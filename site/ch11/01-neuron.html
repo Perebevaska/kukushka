@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Нейрон и слои — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/katex/katex.min.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch11">Глава 11. Нейросети</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 11</div><div class="side-title">Нейросети</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02"><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03"><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05"><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11" open><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" aria-current="page" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 1 · <span class="deep-eb" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубление</span> · ≈ 70 мин · задач: 10</div>
+      <h1>Нейрон и слои</h1>
+      <p class="lead">Нейросеть звучит загадочно, но её кирпичик вам уже знаком: взвешенная сумма признаков плюс нелинейная «функция активации» — почти логистическая регрессия. Собираем нейрон и маленькую сеть на numpy и разбираемся, зачем нужны слои.</p>
+      
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 9</span></div>
+    </div>
+    <article class="prose theory"><h2 id="нейрон-это-знакомая-формула">Нейрон — это знакомая формула</h2>
+<p><strong>Нейрон</strong> берёт признаки, считает взвешенную сумму и пропускает её через <strong>функцию активации</strong>:</p>
+<div class="math block">
+z = x_1 w_1 + x_2 w_2 + \ldots + b = x @ w + b, \qquad a = f(z)
+</div>
+<p>Здесь <span class="math inline">x_1, x_2, \ldots</span> — признаки, <span class="math inline">w_1, w_2, \ldots</span> — их веса, <span class="math inline">b</span> — сдвиг, <span class="math inline">z</span> — взвешенная сумма (оценка), <span class="math inline">f</span> — функция активации, <span class="math inline">a</span> — выход нейрона. Если <span class="math inline">f</span> — сигмоида <span class="math inline">\dfrac{1}{1 + e^{-z}}</span>, получается логистическая регрессия из главы 6: вероятность от 0 до 1.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Нейрон похож на опытного бариста, который прикидывает, не потеряет ли кофейня гостя: он смотрит на несколько сигналов (давно ли гость заходил, жаловался ли, есть ли у него приложение), каждому придаёт свою важность — это веса, — добавляет собственную склонность «скорее уйдёт» или «скорее останется» — это сдвиг — и по итоговой сумме решает, насколько он уверен, что гость уйдёт. Сигмоида превращает эту сумму в уверенность от 0 до 1. Хромает аналогия в одном: живой бариста рассуждает как угодно сложно, а нейрон умеет только сложить сигналы с весами и один раз «изогнуть» результат — вся сложность сети берётся из того, что таких нейронов много и они соединены слоями.</p>
+</aside>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+x = np.array([45.0, 1.0, 0.0])        # дней с визита, жалоб, есть приложение
+w = np.array([0.04, 1.2, -0.6])
+b = -2.0
+z = x @ w + b
+print(round(float(z), 2), round(float(sigmoid(z)), 3))</code></pre></div>
+<p>Посчитаем руками. Гость: 45 дней с визита, 1 жалоба, приложения нет.</p>
+<ul>
+<li>взвешенная сумма: 45 · 0.04 + 1 · 1.2 + 0 · (−0.6) = 1.8 + 1.2 + 0 = 3.0;</li>
+<li>плюс сдвиг: z = 3.0 − 2.0 = <strong>1.0</strong>;</li>
+<li>сигмоида: 1 / (1 + e⁻¹) = 1 / (1 + 0.368) ≈ <strong>0.73</strong>.</li>
+</ul>
+<p><strong>Что здесь происходит в коде:</strong></p>
+<ul>
+<li><code>x @ w</code> — скалярное произведение векторов признаков и весов (глава 9): та же взвешенная сумма.</li>
+<li><code>b</code> — сдвиг (в логистической регрессии — <code>intercept_</code>).</li>
+<li><code>sigmoid(z)</code> превращает любое число в вероятность от 0 до 1.</li>
+</ul>
+<p>Оценка z = 1.0, вероятность ухода 0.73. Один нейрон — одна логистическая регрессия. Сила нейросетей появляется, когда нейронов много и они соединены слоями.</p>
+<figure class="fig" data-fig="neuron"><div class="fig-scroll"><svg viewBox="0 0 700 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-neuron">
+  <title id="t-neuron">Один нейрон: взвешенная сумма и активация</title>
+  <defs><marker id="ah-neuron" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box-acc" x="20" y="42" width="120" height="32" rx="16"/>
+  <text class="ink sm" x="80" y="63" text-anchor="middle">x₁ = км</text>
+  <rect class="box-acc" x="20" y="97" width="120" height="32" rx="16"/>
+  <text class="ink sm" x="80" y="118" text-anchor="middle">x₂ = позиций</text>
+  <rect class="box-acc" x="20" y="152" width="120" height="32" rx="16"/>
+  <text class="ink sm" x="80" y="173" text-anchor="middle">x₃ = пеший</text>
+  <path class="ln" d="M142,60 L300,115" marker-end="url(#ah-neuron)"/>
+  <text class="acc sm b" x="220" y="81.5" text-anchor="middle">w₁</text>
+  <path class="ln" d="M142,115 L300,115" marker-end="url(#ah-neuron)"/>
+  <text class="acc sm b" x="220" y="109.0" text-anchor="middle">w₂</text>
+  <path class="ln" d="M142,170 L300,115" marker-end="url(#ah-neuron)"/>
+  <text class="acc sm b" x="220" y="136.5" text-anchor="middle">w₃</text>
+  <circle class="box-ok" cx="330" cy="115" r="34"/>
+  <text class="ink b" x="330" y="112" text-anchor="middle">Σ + b</text>
+  <text class="ink2 sm" x="330" y="130" text-anchor="middle">z</text>
+  <path class="ln" d="M366,115 L416,115" marker-end="url(#ah-neuron)"/>
+  <rect class="box-warn" x="420" y="90" width="110" height="50" rx="8"/>
+  <text class="ink sm b" x="475" y="112" text-anchor="middle">активация</text>
+  <text class="ink2 sm" x="475" y="130" text-anchor="middle">ReLU или σ</text>
+  <path class="ln" d="M532,115 L586,115" marker-end="url(#ah-neuron)"/>
+  <rect class="box" x="590" y="96" width="90" height="38" rx="19"/>
+  <text class="ink sm b" x="635" y="120" text-anchor="middle">выход</text>
+  <text class="ink2 sm" x="350" y="200" text-anchor="middle">z = w₁x₁ + w₂x₂ + w₃x₃ + b — та же формула, что у линейной и логистической регрессии</text>
+  <text class="mut sm" x="350" y="220" text-anchor="middle">с сигмоидой на выходе один нейрон — это и есть логистическая регрессия</text>
+</svg>
+</div><figcaption>
+<p>Нейрон берёт признаки, умножает на веса, прибавляет смещение и пропускает сумму через активацию.</p>
+</figcaption></figure>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-neuron"><b>1</b> Один нейрон</a></div>
+<div class="fb" data-sec="нейрон-это-знакомая-формула"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="функции-активации">Функции активации</h2>
+<p>Активация добавляет <strong>нелинейность</strong> — изгиб, без которого любые слои складываются в одну линейную формулу. Самые популярные:</p>
+<ul>
+<li><strong>сигмоида</strong> — сжимает любое число в 0…1, удобна на выходе для вероятности;</li>
+<li><strong>ReLU</strong> (rectified linear unit) — <span class="math inline">\max(0, z)</span>: отрицательное превращает в ноль, положительное пропускает как есть. Простая и быстрая, основная активация скрытых слоёв;</li>
+<li><strong>tanh</strong> — как сигмоида, но от −1 до 1.</li>
+</ul>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+z = np.array([-3.0, -0.5, 0.0, 0.5, 3.0])
+print(&quot;сигмоида:&quot;, (1 / (1 + np.exp(-z))).round(3))
+print(&quot;ReLU:    &quot;, np.maximum(0, z))
+print(&quot;tanh:    &quot;, np.tanh(z).round(3))</code></pre></div>
+<p><strong>Что видно в выводе:</strong></p>
+<table>
+<thead>
+<tr>
+<th>z</th>
+<th>сигмоида</th>
+<th>ReLU</th>
+<th>tanh</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>−3</td>
+<td>0.047</td>
+<td>0</td>
+<td>−0.995</td>
+</tr>
+<tr>
+<td>0</td>
+<td>0.5</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>0.953</td>
+<td>3</td>
+<td>0.995</td>
+</tr>
+</tbody>
+</table>
+<p>Сигмоида и tanh «насыщаются»: при больших |z| почти не меняются — это потом затрудняет обучение (градиент почти ноль). ReLU для положительных z растёт без ограничений и не насыщается — одна из причин её популярности.</p>
+<figure class="fig" data-fig="nn-activations"><div class="fig-scroll"><svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-nn-activations">
+  <title id="t-nn-activations">Сигмоида, ReLU и tanh на отрезке от −4 до 4</title>
+  <defs><marker id="ah-nn-activations" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink b" x="140.0" y="28" text-anchor="middle">сигмоида</text>
+  <rect class="box-warn" x="50.0" y="46" width="33.75" height="140" rx="0"/>
+  <rect class="box-warn" x="196.25" y="46" width="33.75" height="140" rx="0"/>
+  <path class="ln-mut" d="M50,186.0 L230,186.0"/>
+  <text class="mut sm" x="44" y="190.0" text-anchor="end">0</text>
+  <path class="ln-mut" d="M50,116.0 L230,116.0"/>
+  <text class="mut sm" x="44" y="120.0" text-anchor="end">0.5</text>
+  <path class="ln-mut" d="M50,46.0 L230,46.0"/>
+  <text class="mut sm" x="44" y="50.0" text-anchor="end">1</text>
+  <path class="ln-mut" d="M140.0,46 L140.0,186"/>
+  <text class="mut sm" x="50.0" y="202" text-anchor="middle">−4</text>
+  <text class="mut sm" x="140.0" y="202" text-anchor="middle">0</text>
+  <text class="mut sm" x="230.0" y="202" text-anchor="middle">4</text>
+  <path class="ln-acc" d="M50.0,183.5 L51.1,183.4 L52.2,183.2 L53.4,183.1 L54.5,182.9 L55.6,182.8 L56.8,182.6 L57.9,182.5 L59.0,182.3 L60.1,182.1 L61.2,181.9 L62.4,181.7 L63.5,181.5 L64.6,181.3 L65.8,181.0 L66.9,180.8 L68.0,180.5 L69.1,180.2 L70.2,180.0 L71.4,179.7 L72.5,179.4 L73.6,179.0 L74.8,178.7 L75.9,178.3 L77.0,178.0 L78.1,177.6 L79.2,177.2 L80.4,176.8 L81.5,176.3 L82.6,175.9 L83.8,175.4 L84.9,174.9 L86.0,174.4 L87.1,173.8 L88.2,173.2 L89.4,172.7 L90.5,172.0 L91.6,171.4 L92.8,170.7 L93.9,170.0 L95.0,169.3 L96.1,168.6 L97.2,167.8 L98.4,167.0 L99.5,166.1 L100.6,165.3 L101.8,164.4 L102.9,163.4 L104.0,162.5 L105.1,161.5 L106.2,160.5 L107.4,159.4 L108.5,158.3 L109.6,157.2 L110.8,156.0 L111.9,154.8 L113.0,153.6 L114.1,152.3 L115.3,151.0 L116.4,149.7 L117.5,148.3 L118.6,147.0 L119.8,145.5 L120.9,144.1 L122.0,142.6 L123.1,141.1 L124.2,139.5 L125.4,138.0 L126.5,136.4 L127.6,134.8 L128.8,133.1 L129.9,131.5 L131.0,129.8 L132.1,128.1 L133.2,126.4 L134.4,124.7 L135.5,123.0 L136.6,121.2 L137.8,119.5 L138.9,117.7 L140.0,116.0 L141.1,114.3 L142.2,112.5 L143.4,110.8 L144.5,109.0 L145.6,107.3 L146.8,105.6 L147.9,103.9 L149.0,102.2 L150.1,100.5 L151.2,98.9 L152.4,97.2 L153.5,95.6 L154.6,94.0 L155.8,92.5 L156.9,90.9 L158.0,89.4 L159.1,87.9 L160.2,86.5 L161.4,85.0 L162.5,83.7 L163.6,82.3 L164.8,81.0 L165.9,79.7 L167.0,78.4 L168.1,77.2 L169.2,76.0 L170.4,74.8 L171.5,73.7 L172.6,72.6 L173.8,71.5 L174.9,70.5 L176.0,69.5 L177.1,68.6 L178.2,67.6 L179.4,66.7 L180.5,65.9 L181.6,65.0 L182.8,64.2 L183.9,63.4 L185.0,62.7 L186.1,62.0 L187.2,61.3 L188.4,60.6 L189.5,60.0 L190.6,59.3 L191.8,58.8 L192.9,58.2 L194.0,57.6 L195.1,57.1 L196.2,56.6 L197.4,56.1 L198.5,55.7 L199.6,55.2 L200.8,54.8 L201.9,54.4 L203.0,54.0 L204.1,53.7 L205.2,53.3 L206.4,53.0 L207.5,52.6 L208.6,52.3 L209.8,52.0 L210.9,51.8 L212.0,51.5 L213.1,51.2 L214.3,51.0 L215.4,50.7 L216.5,50.5 L217.6,50.3 L218.8,50.1 L219.9,49.9 L221.0,49.7 L222.1,49.5 L223.2,49.4 L224.4,49.2 L225.5,49.1 L226.6,48.9 L227.8,48.8 L228.9,48.6 L230.0,48.5"/>
+  <circle class="box-acc" cx="72.5" cy="179.36037775514066" r="3.5"/>
+  <text class="ink2 sm" x="72.5" y="170.36037775514066" text-anchor="middle">0.047</text>
+  <circle class="box-acc" cx="140.0" cy="116.0" r="3.5"/>
+  <text class="ink2 sm" x="140.0" y="107.0" text-anchor="middle">0.5</text>
+  <circle class="box-acc" cx="207.5" cy="52.63962224485934" r="3.5"/>
+  <text class="ink2 sm" x="207.5" y="68.63962224485934" text-anchor="middle">0.953</text>
+  <text class="ink2 sm" x="140.0" y="226" text-anchor="middle">выход 0…1 — вероятность</text>
+  <text class="mut sm" x="140.0" y="244" text-anchor="middle">на выходе бинарной задачи</text>
+  <text class="ink b" x="365.0" y="28" text-anchor="middle">ReLU = max(0, z)</text>
+  <rect class="box" x="275.0" y="46" width="90.0" height="140" rx="0"/>
+  <path class="ln-mut" d="M275,186.0 L455,186.0"/>
+  <text class="mut sm" x="269" y="190.0" text-anchor="end">0</text>
+  <path class="ln-mut" d="M275,116.0 L455,116.0"/>
+  <text class="mut sm" x="269" y="120.0" text-anchor="end">2</text>
+  <path class="ln-mut" d="M275,46.0 L455,46.0"/>
+  <text class="mut sm" x="269" y="50.0" text-anchor="end">4</text>
+  <path class="ln-mut" d="M365.0,46 L365.0,186"/>
+  <text class="mut sm" x="275.0" y="202" text-anchor="middle">−4</text>
+  <text class="mut sm" x="365.0" y="202" text-anchor="middle">0</text>
+  <text class="mut sm" x="455.0" y="202" text-anchor="middle">4</text>
+  <path class="ln-acc" d="M275.0,186.0 L276.1,186.0 L277.2,186.0 L278.4,186.0 L279.5,186.0 L280.6,186.0 L281.8,186.0 L282.9,186.0 L284.0,186.0 L285.1,186.0 L286.2,186.0 L287.4,186.0 L288.5,186.0 L289.6,186.0 L290.8,186.0 L291.9,186.0 L293.0,186.0 L294.1,186.0 L295.2,186.0 L296.4,186.0 L297.5,186.0 L298.6,186.0 L299.8,186.0 L300.9,186.0 L302.0,186.0 L303.1,186.0 L304.2,186.0 L305.4,186.0 L306.5,186.0 L307.6,186.0 L308.8,186.0 L309.9,186.0 L311.0,186.0 L312.1,186.0 L313.2,186.0 L314.4,186.0 L315.5,186.0 L316.6,186.0 L317.8,186.0 L318.9,186.0 L320.0,186.0 L321.1,186.0 L322.2,186.0 L323.4,186.0 L324.5,186.0 L325.6,186.0 L326.8,186.0 L327.9,186.0 L329.0,186.0 L330.1,186.0 L331.2,186.0 L332.4,186.0 L333.5,186.0 L334.6,186.0 L335.8,186.0 L336.9,186.0 L338.0,186.0 L339.1,186.0 L340.2,186.0 L341.4,186.0 L342.5,186.0 L343.6,186.0 L344.8,186.0 L345.9,186.0 L347.0,186.0 L348.1,186.0 L349.2,186.0 L350.4,186.0 L351.5,186.0 L352.6,186.0 L353.8,186.0 L354.9,186.0 L356.0,186.0 L357.1,186.0 L358.2,186.0 L359.4,186.0 L360.5,186.0 L361.6,186.0 L362.8,186.0 L363.9,186.0 L365.0,186.0 L366.1,184.2 L367.2,182.5 L368.4,180.8 L369.5,179.0 L370.6,177.2 L371.8,175.5 L372.9,173.7 L374.0,172.0 L375.1,170.2 L376.2,168.5 L377.4,166.8 L378.5,165.0 L379.6,163.2 L380.8,161.5 L381.9,159.8 L383.0,158.0 L384.1,156.2 L385.2,154.5 L386.4,152.8 L387.5,151.0 L388.6,149.2 L389.8,147.5 L390.9,145.8 L392.0,144.0 L393.1,142.2 L394.2,140.5 L395.4,138.7 L396.5,137.0 L397.6,135.2 L398.8,133.5 L399.9,131.7 L401.0,130.0 L402.1,128.2 L403.2,126.5 L404.4,124.8 L405.5,123.0 L406.6,121.2 L407.8,119.5 L408.9,117.8 L410.0,116.0 L411.1,114.2 L412.2,112.5 L413.4,110.7 L414.5,109.0 L415.6,107.2 L416.8,105.5 L417.9,103.7 L419.0,102.0 L420.1,100.2 L421.2,98.5 L422.4,96.7 L423.5,95.0 L424.6,93.2 L425.8,91.5 L426.9,89.8 L428.0,88.0 L429.1,86.2 L430.2,84.5 L431.4,82.8 L432.5,81.0 L433.6,79.2 L434.8,77.5 L435.9,75.7 L437.0,74.0 L438.1,72.2 L439.2,70.5 L440.4,68.7 L441.5,67.0 L442.6,65.2 L443.8,63.5 L444.9,61.7 L446.0,60.0 L447.1,58.2 L448.2,56.5 L449.4,54.8 L450.5,53.0 L451.6,51.2 L452.8,49.5 L453.9,47.8 L455.0,46.0"/>
+  <circle class="box-acc" cx="297.5" cy="186.0" r="3.5"/>
+  <circle class="box-acc" cx="365.0" cy="186.0" r="3.5"/>
+  <circle class="box-acc" cx="432.5" cy="81.0" r="3.5"/>
+  <text class="ink2 sm" x="432.5" y="72.0" text-anchor="middle">3</text>
+  <text class="ink2 sm" x="365.0" y="226" text-anchor="middle">выход 0…∞, не насыщается</text>
+  <text class="mut sm" x="365.0" y="244" text-anchor="middle">основная в скрытых слоях</text>
+  <text class="ink b" x="590.0" y="28" text-anchor="middle">tanh</text>
+  <rect class="box-warn" x="500.0" y="46" width="33.75" height="140" rx="0"/>
+  <rect class="box-warn" x="646.25" y="46" width="33.75" height="140" rx="0"/>
+  <path class="ln-mut" d="M500,186.0 L680,186.0"/>
+  <text class="mut sm" x="494" y="190.0" text-anchor="end">−1</text>
+  <path class="ln-mut" d="M500,116.0 L680,116.0"/>
+  <text class="mut sm" x="494" y="120.0" text-anchor="end">0</text>
+  <path class="ln-mut" d="M500,46.0 L680,46.0"/>
+  <text class="mut sm" x="494" y="50.0" text-anchor="end">1</text>
+  <path class="ln-mut" d="M590.0,46 L590.0,186"/>
+  <text class="mut sm" x="500.0" y="202" text-anchor="middle">−4</text>
+  <text class="mut sm" x="590.0" y="202" text-anchor="middle">0</text>
+  <text class="mut sm" x="680.0" y="202" text-anchor="middle">4</text>
+  <path class="ln-acc" d="M500.0,186.0 L501.1,185.9 L502.2,185.9 L503.4,185.9 L504.5,185.9 L505.6,185.9 L506.8,185.9 L507.9,185.9 L509.0,185.9 L510.1,185.9 L511.2,185.9 L512.4,185.9 L513.5,185.8 L514.6,185.8 L515.8,185.8 L516.9,185.8 L518.0,185.8 L519.1,185.7 L520.2,185.7 L521.4,185.7 L522.5,185.7 L523.6,185.6 L524.8,185.6 L525.9,185.5 L527.0,185.5 L528.1,185.4 L529.2,185.4 L530.4,185.3 L531.5,185.2 L532.6,185.2 L533.8,185.1 L534.9,185.0 L536.0,184.9 L537.1,184.7 L538.2,184.6 L539.4,184.5 L540.5,184.3 L541.6,184.1 L542.8,183.9 L543.9,183.7 L545.0,183.5 L546.1,183.2 L547.2,182.9 L548.4,182.6 L549.5,182.3 L550.6,181.9 L551.8,181.5 L552.9,181.0 L554.0,180.5 L555.1,180.0 L556.2,179.4 L557.4,178.7 L558.5,178.0 L559.6,177.2 L560.8,176.3 L561.9,175.4 L563.0,174.4 L564.1,173.2 L565.2,172.0 L566.4,170.7 L567.5,169.3 L568.6,167.8 L569.8,166.1 L570.9,164.4 L572.0,162.5 L573.1,160.5 L574.2,158.3 L575.4,156.0 L576.5,153.6 L577.6,151.0 L578.8,148.3 L579.9,145.5 L581.0,142.6 L582.1,139.5 L583.2,136.4 L584.4,133.1 L585.5,129.8 L586.6,126.4 L587.8,123.0 L588.9,119.5 L590.0,116.0 L591.1,112.5 L592.2,109.0 L593.4,105.6 L594.5,102.2 L595.6,98.9 L596.8,95.6 L597.9,92.5 L599.0,89.4 L600.1,86.5 L601.2,83.7 L602.4,81.0 L603.5,78.4 L604.6,76.0 L605.8,73.7 L606.9,71.5 L608.0,69.5 L609.1,67.6 L610.2,65.9 L611.4,64.2 L612.5,62.7 L613.6,61.3 L614.8,60.0 L615.9,58.8 L617.0,57.6 L618.1,56.6 L619.2,55.7 L620.4,54.8 L621.5,54.0 L622.6,53.3 L623.8,52.6 L624.9,52.0 L626.0,51.5 L627.1,51.0 L628.2,50.5 L629.4,50.1 L630.5,49.7 L631.6,49.4 L632.8,49.1 L633.9,48.8 L635.0,48.5 L636.1,48.3 L637.2,48.1 L638.4,47.9 L639.5,47.7 L640.6,47.5 L641.8,47.4 L642.9,47.3 L644.0,47.1 L645.1,47.0 L646.2,46.9 L647.4,46.8 L648.5,46.8 L649.6,46.7 L650.8,46.6 L651.9,46.6 L653.0,46.5 L654.1,46.5 L655.2,46.4 L656.4,46.4 L657.5,46.3 L658.6,46.3 L659.8,46.3 L660.9,46.3 L662.0,46.2 L663.1,46.2 L664.2,46.2 L665.4,46.2 L666.5,46.2 L667.6,46.1 L668.8,46.1 L669.9,46.1 L671.0,46.1 L672.1,46.1 L673.2,46.1 L674.4,46.1 L675.5,46.1 L676.6,46.1 L677.8,46.1 L678.9,46.1 L680.0,46.0"/>
+  <circle class="box-acc" cx="522.5" cy="185.65383275807113" r="3.5"/>
+  <text class="ink2 sm" x="530.5" y="179.65383275807113" text-anchor="start">−0.995</text>
+  <circle class="box-acc" cx="590.0" cy="116.0" r="3.5"/>
+  <text class="ink2 sm" x="590.0" y="107.0" text-anchor="middle">0</text>
+  <circle class="box-acc" cx="657.5" cy="46.34616724192887" r="3.5"/>
+  <text class="ink2 sm" x="657.5" y="62.34616724192887" text-anchor="middle">0.995</text>
+  <text class="ink2 sm" x="590.0" y="226" text-anchor="middle">выход −1…1</text>
+  <text class="mut sm" x="590.0" y="244" text-anchor="middle">скрытые слои, реже</text>
+  <text class="mut sm" x="590.0" y="34" text-anchor="middle"></text>
+  <rect class="box-warn" x="70" y="270" width="14" height="12" rx="0"/>
+  <text class="mut sm" x="90" y="280" text-anchor="start">насыщение: кривая почти плоская, наклон около 0</text>
+  <rect class="box" x="420" y="270" width="14" height="12" rx="0"/>
+  <text class="mut sm" x="440" y="280" text-anchor="start">ReLU при z &lt; 0: выход и наклон — 0</text>
+</svg>
+</div><figcaption>
+<p>Три активации на отрезке от −4 до 4, точки — значения из таблицы. Жёлтые полосы — зоны насыщения сигмоиды и tanh: кривая там почти плоская, и малое изменение z почти не меняет выход. У ReLU плоская вся левая половина: при z &lt; 0 и выход, и наклон равны нулю.</p>
+</figcaption></figure>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">import numpy as np
+print(np.maximum(0, np.array([-2, 0, 5])).tolist())</code></pre>
+<ul>
+<li><code>[-2, 0, 5]</code></li>
+<li>[x] <code>[0, 0, 5]</code></li>
+<li><code>[2, 0, 5]</code></li>
+</ul>
+<p>Почему: ReLU заменяет отрицательные значения нулём, остальные оставляет как есть.</p>
+</div>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Сигмоида во всех скрытых слоях глубокой сети.</strong> Наклон сигмоиды не больше 0.25 (в точке z = 0), а при обратном проходе (урок «Обучение сети: обратное распространение ошибки») наклоны слоёв перемножаются — сигнал ошибки к первым слоям почти не доходит. В скрытых слоях — ReLU, сигмоида — на выходе.</li>
+<li><strong>ReLU на выходе бинарной задачи.</strong> Выход ReLU — от 0 до бесконечности, это не вероятность. Для «уйдёт ли гость» на выходе сигмоида.</li>
+<li><strong>«Мёртвые» нейроны ReLU.</strong> Если у нейрона z &lt; 0 для всех объектов, он всегда выдаёт 0 и больше не учится: наклон в левой половине — ноль. Проверка: доля столбцов скрытого слоя, где все значения нулевые, — <code>(H == 0).all(axis=0).mean()</code>.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-relu"><b>2</b> ReLU и её производная</a><a href="#task-saturation"><b>7</b> Где активация «засыпает»</a></div>
+<div class="fb" data-sec="функции-активации"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="слой-матричное-умножение">Слой — матричное умножение</h2>
+<p>Слой из <span class="math inline">k</span> нейронов — это <span class="math inline">k</span> нейронов с разными весами, которые смотрят на одни и те же признаки. Веса слоя удобно сложить в матрицу <span class="math inline">W</span> (признаки × нейроны), и тогда весь слой для всех объектов сразу — одно умножение из главы 9:</p>
+<div class="math block">
+Z = X @ W + b, \qquad A = f(Z)
+</div>
+<p>Здесь <span class="math inline">X</span> — объекты × признаки, <span class="math inline">W</span> — признаки × нейроны, <span class="math inline">b</span> — сдвиги нейронов, <span class="math inline">Z</span> — оценки всех нейронов для всех объектов, <span class="math inline">A</span> — выходы слоя после активации.</p>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+rng = np.random.default_rng(0)
+X = np.array([[45.0, 1, 0],
+              [3.0, 0, 1]])           # два гостя, три признака
+W = rng.normal(size=(3, 4)) * 0.1     # слой из 4 нейронов
+b = np.zeros(4)
+A = np.maximum(0, X @ W + b)          # ReLU
+print(A.shape)
+print(A.round(3))</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>X</code> — 2 гостя × 3 признака; <code>W</code> — 3 признака × 4 нейрона: столбец <code>W[:, j]</code> — веса нейрона <code>j</code>.</li>
+<li><code>X @ W</code> — матрица 2 × 4: в клетке (i, j) — взвешенная сумма признаков гостя i с весами нейрона j. Правило формы (глава 9): (2 × 3) @ (3 × 4) → (2 × 4).</li>
+<li><code>+ b</code> — сдвиг каждого нейрона прибавляется ко всем строкам (broadcasting).</li>
+<li><code>np.maximum(0, ...)</code> — ReLU поэлементно.</li>
+</ul>
+<figure class="fig" data-fig="nn-layer-matmul"><div class="fig-scroll"><svg viewBox="0 0 700 270" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-nn-layer-matmul">
+  <title id="t-nn-layer-matmul">Слой из четырёх нейронов: Z = X @ W + b</title>
+  <defs><marker id="ah-nn-layer-matmul" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink sm b" x="84" y="60" text-anchor="middle">X: 2 гостя × 3 признака</text>
+  <text class="mut sm" x="44.0" y="82" text-anchor="middle">дней</text>
+  <text class="mut sm" x="84.0" y="82" text-anchor="middle">жалоб</text>
+  <text class="mut sm" x="124.0" y="82" text-anchor="middle">прил.</text>
+  <rect class="box-acc" x="24" y="92" width="40" height="30" rx="2"/>
+  <text class="ink sm" x="44.0" y="112" text-anchor="middle">45</text>
+  <rect class="box-acc" x="64" y="92" width="40" height="30" rx="2"/>
+  <text class="ink sm" x="84.0" y="112" text-anchor="middle">1</text>
+  <rect class="box-acc" x="104" y="92" width="40" height="30" rx="2"/>
+  <text class="ink sm" x="124.0" y="112" text-anchor="middle">0</text>
+  <rect class="box" x="24" y="122" width="40" height="30" rx="2"/>
+  <text class="ink sm" x="44.0" y="142" text-anchor="middle">3</text>
+  <rect class="box" x="64" y="122" width="40" height="30" rx="2"/>
+  <text class="ink sm" x="84.0" y="142" text-anchor="middle">0</text>
+  <rect class="box" x="104" y="122" width="40" height="30" rx="2"/>
+  <text class="ink sm" x="124.0" y="142" text-anchor="middle">1</text>
+  <text class="mut sm" x="14" y="112" text-anchor="middle">1</text>
+  <text class="mut sm" x="14" y="142" text-anchor="middle">2</text>
+  <text class="ink b" x="158" y="128" text-anchor="middle">@</text>
+  <text class="ink sm b" x="256" y="60" text-anchor="middle">W: 3 признака × 4 нейрона</text>
+  <text class="mut sm" x="196.0" y="183" text-anchor="middle">н1</text>
+  <rect class="box" x="176" y="77" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="196.0" y="97" text-anchor="middle">w₁₁</text>
+  <rect class="box" x="176" y="107" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="196.0" y="127" text-anchor="middle">w₂₁</text>
+  <rect class="box" x="176" y="137" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="196.0" y="157" text-anchor="middle">w₃₁</text>
+  <text class="mut sm" x="236.0" y="183" text-anchor="middle">н2</text>
+  <rect class="box" x="216" y="77" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="236.0" y="97" text-anchor="middle">w₁₂</text>
+  <rect class="box" x="216" y="107" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="236.0" y="127" text-anchor="middle">w₂₂</text>
+  <rect class="box" x="216" y="137" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="236.0" y="157" text-anchor="middle">w₃₂</text>
+  <text class="mut sm" x="276.0" y="183" text-anchor="middle">н3</text>
+  <rect class="box-acc" x="256" y="77" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="276.0" y="97" text-anchor="middle">w₁₃</text>
+  <rect class="box-acc" x="256" y="107" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="276.0" y="127" text-anchor="middle">w₂₃</text>
+  <rect class="box-acc" x="256" y="137" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="276.0" y="157" text-anchor="middle">w₃₃</text>
+  <text class="mut sm" x="316.0" y="183" text-anchor="middle">н4</text>
+  <rect class="box" x="296" y="77" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="316.0" y="97" text-anchor="middle">w₁₄</text>
+  <rect class="box" x="296" y="107" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="316.0" y="127" text-anchor="middle">w₂₄</text>
+  <rect class="box" x="296" y="137" width="40" height="30" rx="2"/>
+  <text class="ink2 sm" x="316.0" y="157" text-anchor="middle">w₃₄</text>
+  <text class="ink b" x="360" y="128" text-anchor="middle">+ b</text>
+  <text class="ink b" x="392" y="128" text-anchor="middle">=</text>
+  <text class="ink sm b" x="490" y="60" text-anchor="middle">Z: 2 × 4</text>
+  <text class="mut sm" x="430.0" y="82" text-anchor="middle">н1</text>
+  <rect class="box" x="410" y="92" width="40" height="30" rx="2"/>
+  <rect class="box" x="410" y="122" width="40" height="30" rx="2"/>
+  <text class="mut sm" x="470.0" y="82" text-anchor="middle">н2</text>
+  <rect class="box" x="450" y="92" width="40" height="30" rx="2"/>
+  <rect class="box" x="450" y="122" width="40" height="30" rx="2"/>
+  <text class="mut sm" x="510.0" y="82" text-anchor="middle">н3</text>
+  <rect class="box-warn" x="490" y="92" width="40" height="30" rx="2"/>
+  <text class="ink sm b" x="510.0" y="112" text-anchor="middle">z</text>
+  <rect class="box" x="490" y="122" width="40" height="30" rx="2"/>
+  <text class="mut sm" x="550.0" y="82" text-anchor="middle">н4</text>
+  <rect class="box" x="530" y="92" width="40" height="30" rx="2"/>
+  <rect class="box" x="530" y="122" width="40" height="30" rx="2"/>
+  <path class="ln" d="M574,122 L604,122" marker-end="url(#ah-nn-layer-matmul)"/>
+  <rect class="box-ok" x="606" y="90" width="80" height="64" rx="8"/>
+  <text class="ink sm b" x="646" y="114" text-anchor="middle">ReLU</text>
+  <text class="ink2 sm" x="646" y="134" text-anchor="middle">A: 2 × 4</text>
+  <text class="ink2 sm" x="350" y="212" text-anchor="middle">выделенная клетка: z = 45·w₁₃ + 1·w₂₃ + 0·w₃₃ + b₃ — строка гостя 1 на столбец нейрона 3</text>
+  <text class="ink2 sm" x="350" y="234" text-anchor="middle">формы: (2 × 3) @ (3 × 4) → (2 × 4) — внутренние размеры 3 и 3 совпали и «схлопнулись»</text>
+  <text class="mut sm" x="350" y="256" text-anchor="middle">b — по одному сдвигу на нейрон, прибавляется к каждой строке</text>
+</svg>
+</div><figcaption>
+<p>Слой — одно умножение матриц: строка гостя из X умножается на столбец весов нейрона из W, и так для каждой клетки результата. Числа в W схематичны.</p>
+</figcaption></figure>
+<p>Форма (2, 4): для каждого из двух гостей слой выдал 4 новых числа. Это <strong>новые признаки</strong>, которые сеть строит сама. Следующий слой смотрит уже на них.</p>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Матрица весов «боком».</strong> Если создать <code>W</code> формы (4, 3) — нейроны × признаки, — <code>X @ W</code> упадёт: <code>ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0 ... (size 4 is different from 3)</code>. Внутренние размеры должны совпасть: (2 × <strong>3</strong>) @ (<strong>3</strong> × 4). Строк в <code>W</code> столько, сколько признаков, столбцов — сколько нейронов.</li>
+<li><strong>Сдвиг формы (2,) вместо (4,).</strong> Сдвигов столько, сколько нейронов, а не объектов: <code>b = np.zeros(4)</code>. Сдвиг по числу объектов либо упадёт, либо (если числа случайно совпадут) прибавится не к тем клеткам.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-p-layer"><b>3</b> Слой нейронов</a><a href="#task-shapes"><b>8</b> Формы по слоям</a></div>
+<div class="fb" data-sec="слой-матричное-умножение"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="зачем-больше-одного-слоя">Зачем больше одного слоя</h2>
+<p>Классическая задача, которую не решает ни один нейрон: гость уходит, если <strong>ровно одно</strong> из двух — «давно не был» или «жаловался» (например, жалобщики, которые часто ходят, остаются, потому что их проблему решили). Классы расположены «крест-накрест», и никакая прямая их не разделит. А сеть со скрытым слоем из двух нейронов — разделяет: первый нейрон ловит «хотя бы одно», второй — «оба сразу», выход — «первое, но не второе».</p>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])    # давно не был, жаловался
+y = np.array([0, 1, 1, 0])                          # ушёл: ровно одно из двух
+
+W1 = np.array([[20.0, 20.0],
+               [20.0, 20.0]])
+b1 = np.array([-10.0, -30.0])        # нейрон 1: «хотя бы одно», нейрон 2: «оба»
+H = sigmoid(X @ W1 + b1)
+w2 = np.array([20.0, -40.0])
+b2 = -10.0
+out = sigmoid(H @ w2 + b2)
+print(H.round(2))
+print(out.round(2), &quot;← прогноз; факт:&quot;, y)</code></pre></div>
+<p>Разберём по шагам для гостя (1, 0) — давно не был, не жаловался:</p>
+<ol>
+<li>Нейрон 1: 20·1 + 20·0 − 10 = 10 → сигмоида ≈ 1.00: «хотя бы одно» — да.</li>
+<li>Нейрон 2: 20·1 + 20·0 − 30 = −10 → сигмоида ≈ 0.00: «оба» — нет.</li>
+<li>Выход: 20·1.00 − 40·0.00 − 10 = 10 → сигмоида ≈ 1.00: ушёл.</li>
+</ol>
+<p>А для гостя (1, 1): нейрон 1 ≈ 1, нейрон 2 ≈ 1 (20 + 20 − 30 = 10), выход 20 − 40 − 10 = −30 → ≈ 0: остался. Скрытый слой построил два новых признака, и в их пространстве классы разделяются прямой.</p>
+<figure class="fig" data-fig="nn-xor"><div class="fig-scroll"><svg viewBox="0 0 700 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-nn-xor">
+  <title id="t-nn-xor">Скрытый слой переводит гостей в новые признаки, где классы разделяются прямой</title>
+  <defs><marker id="ah-nn-xor" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink sm b" x="135.0" y="48" text-anchor="middle">исходные признаки</text>
+  <path class="ln-mut" d="M50,240 L240,240" marker-end="url(#ah-nn-xor)"/>
+  <path class="ln-mut" d="M50,240 L50,60" marker-end="url(#ah-nn-xor)"/>
+  <text class="mut sm" x="240" y="274" text-anchor="end">давно не был</text>
+  <text class="mut sm" x="56" y="64" text-anchor="start">жаловался</text>
+  <text class="mut sm" x="70" y="256" text-anchor="middle">0</text>
+  <text class="mut sm" x="40" y="224" text-anchor="middle">0</text>
+  <text class="mut sm" x="200" y="256" text-anchor="middle">1</text>
+  <text class="mut sm" x="40" y="94" text-anchor="middle">1</text>
+  <circle class="box-ok" cx="70" cy="220" r="9"/>
+  <circle class="box-err" cx="70" cy="90" r="9"/>
+  <circle class="box-err" cx="200" cy="220" r="9"/>
+  <circle class="box-ok" cx="200" cy="90" r="9"/>
+  <text class="ink2 sm" x="135.0" y="296" text-anchor="middle">ни одна прямая не отделит ✕ от ○</text>
+  <text class="ink sm b" x="70" y="224" text-anchor="middle">○</text>
+  <text class="ink sm b" x="70" y="94" text-anchor="middle">✕</text>
+  <text class="ink sm b" x="200" y="224" text-anchor="middle">✕</text>
+  <text class="ink sm b" x="200" y="94" text-anchor="middle">○</text>
+  <path class="ln-acc" d="M262,140 L390,140" marker-end="url(#ah-nn-xor)"/>
+  <text class="acc sm b" x="326" y="112" text-anchor="middle">скрытый слой</text>
+  <text class="ink2 sm" x="326" y="160" text-anchor="middle">h₁ = «хотя бы одно»</text>
+  <text class="ink2 sm" x="326" y="178" text-anchor="middle">h₂ = «оба сразу»</text>
+  <text class="ink sm b" x="525.0" y="48" text-anchor="middle">новые признаки h₁, h₂</text>
+  <path class="ln-mut" d="M440,240 L630,240" marker-end="url(#ah-nn-xor)"/>
+  <path class="ln-mut" d="M440,240 L440,60" marker-end="url(#ah-nn-xor)"/>
+  <text class="mut sm" x="630" y="274" text-anchor="end">h₁</text>
+  <text class="mut sm" x="446" y="64" text-anchor="start">h₂</text>
+  <text class="mut sm" x="460" y="256" text-anchor="middle">0</text>
+  <text class="mut sm" x="430" y="224" text-anchor="middle">0</text>
+  <text class="mut sm" x="590" y="256" text-anchor="middle">1</text>
+  <text class="mut sm" x="430" y="94" text-anchor="middle">1</text>
+  <path class="ln-acc dash" d="M525.0,220.0 L622.5,171.2"/>
+  <circle class="box-ok" cx="460.0" cy="220.0" r="9"/>
+  <text class="ink sm b" x="460.0" y="224.0" text-anchor="middle">○</text>
+  <text class="mut sm" x="460.0" y="204.0" text-anchor="middle">(0,0)</text>
+  <circle class="box-err" cx="590.0" cy="220.0" r="9"/>
+  <text class="ink sm b" x="590.0" y="224.0" text-anchor="middle">✕</text>
+  <text class="mut sm" x="604.0" y="224.0" text-anchor="start">(0,1), (1,0)</text>
+  <circle class="box-ok" cx="590.0" cy="90.0" r="9"/>
+  <text class="ink sm b" x="590.0" y="94.0" text-anchor="middle">○</text>
+  <text class="mut sm" x="590.0" y="74.0" text-anchor="middle">(1,1)</text>
+  <text class="ink2 sm" x="525.0" y="296" text-anchor="middle">выход: 20·h₁ − 40·h₂ − 10 &gt; 0 → ушёл</text>
+  <text class="mut sm" x="350" y="322" text-anchor="middle">○ остался, ✕ ушёл; в скобках — исходные признаки гостя</text>
+</svg>
+</div><figcaption>
+<p>Слева гости в исходных признаках: ушедшие (✕) стоят по диагонали, и одной прямой их не отделить. Справа те же гости в признаках скрытого слоя: два ушедших совпали в точке (1, 0), и прямая выхода отделяет их от остальных.</p>
+</figcaption></figure>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Это как отчёт в SQL, где по двум флагам нужно отобрать «ровно один из двух». Одним условием вида <code>a·x + b·y &gt; c</code> такой фильтр не написать, но если сначала добавить вычисляемые столбцы «хотя бы один» и «оба» (два <code>CASE WHEN</code>), итоговый фильтр становится простым: «первый столбец да, второй нет». Скрытый слой и есть такие вычисляемые столбцы, только сеть придумывает их сама. Хромает аналогия в одном: сеть не знает заранее, какие столбцы нужны, — она подбирает их при обучении, и обычно они не имеют такого понятного смысла.</p>
+</aside>
+<p>Веса здесь подобраны руками, чтобы было видно идею. В следующем уроке сеть найдёт такие веса сама.</p>
+<aside class="callout callout-note"><div class="callout-title">Заметка</div>
+<p>Почему без активации слои бесполезны: <span class="math inline">(X @ W_1) @ W_2 = X @ (W_1 @ W_2)</span> — это снова одна линейная модель с весами <span class="math inline">W_1 @ W_2</span>. Нелинейность между слоями — то, что делает «глубину» осмысленной.</p>
+</aside>
+<figure class="fig" data-fig="nn-collapse"><div class="fig-scroll"><svg viewBox="0 0 700 336" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-nn-collapse">
+  <title id="t-nn-collapse">Два линейных слоя без активации равны одному слою с весами W1 @ W2</title>
+  <defs><marker id="ah-nn-collapse" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink b" x="20" y="28" text-anchor="start">два слоя без активации</text>
+  <rect class="box" x="30" y="50" width="16" height="16" rx="1"/>
+  <rect class="box" x="46" y="50" width="16" height="16" rx="1"/>
+  <rect class="box" x="62" y="50" width="16" height="16" rx="1"/>
+  <rect class="box" x="30" y="66" width="16" height="16" rx="1"/>
+  <rect class="box" x="46" y="66" width="16" height="16" rx="1"/>
+  <rect class="box" x="62" y="66" width="16" height="16" rx="1"/>
+  <text class="ink sm b" x="54.0" y="98" text-anchor="middle">X: 2 × 3</text>
+  <text class="ink b" x="100" y="72" text-anchor="middle">@</text>
+  <rect class="box-acc" x="120" y="50" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="136" y="50" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="152" y="50" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="168" y="50" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="120" y="66" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="136" y="66" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="152" y="66" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="168" y="66" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="120" y="82" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="136" y="82" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="152" y="82" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="168" y="82" width="16" height="16" rx="1"/>
+  <text class="ink sm b" x="152.0" y="114" text-anchor="middle">W₁: 3 × 4</text>
+  <text class="ink b" x="206" y="72" text-anchor="middle">=</text>
+  <rect class="box" x="226" y="50" width="16" height="16" rx="1"/>
+  <rect class="box" x="242" y="50" width="16" height="16" rx="1"/>
+  <rect class="box" x="258" y="50" width="16" height="16" rx="1"/>
+  <rect class="box" x="274" y="50" width="16" height="16" rx="1"/>
+  <rect class="box" x="226" y="66" width="16" height="16" rx="1"/>
+  <rect class="box" x="242" y="66" width="16" height="16" rx="1"/>
+  <rect class="box" x="258" y="66" width="16" height="16" rx="1"/>
+  <rect class="box" x="274" y="66" width="16" height="16" rx="1"/>
+  <text class="ink sm b" x="258.0" y="98" text-anchor="middle">Z: 2 × 4</text>
+  <text class="ink b" x="312" y="72" text-anchor="middle">@</text>
+  <rect class="box-acc" x="332" y="50" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="332" y="66" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="332" y="82" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="332" y="98" width="16" height="16" rx="1"/>
+  <text class="ink sm b" x="340.0" y="130" text-anchor="middle">W₂: 4 × 1</text>
+  <text class="ink b" x="374" y="72" text-anchor="middle">=</text>
+  <rect class="box-ok" x="394" y="50" width="16" height="16" rx="1"/>
+  <rect class="box-ok" x="394" y="66" width="16" height="16" rx="1"/>
+  <text class="ink sm b" x="402.0" y="98" text-anchor="middle">выход: 2 × 1</text>
+  <text class="ink2 sm" x="480" y="60" text-anchor="start">скобки можно переставить:</text>
+  <text class="ink sm b" x="480" y="78" text-anchor="start">(X @ W₁) @ W₂ = X @ (W₁ @ W₂)</text>
+  <path class="ln-acc" d="M150,140 L150,166" marker-end="url(#ah-nn-collapse)"/>
+  <text class="acc sm" x="162" y="158" text-anchor="start">сначала перемножим веса: W₁ @ W₂ — матрица 3 × 1</text>
+  <text class="ink b" x="20" y="190" text-anchor="start">тот же результат — один слой</text>
+  <rect class="box" x="30" y="204" width="16" height="16" rx="1"/>
+  <rect class="box" x="46" y="204" width="16" height="16" rx="1"/>
+  <rect class="box" x="62" y="204" width="16" height="16" rx="1"/>
+  <rect class="box" x="30" y="220" width="16" height="16" rx="1"/>
+  <rect class="box" x="46" y="220" width="16" height="16" rx="1"/>
+  <rect class="box" x="62" y="220" width="16" height="16" rx="1"/>
+  <text class="ink sm b" x="54.0" y="252" text-anchor="middle">X: 2 × 3</text>
+  <text class="ink b" x="100" y="226" text-anchor="middle">@</text>
+  <rect class="box-acc" x="120" y="204" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="120" y="220" width="16" height="16" rx="1"/>
+  <rect class="box-acc" x="120" y="236" width="16" height="16" rx="1"/>
+  <text class="ink sm b" x="128.0" y="268" text-anchor="middle">W₁ @ W₂: 3 × 1</text>
+  <text class="ink b" x="162" y="226" text-anchor="middle">=</text>
+  <rect class="box-ok" x="182" y="204" width="16" height="16" rx="1"/>
+  <rect class="box-ok" x="182" y="220" width="16" height="16" rx="1"/>
+  <text class="ink sm b" x="190.0" y="252" text-anchor="middle">выход: 2 × 1</text>
+  <text class="ink2 sm" x="260" y="220" text-anchor="start">3 веса вместо 3 · 4 + 4 · 1 = 16: обычная линейная модель,</text>
+  <text class="ink2 sm" x="260" y="238" text-anchor="start">граница — прямая, сколько бы слоёв ни было</text>
+  <rect class="box-warn" x="20" y="284" width="660" height="44" rx="8"/>
+  <text class="ink sm" x="350" y="302" text-anchor="middle">с ReLU между слоями: relu(X @ W₁) @ W₂ — скобки уже не переставить:</text>
+  <text class="ink sm" x="350" y="320" text-anchor="middle">ReLU обнуляет разные клетки Z у разных гостей, и граница получает изгибы</text>
+</svg>
+</div><figcaption>
+<p>Формы из раздела «Слой — матричное умножение»: два гостя, три признака, слой из четырёх нейронов и выход. Без активации скобки можно переставить и заранее перемножить веса — получится одна матрица 3 × 1, то есть обычная линейная модель. ReLU между слоями этого не позволяет.</p>
+</figcaption></figure>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>Зачем между слоями нужна нелинейная активация, например ReLU?</p>
+<ul>
+<li>[x] Без неё несколько слоёв схлопываются в один линейный слой, и сеть не может нарисовать кривую границу
+<blockquote>
+<p><code>(X @ W1) @ W2 = X @ (W1 @ W2)</code>. ReLU ломает это равенство — так появляются изгибы границы.</p>
+</blockquote>
+</li>
+<li>[ ] Чтобы сеть быстрее обучалась
+<blockquote>
+<p>Скорость здесь вторична. Главное — выразительность.</p>
+</blockquote>
+</li>
+<li>[ ] Чтобы выход был от 0 до 1
+<blockquote>
+<p>Это задача сигмоиды на выходе, а не активаций между слоями.</p>
+</blockquote>
+</li>
+<li>[ ] Чтобы уменьшить число параметров
+<blockquote>
+<p>Активация не добавляет и не убирает параметры.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-collapse"><b>5</b> Слои без активации</a><a href="#task-xor-linear"><b>9</b> Где не справляется прямая</a><a href="#task-feature-net"><b>10</b> Скрытый слой как новые признаки</a></div>
+<div class="fb" data-sec="зачем-больше-одного-слоя"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="прямой-проход">Прямой проход</h2>
+<p>Вычисление прогноза слой за слоем называют <strong>прямым проходом</strong> (forward pass). Сеть из двух слоёв:</p>
+<ol>
+<li><span class="math inline">H = \mathrm{relu}(X @ W_1 + b_1)</span> — скрытый слой, новые признаки;</li>
+<li><span class="math inline">p = \mathrm{sigmoid}(H @ w_2 + b_2)</span> — выход, вероятность.</li>
+</ol>
+<p>Всё, что мы знаем о моделях, остаётся в силе: нужны признаки в одном масштабе (глава 7), обучающая и тестовая выборки (глава 6), метрики (глава 7). Новое — только как подбирать веса, когда слоёв несколько. Об этом следующий урок.</p>
+<p>До обучения веса сети — маленькие случайные числа, как в примерах этого урока (<code>rng.normal(...) * 0.1</code>). Их масштаб важен: в глубокой сети слишком большие веса раздувают сигнал от слоя к слою, слишком маленькие — гасят. Как подобрать масштаб (инициализации Xavier и He), разберём в уроке «Граф вычислений, инициализация и обрезка градиента», когда уже будет видно и прямой, и обратный проход.</p>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-forward"><b>6</b> Прямой проход сети</a></div>
+<div class="fb" data-sec="прямой-проход"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="разберём-вместе-сколько-параметров-у-сети">Разберём вместе: сколько параметров у сети</h2>
+<p>Каждый вес и каждый сдвиг — параметр, который нужно подобрать при обучении. Чем их больше, тем гибче сеть — и тем больше данных нужно, чтобы она не переобучилась.</p>
+<p>Сеть «10 признаков → 16 нейронов → 8 нейронов → 1 выход»:</p>
+<table>
+<thead>
+<tr>
+<th>слой</th>
+<th>веса</th>
+<th>сдвиги</th>
+<th>всего</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10 → 16</td>
+<td>10 · 16 = 160</td>
+<td>16</td>
+<td>176</td>
+</tr>
+<tr>
+<td>16 → 8</td>
+<td>16 · 8 = 128</td>
+<td>8</td>
+<td>136</td>
+</tr>
+<tr>
+<td>8 → 1</td>
+<td>8 · 1 = 8</td>
+<td>1</td>
+<td>9</td>
+</tr>
+<tr>
+<td><strong>итого</strong></td>
+<td></td>
+<td></td>
+<td><strong>321</strong></td>
+</tr>
+</tbody>
+</table>
+<figure class="fig" data-fig="nn-param-count"><div class="fig-scroll"><svg viewBox="0 0 700 345" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-nn-param-count">
+  <title id="t-nn-param-count">Сеть 10 → 16 → 8 → 1: 321 параметр</title>
+  <defs><marker id="ah-nn-param-count" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <path class="ln-mut" d="M65,85.0 L225,43.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,57.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,71.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,85.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,99.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,113.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,127.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,141.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,155.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,169.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,183.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,197.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,211.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,225.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,239.0"/>
+  <path class="ln-mut" d="M65,85.0 L225,253.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,43.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,57.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,71.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,85.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,99.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,113.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,127.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,141.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,155.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,169.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,183.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,197.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,211.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,225.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,239.0"/>
+  <path class="ln-mut" d="M65,99.0 L225,253.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,43.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,57.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,71.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,85.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,99.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,113.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,127.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,141.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,155.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,169.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,183.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,197.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,211.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,225.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,239.0"/>
+  <path class="ln-mut" d="M65,113.0 L225,253.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,43.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,57.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,71.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,85.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,99.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,113.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,127.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,141.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,155.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,169.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,183.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,197.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,211.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,225.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,239.0"/>
+  <path class="ln-mut" d="M65,127.0 L225,253.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,43.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,57.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,71.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,85.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,99.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,113.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,127.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,141.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,155.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,169.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,183.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,197.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,211.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,225.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,239.0"/>
+  <path class="ln-mut" d="M65,141.0 L225,253.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,43.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,57.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,71.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,85.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,99.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,113.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,127.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,141.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,155.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,169.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,183.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,197.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,211.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,225.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,239.0"/>
+  <path class="ln-mut" d="M65,155.0 L225,253.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,43.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,57.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,71.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,85.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,99.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,113.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,127.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,141.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,155.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,169.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,183.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,197.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,211.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,225.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,239.0"/>
+  <path class="ln-mut" d="M65,169.0 L225,253.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,43.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,57.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,71.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,85.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,99.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,113.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,127.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,141.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,155.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,169.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,183.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,197.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,211.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,225.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,239.0"/>
+  <path class="ln-mut" d="M65,183.0 L225,253.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,43.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,57.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,71.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,85.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,99.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,113.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,127.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,141.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,155.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,169.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,183.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,197.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,211.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,225.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,239.0"/>
+  <path class="ln-mut" d="M65,197.0 L225,253.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,43.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,57.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,71.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,85.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,99.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,113.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,127.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,141.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,155.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,169.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,183.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,197.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,211.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,225.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,239.0"/>
+  <path class="ln-mut" d="M65,211.0 L225,253.0"/>
+  <path class="ln-mut" d="M235,43.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,43.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,43.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,43.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,43.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,43.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,43.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,43.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,57.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,57.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,57.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,57.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,57.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,57.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,57.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,57.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,71.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,71.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,71.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,71.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,71.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,71.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,71.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,71.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,85.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,85.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,85.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,85.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,85.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,85.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,85.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,85.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,99.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,99.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,99.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,99.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,99.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,99.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,99.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,99.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,113.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,113.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,113.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,113.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,113.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,113.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,113.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,113.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,127.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,127.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,127.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,127.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,127.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,127.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,127.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,127.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,141.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,141.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,141.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,141.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,141.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,141.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,141.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,141.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,155.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,155.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,155.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,155.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,155.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,155.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,155.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,155.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,169.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,169.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,169.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,169.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,169.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,169.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,169.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,169.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,183.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,183.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,183.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,183.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,183.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,183.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,183.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,183.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,197.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,197.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,197.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,197.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,197.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,197.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,197.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,197.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,211.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,211.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,211.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,211.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,211.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,211.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,211.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,211.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,225.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,225.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,225.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,225.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,225.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,225.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,225.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,225.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,239.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,239.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,239.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,239.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,239.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,239.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,239.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,239.0 L395,197.0"/>
+  <path class="ln-mut" d="M235,253.0 L395,99.0"/>
+  <path class="ln-mut" d="M235,253.0 L395,113.0"/>
+  <path class="ln-mut" d="M235,253.0 L395,127.0"/>
+  <path class="ln-mut" d="M235,253.0 L395,141.0"/>
+  <path class="ln-mut" d="M235,253.0 L395,155.0"/>
+  <path class="ln-mut" d="M235,253.0 L395,169.0"/>
+  <path class="ln-mut" d="M235,253.0 L395,183.0"/>
+  <path class="ln-mut" d="M235,253.0 L395,197.0"/>
+  <path class="ln-mut" d="M405,99.0 L555,148.0"/>
+  <path class="ln-mut" d="M405,113.0 L555,148.0"/>
+  <path class="ln-mut" d="M405,127.0 L555,148.0"/>
+  <path class="ln-mut" d="M405,141.0 L555,148.0"/>
+  <path class="ln-mut" d="M405,155.0 L555,148.0"/>
+  <path class="ln-mut" d="M405,169.0 L555,148.0"/>
+  <path class="ln-mut" d="M405,183.0 L555,148.0"/>
+  <path class="ln-mut" d="M405,197.0 L555,148.0"/>
+  <circle class="box" cx="60" cy="85.0" r="5"/>
+  <circle class="box" cx="60" cy="99.0" r="5"/>
+  <circle class="box" cx="60" cy="113.0" r="5"/>
+  <circle class="box" cx="60" cy="127.0" r="5"/>
+  <circle class="box" cx="60" cy="141.0" r="5"/>
+  <circle class="box" cx="60" cy="155.0" r="5"/>
+  <circle class="box" cx="60" cy="169.0" r="5"/>
+  <circle class="box" cx="60" cy="183.0" r="5"/>
+  <circle class="box" cx="60" cy="197.0" r="5"/>
+  <circle class="box" cx="60" cy="211.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="43.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="57.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="71.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="85.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="99.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="113.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="127.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="141.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="155.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="169.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="183.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="197.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="211.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="225.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="239.0" r="5"/>
+  <circle class="box-acc" cx="230" cy="253.0" r="5"/>
+  <circle class="box-acc" cx="400" cy="99.0" r="5"/>
+  <circle class="box-acc" cx="400" cy="113.0" r="5"/>
+  <circle class="box-acc" cx="400" cy="127.0" r="5"/>
+  <circle class="box-acc" cx="400" cy="141.0" r="5"/>
+  <circle class="box-acc" cx="400" cy="155.0" r="5"/>
+  <circle class="box-acc" cx="400" cy="169.0" r="5"/>
+  <circle class="box-acc" cx="400" cy="183.0" r="5"/>
+  <circle class="box-acc" cx="400" cy="197.0" r="5"/>
+  <circle class="box-ok" cx="560" cy="148.0" r="5"/>
+  <text class="ink sm b" x="60" y="22" text-anchor="middle">вход: 10 признаков</text>
+  <text class="ink sm b" x="230" y="22" text-anchor="middle">скрытый: 16</text>
+  <text class="ink sm b" x="400" y="22" text-anchor="middle">скрытый: 8</text>
+  <text class="ink sm b" x="560" y="22" text-anchor="middle">выход: 1</text>
+  <rect class="box" x="79.0" y="286" width="132" height="50" rx="6"/>
+  <text class="ink2 sm" x="145.0" y="304" text-anchor="middle">веса 10 · 16 = 160</text>
+  <text class="ink sm b" x="145.0" y="322" text-anchor="middle">+ сдвиги 16 = 176</text>
+  <rect class="box" x="249.0" y="286" width="132" height="50" rx="6"/>
+  <text class="ink2 sm" x="315.0" y="304" text-anchor="middle">веса 16 · 8 = 128</text>
+  <text class="ink sm b" x="315.0" y="322" text-anchor="middle">+ сдвиги 8 = 136</text>
+  <rect class="box" x="414.0" y="286" width="132" height="50" rx="6"/>
+  <text class="ink2 sm" x="480.0" y="304" text-anchor="middle">веса 8 · 1 = 8</text>
+  <text class="ink sm b" x="480.0" y="322" text-anchor="middle">+ сдвиги 1 = 9</text>
+  <text class="mut sm" x="640" y="304" text-anchor="middle">итого</text>
+  <text class="acc b" x="640" y="324" text-anchor="middle">321</text>
+  <text class="mut sm" x="350" y="274" text-anchor="middle">каждая линия — один вес; у каждого нейрона после входа — ещё свой сдвиг</text>
+</svg>
+</div><figcaption>
+<p>Та же сеть картинкой: каждая линия — один вес, у каждого нейрона скрытых слоёв и выхода — ещё по сдвигу. Почти все параметры — веса между широкими слоями.</p>
+</figcaption></figure>
+<div class="cell"><pre class="cell-src"><code>def n_params(sizes):
+    total = 0
+    for n_in, n_out in zip(sizes[:-1], sizes[1:]):    # пары соседних слоёв
+        total += n_in * n_out + n_out                   # веса + сдвиги
+    return total
+
+print(n_params([10, 16, 8, 1]))
+print(n_params([10, 1]))          # логистическая регрессия
+print(n_params([10, 256, 256, 1]))</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>zip(sizes[:-1], sizes[1:])</code> — пары «вход слоя, выход слоя»: (10, 16), (16, 8), (8, 1).</li>
+<li>У каждого слоя <code>n_in · n_out</code> весов и <code>n_out</code> сдвигов.</li>
+</ul>
+<p><strong>Что получилось:</strong> логистическая регрессия на 10 признаках — 11 параметров, маленькая сеть — 321, а сеть с двумя слоями по 256 нейронов — больше 68 тысяч. На 2400 гостях из <a class="data-link" href="../data/guests_churn.csv" download title="Скачать guests_churn.csv"><code>guests_churn.csv</code></a> (глава 7; с ними работаем в уроке «Нейросеть в sklearn: MLP») последняя легко «запомнит» обучающую выборку — вот почему там понадобятся регуляризация и ранняя остановка.</p>
+<div class="quiz-c" data-q="c2"><div class="predict-title">Проверьте себя</div>
+<p>Сеть «10 → 16 → 8 → 1» заменили на «10 → 256 → 256 → 1» и обучают на тех же 2400 гостях из <a class="data-link" href="../data/guests_churn.csv" download title="Скачать guests_churn.csv"><code>guests_churn.csv</code></a>. Что главным образом изменилось?</p>
+<ul>
+<li>[x] Параметров стало больше 68 тысяч вместо 321: сеть гибче, но легко «запомнит» обучающих гостей, поэтому без регуляризации и ранней остановки тест может стать хуже
+<blockquote>
+<p>Гибкость — палка о двух концах: чем больше параметров на те же данные, тем проще подогнаться под шум обучающей выборки.</p>
+</blockquote>
+</li>
+<li>[ ] Сеть гарантированно точнее на тесте: больше нейронов — больше новых признаков
+<blockquote>
+<p>Больше признаков помогает на обучении, но качество на новых данных проверяют отложенной выборкой — и при избытке параметров оно часто падает.</p>
+</blockquote>
+</li>
+<li>[ ] Параметров стало больше в основном за счёт сдвигов
+<blockquote>
+<p>Сдвигов всего по одному на нейрон, а весов — n_in · n_out на слой: один слой 256 → 256 даёт 256 · 256 = 65 536 весов.</p>
+</blockquote>
+</li>
+<li>[ ] Число параметров не изменилось: оно зависит только от числа признаков на входе
+<blockquote>
+<p>Вход тот же (10 признаков), но каждый скрытый нейрон приносит свои веса и сдвиг — параметры складываются по всем слоям.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-n-params"><b>4</b> Сколько параметров</a></div>
+<div class="fb" data-sec="разберём-вместе-сколько-параметров-у-сети"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-neuron" data-task="neuron" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Один нейрон</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#нейрон-это-знакомая-формула">↑ К теории: Нейрон — это знакомая формула</a>
+  <div class="task-text prose"><p>Напишите функцию <code>neuron(x, w, b)</code>, которая возвращает сигмоиду от <code>x @ w + b</code>. Сохраните <code>p</code> — выход нейрона для гостя <code>x</code> с весами <code>w</code> и <code>b</code> (3 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-relu" data-task="relu" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">ReLU и её производная</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#функции-активации">↑ К теории: Функции активации</a>
+  <div class="task-text prose"><p>Сохраните <code>r = relu(z)</code> для вектора <code>z</code> и <code>dr</code> — «производную» ReLU: 1, где z &gt; 0, и 0 в остальных местах (массив целых чисел).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-p-layer" data-task="p-layer" data-level="warmup" data-kind="parsons">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">Слой нейронов</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#слой-матричное-умножение">↑ К теории: Слой — матричное умножение</a>
+  <div class="task-text prose"><p>Соберите код слоя из трёх нейронов с ReLU для двух объектов и выведите форму результата.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-n-params" data-task="n-params" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">4</span>
+    <h3 class="task-title">Сколько параметров</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#разберём-вместе-сколько-параметров-у-сети">↑ К теории: Разберём вместе: сколько параметров у сети</a>
+  <div class="task-text prose"><p>Напишите <code>n_params(sizes)</code> — число параметров (веса + сдвиги) полносвязной сети со слоями заданных размеров, как в разборе урока. Посчитайте <code>p_small</code> для <code>[10, 16, 8, 1]</code>, <code>p_logit</code> для <code>[10, 1]</code> и <code>p_big</code> для <code>[10, 256, 256, 1]</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-collapse" data-task="collapse" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">5</span>
+    <h3 class="task-title">Слои без активации</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#зачем-больше-одного-слоя">↑ К теории: Зачем больше одного слоя</a>
+  <div class="task-text prose"><p>Покажите, что два линейных слоя без активации — один линейный слой. Для <code>X</code>, <code>W1</code>, <code>W2</code> из заготовки посчитайте <code>two_layers = (X @ W1) @ W2</code>, найдите матрицу <code>W</code> одного слоя, дающего то же самое, и сохраните её. В <code>same</code> — <code>True</code>, если <code>X @ W</code> совпадает с <code>two_layers</code>. В <code>with_relu_same</code> — совпадёт ли <code>np.maximum(0, X @ W1) @ W2</code> с <code>X @ W</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-forward" data-task="forward" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">6</span>
+    <h3 class="task-title">Прямой проход сети</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#прямой-проход">↑ К теории: Прямой проход</a>
+  <div class="task-text prose"><p>Напишите функцию <code>forward(X, W1, b1, w2, b2)</code> для сети «скрытый слой с ReLU → один выходной нейрон с сигмоидой», возвращающую вероятности. Посчитайте <code>p</code> для <code>X</code> и весов из заготовки (3 знака) и <code>pred</code> — классы при пороге 0.5.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-saturation" data-task="saturation" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">7</span>
+    <h3 class="task-title">Где активация «засыпает»</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#функции-активации">↑ К теории: Функции активации</a>
+  <div class="task-text prose"><p>Обучение сети двигает веса пропорционально наклону (производной) активации. Посчитайте производные на сетке <code>z = np.linspace(-6, 6, 121)</code>: сигмоиды <code>σ(z)·(1 − σ(z))</code>, tanh <code>1 − tanh(z)²</code> и ReLU (1 при z &gt; 0, иначе 0). Сохраните <code>max_deriv</code> — словарь <code>{&quot;sigmoid&quot;: …, &quot;tanh&quot;: …}</code> наибольших производных (3 знака), <code>deriv_at_5</code> — словарь производных трёх функций в точке z = 5 (4 знака; ключи <code>&quot;sigmoid&quot;</code>, <code>&quot;tanh&quot;</code>, <code>&quot;relu&quot;</code>) и <code>share_small</code> — долю точек сетки, где производная сигмоиды меньше 0.01 (3 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-shapes" data-task="shapes" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">8</span>
+    <h3 class="task-title">Формы по слоям</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#слой-матричное-умножение">↑ К теории: Слой — матричное умножение</a>
+  <div class="task-text prose"><p>Пакет из 100 гостей с 10 признаками проходит через сеть со слоями <code>[10, 16, 8, 1]</code> (ReLU в скрытых слоях, сигмоида на выходе). Веса — в заготовке (<code>Ws</code>, <code>bs</code> — списки). Напишите <code>forward(X, Ws, bs)</code>, возвращающий выход сети и список форм после каждого слоя. Сохраните <code>out_shape</code> — форму выхода, <code>shapes</code> — список форм (кортежей), <code>p_mean</code> — среднюю вероятность (3 знака). Затем выясните, что будет, если перепутать порядок весов: вызов <code>forward(X, Ws[::-1], bs[::-1])</code> падает — сохраните в <code>err_type</code> имя типа ошибки.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-xor-linear" data-task="xor-linear" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">9</span>
+    <h3 class="task-title">Где не справляется прямая</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#зачем-больше-одного-слоя">↑ К теории: Зачем больше одного слоя</a>
+  <div class="task-text prose"><p>Проверьте, что логистическая регрессия не решает задачу «ровно одно из двух», а сеть из теории решает. Сохраните <code>acc_logit</code> — долю правильных ответов <code>LogisticRegression()</code> на 4 точках <code>X</code>, <code>y</code> (обучение и проверка на них же) и <code>acc_net</code> — долю правильных ответов сети с весами из теории при пороге 0.5.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-feature-net" data-task="feature-net" data-level="star" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">10</span>
+    <h3 class="task-title">Скрытый слой как новые признаки</h3>
+    <span class="lvl lvl-star">Со звёздочкой</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#зачем-больше-одного-слоя">↑ К теории: Зачем больше одного слоя</a>
+  <div class="task-text prose"><p>Сеть из теории можно понять как логистическую регрессию над новыми признаками. Посчитайте скрытый слой <code>H = sigmoid(X @ W1 + b1)</code> (данные «крест» из прошлой задачи) и обучите <code>LogisticRegression()</code> на <code>H</code> вместо <code>X</code>. Сохраните <code>H</code> (округлите до 2 знаков) и <code>acc_on_h</code> — долю правильных ответов на тех же 4 точках.</p>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>Нейрон: z = x @ w + b, затем активация a = f(z). С сигмоидой это ровно логистическая регрессия.</li><li>Популярные активации: сигмоида (0…1), ReLU = max(0, z) (обнуляет отрицательное), tanh (−1…1).</li><li>Слой — много нейронов сразу: Z = X @ W + b, где у W столько столбцов, сколько нейронов.</li><li>Без нелинейной активации несколько слоёв схлопываются в один линейный: (X @ W1) @ W2 = X @ (W1 @ W2).</li><li>Скрытый слой строит новые признаки из старых — поэтому сеть может решать задачи, где классы не разделяются прямой.</li><li>Прямой проход (forward) — вычисление прогноза слой за слоем.</li><li>Начальные веса сети — маленькие случайные числа. Их масштаб важен; как его выбрать (Xavier и He), разбираем в уроке «Граф вычислений, инициализация и обрезка градиента».</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="index.html"><span class="pl">← О главе</span><span class="pt">Нейросети</span></a><a class="next" href="02-backprop.html"><span class="pl">Следующий урок →</span><span class="pt">2. Обучение сети: обратное распространение ошибки</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#нейрон-это-знакомая-формула">Нейрон — это знакомая формула</a></li><li><a href="#функции-активации">Функции активации</a></li><li><a href="#слой-матричное-умножение">Слой — матричное умножение</a></li><li><a href="#зачем-больше-одного-слоя">Зачем больше одного слоя</a></li><li><a href="#прямой-проход">Прямой проход</a></li><li><a href="#разберём-вместе-сколько-параметров-у-сети">Разберём вместе: сколько параметров у сети</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch11/01-neuron", "title": "Нейрон и слои", "chapter": "Нейросети", "tasks": [{"id": "neuron", "title": "Один нейрон", "level": "warmup", "starter": "import numpy as np\nx = np.array([30.0, 0.0, 1.0])\nw = np.array([0.05, 1.5, -0.8])\nb = -1.0", "setup": "", "check": "import numpy as _np\nf = need('neuron')\nassert close(f(_np.array([0.0]), _np.array([1.0]), 0.0), 0.5), 'При нулевой оценке сигмоида равна 0.5.'\nw = 1 / (1 + _np.exp(-(_np.array([30.0, 0.0, 1.0]) @ _np.array([0.05, 1.5, -0.8]) - 1.0)))\nassert close(need('p'), round(float(w), 3)), f'p = {need(\"p\")}, а нужно {round(float(w), 3)}.'", "hints": ["<p>Сначала взвешенная сумма <code>z = x @ w + b<\/code>, затем сигмоида от неё.<\/p>\n", "<p><code>return 1 / (1 + np.exp(-(x @ w + b)))<\/code>.<\/p>\n"], "solution": "import numpy as np\nx = np.array([30.0, 0.0, 1.0])\nw = np.array([0.05, 1.5, -0.8])\nb = -1.0\n\ndef neuron(x, w, b):\n    return 1 / (1 + np.exp(-(x @ w + b)))\n\np = round(float(neuron(x, w, b)), 3)", "explain": "", "parsons": ""}, {"id": "relu", "title": "ReLU и её производная", "level": "warmup", "starter": "import numpy as np\nz = np.array([-1.5, 0.0, 0.3, 2.0, -0.2])", "setup": "", "check": "import numpy as _np\nz0 = _np.array([-1.5, 0.0, 0.3, 2.0, -0.2])\nassert _np.allclose(need('r'), _np.maximum(0, z0)), f'r = {need(\"r\")}.'\nassert list(_np.asarray(need('dr')).astype(int)) == [0, 0, 1, 1, 0], f'dr = {need(\"dr\")}.'", "hints": ["<p>ReLU пропускает положительное и обнуляет отрицательное; её наклон (производная) — 1 справа от нуля и 0 слева.<\/p>\n", "<p><code>np.maximum(0, z)<\/code>; производная — <code>(z &gt; 0).astype(int)<\/code>.<\/p>\n"], "solution": "import numpy as np\nz = np.array([-1.5, 0.0, 0.3, 2.0, -0.2])\nr = np.maximum(0, z)\ndr = (z > 0).astype(int)", "explain": "<p>Производная ReLU понадобится в следующем уроке: при обучении сигнал ошибки проходит только через нейроны, которые были «включены» (z &gt; 0).<\/p>\n", "parsons": ""}, {"id": "p-layer", "title": "Слой нейронов", "level": "warmup", "starter": "", "setup": "", "check": "assert _lines == ['(2, 3)'], f'Сейчас: {_lines}.'", "hints": ["<p>Сначала данные и веса, потом слой, потом печать.<\/p>\n", "<p>Слой — <code>X @ W + b<\/code>, затем активация.<\/p>\n"], "solution": "import numpy as np\nX = np.array([[1.0, 2.0], [3.0, -1.0]])\nW = np.array([[0.5, -1.0, 0.2], [0.1, 0.3, -0.4]])\nb = np.array([0.0, 0.5, 0.1])\nA = np.maximum(0, X @ W + b)\nprint(A.shape)", "explain": "", "parsons": "import numpy as np\nX = np.array([[1.0, 2.0], [3.0, -1.0]])\nW = np.array([[0.5, -1.0, 0.2], [0.1, 0.3, -0.4]])\nb = np.array([0.0, 0.5, 0.1])\nA = np.maximum(0, X @ W + b)\nprint(A.shape)"}, {"id": "n-params", "title": "Сколько параметров", "level": "warmup", "starter": "def n_params(sizes):\n    ...", "setup": "", "check": "f = need('n_params')\nassert f([2, 1]) == 3 and f([3, 4, 2]) == 26, 'Проверьте формулу: у слоя n_in → n_out ровно n_in·n_out весов и n_out сдвигов.'\nassert need('p_small') == 321 and need('p_logit') == 11, f'p_small = {need(\"p_small\")}, p_logit = {need(\"p_logit\")}.'\nassert need('p_big') == 68865, f'p_big = {need(\"p_big\")}.'", "hints": ["<p>Пары соседних слоёв — <code>zip(sizes[:-1], sizes[1:])<\/code>.<\/p>\n", "<p>Для каждой пары прибавьте <code>n_in * n_out + n_out<\/code>.<\/p>\n"], "solution": "def n_params(sizes):\n    return sum(n_in * n_out + n_out for n_in, n_out in zip(sizes[:-1], sizes[1:]))\n\np_small = n_params([10, 16, 8, 1])\np_logit = n_params([10, 1])\np_big = n_params([10, 256, 256, 1])\nprint(p_small, p_logit, p_big)", "explain": "", "parsons": ""}, {"id": "collapse", "title": "Слои без активации", "level": "base", "starter": "import numpy as np\nrng = np.random.default_rng(1)\nX = rng.normal(size=(5, 3))\nW1 = rng.normal(size=(3, 4))\nW2 = rng.normal(size=(4, 2))", "setup": "", "check": "import numpy as _np\nr = _np.random.default_rng(1); X0 = r.normal(size=(5, 3)); A = r.normal(size=(3, 4)); B = r.normal(size=(4, 2))\nassert _np.allclose(need('W'), A @ B), 'W = W1 @ W2.'\nassert need('same') == True, 'same должно быть True.'\nassert need('with_relu_same') == bool(_np.allclose(_np.maximum(0, X0 @ A) @ B, X0 @ A @ B)), f'with_relu_same = {need(\"with_relu_same\")}.'", "hints": ["<p>Два слоя без активации: <code>(X @ W1) @ W2<\/code>. Один слой с весами <code>W1 @ W2<\/code>: <code>X @ (W1 @ W2)<\/code>.<\/p>\n", "<p><code>W = W1 @ W2<\/code>; сравнение — <code>np.allclose<\/code>.<\/p>\n"], "solution": "import numpy as np\nrng = np.random.default_rng(1)\nX = rng.normal(size=(5, 3))\nW1 = rng.normal(size=(3, 4))\nW2 = rng.normal(size=(4, 2))\n\ntwo_layers = (X @ W1) @ W2\nW = W1 @ W2\nsame = bool(np.allclose(X @ W, two_layers))\nwith_relu_same = bool(np.allclose(np.maximum(0, X @ W1) @ W2, X @ W))", "explain": "<p>Умножение матриц ассоциативно: <code>(X @ W1) @ W2 = X @ (W1 @ W2)<\/code>. Поэтому сколько линейных слоёв ни ставь подряд, они схлопываются в один слой с матрицей <code>W1 @ W2<\/code> (здесь 3 × 2), и сеть остаётся линейной моделью. ReLU ломает это равенство: обнуление отрицательных значений между слоями нельзя заранее «вмножить» в веса, и <code>with_relu_same<\/code> выходит <code>False<\/code>. Именно нелинейность между слоями даёт сети возможность рисовать кривые границы, например для задачи «ровно одно из двух».<\/p>\n", "parsons": ""}, {"id": "forward", "title": "Прямой проход сети", "level": "base", "starter": "import numpy as np\nX = np.array([[0.2, 1.0], [1.5, -0.3], [-1.0, 0.4]])\nW1 = np.array([[1.0, -2.0, 0.5], [0.3, 1.0, -1.0]])\nb1 = np.array([0.0, 0.1, 0.2])\nw2 = np.array([1.5, -1.0, 2.0])\nb2 = -0.5", "setup": "", "check": "import numpy as _np\nX0 = _np.array([[0.2, 1.0], [1.5, -0.3], [-1.0, 0.4]]); A = _np.array([[1.0, -2.0, 0.5], [0.3, 1.0, -1.0]])\nh = _np.maximum(0, X0 @ A + _np.array([0.0, 0.1, 0.2])); pp = 1 / (1 + _np.exp(-(h @ _np.array([1.5, -1.0, 2.0]) - 0.5)))\nassert _np.allclose(need('p'), pp.round(3), atol=1e-3), f'p = {need(\"p\")}, а нужно {pp.round(3)}.'\nassert list(_np.asarray(need('pred')).astype(int)) == list((pp > 0.5).astype(int)), f'pred = {need(\"pred\")}.'", "hints": ["<p>Два шага: скрытый слой с ReLU, затем выход с сигмоидой. Форма <code>H<\/code> — (объекты × нейроны скрытого слоя).<\/p>\n", "<p><code>H = np.maximum(0, X @ W1 + b1)<\/code>, затем <code>1 / (1 + np.exp(-(H @ w2 + b2)))<\/code>.<\/p>\n"], "solution": "import numpy as np\nX = np.array([[0.2, 1.0], [1.5, -0.3], [-1.0, 0.4]])\nW1 = np.array([[1.0, -2.0, 0.5], [0.3, 1.0, -1.0]])\nb1 = np.array([0.0, 0.1, 0.2])\nw2 = np.array([1.5, -1.0, 2.0])\nb2 = -0.5\n\ndef forward(X, W1, b1, w2, b2):\n    H = np.maximum(0, X @ W1 + b1)\n    return 1 / (1 + np.exp(-(H @ w2 + b2)))\n\np = forward(X, W1, b1, w2, b2).round(3)\npred = (p > 0.5).astype(int)", "explain": "<p>Разберём второй объект <code>[1.5, -0.3]<\/code>. Скрытый слой до ReLU даёт [1.41, −3.2, 1.25]; отрицательное значение ReLU обнуляет, остаётся [1.41, 0, 1.25]. Выход: 1.5·1.41 − 1.0·0 + 2.0·1.25 − 0.5 = 4.115, сигмоида превращает это в 0.984. У третьего объекта работает только второй скрытый нейрон, и его вес −1.0 тянет ответ вниз, к 0.047. Векторная запись <code>X @ W1 + b1<\/code> делает это для всех объектов сразу: строка <code>H<\/code> — скрытые признаки одного объекта.<\/p>\n", "parsons": ""}, {"id": "saturation", "title": "Где активация «засыпает»", "level": "base", "starter": "import numpy as np\n\nz = np.linspace(-6, 6, 121)", "setup": "", "check": "import numpy as _np\nz = _np.linspace(-6, 6, 121); sg = 1 / (1 + _np.exp(-z))\nds, dt = sg * (1 - sg), 1 - _np.tanh(z) ** 2\ng = need('max_deriv', dict)\nassert close(g['sigmoid'], round(float(ds.max()), 3), 0.0011) and close(g['tanh'], round(float(dt.max()), 3), 0.0011), f'max_deriv = {g}.'\ns5 = 1 / (1 + _np.exp(-5.0))\nw5 = {'sigmoid': round(float(s5 * (1 - s5)), 4), 'tanh': round(float(1 - _np.tanh(5.0) ** 2), 4), 'relu': 1}\ng5 = need('deriv_at_5', dict)\nassert all(close(g5[k], w5[k], 2e-4) for k in w5), f'deriv_at_5 = {g5}, а нужно {w5}.'\nassert close(need('share_small'), round(float((ds < 0.01).mean()), 3), 0.0011), f'share_small = {need(\"share_small\")}.'", "hints": ["<p>Сначала сама сигмоида <code>sg = 1 / (1 + np.exp(-z))<\/code>, потом её производная <code>sg * (1 - sg)<\/code>.<\/p>\n", "<p>В точке 5 удобно посчитать по формулам с <code>z = 5.0<\/code>; производная ReLU при z &gt; 0 равна 1.<\/p>\n", "<p>Доля точек — <code>(производная &lt; 0.01).mean()<\/code>.<\/p>\n"], "solution": "import numpy as np\n\nz = np.linspace(-6, 6, 121)\nsg = 1 / (1 + np.exp(-z))\nd_sig = sg * (1 - sg)\nd_tanh = 1 - np.tanh(z) ** 2\nmax_deriv = {\"sigmoid\": round(float(d_sig.max()), 3), \"tanh\": round(float(d_tanh.max()), 3)}\ns5 = 1 / (1 + np.exp(-5.0))\nderiv_at_5 = {\"sigmoid\": round(float(s5 * (1 - s5)), 4), \"tanh\": round(float(1 - np.tanh(5.0) ** 2), 4), \"relu\": 1}\nshare_small = round(float((d_sig < 0.01).mean()), 3)\nprint(max_deriv, deriv_at_5, share_small)", "explain": "<p>Наибольший наклон сигмоиды — всего 0.25 (в нуле), а при z = 5 он уже около 0.0066: если нейрон «уверенно» насытился, обучение его почти не двигает. Если слоёв много, эти маленькие множители перемножаются, и до первых слоёв доходят крохи — проблема <strong>затухающих градиентов<\/strong>. У ReLU наклон для любого положительного z равен 1, поэтому в скрытых слоях почти всегда используют её, а сигмоиду оставляют на выходе — для вероятности.<\/p>\n", "parsons": ""}, {"id": "shapes", "title": "Формы по слоям", "level": "plus", "starter": "import numpy as np\n\n# X (100 × 10), Ws и bs (списки весов и сдвигов по слоям) уже созданы\ndef forward(X, Ws, bs):\n    shapes = []\n    A = X\n    ...\n    return A, shapes", "setup": "import numpy as np\nrng = np.random.default_rng(1)\nX = rng.normal(size=(100, 10))\nsizes = [10, 16, 8, 1]\nWs = [rng.normal(0, 0.3, size=(a, b)) for a, b in zip(sizes[:-1], sizes[1:])]\nbs = [np.zeros(b) for b in sizes[1:]]", "check": "import numpy as _np\nX0, W0, b0 = need('X'), need('Ws'), need('bs')\nA = X0\nfor i, (W, b) in enumerate(zip(W0, b0)):\n    Z = A @ W + b\n    A = _np.maximum(0, Z) if i < len(W0) - 1 else 1 / (1 + _np.exp(-Z))\nassert tuple(need('out_shape')) == (100, 1), f'out_shape = {need(\"out_shape\")}.'\nassert [tuple(x) for x in need('shapes', list)] == [(100, 16), (100, 8), (100, 1)], f'shapes = {need(\"shapes\")}.'\nassert close(need('p_mean'), round(float(A.mean()), 3), 0.0011), f'p_mean = {need(\"p_mean\")}: ReLU в скрытых слоях, сигмоида только на выходе.'\nassert need('err_type') == 'ValueError', f'err_type = {need(\"err_type\")!r}.'", "hints": ["<p>Цикл по парам <code>(W, b)<\/code>: <code>Z = A @ W + b<\/code>; для всех слоёв, кроме последнего, — ReLU, для последнего — сигмоида. После каждого слоя добавляйте <code>A.shape<\/code> в <code>shapes<\/code>.<\/p>\n", "<p>Номер слоя даёт <code>enumerate<\/code>: последний — <code>i == len(Ws) - 1<\/code>.<\/p>\n", "<p>Ошибку ловят так: <code>try: forward(X, Ws[::-1], bs[::-1]) except Exception as e: err_type = type(e).__name__<\/code>.<\/p>\n"], "solution": "import numpy as np\n\ndef forward(X, Ws, bs):\n    shapes = []\n    A = X\n    for i, (W, b) in enumerate(zip(Ws, bs)):\n        Z = A @ W + b\n        A = np.maximum(0, Z) if i < len(Ws) - 1 else 1 / (1 + np.exp(-Z))\n        shapes.append(A.shape)\n    return A, shapes\n\nout, shapes = forward(X, Ws, bs)\nout_shape = out.shape\np_mean = round(float(out.mean()), 3)\ntry:\n    forward(X, Ws[::-1], bs[::-1])\n    err_type = None\nexcept Exception as e:\n    err_type = type(e).__name__\nprint(out_shape, shapes, p_mean, err_type)", "explain": "<p>Формы — лучший способ отлаживать сеть: после каждого слоя второе число формы равно числу нейронов слоя, а первое (число объектов) не меняется. Перепутанные веса падают с <code>ValueError<\/code> про несовпадение размеров при умножении матриц: (100 × 10) нельзя умножить на (1 × 8). В PyTorch то же самое выглядит как «mat1 and mat2 shapes cannot be multiplied» — и лечится тем же: печатаем <code>.shape<\/code> на каждом шаге.<\/p>\n", "parsons": ""}, {"id": "xor-linear", "title": "Где не справляется прямая", "level": "plus", "starter": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nX = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])\ny = np.array([0, 1, 1, 0])\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nW1 = np.array([[20.0, 20.0], [20.0, 20.0]])\nb1 = np.array([-10.0, -30.0])\nw2 = np.array([20.0, -40.0])\nb2 = -10.0", "setup": "", "check": "import numpy as _np\nfrom sklearn.linear_model import LogisticRegression as _LR\nX0 = _np.array([[0, 0], [0, 1], [1, 0], [1, 1]]); y0 = _np.array([0, 1, 1, 0])\na = (_LR().fit(X0, y0).predict(X0) == y0).mean()\nassert close(need('acc_logit'), a), f'acc_logit = {need(\"acc_logit\")}, а нужно {a}.'\nassert close(need('acc_net'), 1.0), f'acc_net = {need(\"acc_net\")} — сеть из теории отвечает верно на всех четырёх.'", "hints": ["<p>Для логистической регрессии используйте <code>LogisticRegression().fit(X, y).score(X, y)<\/code> — даже на обучении она не сможет превысить 0.75.<\/p>\n", "<p>Для сети: <code>H = sigmoid(X @ W1 + b1)<\/code>, <code>out = sigmoid(H @ w2 + b2)<\/code>, затем <code>((out &gt; 0.5) == y).mean()<\/code>.<\/p>\n"], "solution": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nX = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])\ny = np.array([0, 1, 1, 0])\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nW1 = np.array([[20.0, 20.0], [20.0, 20.0]])\nb1 = np.array([-10.0, -30.0])\nw2 = np.array([20.0, -40.0])\nb2 = -10.0\n\nacc_logit = (LogisticRegression().fit(X, y).predict(X) == y).mean()\nout = sigmoid(sigmoid(X @ W1 + b1) @ w2 + b2)\nacc_net = ((out > 0.5) == y).mean()", "explain": "<p>Логистическая регрессия проводит одну прямую и на «кресте» угадывает не больше трёх точек из четырёх (здесь — половину). Сети хватило двух скрытых нейронов: они превратили задачу в такую, где прямая работает.<\/p>\n", "parsons": ""}, {"id": "feature-net", "title": "Скрытый слой как новые признаки", "level": "star", "starter": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nX = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])\ny = np.array([0, 1, 1, 0])\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nW1 = np.array([[20.0, 20.0], [20.0, 20.0]])\nb1 = np.array([-10.0, -30.0])", "setup": "", "check": "import numpy as _np\nfrom sklearn.linear_model import LogisticRegression as _LR\nX0 = _np.array([[0, 0], [0, 1], [1, 0], [1, 1]]); y0 = _np.array([0, 1, 1, 0])\nh = 1 / (1 + _np.exp(-(X0 @ _np.array([[20.0, 20.0], [20.0, 20.0]]) + _np.array([-10.0, -30.0]))))\nassert _np.allclose(need('H'), h.round(2)), f'H = {need(\"H\")}.'\nassert close(need('acc_on_h'), (_LR().fit(h, y0).predict(h) == y0).mean()), f'acc_on_h = {need(\"acc_on_h\")}.'", "hints": ["<p>Новые признаки — выход скрытого слоя <code>H<\/code>; логистическая регрессия на <code>H<\/code> вместо <code>X<\/code> — это и есть «последний слой» сети.<\/p>\n", "<p>Обучайте на неокруглённом <code>H<\/code>, а в переменную сохраните округлённый.<\/p>\n"], "solution": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nX = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])\ny = np.array([0, 1, 1, 0])\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nW1 = np.array([[20.0, 20.0], [20.0, 20.0]])\nb1 = np.array([-10.0, -30.0])\n\nH_raw = sigmoid(X @ W1 + b1)\nacc_on_h = (LogisticRegression().fit(H_raw, y).predict(H_raw) == y).mean()\nH = H_raw.round(2)", "explain": "<p>В новых признаках «хотя бы одно» и «оба» классы разделяются прямой, и обычная логистическая регрессия справляется. В этом вся суть скрытых слоёв: сеть сама придумывает признаки, в которых задача становится простой. Раньше (глава 7) признаки придумывали мы.<\/p>\n", "parsons": ""}], "files": [], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/katex/katex.min.js?v=b555cf35b0"></script>
+<script>document.querySelectorAll(".math").forEach(function(e){try{katex.render(e.textContent.trim(),e,{displayMode:e.classList.contains("block"),throwOnError:false})}catch(x){}});</script>
+
+</body>
+</html>

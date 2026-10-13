@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Матрица ошибок — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch07">Глава 7. Признаки, метрики и Pipeline</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 7</div><div class="side-title">Признаки, метрики и Pipeline</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02"><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03"><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05"><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07" open><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" aria-current="page" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11"><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 1 · основной путь · ≈ 75 мин · задач: 9</div>
+      <h1>Матрица ошибок</h1>
+      <p class="lead">Модель оттока из проекта главы 6 права в 89 % случаев. Звучит отлично — пока не выясняется, что модель «никто не уйдёт» права в 78 %. Учимся раскладывать ответы модели на четыре исхода, считать их одной функцией и понимать, какие ошибки модель делает и сколько они стоят «Зерну».</p>
+      <div class="data-files"><span class="df-label">Данные урока</span><a class="data-file" href="../data/guests_churn.csv" download title="Скачать guests_churn.csv"><span class="df-name">guests_churn.csv</span><span class="df-info">2400 строк · 131 КБ</span></a><span class="df-note">В примерах файлы уже подключены — скачивать нужно, только чтобы открыть их у себя.</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 8</span></div>
+    </div>
+    <article class="prose theory"><h2 id="когда-89-это-мало">Когда 89 % — это мало</h2>
+<p>В проекте главы 6 мы строили модель оттока: кто из гостей с картой лояльности не придёт в ближайшие 60 дней. Напомним подготовку: убираем <code>guest_id</code>, ответ <code>churned</code> и утечку <code>card_blocked</code>, текстовые столбцы — через <code>get_dummies</code>, пустой средний чек — это 0 визитов, значит 0.</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+
+g = pd.read_csv(&quot;guests_churn.csv&quot;)
+y = g[&quot;churned&quot;]
+X = pd.get_dummies(g.drop(columns=[&quot;guest_id&quot;, &quot;churned&quot;, &quot;card_blocked&quot;]), dtype=int).fillna({&quot;avg_check&quot;: 0})
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+
+forest = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train)
+print(f&quot;лес: {forest.score(X_test, y_test):.3f}&quot;)
+print(f&quot;доля ушедших в тесте: {y_test.mean():.3f}&quot;)</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>drop(columns=[...])</code> убирает номер гостя, ответ и утечку; <code>get_dummies</code> превращает текстовые столбцы (город, любимая категория) во флаги 0/1.</li>
+<li><code>stratify=y</code> — в тесте та же доля ушедших, что во всех данных; без этого при дисбалансе тест мог бы случайно получиться «лёгким».</li>
+<li><code>forest.score(X_test, y_test)</code> — у классификатора это accuracy: доля совпавших ответов.</li>
+<li><code>y_test.mean()</code> — среднее нулей и единиц, то есть доля ушедших.</li>
+</ul>
+<p>Лес прав почти в 89 % случаев. Но уходит только 22 % гостей. Значит, «модель», которая про всех говорит «останется», права в 78 % случаев — и при этом бесполезна: она не найдёт ни одного гостя для акции удержания.</p>
+<p>Такую ситуацию называют <strong>дисбалансом классов</strong> (class imbalance): один ответ встречается гораздо чаще другого. Уходят 22 % гостей, мошеннических платежей — доли процента, брака на линии — единицы процентов. При дисбалансе <strong>accuracy</strong> (доля правильных ответов) почти всегда высокая — её «набирают» на частом классе.</p>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">y = [1] * 22 + [0] * 78
+pred = [0] * 100
+print(sum(a == b for a, b in zip(y, pred)) / len(y))</code></pre>
+<ul>
+<li><code>0.22</code></li>
+<li>[x] <code>0.78</code></li>
+<li><code>0.0</code></li>
+</ul>
+<p>Почему: модель «никто не уйдёт» права для всех 78 оставшихся гостей и ошибается только на 22 ушедших. Высокая доля правильных ответов — и ни одного найденного уходящего.</p>
+</div>
+<div class="fb" data-sec="когда-89-это-мало"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="базовая-модель-dummyclassifier">Базовая модель: DummyClassifier</h2>
+<p>Чтобы не сравнивать в уме, в sklearn есть готовая «глупая» модель — <code>DummyClassifier</code>. Она не смотрит на признаки. С <code>strategy=&quot;most_frequent&quot;</code> она запоминает при обучении самый частый класс и всегда отвечает им. Это <strong>базовая модель</strong> (baseline): точка отсчёта, от которой меряют пользу настоящей модели.</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.dummy import DummyClassifier
+
+g = pd.read_csv(&quot;guests_churn.csv&quot;)
+y = g[&quot;churned&quot;]
+X = pd.get_dummies(g.drop(columns=[&quot;guest_id&quot;, &quot;churned&quot;, &quot;card_blocked&quot;]), dtype=int).fillna({&quot;avg_check&quot;: 0})
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+
+dummy = DummyClassifier(strategy=&quot;most_frequent&quot;).fit(X_train, y_train)
+print(dummy.predict(X_test)[:10])
+print(f&quot;accuracy: {dummy.score(X_test, y_test):.3f}&quot;)</code></pre></div>
+<p>Интерфейс как у любой модели: <code>fit</code>, <code>predict</code>, <code>score</code>. В главе 6 мы считали такую точку отсчёта руками («доля самого частого класса»), теперь это одна строка — и её удобно ставить в один ряд с другими моделями.</p>
+<p>Выходит, лес лучше базовой модели на 11 пунктов accuracy. Много это или мало? По одному числу не понять: неизвестно, на каких гостях лес ошибается — на уходящих или на оставшихся. Для акции удержания это две совершенно разные ошибки.</p>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-p-dummy"><b>2</b> Базовая модель</a><a href="#task-dummy-acc"><b>3</b> Сколько стоит 78 %</a></div>
+<div class="fb" data-sec="базовая-модель-dummyclassifier"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="четыре-исхода">Четыре исхода</h2>
+<p>Модель для каждого гостя говорит «уйдёт» (1) или «останется» (0), а через 60 дней мы узнаём правду. Комбинаций четыре. Класс 1 — тот, который мы ищем, его называют <strong>положительным</strong> (positive), класс 0 — <strong>отрицательным</strong> (negative).</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Модель: останется (0)</th>
+<th>Модель: уйдёт (1)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Факт: остался (0)</strong></td>
+<td><strong>TN</strong> — верно не тронули</td>
+<td><strong>FP</strong> — лишний бонус</td>
+</tr>
+<tr>
+<td><strong>Факт: ушёл (1)</strong></td>
+<td><strong>FN</strong> — пропустили уходящего</td>
+<td><strong>TP</strong> — бонус по адресу</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>TP</strong> (true positive, верно-положительный) — модель сказала «уйдёт», и гость действительно собирался уйти. Бонус потрачен не зря.</li>
+<li><strong>FP</strong> (false positive, ложноположительный) — «уйдёт», а гость и так бы остался. Бонус потрачен впустую. Это «ложная тревога».</li>
+<li><strong>FN</strong> (false negative, ложноотрицательный) — «останется», а гость ушёл. Мы его даже не пытались удержать. Это «пропуск».</li>
+<li><strong>TN</strong> (true negative, верно-отрицательный) — «останется», и гость остался. Ничего не потратили, ничего не потеряли.</li>
+</ul>
+<p>Запомнить просто: второе слово (positive / negative) — что сказала модель, первое (true / false) — права ли она.</p>
+<p>Посчитать исходы можно обычными масками pandas, как в главе 6:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+
+fact = pd.Series([1, 0, 1, 1, 0, 0, 0, 0])
+pred = pd.Series([1, 1, 0, 1, 0, 0, 1, 0])
+print(&quot;TP&quot;, ((fact == 1) &amp; (pred == 1)).sum())
+print(&quot;FP&quot;, ((fact == 0) &amp; (pred == 1)).sum())
+print(&quot;FN&quot;, ((fact == 1) &amp; (pred == 0)).sum())
+print(&quot;TN&quot;, ((fact == 0) &amp; (pred == 0)).sum())</code></pre></div>
+<p>Руками по восьми гостям: пары (факт, прогноз) — (1,1), (0,1), (1,0), (1,1), (0,0), (0,0), (0,1), (0,0). TP — первая и четвёртая: <strong>2</strong>. FP — вторая и седьмая: <strong>2</strong>. FN — третья: <strong>1</strong>. TN — пятая, шестая, восьмая: <strong>3</strong>. Всего 2 + 2 + 1 + 3 = 8 — каждый гость попал ровно в одну клетку.</p>
+<p>Accuracy — это (TP + TN) / все: правильные ответы обоих типов вместе. Именно поэтому она не различает, какие ошибки модель делает.</p>
+<figure class="fig" data-fig="confusion"><div class="fig-scroll"><svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-confusion">
+  <title id="t-confusion">Матрица ошибок в порядке confusion_matrix: сначала 0, потом 1</title>
+  <defs><marker id="ah-confusion" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="mut sm b" x="255" y="20" text-anchor="middle">прогноз модели</text>
+  <text class="ink2 sm" x="185" y="42" text-anchor="middle">останется (0)</text>
+  <text class="ink2 sm" x="325" y="42" text-anchor="middle">уйдёт (1)</text>
+  <text class="mut sm b" x="30" y="105" text-anchor="middle">на самом</text>
+  <text class="mut sm b" x="30" y="121" text-anchor="middle">деле</text>
+  <text class="ink2 sm" x="86" y="95" text-anchor="middle">остался</text>
+  <text class="ink2 sm" x="86" y="111" text-anchor="middle">(0)</text>
+  <text class="ink2 sm" x="86" y="185" text-anchor="middle">ушёл</text>
+  <text class="ink2 sm" x="86" y="201" text-anchor="middle">(1)</text>
+  <rect class="box" x="120" y="52" width="136" height="86" rx="6"/>
+  <text class="ink b" x="188" y="80" text-anchor="middle">TN</text>
+  <text class="ink2 sm" x="188" y="102" text-anchor="middle">верно: останется</text>
+  <text class="mut sm" x="188" y="120" text-anchor="middle">бонус не нужен</text>
+  <rect class="box-warn" x="260" y="52" width="136" height="86" rx="6"/>
+  <text class="ink b" x="328" y="80" text-anchor="middle">FP</text>
+  <text class="ink2 sm" x="328" y="102" text-anchor="middle">ложная тревога</text>
+  <text class="mut sm" x="328" y="120" text-anchor="middle">бонус зря</text>
+  <rect class="box-err" x="120" y="142" width="136" height="86" rx="6"/>
+  <text class="ink b" x="188" y="170" text-anchor="middle">FN</text>
+  <text class="ink2 sm" x="188" y="192" text-anchor="middle">пропустили</text>
+  <text class="mut sm" x="188" y="210" text-anchor="middle">ушёл без бонуса</text>
+  <rect class="box-ok" x="260" y="142" width="136" height="86" rx="6"/>
+  <text class="ink b" x="328" y="170" text-anchor="middle">TP</text>
+  <text class="ink2 sm" x="328" y="192" text-anchor="middle">нашли уходящего</text>
+  <text class="mut sm" x="328" y="210" text-anchor="middle">бонус по делу</text>
+  <text class="acc b" x="555" y="80" text-anchor="middle">confusion_matrix(y, pred)</text>
+  <text class="ink" x="555" y="104" text-anchor="middle">[[TN, FP],</text>
+  <text class="ink" x="555" y="124" text-anchor="middle"> [FN, TP]]</text>
+  <text class="ink2 sm" x="555" y="164" text-anchor="middle">строки — как было на самом деле,</text>
+  <text class="ink2 sm" x="555" y="182" text-anchor="middle">столбцы — что сказала модель;</text>
+  <text class="ink2 sm" x="555" y="200" text-anchor="middle">сначала 0, потом 1</text>
+  <text class="ink2 sm" x="350" y="260" text-anchor="middle">accuracy = (TP + TN) / все — при редком уходе высока даже у модели «никто не уйдёт»</text>
+</svg>
+</div><figcaption>
+<p>Четыре исхода для задачи об уходе гостей — в том же порядке, что у <code>confusion_matrix</code>: строки — как было на самом деле, столбцы — прогноз, сначала 0, потом 1.</p>
+</figcaption></figure>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Датчик дыма в кофейне. Сработал при пожаре — TP. Сработал от подгоревшего круассана — FP, ложная тревога: неприятно, но дёшево. Промолчал при пожаре — FN, самая дорогая ошибка. Молчит в обычный день — TN. Датчик, который не срабатывает никогда, прав почти каждый день, но пользы от него ноль — как модель «никто не уйдёт».</p>
+</aside>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>Модель сказала про гостя «уйдёт», ему выдали бонус, а он и без бонуса продолжил бы ходить в «Зерно». Какой это исход?</p>
+<ul>
+<li>[x] FP — ложноположительный
+<blockquote>
+<p>Модель ответила «положительный класс» (уйдёт) и ошиблась: бонус потрачен впустую. Это ложная тревога.</p>
+</blockquote>
+</li>
+<li>[ ] FN — ложноотрицательный
+<blockquote>
+<p>FN — пропуск: модель сказала «останется», а гость ушёл. Здесь всё наоборот — модель подняла тревогу.</p>
+</blockquote>
+</li>
+<li>[ ] TP — верно-положительный
+<blockquote>
+<p>Для TP гость должен был действительно собираться уйти. Этот гость остался бы и так.</p>
+</blockquote>
+</li>
+<li>[ ] TN — верно-отрицательный
+<blockquote>
+<p>TN — модель сказала «останется» и оказалась права. Здесь модель сказала «уйдёт».</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-count-four"><b>1</b> Четыре исхода руками</a></div>
+<div class="fb" data-sec="четыре-исхода"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="confusion_matrix">confusion_matrix</h2>
+<p>Четыре числа сразу считает <code>confusion_matrix(y_true, y_pred)</code> из <code>sklearn.metrics</code>. Результат называют <strong>матрицей ошибок</strong> (confusion matrix): строки — факт, столбцы — прогноз, классы по порядку 0, 1. Получается:</p>
+<pre class="static output"><code class="lang-text">[[TN, FP],
+ [FN, TP]]</code></pre>
+<p>Порядок легко перепутать, поэтому запомните: <strong>строки — правда, столбцы — модель</strong>; верные ответы — на диагонали. Метод <code>.ravel()</code> вытягивает таблицу 2×2 в строку из четырёх чисел — в том же порядке, по строкам.</p>
+<figure class="fig" data-fig="cm-ravel"><div class="fig-scroll"><svg viewBox="0 0 700 270" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-cm-ravel">
+  <title id="t-cm-ravel">Восемь гостей → матрица ошибок → ravel()</title>
+  <defs><marker id="ah-cm-ravel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="mut sm b" x="20" y="22" text-anchor="start">восемь гостей: факт, прогноз</text>
+  <rect class="box-acc" x="20" y="32" width="46" height="44" rx="4"/>
+  <text class="ink sm" x="43" y="50" text-anchor="middle">1, 1</text>
+  <text class="ink sm b" x="43" y="68" text-anchor="middle">TP</text>
+  <rect class="box-warn" x="72" y="32" width="46" height="44" rx="4"/>
+  <text class="ink sm" x="95" y="50" text-anchor="middle">0, 1</text>
+  <text class="ink sm b" x="95" y="68" text-anchor="middle">FP</text>
+  <rect class="box-err" x="124" y="32" width="46" height="44" rx="4"/>
+  <text class="ink sm" x="147" y="50" text-anchor="middle">1, 0</text>
+  <text class="ink sm b" x="147" y="68" text-anchor="middle">FN</text>
+  <rect class="box-acc" x="176" y="32" width="46" height="44" rx="4"/>
+  <text class="ink sm" x="199" y="50" text-anchor="middle">1, 1</text>
+  <text class="ink sm b" x="199" y="68" text-anchor="middle">TP</text>
+  <rect class="box" x="228" y="32" width="46" height="44" rx="4"/>
+  <text class="ink sm" x="251" y="50" text-anchor="middle">0, 0</text>
+  <text class="ink sm b" x="251" y="68" text-anchor="middle">TN</text>
+  <rect class="box" x="280" y="32" width="46" height="44" rx="4"/>
+  <text class="ink sm" x="303" y="50" text-anchor="middle">0, 0</text>
+  <text class="ink sm b" x="303" y="68" text-anchor="middle">TN</text>
+  <rect class="box-warn" x="332" y="32" width="46" height="44" rx="4"/>
+  <text class="ink sm" x="355" y="50" text-anchor="middle">0, 1</text>
+  <text class="ink sm b" x="355" y="68" text-anchor="middle">FP</text>
+  <rect class="box" x="384" y="32" width="46" height="44" rx="4"/>
+  <text class="ink sm" x="407" y="50" text-anchor="middle">0, 0</text>
+  <text class="ink sm b" x="407" y="68" text-anchor="middle">TN</text>
+  <text class="ink2 sm" x="470" y="50" text-anchor="start">TP — сказали «уйдёт», ушёл</text>
+  <text class="ink2 sm" x="470" y="68" text-anchor="start">FP — «уйдёт», а остался</text>
+  <text class="ink2 sm" x="470" y="86" text-anchor="start">FN — «останется», а ушёл</text>
+  <text class="ink2 sm" x="470" y="104" text-anchor="start">TN — «останется», остался</text>
+  <path class="ln" d="M200,84 L200,116" marker-end="url(#ah-cm-ravel)"/>
+  <text class="mut sm" x="212" y="104" text-anchor="start">считаем исходы</text>
+  <text class="mut sm" x="168.0" y="132" text-anchor="middle">прогноз 0</text>
+  <text class="mut sm" x="264.0" y="132" text-anchor="middle">прогноз 1</text>
+  <text class="mut sm" x="112" y="165.0" text-anchor="end">факт 0</text>
+  <text class="mut sm" x="112" y="207.0" text-anchor="end">факт 1</text>
+  <rect class="box" x="120" y="140" width="94" height="40" rx="3"/>
+  <text class="ink sm b" x="167.0" y="166.0" text-anchor="middle">TN 3</text>
+  <rect class="box-warn" x="216" y="140" width="94" height="40" rx="3"/>
+  <text class="ink sm b" x="263.0" y="166.0" text-anchor="middle">FP 2</text>
+  <rect class="box-err" x="120" y="182" width="94" height="40" rx="3"/>
+  <text class="ink sm b" x="167.0" y="208.0" text-anchor="middle">FN 1</text>
+  <rect class="box-acc" x="216" y="182" width="94" height="40" rx="3"/>
+  <text class="ink sm b" x="263.0" y="208.0" text-anchor="middle">TP 2</text>
+  <text class="mut sm" x="216" y="240" text-anchor="middle">строки — факт, столбцы — прогноз</text>
+  <path class="ln" d="M330,182 L400,182" marker-end="url(#ah-cm-ravel)"/>
+  <text class="acc sm b" x="365" y="172" text-anchor="middle">ravel()</text>
+  <rect class="box" x="410" y="164" width="60" height="36" rx="3"/>
+  <text class="ink b" x="440.0" y="187.0" text-anchor="middle">3</text>
+  <rect class="box-warn" x="470" y="164" width="60" height="36" rx="3"/>
+  <text class="ink b" x="500.0" y="187.0" text-anchor="middle">2</text>
+  <rect class="box-err" x="530" y="164" width="60" height="36" rx="3"/>
+  <text class="ink b" x="560.0" y="187.0" text-anchor="middle">1</text>
+  <rect class="box-acc" x="590" y="164" width="60" height="36" rx="3"/>
+  <text class="ink b" x="620.0" y="187.0" text-anchor="middle">2</text>
+  <text class="ink2 sm b" x="440" y="218" text-anchor="middle">1. TN</text>
+  <text class="ink2 sm b" x="500" y="218" text-anchor="middle">2. FP</text>
+  <text class="ink2 sm b" x="560" y="218" text-anchor="middle">3. FN</text>
+  <text class="ink2 sm b" x="620" y="218" text-anchor="middle">4. TP</text>
+  <text class="mut sm" x="530" y="246" text-anchor="middle">по строкам: сначала факт 0, потом факт 1</text>
+</svg>
+</div><figcaption>
+<p>Восемь гостей из примера: каждая пара (факт, прогноз) попадает в одну из четырёх клеток. <code>confusion_matrix</code> раскладывает их по строкам «факт» и столбцам «прогноз», а <code>ravel()</code> читает матрицу по строкам: TN, FP, FN, TP.</p>
+</figcaption></figure>
+<div class="cell"><pre class="cell-src"><code>from sklearn.metrics import confusion_matrix
+
+fact = [1, 0, 1, 1, 0, 0, 0, 0]
+pred = [1, 1, 0, 1, 0, 0, 1, 0]
+cm = confusion_matrix(fact, pred)
+print(cm)
+tn, fp, fn, tp = cm.ravel()
+print(f&quot;TN={tn} FP={fp} FN={fn} TP={tp}&quot;)</code></pre></div>
+<div class="predict" data-q="q2"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">from sklearn.metrics import confusion_matrix
+y_true = [1, 1, 1, 0, 0, 0, 0]
+y_pred = [1, 0, 0, 0, 0, 0, 1]
+print(confusion_matrix(y_true, y_pred).ravel())</code></pre>
+<ul>
+<li><code>[1 1 2 3]</code></li>
+<li>[x] <code>[3 1 2 1]</code></li>
+<li><code>[3 2 1 1]</code></li>
+</ul>
+<p>Почему: порядок <code>ravel()</code> — TN, FP, FN, TP. Трёх оставшихся модель назвала оставшимися верно (TN = 3), одному дала ложную тревогу (FP = 1), двух ушедших пропустила (FN = 2), одного нашла (TP = 1).</p>
+</div>
+<aside class="callout callout-sql"><div class="callout-title">Как в SQL</div>
+<p>Матрица ошибок — это обычная сводная таблица: <code>SELECT fact, pred, COUNT(*) FROM t GROUP BY fact, pred</code>. В pandas то же даёт <code>pd.crosstab(fact, pred)</code> из главы 3 — с подписями строк и столбцов, что удобно для отчёта.</p>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-forest-cm"><b>4</b> Матрица леса</a><a href="#task-rule-cm"><b>5</b> Правило 45 дней</a></div>
+<div class="fb" data-sec="confusion_matrix"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="матрицы-трёх-моделей">Матрицы трёх моделей</h2>
+<p>Теперь посмотрим, как ошибаются базовая модель, правило отдела лояльности «не был больше 45 дней — уходит» из проекта главы 6 и лес.</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.dummy import DummyClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import confusion_matrix
+
+g = pd.read_csv(&quot;guests_churn.csv&quot;)
+y = g[&quot;churned&quot;]
+X = pd.get_dummies(g.drop(columns=[&quot;guest_id&quot;, &quot;churned&quot;, &quot;card_blocked&quot;]), dtype=int).fillna({&quot;avg_check&quot;: 0})
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+
+preds = {
+    &quot;никто не уйдёт&quot;: DummyClassifier(strategy=&quot;most_frequent&quot;).fit(X_train, y_train).predict(X_test),
+    &quot;правило 45 дней&quot;: (X_test[&quot;days_since_last&quot;] &gt; 45).astype(int),
+    &quot;лес&quot;: RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict(X_test),
+}
+for name, pred in preds.items():
+    tn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()
+    print(f&quot;{name:16} TN={tn} FP={fp} FN={fn} TP={tp}&quot;)</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>preds</code> — словарь «название → прогнозы»: так три очень разные модели проходят через один и тот же цикл.</li>
+<li>Правило — не модель sklearn, а маска <code>days_since_last &gt; 45</code>; <code>.astype(int)</code> превращает True/False в 1/0, чтобы его можно было сравнивать с остальными.</li>
+<li><code>confusion_matrix(y_test, pred).ravel()</code> — сначала факт, потом прогноз. Перепутанный порядок аргументов меняет местами FP и FN.</li>
+</ul>
+<p>В тесте 134 ушедших гостя. Что видно:</p>
+<ul>
+<li><strong>базовая модель</strong> пропускает всех 134 — FN равно числу ушедших;</li>
+<li><strong>правило 45 дней</strong> почти не ошибается тревогами (около 10 лишних бонусов), зато пропускает больше половины уходящих: гости, которые ещё ходят, но скоро перестанут, под правило не попадают;</li>
+<li><strong>лес</strong> находит около двух третей уходящих (TP около 90) ценой двух десятков лишних бонусов.</li>
+</ul>
+<p>Три модели с accuracy 78 %, 85 % и 89 % ведут себя совсем по-разному, и матрица показывает как.</p>
+<figure class="fig" data-fig="cm-three"><div class="fig-scroll"><svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-cm-three">
+  <title id="t-cm-three">Матрицы ошибок трёх моделей на 600 тестовых гостях</title>
+  <defs><marker id="ah-cm-three" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink b" x="140" y="22" text-anchor="middle">никто не уйдёт</text>
+  <text class="mut sm" x="106.0" y="40" text-anchor="middle">прогноз 0</text>
+  <text class="mut sm" x="178.0" y="40" text-anchor="middle">прогноз 1</text>
+  <text class="mut sm" x="62" y="71.0" text-anchor="end">факт 0</text>
+  <text class="mut sm" x="62" y="109.0" text-anchor="end">факт 1</text>
+  <rect class="box" x="70" y="48" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="105.0" y="72.0" text-anchor="middle">TN 466</text>
+  <rect class="box-warn" x="142" y="48" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="177.0" y="72.0" text-anchor="middle">FP 0</text>
+  <rect class="box-err" x="70" y="86" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="105.0" y="110.0" text-anchor="middle">FN 134</text>
+  <rect class="box-acc" x="142" y="86" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="177.0" y="110.0" text-anchor="middle">TP 0</text>
+  <text class="ink2 sm" x="140" y="146" text-anchor="middle">accuracy 0.777</text>
+  <text class="err sm b" x="140" y="166" text-anchor="middle">нашли 0 из 134 ушедших</text>
+  <text class="ink b" x="365" y="22" text-anchor="middle">правило 45 дней</text>
+  <rect class="box" x="295" y="48" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="330.0" y="72.0" text-anchor="middle">TN 456</text>
+  <rect class="box-warn" x="367" y="48" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="402.0" y="72.0" text-anchor="middle">FP 10</text>
+  <rect class="box-err" x="295" y="86" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="330.0" y="110.0" text-anchor="middle">FN 79</text>
+  <rect class="box-acc" x="367" y="86" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="402.0" y="110.0" text-anchor="middle">TP 55</text>
+  <text class="mut sm" x="331" y="40" text-anchor="middle">прогноз 0</text>
+  <text class="mut sm" x="403" y="40" text-anchor="middle">прогноз 1</text>
+  <text class="ink2 sm" x="365" y="146" text-anchor="middle">accuracy 0.852</text>
+  <text class="ink sm b" x="365" y="166" text-anchor="middle">нашли 55 из 134 ушедших</text>
+  <text class="ink b" x="590" y="22" text-anchor="middle">лес</text>
+  <rect class="box" x="520" y="48" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="555.0" y="72.0" text-anchor="middle">TN 443</text>
+  <rect class="box-warn" x="592" y="48" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="627.0" y="72.0" text-anchor="middle">FP 23</text>
+  <rect class="box-err" x="520" y="86" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="555.0" y="110.0" text-anchor="middle">FN 44</text>
+  <rect class="box-acc" x="592" y="86" width="70" height="36" rx="3"/>
+  <text class="ink sm b" x="627.0" y="110.0" text-anchor="middle">TP 90</text>
+  <text class="mut sm" x="556" y="40" text-anchor="middle">прогноз 0</text>
+  <text class="mut sm" x="628" y="40" text-anchor="middle">прогноз 1</text>
+  <text class="ink2 sm" x="590" y="146" text-anchor="middle">accuracy 0.888</text>
+  <text class="ink sm b" x="590" y="166" text-anchor="middle">нашли 90 из 134 ушедших</text>
+  <text class="mut sm" x="350" y="204" text-anchor="middle">в тесте 134 ушедших и 466 оставшихся; красная клетка FN — пропущенные уходящие</text>
+</svg>
+</div><figcaption>
+<p>Матрицы трёх подходов на одном тесте. У базовой модели все 134 уходящих в клетке FN; правило почти не тревожит зря, но пропускает больше половины; лес находит 90 уходящих ценой 23 лишних бонусов.</p>
+</figcaption></figure>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-two-trees"><b>7</b> Осторожное и смелое дерево</a></div>
+<div class="fb" data-sec="матрицы-трёх-моделей"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="доли-ошибок-каждого-типа">Доли ошибок каждого типа</h2>
+<p>Абсолютные числа зависят от размера теста, поэтому ошибки удобно выражать долями — <strong>внутри своей строки</strong> матрицы:</p>
+<ul>
+<li><strong>доля пропущенных уходящих</strong> — FN / (FN + TP): из всех, кто ушёл, скольких модель не заметила;</li>
+<li><strong>доля лишних бонусов</strong> — FP / (FP + TN): из всех, кто остался, скольким модель зря подняла тревогу.</li>
+</ul>
+<p>Параметр <code>normalize=&quot;true&quot;</code> делит каждую строку матрицы на её сумму и выдаёт эти доли сразу:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import confusion_matrix
+
+g = pd.read_csv(&quot;guests_churn.csv&quot;)
+y = g[&quot;churned&quot;]
+X = pd.get_dummies(g.drop(columns=[&quot;guest_id&quot;, &quot;churned&quot;, &quot;card_blocked&quot;]), dtype=int).fillna({&quot;avg_check&quot;: 0})
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+pred = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict(X_test)
+
+print(confusion_matrix(y_test, pred))
+print(confusion_matrix(y_test, pred, normalize=&quot;true&quot;).round(3))</code></pre></div>
+<p>Во второй таблице каждая строка в сумме даёт 1. Правый верхний угол — доля лишних бонусов (около 5 % оставшихся), левый нижний — доля пропущенных уходящих (около трети). Лес почти не тревожит лояльных гостей, но каждого третьего уходящего упускает.</p>
+<figure class="fig" data-fig="cm-rows"><div class="fig-scroll"><svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-cm-rows">
+  <title id="t-cm-rows">normalize="true": каждая строка делится на свою сумму</title>
+  <defs><marker id="ah-cm-rows" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink b" x="140" y="22" text-anchor="middle">лес: числа</text>
+  <text class="mut sm" x="100.0" y="40" text-anchor="middle">прогноз 0</text>
+  <text class="mut sm" x="180.0" y="40" text-anchor="middle">прогноз 1</text>
+  <text class="mut sm" x="52" y="72.0" text-anchor="end">факт 0</text>
+  <text class="mut sm" x="52" y="112.0" text-anchor="end">факт 1</text>
+  <rect class="box" x="60" y="48" width="78" height="38" rx="3"/>
+  <text class="ink sm b" x="99.0" y="73.0" text-anchor="middle">TN 443</text>
+  <rect class="box-warn" x="140" y="48" width="78" height="38" rx="3"/>
+  <text class="ink sm b" x="179.0" y="73.0" text-anchor="middle">FP 23</text>
+  <rect class="box-err" x="60" y="88" width="78" height="38" rx="3"/>
+  <text class="ink sm b" x="99.0" y="113.0" text-anchor="middle">FN 44</text>
+  <rect class="box-acc" x="140" y="88" width="78" height="38" rx="3"/>
+  <text class="ink sm b" x="179.0" y="113.0" text-anchor="middle">TP 90</text>
+  <text class="ink2 sm" x="232" y="72" text-anchor="start">= 466</text>
+  <text class="ink2 sm" x="232" y="112" text-anchor="start">= 134</text>
+  <text class="mut sm" x="250" y="140" text-anchor="middle">суммы строк</text>
+  <path class="ln" d="M300,90 L405,90" marker-end="url(#ah-cm-rows)"/>
+  <text class="acc sm b" x="352" y="80" text-anchor="middle">делим</text>
+  <text class="ink b" x="544" y="22" text-anchor="middle">normalize="true": доли в строке</text>
+  <rect class="box" x="420" y="48" width="124" height="38" rx="3"/>
+  <text class="ink sm b" x="482" y="72" text-anchor="middle">443/466 = 0.951</text>
+  <rect class="box-warn" x="546" y="48" width="124" height="38" rx="3"/>
+  <text class="ink sm b" x="608" y="72" text-anchor="middle">23/466 = 0.049</text>
+  <rect class="box-err" x="420" y="88" width="124" height="38" rx="3"/>
+  <text class="ink sm b" x="482" y="112" text-anchor="middle">44/134 = 0.328</text>
+  <rect class="box-acc" x="546" y="88" width="124" height="38" rx="3"/>
+  <text class="ink sm b" x="608" y="112" text-anchor="middle">90/134 = 0.672</text>
+  <text class="mut sm" x="544" y="140" text-anchor="middle">каждая строка в сумме даёт 1</text>
+  <rect class="box-err" x="60" y="168" width="280" height="50" rx="6"/>
+  <text class="ink sm b" x="200.0" y="189.0" text-anchor="middle">FN / все гости = 44/600 ≈ 7 %</text>
+  <text class="ink2 sm" x="200.0" y="206.0" text-anchor="middle">«пропускаем мало» — неверный вывод</text>
+  <rect class="box-ok" x="380" y="168" width="300" height="50" rx="6"/>
+  <text class="ink sm b" x="530.0" y="189.0" text-anchor="middle">FN / ушедшие = 44/134 ≈ 33 %</text>
+  <text class="ink2 sm" x="530.0" y="206.0" text-anchor="middle">пропускаем треть уходящих</text>
+  <text class="mut sm" x="350" y="240" text-anchor="middle">доли ошибок считают внутри своей строки: пропуски — среди ушедших, лишние бонусы — среди оставшихся</text>
+</svg>
+</div><figcaption>
+<p><code>normalize=&quot;true&quot;</code> делит каждую строку на её сумму. Пропущенных уходящих 44 — это 7 % всех гостей, но треть ушедших: доля ошибок имеет смысл только внутри своей строки.</p>
+</figcaption></figure>
+<aside class="callout callout-warn"><div class="callout-title">Делить по строкам, а не на всех</div>
+<p>Частая ошибка — делить FN на число всех гостей теста: получится «модель пропускает 7 %», что звучит безобидно. Но уходящих всего 22 %, и пропущена из них треть. Доля ошибки считается внутри той группы, к которой она относится.</p>
+</aside>
+<div class="quiz-c" data-q="c2"><div class="predict-title">Проверьте себя</div>
+<p>Уходит 22 % гостей. Модель «никто не уйдёт» даёт accuracy 78 %. Сколько уходящих она находит?</p>
+<ul>
+<li>[x] Ни одного: TP = 0
+<blockquote>
+<p>Accuracy высокая только потому, что большинство и так остаётся. Матрица ошибок сразу показывает, что TP = 0.</p>
+</blockquote>
+</li>
+<li>[ ] 78 %
+<blockquote>
+<p>78 % — доля верных ответов среди <strong>всех</strong> гостей, а не среди уходящих.</p>
+</blockquote>
+</li>
+<li>[ ] 22 %
+<blockquote>
+<p>22 % — доля уходящих в данных. Модель не отметила ни одного из них.</p>
+</blockquote>
+</li>
+<li>[ ] Половину, раз accuracy выше 50 %
+<blockquote>
+<p>Accuracy не говорит, на каком классе модель права.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-shares"><b>6</b> Доли ошибок</a><a href="#task-missed-who"><b>9</b> Кого модель пропускает</a></div>
+<div class="fb" data-sec="доли-ошибок-каждого-типа"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="разберём-вместе-одинаковая-accuracy-разные-деньг">Разберём вместе: одинаковая accuracy — разные деньги</h2>
+<p>Возьмём 100 гостей, из них 10 уходящих, и две модели.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>TP</th>
+<th>FN</th>
+<th>FP</th>
+<th>TN</th>
+<th>accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A, «осторожная»</td>
+<td>5</td>
+<td>5</td>
+<td>0</td>
+<td>90</td>
+<td>(5 + 90) / 100 = <strong>0.95</strong></td>
+</tr>
+<tr>
+<td>B, «смелая»</td>
+<td>9</td>
+<td>1</td>
+<td>6</td>
+<td>84</td>
+<td>(9 + 84) / 100 = <strong>0.93</strong></td>
+</tr>
+</tbody>
+</table>
+<p>По accuracy A лучше. Теперь доли ошибок по строкам:</p>
+<ul>
+<li>A пропускает 5 / (5 + 5) = <strong>50 %</strong> уходящих и тревожит 0 / 90 = <strong>0 %</strong> оставшихся;</li>
+<li>B пропускает 1 / 10 = <strong>10 %</strong> уходящих и тревожит 6 / 90 ≈ <strong>7 %</strong> оставшихся.</li>
+</ul>
+<p>Посчитаем деньги по одной схеме, которой будем пользоваться всю главу: <strong>бонус платим каждому, кому его отправили</strong> (TP и FP — 300 ₽), а <strong>пропущенный уходящий</strong> (FN) уносит 3 000 ₽ будущей выручки. TN ничего не стоят:</p>
+<ul>
+<li>A: (5 + 0) × 300 + 5 × 3000 = 1 500 + 15 000 = <strong>16 500 ₽</strong> потерь;</li>
+<li>B: (9 + 6) × 300 + 1 × 3000 = 4 500 + 3 000 = <strong>7 500 ₽</strong> потерь.</li>
+</ul>
+<p>Что получилось: модель с меньшей accuracy обходится вдвое с лишним дешевле. Accuracy складывает ошибки так, будто они стоят одинаково, а матрица позволяет приписать каждой клетке её цену.</p>
+<div class="cell"><pre class="cell-src"><code>from sklearn.metrics import confusion_matrix
+fact = [1] * 10 + [0] * 90
+pred_a = [1] * 5 + [0] * 5 + [0] * 90
+pred_b = [1] * 9 + [0] * 1 + [1] * 6 + [0] * 84
+for name, pred in [(&quot;A&quot;, pred_a), (&quot;B&quot;, pred_b)]:
+    tn, fp, fn, tp = confusion_matrix(fact, pred).ravel()
+    print(name, &quot;accuracy&quot;, (tp + tn) / 100, &quot;| потери&quot;, (tp + fp) * 300 + fn * 3000)</code></pre></div>
+<aside class="callout callout-note"><div class="callout-title">Цена ошибок</div>
+<p>Лишний бонус стоит его себестоимость — скажем, 300 ₽. Ушедший гость уносит выручку за месяцы вперёд — тысячи рублей. Если FN дороже FP в несколько раз, модель с большей accuracy может обходиться «Зерну» дороже модели, которая чаще ошибается, но реже пропускает уходящих. Матрица ошибок — первый шаг к такому расчёту: умножаем каждую клетку на её цену. Как сдвигать баланс между FP и FN с помощью порога вероятности — в уроке «Порог, PR- и ROC-кривые».</p>
+</aside>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Перепутан порядок аргументов.</strong> <code>confusion_matrix(pred, fact)</code> транспонирует таблицу: FP и FN меняются местами, а выводы — на противоположные.</li>
+<li><strong>Порядок <code>ravel()</code>.</strong> Это TN, FP, FN, TP — не «TP первым».</li>
+<li><strong>Сравнение без базовой модели.</strong> «89 %» без «78 % у DummyClassifier» ничего не говорит.</li>
+<li><strong>Доли ошибок на весь тест.</strong> Делите FN на всех ушедших, FP — на всех оставшихся.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-cost"><b>8</b> Сколько стоят ошибки</a></div>
+<div class="fb" data-sec="разберём-вместе-одинаковая-accuracy-разные-деньг"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-count-four" data-task="count-four" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Четыре исхода руками</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#четыре-исхода">↑ К теории: Четыре исхода</a>
+  <div class="task-text prose"><p>Отдел лояльности отправил бонусы по прогнозу модели десяти гостям и через 60 дней узнал правду. Посчитайте без sklearn, масками pandas, четыре исхода: <code>tp</code>, <code>fp</code>, <code>fn</code>, <code>tn</code> (целые числа). В <code>acc</code> сохраните долю правильных ответов (2 знака), посчитанную по этим четырём числам.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-p-dummy" data-task="p-dummy" data-level="warmup" data-kind="parsons">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">Базовая модель</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#базовая-модель-dummyclassifier">↑ К теории: Базовая модель: DummyClassifier</a>
+  <div class="task-text prose"><p>Соберите программу: обучить базовую модель «самый частый класс» и вывести её матрицу ошибок на тесте. Признаки <code>X_train</code>, <code>X_test</code>, <code>y_train</code>, <code>y_test</code> уже готовы.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-dummy-acc" data-task="dummy-acc" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">Сколько стоит 78 %</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#базовая-модель-dummyclassifier">↑ К теории: Базовая модель: DummyClassifier</a>
+  <div class="task-text prose"><p>Обучите <code>DummyClassifier(strategy=&quot;most_frequent&quot;)</code> и сохраните:</p>
+<ul>
+<li><code>acc_dummy</code> — её accuracy на тесте (3 знака);</li>
+<li><code>churn_test</code> — долю ушедших в тесте (3 знака);</li>
+<li><code>found</code> — сколько ушедших гостей теста базовая модель нашла (целое число, по матрице ошибок).</li>
+</ul>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-forest-cm" data-task="forest-cm" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">4</span>
+    <h3 class="task-title">Матрица леса</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#confusion_matrix">↑ К теории: confusion_matrix</a>
+  <div class="task-text prose"><p>Обучите <code>RandomForestClassifier(n_estimators=50, random_state=0)</code> и сохраните его матрицу ошибок на тесте в <code>cm</code>, а её клетки — в <code>tn</code>, <code>fp</code>, <code>fn</code>, <code>tp</code> (целые числа).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-rule-cm" data-task="rule-cm" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">5</span>
+    <h3 class="task-title">Правило 45 дней</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#confusion_matrix">↑ К теории: confusion_matrix</a>
+  <div class="task-text prose"><p>Отдел лояльности считает гостя уходящим, если <code>days_since_last &gt; 45</code>. Превратите правило в прогноз для тестовых гостей (1 — уйдёт, 0 — останется) и сохраните:</p>
+<ul>
+<li><code>rule_cm</code> — матрицу ошибок правила;</li>
+<li><code>rule_missed</code> — сколько ушедших гостей правило пропустило (целое);</li>
+<li><code>rule_extra</code> — сколько лишних бонусов оно бы раздало (целое).</li>
+</ul>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-shares" data-task="shares" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">6</span>
+    <h3 class="task-title">Доли ошибок</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#доли-ошибок-каждого-типа">↑ К теории: Доли ошибок каждого типа</a>
+  <div class="task-text prose"><p>Для леса <code>RandomForestClassifier(n_estimators=50, random_state=0)</code> посчитайте на тесте (все — 3 знака):</p>
+<ul>
+<li><code>missed_share</code> — долю пропущенных среди ушедших гостей;</li>
+<li><code>extra_share</code> — долю лишних бонусов среди оставшихся гостей;</li>
+<li><code>error_rate</code> — долю всех ошибок среди всех гостей теста.</li>
+</ul>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-two-trees" data-task="two-trees" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">7</span>
+    <h3 class="task-title">Осторожное и смелое дерево</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#матрицы-трёх-моделей">↑ К теории: Матрицы трёх моделей</a>
+  <div class="task-text prose"><p>Сравните два дерева: <code>DecisionTreeClassifier(max_depth=2, random_state=0)</code> и <code>DecisionTreeClassifier(max_depth=3, random_state=0)</code>. Сохраните:</p>
+<ul>
+<li><code>acc2</code>, <code>acc3</code> — accuracy на тесте (3 знака);</li>
+<li><code>tp2</code>, <code>tp3</code> — сколько уходящих нашло каждое дерево (целые);</li>
+<li><code>fp2</code>, <code>fp3</code> — сколько лишних бонусов раздало каждое (целые);</li>
+<li><code>more_found</code> — строку <code>&quot;2&quot;</code> или <code>&quot;3&quot;</code>: какое дерево нашло больше уходящих.</li>
+</ul>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-cost" data-task="cost" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">8</span>
+    <h3 class="task-title">Сколько стоят ошибки</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#разберём-вместе-одинаковая-accuracy-разные-деньг">↑ К теории: Разберём вместе: одинаковая accuracy — разные деньги</a>
+  <div class="task-text prose"><p>Отдел лояльности оценил: бонус стоит 300 ₽ (платим за каждого гостя, которому его отправили, — и за TP, и за FP), а каждый пропущенный уходящий гость — это 2000 ₽ потерянной выручки. Посчитайте стоимость <code>300 × (TP + FP) + 2000 × FN</code> на тесте для четырёх вариантов и сохраните словарь <code>costs</code> с ключами:</p>
+<ul>
+<li><code>&quot;никто&quot;</code> — <code>DummyClassifier(strategy=&quot;most_frequent&quot;)</code>;</li>
+<li><code>&quot;правило&quot;</code> — <code>days_since_last &gt; 45</code>;</li>
+<li><code>&quot;дерево&quot;</code> — <code>DecisionTreeClassifier(max_depth=2, random_state=0)</code>;</li>
+<li><code>&quot;лес&quot;</code> — <code>RandomForestClassifier(n_estimators=50, random_state=0)</code>.</li>
+</ul>
+<p>Значения — целые рубли. В <code>cheapest</code> сохраните ключ самого дешёвого варианта.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-missed-who" data-task="missed-who" data-level="star" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">9</span>
+    <h3 class="task-title">Кого модель пропускает</h3>
+    <span class="lvl lvl-star">Со звёздочкой</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#доли-ошибок-каждого-типа">↑ К теории: Доли ошибок каждого типа</a>
+  <div class="task-text prose"><p>Разбор ошибок — лучший способ понять модель. Возьмите лес <code>RandomForestClassifier(n_estimators=50, random_state=0)</code> и <strong>только ушедших</strong> гостей теста. Разделите их на найденных (TP) и пропущенных (FN) и сравните группы. Сохраните:</p>
+<ul>
+<li><code>days_tp</code>, <code>days_fn</code> — медиану <code>days_since_last</code> у найденных и у пропущенных (1 знак);</li>
+<li><code>visits_tp</code>, <code>visits_fn</code> — медиану <code>visits_90d</code> (1 знак);</li>
+<li><code>new_tp</code>, <code>new_fn</code> — долю новичков (<code>tenure_months &lt;= 3</code>) в каждой группе (3 знака).</li>
+</ul>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>При дисбалансе классов accuracy обманывает: модель «никто не уйдёт» на наших гостях права в 78 % случаев и не находит ни одного уходящего.</li><li><code>DummyClassifier(strategy=&quot;most_frequent&quot;)</code> — базовая модель, которая всегда отвечает самым частым классом. Любая модель должна быть заметно лучше неё.</li><li>Четыре исхода: TP — бонус уходящему, FP — лишний бонус оставшемуся, FN — пропустили уходящего, TN — верно не тронули оставшегося.</li><li><code>confusion_matrix(y_true, y_pred)</code> — таблица [[TN, FP], [FN, TP]]: строки — факт, столбцы — прогноз; <code>.ravel()</code> раскладывает её в <code>tn, fp, fn, tp</code>.</li><li>Доли ошибок по типам: FN / (FN + TP) — какую долю уходящих пропустили, FP / (FP + TN) — какой доле оставшихся дали лишний бонус. <code>normalize=&quot;true&quot;</code> считает их сразу.</li><li>Ошибки стоят по-разному: лишний бонус дешевле потерянного гостя, поэтому модели сравнивают по матрице и по деньгам, а не только по accuracy.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="index.html"><span class="pl">← О главе</span><span class="pt">Признаки, метрики и Pipeline</span></a><a class="next" href="02-precision-recall.html"><span class="pl">Следующий урок →</span><span class="pt">2. Precision, recall и F1</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#когда-89-это-мало">Когда 89 % — это мало</a></li><li><a href="#базовая-модель-dummyclassifier">Базовая модель: DummyClassifier</a></li><li><a href="#четыре-исхода">Четыре исхода</a></li><li><a href="#confusion_matrix">confusion_matrix</a></li><li><a href="#матрицы-трёх-моделей">Матрицы трёх моделей</a></li><li><a href="#доли-ошибок-каждого-типа">Доли ошибок каждого типа</a></li><li><a href="#разберём-вместе-одинаковая-accuracy-разные-деньг">Разберём вместе: одинаковая accuracy — разные деньги</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch07/01-confusion", "title": "Матрица ошибок", "chapter": "Признаки, метрики и Pipeline", "tasks": [{"id": "count-four", "title": "Четыре исхода руками", "level": "warmup", "starter": "import pandas as pd\n\nfact = pd.Series([1, 0, 0, 1, 1, 0, 0, 0, 1, 0])\npred = pd.Series([1, 0, 1, 0, 1, 0, 0, 1, 0, 0])", "setup": "", "check": "_f = [1, 0, 0, 1, 1, 0, 0, 0, 1, 0]\n_p = [1, 0, 1, 0, 1, 0, 0, 1, 0, 0]\n_w = {'tp': 0, 'fp': 0, 'fn': 0, 'tn': 0}\nfor _a, _b in zip(_f, _p):\n    _w[('t' if _a == _b else 'f') + ('p' if _b == 1 else 'n')] += 1\n_tips = {'tp': 'факт 1 и прогноз 1', 'fp': 'факт 0, а прогноз 1 — лишний бонус', 'fn': 'факт 1, а прогноз 0 — пропущенный гость', 'tn': 'факт 0 и прогноз 0'}\nfor _k, _v in _w.items():\n    assert int(need(_k)) == _v, f'{_k} = {need(_k)}, а должно быть {_v}. {_k.upper()} — это {_tips[_k]}.'\nassert close(need('acc'), round((_w['tp'] + _w['tn']) / 10, 2)), f'acc = {need(\"acc\")}. Правильные ответы — TP и TN, делить на всех гостей.'", "hints": ["<p>Маска для TP: <code>(fact == 1) &amp; (pred == 1)<\/code>; <code>.sum()<\/code> считает число <code>True<\/code>.<\/p>\n", "<p>Accuracy: <code>(tp + tn) / (tp + fp + fn + tn)<\/code>.<\/p>\n"], "solution": "import pandas as pd\n\nfact = pd.Series([1, 0, 0, 1, 1, 0, 0, 0, 1, 0])\npred = pd.Series([1, 0, 1, 0, 1, 0, 0, 1, 0, 0])\ntp = int(((fact == 1) & (pred == 1)).sum())\nfp = int(((fact == 0) & (pred == 1)).sum())\nfn = int(((fact == 1) & (pred == 0)).sum())\ntn = int(((fact == 0) & (pred == 0)).sum())\nacc = round((tp + tn) / (tp + fp + fn + tn), 2)", "explain": "<p>Accuracy 60 % складывается из двух верных «уйдёт» и четырёх верных «останется». Четыре ошибки делятся поровну: два лишних бонуса и два пропущенных гостя — а по одной accuracy этого не видно.<\/p>\n", "parsons": ""}, {"id": "p-dummy", "title": "Базовая модель", "level": "warmup", "starter": "", "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)", "check": "_n0, _n1 = int((y_test == 0).sum()), int((y_test == 1).sum())\n_want = [f'[[{_n0}    0]', f'[{_n1}    0]]']\nassert [_l.replace(' ', '') for _l in _lines] == [_s.replace(' ', '') for _s in _want], f'Программа вывела {_lines}. Ожидалась матрица 2×2, где весь прогноз — «останется»: в левом столбце {_n0} и {_n1}, в правом нули.'", "hints": ["<p>Сначала импорты, потом модель, <code>fit<\/code>, <code>predict<\/code> — и только затем матрица по фактическим ответам и прогнозу.<\/p>\n"], "solution": "from sklearn.dummy import DummyClassifier\nfrom sklearn.metrics import confusion_matrix\ndummy = DummyClassifier(strategy=\"most_frequent\")\ndummy.fit(X_train, y_train)\npred = dummy.predict(X_test)\nprint(confusion_matrix(y_test, pred))", "explain": "", "parsons": "from sklearn.dummy import DummyClassifier\nfrom sklearn.metrics import confusion_matrix\ndummy = DummyClassifier(strategy=\"most_frequent\")\ndummy.fit(X_train, y_train)\npred = dummy.predict(X_test)\nprint(confusion_matrix(y_test, pred))"}, {"id": "dummy-acc", "title": "Сколько стоит 78 %", "level": "warmup", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\n_g = _pd.read_csv('guests_churn.csv')\n_y = _g['churned']\n_X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\n_a, _b, _c, _e = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)\n_ct = round(_e.mean(), 3)\nassert close(need('churn_test'), _ct), f'churn_test = {need(\"churn_test\")}, а нужно {_ct} — среднее y_test.'\nassert close(need('acc_dummy'), round(1 - _e.mean(), 3)), f'acc_dummy = {need(\"acc_dummy\")}, а нужно {round(1 - _e.mean(), 3)}. Это score базовой модели на X_test, y_test.'\nassert int(need('found')) == 0, f'found = {need(\"found\")}. Посмотрите на TP в матрице ошибок базовой модели: сколько гостей она назвала уходящими?'", "hints": ["<p><code>DummyClassifier<\/code> импортируется из <code>sklearn.dummy<\/code>; дальше как с любой моделью: <code>fit<\/code> и <code>score<\/code>.<\/p>\n", "<p>Найденные ушедшие — это TP: <code>tn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.dummy import DummyClassifier\nfrom sklearn.metrics import confusion_matrix\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ndummy = DummyClassifier(strategy=\"most_frequent\").fit(X_train, y_train)\nacc_dummy = round(dummy.score(X_test, y_test), 3)\nchurn_test = round(y_test.mean(), 3)\ntn, fp, fn, tp = confusion_matrix(y_test, dummy.predict(X_test)).ravel()\nfound = int(tp)", "explain": "<p>Accuracy базовой модели равна доле оставшихся: 1 − 0.223 ≈ 0.777. Отдел лояльности с такой моделью не отправил бы ни одного бонуса.<\/p>\n", "parsons": ""}, {"id": "forest-cm", "title": "Матрица леса", "level": "base", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)", "setup": "", "check": "import numpy as _np\nimport pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nfrom sklearn.metrics import confusion_matrix as _cm\n_g = _pd.read_csv('guests_churn.csv')\n_y = _g['churned']\n_X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\n_a, _b, _c, _e = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)\n_w = _cm(_e, _RF(n_estimators=50, random_state=0).fit(_a, _c).predict(_b))\n_m = _np.asarray(need('cm'))\nassert _m.shape == (2, 2), f'cm формы {_m.shape}, а матрица ошибок для двух классов — 2×2.'\nif (_m == _w.T).all() and not (_m == _w).all():\n    raise AssertionError('cm перевёрнута: похоже, аргументы перепутаны местами. Сначала факт (y_test), потом прогноз.')\nassert (_m == _w).all(), f'cm = {_m.tolist()}, а нужно {_w.tolist()}. Проверьте модель (n_estimators=50, random_state=0) и что прогноз сделан для X_test.'\nfor _k, _v in zip(['tn', 'fp', 'fn', 'tp'], _w.ravel()):\n    assert int(need(_k)) == int(_v), f'{_k} = {need(_k)}, а должно быть {int(_v)}. Порядок ravel(): tn, fp, fn, tp.'", "hints": ["<p><code>confusion_matrix(y_test, forest.predict(X_test))<\/code> — сначала правда, потом прогноз.<\/p>\n", "<p><code>tn, fp, fn, tp = cm.ravel()<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import confusion_matrix\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nforest = RandomForestClassifier(n_estimators=50, random_state=0).fit(X_train, y_train)\ncm = confusion_matrix(y_test, forest.predict(X_test))\ntn, fp, fn, tp = cm.ravel()", "explain": "<p>Лес из 50 деревьев: 92 найденных уходящих, 42 пропущенных, 25 лишних бонусов, 441 верно не тронутый гость. Проверка суммой: 441 + 25 = 466 оставшихся и 42 + 92 = 134 ушедших — строки матрицы складываются в размеры классов. Если суммы не сходятся, порядок аргументов перепутан.<\/p>\n", "parsons": ""}, {"id": "rule-cm", "title": "Правило 45 дней", "level": "base", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)", "setup": "", "check": "import numpy as _np\nimport pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.metrics import confusion_matrix as _cm\n_g = _pd.read_csv('guests_churn.csv')\n_y = _g['churned']\n_X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\n_a, _b, _c, _e = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)\n_w = _cm(_e, (_b['days_since_last'] > 45).astype(int))\n_m = _np.asarray(need('rule_cm'))\nassert _m.shape == (2, 2), f'rule_cm формы {_m.shape}, а нужна матрица 2×2.'\nassert (_m == _w).all(), f'rule_cm = {_m.tolist()}, а нужно {_w.tolist()}. Правило — строго больше 45 дней, применяется к X_test; сначала факт, потом прогноз.'\nassert int(need('rule_missed')) == int(_w[1, 0]), f'rule_missed = {need(\"rule_missed\")}. Пропущенные уходящие — FN: факт 1, прогноз 0.'\nassert int(need('rule_extra')) == int(_w[0, 1]), f'rule_extra = {need(\"rule_extra\")}. Лишние бонусы — FP: факт 0, прогноз 1.'", "hints": ["<p>Прогноз правила: <code>(X_test[&quot;days_since_last&quot;] &gt; 45).astype(int)<\/code>.<\/p>\n", "<p><code>tn, fp, fn, tp = rule_cm.ravel()<\/code> — пропущенные это <code>fn<\/code>, лишние бонусы — <code>fp<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import confusion_matrix\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nrule = (X_test[\"days_since_last\"] > 45).astype(int)\nrule_cm = confusion_matrix(y_test, rule)\ntn, fp, fn, tp = rule_cm.ravel()\nrule_missed = int(fn)\nrule_extra = int(fp)", "explain": "<p>Правило осторожно: лишних бонусов около десятка. Но больше половины уходящих оно пропускает — это гости, которые ещё заходят, но скоро перестанут. Их правило «45 дней» увидит, только когда будет поздно.<\/p>\n", "parsons": ""}, {"id": "shares", "title": "Доли ошибок", "level": "base", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nfrom sklearn.metrics import confusion_matrix as _cm\n_g = _pd.read_csv('guests_churn.csv')\n_y = _g['churned']\n_X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\n_a, _b, _c, _e = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)\n_tn, _fp, _fn, _tp = _cm(_e, _RF(n_estimators=50, random_state=0).fit(_a, _c).predict(_b)).ravel()\n_ms, _es, _er = round(_fn / (_fn + _tp), 3), round(_fp / (_fp + _tn), 3), round((_fp + _fn) / len(_e), 3)\n_got = need('missed_share')\nassert not close(_got, round(_fn / len(_e), 3)) or close(_got, _ms), f'missed_share = {_got} — похоже, FN поделено на всех гостей. Делить нужно на число ушедших: FN + TP.'\nassert close(_got, _ms), f'missed_share = {_got}, а нужно {_ms}. Это FN / (FN + TP).'\nassert close(need('extra_share'), _es), f'extra_share = {need(\"extra_share\")}, а нужно {_es}. Это FP / (FP + TN) — доля внутри оставшихся.'\nassert close(need('error_rate'), _er), f'error_rate = {need(\"error_rate\")}, а нужно {_er}. Все ошибки — FP и FN вместе, делить на всех гостей теста.'", "hints": ["<p>Сначала разложите матрицу: <code>tn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()<\/code>.<\/p>\n", "<p>Можно проверить себя через <code>confusion_matrix(y_test, pred, normalize=&quot;true&quot;)<\/code>: нужные доли — вне диагонали.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import confusion_matrix\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\npred = RandomForestClassifier(n_estimators=50, random_state=0).fit(X_train, y_train).predict(X_test)\ntn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\nmissed_share = round(fn / (fn + tp), 3)\nextra_share = round(fp / (fp + tn), 3)\nerror_rate = round((fp + fn) / len(y_test), 3)", "explain": "<p>Общая доля ошибок около 11 % — но она состоит из двух очень разных частей: лишние бонусы получает около 5 % оставшихся, а пропускаем мы около 30 % уходящих. Одно число скрывает, что модель ошибается в основном на тех, ради кого её строили.<\/p>\n", "parsons": ""}, {"id": "two-trees", "title": "Осторожное и смелое дерево", "level": "base", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.tree import DecisionTreeClassifier as _T\nfrom sklearn.metrics import confusion_matrix as _cm\n_g = _pd.read_csv('guests_churn.csv')\n_y = _g['churned']\n_X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\n_a, _b, _c, _e = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)\n_r = {}\nfor _d in (2, 3):\n    _m = _T(max_depth=_d, random_state=0).fit(_a, _c)\n    _tn, _fp, _fn, _tp = _cm(_e, _m.predict(_b)).ravel()\n    _r[_d] = (round(_m.score(_b, _e), 3), int(_tp), int(_fp))\n    assert close(need(f'acc{_d}'), _r[_d][0]), f'acc{_d} = {need(f\"acc{_d}\")}, а нужно {_r[_d][0]} — accuracy дерева глубины {_d} на тесте.'\n    assert int(need(f'tp{_d}')) == _r[_d][1], f'tp{_d} = {need(f\"tp{_d}\")}, а нужно {_r[_d][1]}. TP — правый нижний угол матрицы.'\n    assert int(need(f'fp{_d}')) == _r[_d][2], f'fp{_d} = {need(f\"fp{_d}\")}, а нужно {_r[_d][2]}. FP — правый верхний угол матрицы.'\n_mf = '2' if _r[2][1] > _r[3][1] else '3'\nassert str(need('more_found')) == _mf, f'more_found = {need(\"more_found\")!r}. Сравните tp2 и tp3.'", "hints": ["<p>Сделайте цикл <code>for depth in [2, 3]:<\/code> или просто два блока кода — по одному на дерево.<\/p>\n", "<p><code>tn, fp, fn, tp = confusion_matrix(y_test, tree.predict(X_test)).ravel()<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.metrics import confusion_matrix\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nt2 = DecisionTreeClassifier(max_depth=2, random_state=0).fit(X_train, y_train)\nt3 = DecisionTreeClassifier(max_depth=3, random_state=0).fit(X_train, y_train)\nacc2 = round(t2.score(X_test, y_test), 3)\nacc3 = round(t3.score(X_test, y_test), 3)\ntn, fp2, fn, tp2 = confusion_matrix(y_test, t2.predict(X_test)).ravel()\ntn, fp3, fn, tp3 = confusion_matrix(y_test, t3.predict(X_test)).ravel()\nmore_found = \"2\" if tp2 > tp3 else \"3\"", "explain": "<p>Дерево глубины 3 точнее по accuracy, но почти никого не тревожит зря и потому находит меньше половины уходящих. Дерево глубины 2 ошибается чаще, зато находит заметно больше уходящих — ценой лишних бонусов. Какое лучше, решает не accuracy, а цена ошибок — следующая задача.<\/p>\n", "parsons": ""}, {"id": "cost", "title": "Сколько стоят ошибки", "level": "plus", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.dummy import DummyClassifier as _D\nfrom sklearn.tree import DecisionTreeClassifier as _T\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nfrom sklearn.metrics import confusion_matrix as _cm\n_g = _pd.read_csv('guests_churn.csv')\n_y = _g['churned']\n_X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\n_a, _b, _c, _e = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)\n_preds = {\n    'никто': _D(strategy='most_frequent').fit(_a, _c).predict(_b),\n    'правило': (_b['days_since_last'] > 45).astype(int),\n    'дерево': _T(max_depth=2, random_state=0).fit(_a, _c).predict(_b),\n    'лес': _RF(n_estimators=50, random_state=0).fit(_a, _c).predict(_b),\n}\n_w = {}\nfor _k, _p in _preds.items():\n    _tn, _fp, _fn, _tp = _cm(_e, _p).ravel()\n    _w[_k] = int(300 * (_tp + _fp) + 2000 * _fn)\n_got = need('costs', dict)\nassert set(_got) == set(_w), f'Ключи costs: {sorted(_got)}, а нужны {sorted(_w)}.'\nfor _k in _w:\n    assert int(_got[_k]) == _w[_k], f'costs[{_k!r}] = {_got[_k]}, а нужно {_w[_k]}. Бонус (300 ₽) платим за TP и FP, потерю (2000 ₽) — за FN; TN ничего не стоит.'\nassert need('cheapest') == min(_w, key=_w.get), f'cheapest = {need(\"cheapest\")!r}. Найдите ключ с наименьшей стоимостью: min(costs, key=costs.get).'", "hints": ["<p>Соберите словарь прогнозов <code>{&quot;никто&quot;: ..., &quot;правило&quot;: ..., ...}<\/code> и в цикле разложите каждую матрицу через <code>ravel()<\/code>.<\/p>\n", "<p>Ключ с наименьшим значением: <code>min(costs, key=costs.get)<\/code>. Не забудьте <code>int(...)<\/code>, чтобы получить обычные целые числа.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.dummy import DummyClassifier\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import confusion_matrix\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\npreds = {\n    \"никто\": DummyClassifier(strategy=\"most_frequent\").fit(X_train, y_train).predict(X_test),\n    \"правило\": (X_test[\"days_since_last\"] > 45).astype(int),\n    \"дерево\": DecisionTreeClassifier(max_depth=2, random_state=0).fit(X_train, y_train).predict(X_test),\n    \"лес\": RandomForestClassifier(n_estimators=50, random_state=0).fit(X_train, y_train).predict(X_test),\n}\ncosts = {}\nfor name, pred in preds.items():\n    tn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\n    costs[name] = int(300 * (tp + fp) + 2000 * fn)\ncheapest = min(costs, key=costs.get)\nprint(costs, cheapest)", "explain": "<p>Самым дешёвым оказывается простое дерево глубины 2, хотя по accuracy оно заметно уступает лесу. Пропущенный гость стоит почти в семь раз дороже бонуса, поэтому выгоднее «перестраховаться» и раздать лишние бонусы, чем упустить уходящих. При другом соотношении цен победитель может смениться. Подбирать баланс тоньше, не меняя модель, научимся в уроке «Порог, PR- и ROC-кривые» — через порог вероятности.<\/p>\n", "parsons": ""}, {"id": "missed-who", "title": "Кого модель пропускает", "level": "star", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import RandomForestClassifier as _RF\n_g = _pd.read_csv('guests_churn.csv')\n_y = _g['churned']\n_X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\n_a, _b, _c, _e = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)\n_t = _b.copy()\n_t['pred'] = _RF(n_estimators=50, random_state=0).fit(_a, _c).predict(_b)\n_ch = _t[_e == 1]\n_tp, _fn = _ch[_ch['pred'] == 1], _ch[_ch['pred'] == 0]\n_w = {\n    'days_tp': round(_tp['days_since_last'].median(), 1), 'days_fn': round(_fn['days_since_last'].median(), 1),\n    'visits_tp': round(_tp['visits_90d'].median(), 1), 'visits_fn': round(_fn['visits_90d'].median(), 1),\n    'new_tp': round((_tp['tenure_months'] <= 3).mean(), 3), 'new_fn': round((_fn['tenure_months'] <= 3).mean(), 3),\n}\nfor _k, _v in _w.items():\n    _grp = 'найденных (факт 1, прогноз 1)' if _k.endswith('tp') else 'пропущенных (факт 1, прогноз 0)'\n    assert close(need(_k), _v), f'{_k} = {need(_k)}, а нужно {_v}. Это группа {_grp}; сначала оставьте только ушедших гостей теста.'", "hints": ["<p>Скопируйте <code>X_test<\/code> и добавьте столбец прогноза: <code>t = X_test.copy(); t[&quot;pred&quot;] = forest.predict(X_test)<\/code>. Ушедшие: <code>t[y_test == 1]<\/code>.<\/p>\n", "<p>Внутри ушедших найденные — <code>pred == 1<\/code>, пропущенные — <code>pred == 0<\/code>. Доля новичков: <code>(group[&quot;tenure_months&quot;] &lt;= 3).mean()<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nforest = RandomForestClassifier(n_estimators=50, random_state=0).fit(X_train, y_train)\n\nt = X_test.copy()\nt[\"pred\"] = forest.predict(X_test)\nchurned = t[y_test == 1]\nfound = churned[churned[\"pred\"] == 1]\nmissed = churned[churned[\"pred\"] == 0]\ndays_tp = round(found[\"days_since_last\"].median(), 1)\ndays_fn = round(missed[\"days_since_last\"].median(), 1)\nvisits_tp = round(found[\"visits_90d\"].median(), 1)\nvisits_fn = round(missed[\"visits_90d\"].median(), 1)\nnew_tp = round((found[\"tenure_months\"] <= 3).mean(), 3)\nnew_fn = round((missed[\"tenure_months\"] <= 3).mean(), 3)", "explain": "<p>Найденные уходящие — те, кто уже почти пропал: давно не был, мало визитов. Пропущенные выглядят как обычные гости — были недавно, ходят часто, — и среди них заметно больше новичков. Это «тихий» отток, о котором шла речь в проекте главы 6. Разбор FN подсказывает, куда двигаться: искать признаки, которые отличают таких гостей (урок «Новые признаки» — конструирование признаков), или снижать порог тревоги (урок «Порог, PR- и ROC-кривые»).<\/p>\n", "parsons": ""}], "files": ["guests_churn.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+
+
+</body>
+</html>

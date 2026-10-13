@@ -1,0 +1,1166 @@
+{
+ "chapter": "ch14",
+ "title": "Компьютерное зрение",
+ "tasks": {
+  "ch14/01-pixels/load": {
+   "chapter": "ch14",
+   "lesson": "01-pixels",
+   "lesson_title": "Картинка — это массив чисел",
+   "id": "load",
+   "title": "Что в файле",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nd0 = _np.load('showcase.npz')\nassert need('X').shape == (2000, 32, 32), 'X — массив d[\"X\"].'\nassert (need('y') == d0['y']).all(), 'y — массив d[\"y\"].'\nw = {str(c): int((d0['y'] == k).sum()) for k, c in enumerate(d0['classes'])}\ngot = {str(k): int(v) for k, v in need('counts', dict).items()}\nassert got == w, f'counts = {got}, а нужно {w}.'\nassert tuple(need('size')) == (32, 32), f'size = {need(\"size\")}.'",
+   "starter": "import numpy as np",
+   "solution": "import numpy as np\n\nd = np.load(\"showcase.npz\")\nX, y, classes = d[\"X\"], d[\"y\"], d[\"classes\"]\ncounts = {str(c): int(n) for c, n in zip(classes, np.bincount(y))}\nsize = X.shape[1:]\nprint(counts, size)",
+   "hints": [
+    "Массивы из архива достаются по именам: `d = np.load(\"showcase.npz\")`, затем `d[\"X\"]`, `d[\"y\"]`, `d[\"classes\"]`.",
+    "`np.bincount(y)` считает метки; пройдите `zip(classes, np.bincount(y))`. Размер — `X.shape[1:]`.",
+    "`counts = {str(c): int(n) for c, n in zip(classes, np.bincount(y))}` — `str` и `int` превращают типы numpy в обычные."
+   ],
+   "explain": ""
+  },
+  "ch14/01-pixels/p-show": {
+   "chapter": "ch14",
+   "lesson": "01-pixels",
+   "lesson_title": "Картинка — это массив чисел",
+   "id": "p-show",
+   "title": "Показать маффин",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert _lines == ['(32, 32)'], f'Сейчас: {_lines}.'\nax = ax_of(0)\nassert len(ax.images) == 1, 'Нужна одна картинка через imshow.'\nim = ax.images[0]\nassert im.get_clim() == (0, 255), 'Задайте vmin=0, vmax=255.'",
+   "starter": "",
+   "solution": "import numpy as np\nimport matplotlib.pyplot as plt\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"], d[\"y\"]\nimg = X[np.flatnonzero(y == 2)[0]]\nplt.imshow(img, cmap=\"gray\", vmin=0, vmax=255)\nprint(img.shape)",
+   "hints": [
+    "Загрузка → выбор картинки → рисунок → печать.",
+    "Номер первого маффина — `np.flatnonzero(y == 2)[0]`: маффин — класс 2."
+   ],
+   "explain": ""
+  },
+  "ch14/01-pixels/crop": {
+   "chapter": "ch14",
+   "lesson": "01-pixels",
+   "lesson_title": "Картинка — это массив чисел",
+   "id": "crop",
+   "title": "Центр всех кадров",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nX = np.load(\"showcase.npz\")[\"X\"]",
+   "check": "import numpy as _np\nX0 = need('X')\nc = need('centers')\nassert c.shape == (2000, 16, 16), f'centers.shape = {c.shape}, а нужно (2000, 16, 16).'\nassert (c == X0[:, 8:24, 8:24]).all(), 'centers — строки и столбцы 8…23 у каждой картинки: X[:, 8:24, 8:24].'\nassert need('n_numbers') == c.size, f'n_numbers = {need(\"n_numbers\")}.'\nassert close(need('share_kept'), 0.25, 1e-9), f'share_kept = {need(\"share_kept\")}.'",
+   "starter": "import numpy as np",
+   "solution": "import numpy as np\n\ncenters = X[:, 8:24, 8:24]\nn_numbers = centers.size\nshare_kept = round(centers.size / X.size, 2)\nprint(centers.shape, n_numbers, share_kept)",
+   "hints": [
+    "Первая ось — номер картинки, её берём целиком: `:`. Две другие — строки и столбцы.",
+    "`centers = X[:, 8:24, 8:24]`; число элементов массива — `.size`; доля — `centers.size / X.size`."
+   ],
+   "explain": ""
+  },
+  "ch14/01-pixels/overflow": {
+   "chapter": "ch14",
+   "lesson": "01-pixels",
+   "lesson_title": "Картинка — это массив чисел",
+   "id": "overflow",
+   "title": "Сделать ярче без поломки",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nX = np.load(\"showcase.npz\")[\"X\"]",
+   "check": "import numpy as _np\nf = need('brighten')\nt = _np.array([[200, 100, 0]], dtype=_np.uint8)\nr = f(t, 1.5)\nassert isinstance(r, _np.ndarray) and r.dtype == _np.uint8, 'Функция должна вернуть массив uint8.'\nassert r.tolist() == [[255, 150, 0]], f'brighten([[200, 100, 0]], 1.5) = {r.tolist()}, а нужно [[255, 150, 0]].'\nassert f(_np.array([[3]], dtype=_np.uint8), 0.5).tolist() == [[2]], 'Округляйте: 1.5 → 2 (np.round).'\nX0 = need('X')\nw = _np.clip(_np.round(X0[0].astype(float) * 1.5), 0, 255).astype(_np.uint8)\nb = need('bright', _np.ndarray)\nassert (b == w).all(), 'bright = brighten(X[0], 1.5).'\nassert need('n_sat') == int((w == 255).sum()), f'n_sat = {need(\"n_sat\")}.'",
+   "starter": "import numpy as np\n\ndef brighten(img, k):\n    ...",
+   "solution": "import numpy as np\n\ndef brighten(img, k):\n    return np.clip(np.round(img.astype(float) * k), 0, 255).astype(np.uint8)\n\nbright = brighten(X[0], 1.5)\nn_sat = int((bright == 255).sum())\nprint(n_sat)",
+   "hints": [
+    "Четыре шага: перевести в `float` (иначе переполнение), умножить, округлить и обрезать до 0–255, вернуть в `uint8`.",
+    "`img.astype(float) * k` → `np.round(...)` → `np.clip(..., 0, 255)` → `.astype(np.uint8)`.",
+    "Число пикселей, равных 255: `(bright == 255).sum()` — сумма `True` считает их количество."
+   ],
+   "explain": "Фон светлый, поэтому после умножения на 1.5 больше трети пикселей упирается в 255 — детали фона теряются безвозвратно (это называют **пересветом**). При аугментации яркость меняют умеренно."
+  },
+  "ch14/01-pixels/dark-rule": {
+   "chapter": "ch14",
+   "lesson": "01-pixels",
+   "lesson_title": "Картинка — это массив чисел",
+   "id": "dark-rule",
+   "title": "Правило «есть ли товар»",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nd = np.load(\"showcase.npz\")\nX, y, classes = d[\"X\"], d[\"y\"], d[\"classes\"]",
+   "check": "import numpy as _np\nimport pandas as _pd\nd0 = _np.load('showcase.npz'); X0, y0, c0 = d0['X'], d0['y'], d0['classes']\ndk = (X0 < 100).reshape(len(X0), -1).mean(axis=1)\nw = {t: round(float(((dk >= t) == (y0 != 0)).mean()), 3) for t in [0.005, 0.01, 0.02, 0.05]}\ngot = need('acc_by_t', dict)\nassert sorted(got) == sorted(w), f'Ключи: {sorted(got)}.'\nassert all(close(got[t], w[t], 0.0015) for t in w), f'acc_by_t = {got}, а нужно {w}.'\nassert close(need('best_t'), max(w, key=w.get)), f'best_t = {need(\"best_t\")}.'\nm = _pd.Series(dk).groupby(c0[y0]).median().round(3)\ngot_m = need('dark_median', _pd.Series)\nassert all(close(got_m[k], m[k], 0.0015) for k in m.index), f'dark_median:\\n{got_m}'",
+   "starter": "import numpy as np\nimport pandas as pd",
+   "solution": "import numpy as np\nimport pandas as pd\n\ndark = (X < 100).reshape(len(X), -1).mean(axis=1)\nacc_by_t = {t: round(float(((dark >= t) == (y != 0)).mean()), 3) for t in [0.005, 0.01, 0.02, 0.05]}\nbest_t = max(acc_by_t, key=acc_by_t.get)\ndark_median = pd.Series(dark).groupby(classes[y]).median().round(3)\nprint(acc_by_t, best_t)\nprint(dark_median)",
+   "hints": [
+    "Сначала признак для всех картинок сразу: `(X < 100).reshape(len(X), -1).mean(axis=1)` — массив из 2000 долей.",
+    "Ответ правила — `dark >= t`, правильный ответ «товар есть» — `y != 0`. Доля совпадений — `((dark >= t) == (y != 0)).mean()`.",
+    "Словарь по порогам: `{t: round(float(...), 3) for t in [0.005, 0.01, 0.02, 0.05]}`; лучший — `max(acc_by_t, key=acc_by_t.get)`. Медианы: `pd.Series(dark).groupby(classes[y]).median()`."
+   ],
+   "explain": "Правило в одну строку отличает пустую ячейку от занятой примерно в 97 % случаев: у пустого подноса тёмных пикселей почти нет. Ошибки — пустые кадры с тёмным ценником и печенье, которое светлее остальной выпечки. Лучший порог оказался крайним в списке — это повод расширить перебор вниз: пороги 0.002 и 0.003 дают 0.973, чуть больше, чем 0.005 (0.967). Запомните это число — модели должны его обогнать. И порог подобран при дневном свете: что будет вечером, разберём в проекте."
+  },
+  "ch14/01-pixels/centroid": {
+   "chapter": "ch14",
+   "lesson": "01-pixels",
+   "lesson_title": "Картинка — это массив чисел",
+   "id": "centroid",
+   "title": "Средняя картинка класса",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nd = np.load(\"showcase.npz\")\nX, y, classes = d[\"X\"].astype(float), d[\"y\"], d[\"classes\"]",
+   "check": "import numpy as _np\nfrom sklearn.model_selection import train_test_split as _tts\nd0 = _np.load('showcase.npz'); X0, y0 = d0['X'].astype(float), d0['y']\ntr, te = _tts(_np.arange(len(X0)), test_size=0.25, random_state=42, stratify=y0)\nM = _np.stack([X0[tr][y0[tr] == c].mean(0) for c in range(4)])\ngot = _np.asarray(need('means'))\nassert got.shape == (4, 32, 32), f'means.shape = {got.shape}.'\nassert _np.allclose(got, M, atol=1e-6), 'Средние считаются только по обучающим картинкам каждого класса.'\ndist = ((X0[te][:, None] - M[None]) ** 2).sum(axis=(2, 3))\nw = round(float((dist.argmin(1) == y0[te]).mean()), 3)\nassert close(need('centroid_acc'), w, 0.0015), f'centroid_acc = {need(\"centroid_acc\")}, а нужно {w}.'\nassert len(figs) >= 1, 'Нарисуйте средние картинки.'",
+   "starter": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split",
+   "solution": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\n\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\nmeans = np.stack([X[tr][y[tr] == c].mean(axis=0) for c in range(4)])\npred = np.array([np.argmin([np.linalg.norm(img - means[c]) for c in range(4)]) for img in X[te]])\ncentroid_acc = round(float((pred == y[te]).mean()), 3)\nprint(centroid_acc)\n\nfig, axes = plt.subplots(1, 4, figsize=(8, 2.3))\nfor c, ax in enumerate(axes):\n    ax.imshow(means[c], cmap=\"gray\", vmin=0, vmax=255); ax.set_title(classes[c]); ax.axis(\"off\")",
+   "hints": [
+    "Средняя картинка класса — среднее по первой оси (по картинкам): `X[tr][y[tr] == c].mean(axis=0)`, форма `(32, 32)`. Четыре таких — `np.stack([...])`.",
+    "Классификация циклом: для каждой тестовой картинки `img` из `X[te]` — четыре расстояния `[np.linalg.norm(img - means[c]) for c in range(4)]`, ответ — номер наименьшего (`np.argmin`). Доля верных — среднее совпадений ответов с `y[te]`."
+   ],
+   "explain": "Цикл можно заменить одной строкой: `((X[te][:, None] - means[None]) ** 2).sum(axis=(2, 3))` — `None` вставляет ось, и numpy сразу считает разности всех тестовых картинок со всеми четырьмя средними (форма `(n_test, 4)`); дальше `argmin(axis=1)`. Корень для выбора ближайшей не нужен: он не меняет порядок.\n\nСредние картинки — размытые пятна: выпечка лежит в разных местах, и силуэты усредняются в облако. Классификатор по ближайшей средней угадывает меньше половины — хуже, чем правило из одной строки. Пиксели на своих местах — плохое описание формы."
+  },
+  "ch14/01-pixels/shift": {
+   "chapter": "ch14",
+   "lesson": "01-pixels",
+   "lesson_title": "Картинка — это массив чисел",
+   "id": "shift",
+   "title": "Сдвиг против смысла",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"].astype(float), d[\"y\"]",
+   "check": "import numpy as _np\nd0 = _np.load('showcase.npz'); X0, y0 = d0['X'].astype(float), d0['y']\ni = _np.flatnonzero(y0 == 1)[0]; x = X0[i]\nws = {k: round(float(_np.linalg.norm(x - _np.roll(x, k, axis=1)))) for k in range(1, 7)}\nwsame = round(float(_np.mean([_np.linalg.norm(x - X0[j]) for j in _np.flatnonzero(y0 == 1) if j != i])))\nwe = round(float(_np.mean([_np.linalg.norm(x - X0[j]) for j in _np.flatnonzero(y0 == 0)])))\ngot = {int(k): v for k, v in need('d_shift', dict).items()}\nassert sorted(got) == list(range(1, 7)), f'Ключи d_shift: {sorted(got)}.'\nassert all(abs(got[k] - ws[k]) <= 1 for k in ws), f'd_shift = {got}, а нужно {ws}.'\nassert abs(need('d_same') - wsame) <= 1, f'd_same = {need(\"d_same\")}, а нужно {wsame}.'\nassert abs(need('d_empty') - we) <= 1, f'd_empty = {need(\"d_empty\")}, а нужно {we}.'\nmss = max([k for k in ws if ws[k] < we], default=0)\nassert need('max_safe_shift') == mss, f'max_safe_shift = {need(\"max_safe_shift\")}, а нужно {mss}.'",
+   "starter": "import numpy as np\n\ni = np.flatnonzero(y == 1)[0]\nx0 = X[i]",
+   "solution": "import numpy as np\n\ni = np.flatnonzero(y == 1)[0]\nx0 = X[i]\nd_shift = {k: round(float(np.linalg.norm(x0 - np.roll(x0, k, axis=1)))) for k in range(1, 7)}\nd_same = round(float(np.mean([np.linalg.norm(x0 - X[j]) for j in np.flatnonzero(y == 1) if j != i])))\nd_empty = round(float(np.mean([np.linalg.norm(x0 - X[j]) for j in np.flatnonzero(y == 0)])))\nmax_safe_shift = max([k for k in d_shift if d_shift[k] < d_empty], default=0)\nprint(d_shift, d_same, d_empty, max_safe_shift)",
+   "hints": [
+    "Расстояние до сдвинутой копии: `np.linalg.norm(x0 - np.roll(x0, k, axis=1))` — для `k` от 1 до 6 в словарном выражении.",
+    "Для остальных круассанов: `[np.linalg.norm(x0 - X[j]) for j in np.flatnonzero(y == 1) if j != i]` — и `np.mean` от списка. Для пустых — то же с `y == 0`.",
+    "`max_safe_shift = max([k for k in d_shift if d_shift[k] < d_empty], default=0)`."
+   ],
+   "explain": "После сдвига всего на 6 пикселей тот же самый круассан «по пикселям» дальше от себя, чем в среднем пустой поднос, и почти так же далёк, как другие круассаны. Глаз человека этого даже не заметит. Нужны признаки, которым безразлично, где именно лежит выпечка, — их дают свёртки и пулинг из урока «Свёртка и фильтры»."
+  },
+  "ch14/01-pixels/gray": {
+   "chapter": "ch14",
+   "lesson": "01-pixels",
+   "lesson_title": "Картинка — это массив чисел",
+   "id": "gray",
+   "title": "Из цвета в серое",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\ncup = np.zeros((6, 6, 3), dtype=np.uint8)\ncup[:, :] = [200, 30, 30]          # стакан — красный\ncup[1:5, 1:5] = [110, 70, 40]      # кофе\ncup[2:4, 2:4] = [240, 230, 210]    # пена",
+   "check": "import numpy as _np\nf = need('to_gray')\nt = _np.array([[[255, 0, 0], [0, 255, 0], [0, 0, 255], [10, 20, 30]]], dtype=_np.uint8)\nr = f(t)\nassert isinstance(r, _np.ndarray) and r.shape == (1, 4), f'Форма результата должна быть (высота, ширина), а сейчас {getattr(r, \"shape\", None)}.'\nassert r.dtype == _np.uint8, 'Верните uint8: .round().astype(np.uint8).'\nassert r.tolist() == [[76, 150, 29, 18]], f'to_gray для чистых красного, зелёного, синего и (10, 20, 30) = {r.tolist()}, а нужно [[76, 150, 29, 18]].'\ng = need('cup_gray')\nassert g.shape == (6, 6) and int(g[0, 0]) == 81 and int(g[1, 1]) == 79 and int(g[2, 2]) == 231, f'cup_gray: углы и центр не совпадают — {g[0, 0]}, {g[1, 1]}, {g[2, 2]}.'\nassert need('darkest_color') == 'кофе', f'darkest_color = {need(\"darkest_color\")!r}.'",
+   "starter": "import numpy as np\n\ndef to_gray(rgb):\n    ...\n\ncup_gray = to_gray(cup)\nprint(cup_gray)",
+   "solution": "import numpy as np\n\ndef to_gray(rgb):\n    c = rgb.astype(float)\n    return (0.299 * c[..., 0] + 0.587 * c[..., 1] + 0.114 * c[..., 2]).round().astype(np.uint8)\n\ncup_gray = to_gray(cup)\nvalues = {\"стакан\": int(cup_gray[0, 0]), \"кофе\": int(cup_gray[1, 1]), \"пена\": int(cup_gray[2, 2])}\ndarkest_color = min(values, key=values.get)\nprint(cup_gray, values, darkest_color)",
+   "hints": [
+    "Каналы: `rgb[..., 0]` — красный, `rgb[..., 1]` — зелёный, `rgb[..., 2]` — синий. Каждый — матрица `(высота, ширина)`.",
+    "Перемножать лучше во `float`: `rgb.astype(float)`, иначе можно получить переполнение на промежуточных шагах.",
+    "`return (0.299 * c[..., 0] + 0.587 * c[..., 1] + 0.114 * c[..., 2]).round().astype(np.uint8)`, где `c = rgb.astype(float)`."
+   ],
+   "explain": "Ярко-красный стакан (81) и коричневый кофе (79) в сером почти не различаются, хотя глазу они совсем разные. Это и есть цена перехода в оттенки серого: цвета с похожей яркостью сливаются. Для выпечки на подносе это не страшно — силуэт виден по яркости, — но для задачи «отличить капучино от латте по цвету» серый не годится."
+  },
+  "ch14/01-pixels/cells": {
+   "chapter": "ch14",
+   "lesson": "01-pixels",
+   "lesson_title": "Картинка — это массив чисел",
+   "id": "cells",
+   "title": "Разрезать кадр на ячейки",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\n_d = np.load(\"showcase.npz\")\n_X, _y = _d[\"X\"], _d[\"y\"]\n_pick = [np.flatnonzero(_y == c)[k] for c, k in [(3, 2), (0, 3), (1, 4), (0, 5), (2, 6), (0, 7)]]\nframe = np.vstack([np.hstack([_X[i] for i in _pick[:3]]), np.hstack([_X[i] for i in _pick[3:]])])",
+   "check": "import numpy as _np\nfr = need('frame')\nwant = [fr[32 * r:32 * (r + 1), 32 * c:32 * (c + 1)] for r in range(2) for c in range(3)]\ncl = need('cells', list)\nassert len(cl) == 6 and all(_np.asarray(a).shape == (32, 32) for a in cl), 'cells — 6 массивов 32 × 32.'\nassert all((_np.asarray(a) == b).all() for a, b in zip(cl, want)), 'Порядок ячеек: сначала верхний ряд слева направо, потом нижний.'\nds = [round(float((b < 100).mean()), 3) for b in want]\nassert all(close(a, b, 0.0011) for a, b in zip(need('dark_shares', list), ds)), f'dark_shares = {need(\"dark_shares\")}, а нужно {ds}.'\nassert [bool(v) for v in need('empty', list)] == [x < 0.005 for x in [(b < 100).mean() for b in want]], f'empty = {need(\"empty\")}.'\nassert need('n_empty') == sum((b < 100).mean() < 0.005 for b in want), f'n_empty = {need(\"n_empty\")}.'",
+   "starter": "import numpy as np\n\ncells = []",
+   "solution": "import numpy as np\n\ncells = []\nfor r in range(2):\n    for c in range(3):\n        cells.append(frame[32 * r: 32 * (r + 1), 32 * c: 32 * (c + 1)])\ndark_shares = [round(float((cell < 100).mean()), 3) for cell in cells]\nempty = [(cell < 100).mean() < 0.005 for cell in cells]\nn_empty = sum(empty)\nprint(dark_shares, empty, n_empty)",
+   "hints": [
+    "Ячейка в ряду `r` и колонке `c`: `frame[32 * r: 32 * (r + 1), 32 * c: 32 * (c + 1)]`. Двойной цикл: внешний по рядам, внутренний по колонкам — тогда порядок будет нужный.",
+    "Доля тёмных в ячейке — `(cell < 100).mean()`; решение — `доля < 0.005`.",
+    "```python\nfor r in range(2):\n    for c in range(3):\n        cells.append(frame[32 * r: 32 * (r + 1), 32 * c: 32 * (c + 1)])\ndark_shares = [round(float((cell < 100).mean()), 3) for cell in cells]\n```"
+   ],
+   "explain": "Так и работает программа у камеры: кадр — один большой массив, ячейки — его срезы по известной сетке. Обратите внимание на границы: `32 * (r + 1)` не включается в срез, поэтому соседние ячейки не перекрываются и ничего не теряется. Если сетка сдвинута хотя бы на пару пикселей (камеру задели при уборке), в ячейку попадёт кусок соседней выпечки — и правило по тёмным пикселям начнёт ошибаться. Поэтому сетку ячеек на практике периодически перепроверяют."
+  },
+  "ch14/01-pixels/where": {
+   "chapter": "ch14",
+   "lesson": "01-pixels",
+   "lesson_title": "Картинка — это массив чисел",
+   "id": "where",
+   "title": "Где лежит выпечка",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"], d[\"y\"]",
+   "check": "import numpy as _np\nX0, y0 = need('X'), need('y')\nrr, cc = [], []\nfor img in X0[y0 != 0]:\n    r, c = _np.nonzero(img < 100)\n    if len(r):\n        rr.append(r.mean()); cc.append(c.mean())\nrr, cc = _np.array(rr), _np.array(cc)\nassert len(need('rows_c')) == len(rr), f'Центров должно быть {len(rr)}: по непустым картинкам с тёмными пикселями.'\nassert _np.allclose(need('rows_c'), rr) and _np.allclose(need('cols_c'), cc), 'Центр — средний номер строки (столбца) тёмных пикселей: np.nonzero(img < 100).'\nsp = (round(float(rr.std()), 1), round(float(cc.std()), 1))\nassert all(close(a, b, 0.051) for a, b in zip(need('spread'), sp)), f'spread = {need(\"spread\")}, а нужно {sp}.'\nfo = round(float(((_np.abs(rr - 15.5) > 4) | (_np.abs(cc - 15.5) > 4)).mean()), 2)\nassert close(need('frac_off_center'), fo, 0.0051), f'frac_off_center = {need(\"frac_off_center\")}, а нужно {fo}.'",
+   "starter": "import numpy as np\n\nrows_c, cols_c = [], []",
+   "solution": "import numpy as np\n\nrows_c, cols_c = [], []\nfor img in X[y != 0]:\n    r, c = np.nonzero(img < 100)\n    if len(r):\n        rows_c.append(r.mean())\n        cols_c.append(c.mean())\nrows_c, cols_c = np.array(rows_c), np.array(cols_c)\nspread = (round(float(rows_c.std()), 1), round(float(cols_c.std()), 1))\nfrac_off_center = round(float(((np.abs(rows_c - 15.5) > 4) | (np.abs(cols_c - 15.5) > 4)).mean()), 2)\nprint(spread, frac_off_center)",
+   "hints": [
+    "`np.nonzero(img < 100)` возвращает два массива — номера строк и номера столбцов тёмных пикселей. Их средние и есть центр пятна.",
+    "Цикл по `X[y != 0]`; если тёмных пикселей нет (`len(r) == 0`) — картинку пропускаем. В конце превратите списки в массивы `np.array(...)`.",
+    "Доля «далеко от центра»: `((np.abs(rows_c - 15.5) > 4) | (np.abs(cols_c - 15.5) > 4)).mean()` — `|` значит «или»."
+   ],
+   "explain": "Центр пятна «гуляет» на несколько пикселей в каждую сторону, и почти у двух третей кадров выпечка сдвинута от середины больше чем на 4 пикселя хотя бы по одной оси. Вспомните разбор расстояний: уже такой сдвиг делает круассан «по пикселям» почти чужим самому себе. Это количественное объяснение, почему модели на сырых пикселях будут ошибаться, — и почему дальше нам понадобятся признаки, нечувствительные к положению."
+  },
+  "ch14/01b-files/memory": {
+   "chapter": "ch14",
+   "lesson": "01b-files",
+   "lesson_title": "Файлы картинок и память",
+   "id": "memory",
+   "title": "Сколько памяти нужно кадрам",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "b = 1080 * 1920 * 3\nassert close(need('gb_uint8'), round(b * 10_000 / 1e9, 3), 0.0015), f'gb_uint8 = {need(\"gb_uint8\")}: пикселей × каналов × кадров × 1 байт, делённое на 10⁹.'\nassert close(need('gb_float32'), round(b * 4 * 10_000 / 1e9, 3), 0.0015), f'gb_float32 = {need(\"gb_float32\")}: у float32 4 байта на число.'\nassert need('frames_224') == int(8e9 // (224 * 224 * 3)), f'frames_224 = {need(\"frames_224\")}. Кадр 224 × 224 × 3 байт; сколько целых таких кадров в 8·10⁹ байт.'",
+   "starter": "import numpy as np\nh, w, ch = 1080, 1920, 3\nn = 10_000",
+   "solution": "import numpy as np\nh, w, ch = 1080, 1920, 3\nn = 10_000\n\nframe_bytes = np.zeros((h, w, ch), dtype=np.uint8).nbytes      # 6 220 800 байт\ngb_uint8 = round(frame_bytes * n / 1e9, 3)\ngb_float32 = round(frame_bytes * 4 * n / 1e9, 3)\nframes_224 = int(8e9 // (224 * 224 * 3))\nprint(gb_uint8, gb_float32, frames_224)",
+   "hints": [
+    "Байт на кадр — `h * w * ch` (по байту на число в `uint8`); у `float32` — в 4 раза больше. Можно проверить себя: `np.zeros((h, w, ch), dtype=np.uint8).nbytes`.",
+    "Целое число кадров — деление без остатка: `int(8e9 // (224 * 224 * 3))`."
+   ],
+   "explain": "62 ГБ в `uint8` и почти 250 ГБ в `float32` — столько памяти нет ни в одном ноутбуке, хотя на диске те же 10 000 кадров в JPEG займут единицы гигабайт. После уменьшения до 224 × 224 в 8 ГБ влезает около 53 тысяч кадров. Поэтому картинки не загружают «все сразу», а читают пакетами по 32–256 штук прямо перед подачей в модель."
+  },
+  "ch14/01b-files/formats": {
+   "chapter": "ch14",
+   "lesson": "01b-files",
+   "lesson_title": "Файлы картинок и память",
+   "id": "formats",
+   "title": "PNG против JPEG",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import io as _io, numpy as _np\nfrom PIL import Image as _I\nX0 = _np.load('showcase.npz')['X'][:100]\ndef _rt(img, fmt, **o):\n    b = _io.BytesIO(); _I.fromarray(img).save(b, format=fmt, **o); d = b.getvalue()\n    return len(d), _np.array(_I.open(_io.BytesIO(d)))\nsp = sj = 0; errs = []; ok = True\nfor img in X0:\n    n, back = _rt(img, 'PNG'); sp += n; ok = ok and _np.array_equal(back, img)\n    n, back = _rt(img, 'JPEG', quality=75); sj += n; errs.append(_np.abs(back.astype(int) - img.astype(int)))\nassert close(need('share_png'), round(sp / X0.nbytes, 3), 0.0015), f'share_png = {need(\"share_png\")}, а нужно {sp / X0.nbytes:.3f}. Сумма размеров PNG-файлов / X[:100].nbytes.'\nassert close(need('share_jpeg'), round(sj / X0.nbytes, 3), 0.0015), f'share_jpeg = {need(\"share_jpeg\")}, а нужно {sj / X0.nbytes:.3f}.'\nm = round(float(_np.mean(errs)), 2)\nassert close(need('mae_jpeg'), m, 0.011), f'mae_jpeg = {need(\"mae_jpeg\")}, а нужно {m}. Вычитайте в int: в uint8 разность «переворачивается» (3 − 5 = 254).'\nassert need('lossless') is True or need('lossless') == True, 'lossless: PNG — сжатие без потерь, все кадры должны совпасть (np.array_equal).'",
+   "starter": "import io\nimport numpy as np\nfrom PIL import Image\n\nX = np.load(\"showcase.npz\")[\"X\"]\n\ndef roundtrip(img, fmt, **opts):\n    \"\"\"Сохранить картинку в память и прочитать обратно: (размер в байтах, массив).\"\"\"\n    buf = io.BytesIO()\n    Image.fromarray(img).save(buf, format=fmt, **opts)\n    data = buf.getvalue()\n    return len(data), np.array(Image.open(io.BytesIO(data)))",
+   "solution": "import io\nimport numpy as np\nfrom PIL import Image\n\nX = np.load(\"showcase.npz\")[\"X\"]\n\ndef roundtrip(img, fmt, **opts):\n    \"\"\"Сохранить картинку в память и прочитать обратно: (размер в байтах, массив).\"\"\"\n    buf = io.BytesIO()\n    Image.fromarray(img).save(buf, format=fmt, **opts)\n    data = buf.getvalue()\n    return len(data), np.array(Image.open(io.BytesIO(data)))\n\nsize_png = size_jpeg = 0\nerrors, same = [], []\nfor img in X[:100]:\n    n, back = roundtrip(img, \"PNG\")\n    size_png += n\n    same.append(np.array_equal(back, img))\n    n, back = roundtrip(img, \"JPEG\", quality=75)\n    size_jpeg += n\n    errors.append(np.abs(back.astype(int) - img.astype(int)))\n\nraw = X[:100].nbytes\nshare_png = round(size_png / raw, 3)\nshare_jpeg = round(size_jpeg / raw, 3)\nmae_jpeg = round(float(np.mean(errors)), 2)\nlossless = all(same)\nprint(share_png, share_jpeg, mae_jpeg, lossless)",
+   "hints": [
+    "Цикл по `X[:100]`: для каждого кадра `roundtrip(img, \"PNG\")` и `roundtrip(img, \"JPEG\", quality=75)`; размеры складывайте, ошибки JPEG копите в список.",
+    "Ошибка кадра — `np.abs(back.astype(int) - img.astype(int))`. Совпадение — `np.array_equal(back, img)`; «все кадры» — `all(...)`.",
+    "```python\nsize_png = size_jpeg = 0\nerrors, same = [], []\nfor img in X[:100]:\n    n, back = roundtrip(img, \"PNG\")\n    size_png += n\n    same.append(np.array_equal(back, img))\n    ...\nshare_png = round(size_png / X[:100].nbytes, 3)\n```"
+   ],
+   "explain": "PNG сжал кадры всего примерно до 95 % исходного объёма и вернул их без единой ошибки; JPEG — примерно до 62 %, но каждый пиксель сдвинулся в среднем на 7 уровней яркости из 255. На маленьких зашумлённых вырезках выигрыш скромный: шум не сжимается. На настоящих фотографиях 1920 × 1080 с плавными участками JPEG обычно в 5–20 раз меньше PNG. Если бы вы вычитали `back - img` прямо в `uint8`, отрицательные разности «перевернулись» бы в числа около 250, и средняя ошибка вышла бы в разы больше настоящей — это та же ловушка переполнения, что в задаче «Сделать ярче без поломки» урока «Картинка — это массив чисел»."
+  },
+  "ch14/02-filters/conv": {
+   "chapter": "ch14",
+   "lesson": "02-filters",
+   "lesson_title": "Свёртка и фильтры",
+   "id": "conv",
+   "title": "Свёртка руками",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimg = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]], dtype=float)\nblur = np.ones((3, 3)) / 9",
+   "check": "import numpy as _np\nfrom scipy import ndimage as _ndi\nf = need('conv2d')\nr = _np.random.default_rng(0)\nfor n, k in [(6, 3), (7, 3), (5, 5), (8, 2)]:\n    a, kk = r.normal(size=(n, n)), r.normal(size=(k, k))\n    got = _np.asarray(f(a, kk), dtype=float)\n    w = _np.array([[(a[i:i + k, j:j + k] * kk).sum() for j in range(n - k + 1)] for i in range(n - k + 1)])\n    assert got.shape == w.shape, f'Для картинки {n}×{n} и фильтра {k}×{k} выход должен быть {w.shape}, а сейчас {got.shape}.'\n    assert _np.allclose(got, w), 'Значения не совпадают: в каждой позиции — сумма произведений окна на фильтр, без переворота.'\nassert _np.allclose(need('out'), [[6, 7], [10, 11]]), f'out = {need(\"out\")}.'",
+   "starter": "import numpy as np\n\ndef conv2d(img, kernel):\n    ...\n\nout = conv2d(img, blur)\nprint(out)",
+   "solution": "import numpy as np\n\ndef conv2d(img, kernel):\n    k = kernel.shape[0]\n    h, w = img.shape[0] - k + 1, img.shape[1] - k + 1\n    out = np.zeros((h, w))\n    for i in range(h):\n        for j in range(w):\n            out[i, j] = (img[i:i + k, j:j + k] * kernel).sum()\n    return out\n\nout = conv2d(img, blur)\nprint(out)",
+   "hints": [
+    "Повторите ручной расчёт из начала урока: окно ставится в каждую допустимую позицию, и в каждой — сумма произведений.",
+    "Размер выхода — `n - k + 1`. Двойной цикл по `i`, `j`; окно — `img[i:i + k, j:j + k]`.",
+    "```python\nk = kernel.shape[0]\nout = np.zeros((img.shape[0] - k + 1, img.shape[1] - k + 1))\nfor i in range(out.shape[0]):\n    for j in range(out.shape[1]):\n        out[i, j] = ...\nreturn out\n```"
+   ],
+   "explain": ""
+  },
+  "ch14/02-filters/p-size": {
+   "chapter": "ch14",
+   "lesson": "02-filters",
+   "lesson_title": "Свёртка и фильтры",
+   "id": "p-size",
+   "title": "Размер выхода",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert _lines == ['28', '14'], f'Сейчас: {_lines}.'",
+   "starter": "",
+   "solution": "n, k, s = 32, 5, 2\nout = n - k + 1\nprint(out)\nprint(out // s)",
+   "hints": [
+    "Сначала параметры, потом размер свёртки, потом — после пулинга.",
+    "32 − 5 + 1 = 28; после пулинга 2 — 28 // 2 = 14."
+   ],
+   "explain": ""
+  },
+  "ch14/02-filters/edges": {
+   "chapter": "ch14",
+   "lesson": "02-filters",
+   "lesson_title": "Свёртка и фильтры",
+   "id": "edges",
+   "title": "Сила края по классам",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nd = np.load(\"showcase.npz\")\nX, y, classes = d[\"X\"] / 255, d[\"y\"], d[\"classes\"]\nBLUR = np.ones((3, 3)) / 9\nSX = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])",
+   "check": "import numpy as _np\nimport pandas as _pd\nfrom scipy import ndimage as _ndi\nd0 = _np.load('showcase.npz'); X0, y0, c0 = d0['X'] / 255, d0['y'], d0['classes']\nB = _np.ones((3, 3)) / 9; S = _np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])\ndef _em(z, sm):\n    if sm: z = _ndi.correlate(z, B, mode='nearest')\n    return _np.hypot(_ndi.correlate(z, S, mode='nearest'), _ndi.correlate(z, S.T, mode='nearest'))\ne = _np.array([_np.percentile(_em(z, True), 95) for z in X0])\ner = _np.array([_np.percentile(_em(z, False), 95) for z in X0])\nassert _np.allclose(_np.asarray(need('edge95')), e, atol=1e-6), 'edge95: 95-й процентиль силы края после размытия, по каждой картинке.'\nw = _pd.Series(e).groupby(c0[y0]).mean().round(3); wr = _pd.Series(er).groupby(c0[y0]).mean().round(3)\ng, gr = need('edge_by_class', _pd.Series), need('edge_by_class_raw', _pd.Series)\nassert all(close(g[k], w[k], 0.0015) for k in w.index), f'edge_by_class:\\n{g}\\nа нужно\\n{w}'\nassert all(close(gr[k], wr[k], 0.0015) for k in wr.index), f'edge_by_class_raw:\\n{gr}\\nа нужно\\n{wr}'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom scipy import ndimage as ndi\n\ndef edge_map(img, smooth=True):\n    ...",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom scipy import ndimage as ndi\n\ndef edge_map(img, smooth=True):\n    if smooth:\n        img = ndi.correlate(img, BLUR, mode=\"nearest\")\n    return np.hypot(ndi.correlate(img, SX, mode=\"nearest\"), ndi.correlate(img, SX.T, mode=\"nearest\"))\n\nedge95 = np.array([np.percentile(edge_map(z), 95) for z in X])\nedge95_raw = np.array([np.percentile(edge_map(z, smooth=False), 95) for z in X])\nedge_by_class = pd.Series(edge95).groupby(classes[y]).mean().round(3)\nedge_by_class_raw = pd.Series(edge95_raw).groupby(classes[y]).mean().round(3)\nprint(pd.DataFrame({\"с размытием\": edge_by_class, \"без\": edge_by_class_raw}))",
+   "hints": [
+    "Начните с функции `edge_map(img, smooth=True)` для **одной** картинки: при `smooth` — размыть, потом два Собеля и `np.hypot`.",
+    "Функция: при `smooth` сначала `img = ndi.correlate(img, BLUR, mode=\"nearest\")`, потом `np.hypot(ndi.correlate(img, SX, ...), ndi.correlate(img, SX.T, ...))`. Средние по классам: `pd.Series(edge95).groupby(classes[y]).mean()`.",
+    "Процентиль одной картинки — `np.percentile(edge_map(z), 95)`; для всех — `np.array([... for z in X])`. То же с `smooth=False` — для `edge_by_class_raw`."
+   ],
+   "explain": "После размытия у пустого подноса сильных краёв почти нет, а у маффина с тёмной шапкой — больше всех. Без размытия шум поднимает «края» у всех классов, и разница между ними относительно меньше. 95-й процентиль, а не максимум, — чтобы одна случайная крапинка не решала за всю картинку."
+  },
+  "ch14/02-filters/pool": {
+   "chapter": "ch14",
+   "lesson": "02-filters",
+   "lesson_title": "Свёртка и фильтры",
+   "id": "pool",
+   "title": "Пулинг для всего набора",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nX = np.load(\"showcase.npz\")[\"X\"] / 255",
+   "check": "import numpy as _np\nX0 = _np.load('showcase.npz')['X'] / 255\nf, g = need('max_pool'), need('avg_pool')\nt = _np.arange(32, dtype=float).reshape(2, 4, 4)\nassert _np.asarray(f(t, 2)).tolist() == [[[5, 7], [13, 15]], [[21, 23], [29, 31]]], f'max_pool(t, 2) = {_np.asarray(f(t, 2)).tolist()}.'\nassert _np.allclose(g(t, 2), [[[2.5, 4.5], [10.5, 12.5]], [[18.5, 20.5], [26.5, 28.5]]]), 'avg_pool: среднее в каждом блоке.'\nPm, Pa = need('P_max'), need('P_avg')\nassert Pm.shape == (2000, 8, 8) and Pa.shape == (2000, 8, 8), f'Формы: {Pm.shape}, {Pa.shape}.'\nassert _np.allclose(Pm, X0.reshape(2000, 8, 4, 8, 4).max(axis=(2, 4))), 'P_max не совпадает.'\nassert close(need('ratio'), 16), f'ratio = {need(\"ratio\")}.'",
+   "starter": "import numpy as np\n\ndef max_pool(F, s):\n    ...\n\ndef avg_pool(F, s):\n    ...",
+   "solution": "import numpy as np\n\ndef max_pool(F, s):\n    n, h, w = F.shape\n    return F.reshape(n, h // s, s, w // s, s).max(axis=(2, 4))\n\ndef avg_pool(F, s):\n    n, h, w = F.shape\n    return F.reshape(n, h // s, s, w // s, s).mean(axis=(2, 4))\n\nP_max, P_avg = max_pool(X, 4), avg_pool(X, 4)\nratio = X[0].size / P_max[0].size\nprint(P_max.shape, ratio)",
+   "hints": [
+    "Это `max_pool` из урока, только у массива на одну ось больше: первая ось — номер картинки, её не трогаем.",
+    "`F.reshape(n, h // s, s, w // s, s)` и `.max(axis=(2, 4))` / `.mean(axis=(2, 4))`.",
+    "`ratio` — отношение числа значений: `X[0].size / P_max[0].size` (1024 / 64)."
+   ],
+   "explain": "Max- и average-pooling отвечают на разные вопросы: «есть ли где-то в блоке что-то яркое?» и «насколько блок светлый в целом?». Для наших кадров (тёмная выпечка на светлом фоне) max-pooling от самой картинки почти везде вернёт яркий фон — тёмное пятно потеряется. Поэтому в уроке max-pooling применяется не к картинке, а к картам откликов фильтров, где «интересное» — это большие значения. Типичная ошибка — забыть первую ось: `F.reshape(h // s, s, w // s, s)` для массива из 2000 картинок упадёт с ошибкой формы."
+  },
+  "ch14/02-filters/denoise": {
+   "chapter": "ch14",
+   "lesson": "02-filters",
+   "lesson_title": "Свёртка и фильтры",
+   "id": "denoise",
+   "title": "Размытие против шума",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]",
+   "check": "import numpy as _np\nfrom scipy import ndimage as _ndi\nd0 = _np.load('showcase.npz'); E = d0['X'][d0['y'] == 0] / 255\ndef _n(k):\n    if k == 1: return round(float(_np.mean([z[4:28, 4:28].std() for z in E])), 4)\n    K = _np.ones((k, k)) / k ** 2\n    return round(float(_np.mean([_ndi.correlate(z, K, mode='nearest')[4:28, 4:28].std() for z in E])), 4)\nw = {'noise_raw': _n(1), 'noise_3': _n(3), 'noise_5': _n(5)}\nfor k, v in w.items():\n    assert close(need(k), v, 0.0002), f'{k} = {need(k)}, а нужно {v}.'\nassert close(need('reduction_3'), round(w['noise_raw'] / w['noise_3'], 2), 0.011), f'reduction_3 = {need(\"reduction_3\")}.'",
+   "starter": "import numpy as np\nfrom scipy import ndimage as ndi\n\nempty = X[y == 0]",
+   "solution": "import numpy as np\nfrom scipy import ndimage as ndi\n\nempty = X[y == 0]\n\ndef spread(k):\n    if k == 1:\n        return np.mean([z[4:28, 4:28].std() for z in empty])\n    K = np.ones((k, k)) / k ** 2\n    return np.mean([ndi.correlate(z, K, mode=\"nearest\")[4:28, 4:28].std() for z in empty])\n\nnoise_raw, noise_3, noise_5 = (round(float(spread(k)), 4) for k in [1, 3, 5])\nreduction_3 = round(noise_raw / noise_3, 2)\nprint(noise_raw, noise_3, noise_5, reduction_3)",
+   "hints": [
+    "Работайте только с пустыми кадрами: `empty = X[y == 0]`. Для каждого — разброс центра, потом среднее по всем.",
+    "Фильтр k × k — `np.ones((k, k)) / k**2`. Разброс одной картинки — `z[4:28, 4:28].std()`, потом среднее по пустым.",
+    "Удобно написать функцию `spread(k)`: при `k == 1` — без размытия, иначе — `ndi.correlate(z, K, mode=\"nearest\")[4:28, 4:28].std()`."
+   ],
+   "explain": "Размытие 3 × 3 уменьшает разброс почти вдвое; для чистого независимого шума усреднение 9 пикселей дало бы уменьшение в √9 = 3 раза, но часть разброса — градиент подноса и крошки, их размытие не убирает. Окно 5 × 5 сглаживает сильнее, но и края выпечки размывает: сильнее — не всегда лучше."
+  },
+  "ch14/02-filters/features": {
+   "chapter": "ch14",
+   "lesson": "02-filters",
+   "lesson_title": "Свёртка и фильтры",
+   "id": "features",
+   "title": "Пиксели против фильтров",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\nSX = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])\nKERNELS = [SX, SX.T, np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]]), -np.ones((3, 3)) / 9]",
+   "check": "import numpy as _np\nfrom scipy import ndimage as _ndi\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.linear_model import LogisticRegression as _LR\nd0 = _np.load('showcase.npz'); X0, y0 = d0['X'] / 255, d0['y']\nS = _np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])\nKS = [S, S.T, _np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]]), -_np.ones((3, 3)) / 9]\ndef _cf(Z, s):\n    out = []\n    for i, k in enumerate(KS):\n        f = _np.stack([_ndi.correlate(z, k, mode='nearest') for z in Z])\n        if i < 3: f = _np.abs(f)\n        n, h, w = f.shape\n        out.append(f.reshape(n, h // s, s, w // s, s).max(axis=(2, 4)).reshape(n, -1))\n    return _np.hstack(out)\ntr, te = _tts(_np.arange(len(X0)), test_size=0.25, random_state=42, stratify=y0)\n_sc = lambda A: round(float(_mp(_SS(), _LR(max_iter=3000)).fit(A[tr], y0[tr]).score(A[te], y0[te])), 3)\nw = {'acc_pixels': _sc(X0.reshape(len(X0), -1)), 'acc_filters': _sc(_cf(X0, 4)), 'acc_pool2': _sc(_cf(X0, 2))}\nfor k, v in w.items():\n    assert close(need(k), v, 0.005), f'{k} = {need(k)}, а нужно {v}.'",
+   "starter": "import numpy as np\nfrom scipy import ndimage as ndi\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\ndef conv_features(Z, s=4):\n    ...",
+   "solution": "import numpy as np\nfrom scipy import ndimage as ndi\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\ndef conv_features(Z, s=4):\n    maps = []\n    for i, k in enumerate(KERNELS):\n        f = np.stack([ndi.correlate(z, k, mode=\"nearest\") for z in Z])\n        if i < 3:\n            f = np.abs(f)\n        n, h, w = f.shape\n        maps.append(f.reshape(n, h // s, s, w // s, s).max(axis=(2, 4)).reshape(n, -1))\n    return np.hstack(maps)\n\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\n\ndef score(A):\n    m = make_pipeline(StandardScaler(), LogisticRegression(max_iter=3000)).fit(A[tr], y[tr])\n    return round(m.score(A[te], y[te]), 3)\n\nacc_pixels = score(X.reshape(len(X), -1))\nacc_filters = score(conv_features(X, 4))\nacc_pool2 = score(conv_features(X, 2))\nprint(acc_pixels, acc_filters, acc_pool2)",
+   "hints": [
+    "Скопируйте `conv_features` из урока и добавьте параметр `s`. Пиксели — `X.reshape(len(X), -1)`.",
+    "Чтобы не повторять обучение трижды, напишите `score(A)`: конвейер `StandardScaler` + `LogisticRegression(max_iter=3000)`, обучение на `A[tr]`, `score` на `A[te]`.",
+    "`acc_pixels = score(X.reshape(len(X), -1))`, `acc_filters = score(conv_features(X, 4))`, `acc_pool2 = score(conv_features(X, 2))`."
+   ],
+   "explain": "На наших кадрах пулинг 2 заметно выиграл: около 0.94 против 0.88 у пулинга 4. Он оставляет 4 × 256 = 1024 признака — больше деталей формы, и 1500 обучающих кадров хватает, чтобы логистическая регрессия в них разобралась. Терпимость к сдвигу при этом не пострадала: если сдвинуть тестовые кадры на 4 пикселя, оба варианта падают примерно до 0.79 — сдвиг на целый блок не прощает и пулинг 4. Значит, пулинг 4 в уроке был не лучшим выбором, а просто первым. Размер блока — такой же гиперпараметр, как глубина дерева: его выбирают на валидации, а не на глаз. На других данных победить может и крупный блок."
+  },
+  "ch14/02-filters/global": {
+   "chapter": "ch14",
+   "lesson": "02-filters",
+   "lesson_title": "Свёртка и фильтры",
+   "id": "global",
+   "title": "Девять чисел вместо тысячи",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\nSX = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])\nLAP = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])\nBLUR = np.ones((3, 3)) / 9",
+   "check": "import numpy as _np\nfrom scipy import ndimage as _ndi\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nd0 = _np.load('showcase.npz'); X0, y0 = d0['X'] / 255, d0['y']\nS = _np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]); L = _np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]]); B = _np.ones((3, 3)) / 9\nfm = lambda k: _np.stack([_ndi.correlate(z, k, mode='nearest') for z in X0]).reshape(len(X0), -1)\ncols = []\nfor k in [S, S.T, L]:\n    a = _np.abs(fm(k)); cols += [a.mean(1), a.max(1)]\nb = fm(B); cols += [b.min(1), b.mean(1), (b < 0.4).mean(1)]\nG0 = _np.column_stack(cols)\ng = _np.asarray(need('G'))\nassert g.shape == (2000, 9), f'G.shape = {g.shape}.'\nassert _np.allclose(g, G0, atol=1e-6), 'Признаки G не совпадают: проверьте порядок и mode=\"nearest\".'\ntr, te = _tts(_np.arange(len(X0)), test_size=0.25, random_state=42, stratify=y0)\n_s = lambda A: round(float(_RF(300, random_state=0).fit(A[tr], y0[tr]).score(A[te], y0[te])), 3)\nwr, wg = _s(X0.reshape(len(X0), -1)), _s(G0)\nassert close(need('acc_raw'), wr, 0.005), f'acc_raw = {need(\"acc_raw\")}, а нужно {wr}.'\nassert close(need('acc_global'), wg, 0.005), f'acc_global = {need(\"acc_global\")}, а нужно {wg}.'",
+   "starter": "import numpy as np\nfrom scipy import ndimage as ndi\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier",
+   "solution": "import numpy as np\nfrom scipy import ndimage as ndi\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\n\ndef fmap(k):\n    return np.stack([ndi.correlate(z, k, mode=\"nearest\") for z in X]).reshape(len(X), -1)\n\ncols = []\nfor k in [SX, SX.T, LAP]:\n    a = np.abs(fmap(k))\n    cols += [a.mean(axis=1), a.max(axis=1)]\nb = fmap(BLUR)\ncols += [b.min(axis=1), b.mean(axis=1), (b < 0.4).mean(axis=1)]\nG = np.column_stack(cols)\n\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\nacc_raw = round(RandomForestClassifier(300, random_state=0).fit(X[tr].reshape(len(tr), -1), y[tr]).score(X[te].reshape(len(te), -1), y[te]), 3)\nacc_global = round(RandomForestClassifier(300, random_state=0).fit(G[tr], y[tr]).score(G[te], y[te]), 3)\nprint(acc_raw, acc_global)",
+   "hints": [
+    "Каждый признак — одно число на картинку, то есть массив длины 2000. Девять таких массивов → `np.column_stack` → таблица `(2000, 9)`.",
+    "Карты всех картинок для фильтра `k`: `np.stack([ndi.correlate(z, k, mode=\"nearest\") for z in X]).reshape(len(X), -1)` — дальше `.mean(1)`, `.max(1)` по строкам. Столбцы соберите `np.column_stack`.",
+    "Порядок важен: для `SX`, `SX.T`, `LAP` по очереди — `[a.mean(axis=1), a.max(axis=1)]` от `a = np.abs(карты)`; затем для размытия — `b.min(axis=1)`, `b.mean(axis=1)`, `(b < 0.4).mean(axis=1)`."
+   ],
+   "explain": "Девять чисел, не знающих, где лежит выпечка, дают лесу около 0.96 — больше, чем 1024 пикселя. Но удивительнее другое: лес на сырых пикселях тоже силён, около 0.94, хотя логистическая регрессия на тех же пикселях давала 0.68, а ближайшая средняя картинка в уроке «Картинка — это массив чисел» — меньше половины. Лес сам выбирает «важные» пиксели и пороги по ним, а выпечка почти всегда лежит недалеко от центра кадра — на этом он и держится. В уроке «Модели на пикселях: ошибки, аугментация, устойчивость» проверим, что с ним будет, если кадры сдвинуть или затемнить: девяти глобальным признакам сдвиг не страшен по построению, а лесу на пикселях — страшен. Это идея, на которой держится вся глава: хорошее представление картинки важнее модели. Свёрточная сеть находит такое представление сама — урок «Свёрточные нейросети»."
+  },
+  "ch14/02-filters/modes": {
+   "chapter": "ch14",
+   "lesson": "02-filters",
+   "lesson_title": "Свёртка и фильтры",
+   "id": "modes",
+   "title": "Чем дополнять края",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimg = np.full((6, 6), 0.8)\nSX = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])",
+   "check": "import numpy as _np\nfrom scipy import ndimage as _ndi\ni0, S = need('img'), need('SX')\nw = {m: round(float(_np.abs(_ndi.correlate(i0, S, mode=m)).max()), 2) for m in ['nearest', 'reflect', 'constant']}\ng = need('max_abs', dict)\nassert set(g) == set(w) and all(close(g[m], w[m], 0.006) for m in w), f'max_abs = {g}, а нужно {w}.'\nassert need('fake_edge_mode') == 'constant', f'fake_edge_mode = {need(\"fake_edge_mode\")!r}.'",
+   "starter": "import numpy as np\nfrom scipy import ndimage as ndi",
+   "solution": "import numpy as np\nfrom scipy import ndimage as ndi\n\nmax_abs = {m: round(float(np.abs(ndi.correlate(img, SX, mode=m)).max()), 2) for m in [\"nearest\", \"reflect\", \"constant\"]}\nfake_edge_mode = max(max_abs, key=max_abs.get)\nprint(max_abs, fake_edge_mode)",
+   "hints": [
+    "Цикл по трём режимам: `ndi.correlate(img, SX, mode=m)`; от результата — `np.abs(...).max()`.",
+    "Ровный квадрат не имеет краёв: «правильный» режим даёт 0. Тот режим, где максимум не 0, и придумал край."
+   ],
+   "explain": ""
+  },
+  "ch14/02-filters/orient": {
+   "chapter": "ch14",
+   "lesson": "02-filters",
+   "lesson_title": "Свёртка и фильтры",
+   "id": "orient",
+   "title": "Направление краёв",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nd = np.load(\"showcase.npz\")\nX, y, classes = d[\"X\"] / 255, d[\"y\"], d[\"classes\"]\nBLUR = np.ones((3, 3)) / 9\nSX = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])",
+   "check": "import numpy as _np\nimport pandas as _pd\nfrom scipy import ndimage as _ndi\nX0, y0, c0, B, S = need('X'), need('y'), need('classes'), need('BLUR'), need('SX')\nr = []\nfor z in X0:\n    b = _ndi.correlate(z, B, mode='nearest')\n    r.append(_np.abs(_ndi.correlate(b, S.T, mode='nearest')).sum() / _np.abs(_ndi.correlate(b, S, mode='nearest')).sum())\nr = _np.array(r)\nassert _np.allclose(_np.asarray(need('ratio')), r, atol=1e-6), 'ratio — горизонтальные (SX.T) / вертикальные (SX) края, после размытия.'\nw = _pd.Series(r).groupby(c0[y0]).median().round(2)\ng = need('ratio_by_class', _pd.Series)\nassert all(close(g[k], w[k], 0.006) for k in w.index), f'ratio_by_class:\\n{g}\\nа нужно\\n{w}'\nassert str(need('most_horizontal')) == str(w.idxmax()), f'most_horizontal = {need(\"most_horizontal\")!r}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom scipy import ndimage as ndi",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom scipy import ndimage as ndi\n\nratio = []\nfor z in X:\n    b = ndi.correlate(z, BLUR, mode=\"nearest\")\n    vert = np.abs(ndi.correlate(b, SX, mode=\"nearest\")).sum()\n    horiz = np.abs(ndi.correlate(b, SX.T, mode=\"nearest\")).sum()\n    ratio.append(horiz / vert)\nratio = np.array(ratio)\nratio_by_class = pd.Series(ratio).groupby(classes[y]).median().round(2)\nmost_horizontal = ratio_by_class.idxmax()\nprint(ratio_by_class, most_horizontal)",
+   "hints": [
+    "Цикл по картинкам: размыть → два отклика → суммы модулей → отношение. Отношения копите в список и превратите в массив.",
+    "Горизонтальные края находит `SX.T` (перепад сверху вниз), вертикальные — `SX`.",
+    "Медианы: `pd.Series(ratio).groupby(classes[y]).median().round(2)`; класс-лидер — `.idxmax()`."
+   ],
+   "explain": "У маффина горизонтальных краёв примерно на треть больше, чем вертикальных: широкая граница шапки и стаканчика. У остальных классов отношение около 1. Значит, отношение краёв — полезный признак, отличающий маффин, и он не зависит от того, где маффин лежит в кадре (суммы считаются по всей картинке). Такие признаки и нужны моделям: в уроке «Модели на пикселях: ошибки, аугментация, устойчивость» сравним, что дают модели сырые пиксели и что — признаки."
+  },
+  "ch14/02-filters/edge-rule": {
+   "chapter": "ch14",
+   "lesson": "02-filters",
+   "lesson_title": "Свёртка и фильтры",
+   "id": "edge-rule",
+   "title": "Правило по краям",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\nBLUR = np.ones((3, 3)) / 9\nSX = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])",
+   "check": "import numpy as _np\nfrom scipy import ndimage as _ndi\nX0, y0, B, S = need('X'), need('y'), need('BLUR'), need('SX')\nst = []\nfor z in X0:\n    b = _ndi.correlate(z, B, mode='nearest')\n    st.append((_np.hypot(_ndi.correlate(b, S, mode='nearest'), _ndi.correlate(b, S.T, mode='nearest')) > 0.5).mean())\nst = _np.array(st)\nassert _np.allclose(_np.asarray(need('strong')), st, atol=1e-9), 'strong — доля пикселей с силой края > 0.5 (после размытия).'\nw = {t: round(float(((st >= t) == (y0 != 0)).mean()), 3) for t in [0.005, 0.01, 0.02, 0.04]}\ng = need('acc_by_t', dict)\nassert all(close(g[t], w[t], 0.0011) for t in w), f'acc_by_t = {g}, а нужно {w}.'\nassert close(need('best_t'), max(w, key=w.get)), f'best_t = {need(\"best_t\")}.'\ndark = ((X0 < 100 / 255).reshape(len(X0), -1).mean(1) >= 0.005) == (y0 != 0)\nassert close(need('vs_dark'), round(max(w.values()) - float(dark.mean()), 3), 0.0021), f'vs_dark = {need(\"vs_dark\")}.'",
+   "starter": "import numpy as np\nfrom scipy import ndimage as ndi",
+   "solution": "import numpy as np\nfrom scipy import ndimage as ndi\n\nstrong = []\nfor z in X:\n    b = ndi.correlate(z, BLUR, mode=\"nearest\")\n    edges = np.hypot(ndi.correlate(b, SX, mode=\"nearest\"), ndi.correlate(b, SX.T, mode=\"nearest\"))\n    strong.append((edges > 0.5).mean())\nstrong = np.array(strong)\nacc_by_t = {t: round(float(((strong >= t) == (y != 0)).mean()), 3) for t in [0.005, 0.01, 0.02, 0.04]}\nbest_t = max(acc_by_t, key=acc_by_t.get)\ndark = (X < 100 / 255).reshape(len(X), -1).mean(axis=1)\ndark_acc = float(((dark >= 0.005) == (y != 0)).mean())\nvs_dark = round(max(acc_by_t.values()) - dark_acc, 3)\nprint(acc_by_t, best_t, vs_dark)",
+   "hints": [
+    "Карта силы краёв одной картинки — как в задаче «Сила края по классам»; доля сильных — `(edges > 0.5).mean()`.",
+    "Точность правила при пороге `t` — `((strong >= t) == (y != 0)).mean()`; правило по тёмным — то же с `dark >= 0.005`, где `dark = (X < 100 / 255).reshape(len(X), -1).mean(axis=1)`.",
+    "`vs_dark = round(max(acc_by_t.values()) - dark_acc, 3)`."
+   ],
+   "explain": "Правило по краям даёт около 0.95 — немного хуже, чем правило по тёмным пикселям (около 0.97). Причина видна из задачи про размытие: шум и крошки на подносе тоже дают «края», и порог приходится ставить выше, теряя светлое печенье. Вывод не «края хуже», а «один признак — слабая модель»: тёмные пиксели и края ошибаются на **разных** кадрах, и модель, которая видит оба признака сразу, ошибётся реже каждого правила. Именно это делают признаки из нескольких фильтров в задаче «Пиксели против фильтров»."
+  },
+  "ch14/03-classic/flat": {
+   "chapter": "ch14",
+   "lesson": "03-classic",
+   "lesson_title": "Модели на пикселях: ошибки, аугментация, устойчивость",
+   "id": "flat",
+   "title": "Картинки в таблицу",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nX = np.load(\"showcase.npz\")[\"X\"] / 255",
+   "check": "import numpy as _np\nX0 = _np.load('showcase.npz')['X'] / 255\na = need('X2d')\nassert a.shape == (2000, 1024), f'X2d.shape = {a.shape}.'\nassert _np.allclose(a[5], X0[5].ravel()), 'Строки X2d — картинки, вытянутые построчно (reshape).'\nassert need('n_features') == 1024, f'n_features = {need(\"n_features\")}.'\nassert _np.asarray(need('back')).shape == (32, 32) and _np.allclose(need('back'), X0[0]), 'back — X2d[0].reshape(32, 32).'",
+   "starter": "import numpy as np",
+   "solution": "import numpy as np\n\nX2d = X.reshape(len(X), -1)\nn_features = X2d.shape[1]\nback = X2d[0].reshape(32, 32)",
+   "hints": [
+    "`-1` в `reshape` значит «посчитай этот размер сам»: 2000 × 32 × 32 = 2000 × 1024.",
+    "`X.reshape(len(X), -1)`; обратно — `.reshape(32, 32)`."
+   ],
+   "explain": ""
+  },
+  "ch14/03-classic/p-knn": {
+   "chapter": "ch14",
+   "lesson": "03-classic",
+   "lesson_title": "Модели на пикселях: ошибки, аугментация, устойчивость",
+   "id": "p-knn",
+   "title": "kNN на пикселях",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.neighbors import KNeighborsClassifier as _K\nd0 = _np.load('showcase.npz'); A, y0 = d0['X'].reshape(2000, -1) / 255, d0['y']\na, b, c, e = _tts(A, y0, test_size=0.25, random_state=42, stratify=y0)\nw = round(_K(5).fit(a, c).score(b, e), 3)\nassert _lines == [str(w)], f'Сейчас: {_lines}.'",
+   "starter": "",
+   "solution": "import numpy as np\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.neighbors import KNeighborsClassifier\nd = np.load(\"showcase.npz\")\nX2d, y = d[\"X\"].reshape(2000, -1) / 255, d[\"y\"]\nX_train, X_test, y_train, y_test = train_test_split(X2d, y, test_size=0.25, random_state=42, stratify=y)\nknn = KNeighborsClassifier(5).fit(X_train, y_train)\nprint(round(knn.score(X_test, y_test), 3))",
+   "hints": [
+    "Данные → разбиение → модель → печать.",
+    "`X2d` строится из картинок `reshape(2000, -1)`, и только потом его можно разбивать."
+   ],
+   "explain": ""
+  },
+  "ch14/03-classic/confusion": {
+   "chapter": "ch14",
+   "lesson": "03-classic",
+   "lesson_title": "Модели на пикселях: ошибки, аугментация, устойчивость",
+   "id": "confusion",
+   "title": "Кого с кем путают",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom sklearn.model_selection import train_test_split\nd = np.load(\"showcase.npz\")\nX, y, classes = d[\"X\"] / 255, d[\"y\"], d[\"classes\"]\nX2d = X.reshape(len(X), -1)\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)",
+   "check": "import numpy as _np\nimport pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nfrom sklearn.metrics import confusion_matrix as _cmf\nd0 = _np.load('showcase.npz'); A, y0, c0 = d0['X'].reshape(2000, -1) / 255, d0['y'], [str(c) for c in d0['classes']]\ntr, te = _tts(_np.arange(2000), test_size=0.25, random_state=42, stratify=y0)\np = _RF(100, random_state=0).fit(A[tr], y0[tr]).predict(A[te])\nM = _pd.DataFrame(_cmf(y0[te], p), index=c0, columns=c0)\ng = need('cm', _pd.DataFrame)\nassert [str(i) for i in g.index] == c0 and [str(i) for i in g.columns] == c0, 'Индекс и столбцы cm — названия классов по порядку.'\nassert (g.values == M.values).all(), f'cm не совпадает:\\n{M}'\npc = _pd.Series(_np.diag(M.values) / M.values.sum(1), index=c0).round(3)\ngp = need('per_class', _pd.Series)\nassert all(close(gp[k], pc[k], 0.0015) for k in c0), f'per_class:\\n{gp}\\nа нужно\\n{pc}'\noff = M.values.copy(); _np.fill_diagonal(off, 0)\ni, j = _np.unravel_index(off.argmax(), off.shape)\nassert tuple(str(v) for v in need('worst_pair')) == (c0[i], c0[j]), f'worst_pair = {need(\"worst_pair\")}, а нужно {(c0[i], c0[j])}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import confusion_matrix",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import confusion_matrix\n\nforest = RandomForestClassifier(100, random_state=0).fit(X2d[tr], y[tr])\npred = forest.predict(X2d[te])\nnames = [str(c) for c in classes]\ncm = pd.DataFrame(confusion_matrix(y[te], pred), index=names, columns=names)\nper_class = pd.Series(np.diag(cm.values) / cm.values.sum(axis=1), index=names).round(3)\noff = cm.values.copy()\nnp.fill_diagonal(off, 0)\ni, j = np.unravel_index(off.argmax(), off.shape)\nworst_pair = (names[i], names[j])\nprint(cm, per_class, worst_pair, sep=\"\\n\\n\")",
+   "hints": [
+    "Сначала обучите лес на `X2d[tr]` и получите `pred = forest.predict(X2d[te])`.",
+    "`confusion_matrix(y[te], pred)` → `pd.DataFrame(..., index=classes, columns=classes)`. Полнота — диагональ (`np.diag`), делённая на суммы строк (`.sum(axis=1)`).",
+    "Для худшей пары скопируйте матрицу, обнулите диагональ (`np.fill_diagonal(off, 0)`) и найдите максимум: `i, j = np.unravel_index(off.argmax(), off.shape)` — номера строки (правда) и столбца (ответ)."
+   ],
+   "explain": "Хуже всего лес узнаёт круассаны — и чаще всего называет их печеньем. Для дела это не страшно: перепутать два вида выпечки обидно, но витрина не пустая. Для задачи «допечь вовремя» важнее строка и столбец «пусто» — там ошибок единицы."
+  },
+  "ch14/03-classic/importance": {
+   "chapter": "ch14",
+   "lesson": "03-classic",
+   "lesson_title": "Модели на пикселях: ошибки, аугментация, устойчивость",
+   "id": "importance",
+   "title": "Куда смотрит лес",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom sklearn.model_selection import train_test_split\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\nflat = lambda Z: Z.reshape(len(Z), -1)",
+   "check": "import numpy as _np\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nX0, y0, tr0 = need('X'), need('y'), need('tr')\nim = _RF(100, random_state=0).fit(X0[tr0].reshape(len(tr0), -1), y0[tr0]).feature_importances_.reshape(32, 32)\nassert _np.asarray(need('imp')).shape == (32, 32) and _np.allclose(need('imp'), im), 'imp — feature_importances_.reshape(32, 32) леса, обученного на X[tr].'\nassert close(need('center_share'), round(float(im[8:24, 8:24].sum()), 3), 0.0011), f'center_share = {need(\"center_share\")}.'\nassert close(need('border_share'), round(float(im.sum() - im[4:28, 4:28].sum()), 3), 0.0011), f'border_share = {need(\"border_share\")}.'\nr, c = _np.unravel_index(im.argmax(), im.shape)\nassert tuple(int(v) for v in need('top_pixel')) == (int(r), int(c)), f'top_pixel = {need(\"top_pixel\")}, а нужно {(int(r), int(c))}.'",
+   "starter": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier",
+   "solution": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\nforest = RandomForestClassifier(100, random_state=0).fit(flat(X[tr]), y[tr])\nimp = forest.feature_importances_.reshape(32, 32)\ncenter_share = round(float(imp[8:24, 8:24].sum()), 3)\nborder_share = round(float(imp.sum() - imp[4:28, 4:28].sum()), 3)\nr, c = np.unravel_index(imp.argmax(), imp.shape)\ntop_pixel = (int(r), int(c))\nprint(center_share, border_share, top_pixel)",
+   "hints": [
+    "Лес обучается на таблице: `flat(X[tr])`. Важности — `forest.feature_importances_`, 1024 числа в порядке пикселей; `reshape(32, 32)` возвращает их на места.",
+    "Рамка = всё − внутренний квадрат: `imp.sum() - imp[4:28, 4:28].sum()`.",
+    "Координаты максимума в двумерном массиве: `np.unravel_index(imp.argmax(), imp.shape)`."
+   ],
+   "explain": "Центр — четверть площади, но больше половины важности. Рамка шириной 4 пикселя — почти половина площади (1024 − 576 = 448 пикселей из 1024), а важности у неё лишь около шестой части: туда выпечка заходит редко, и лес почти не задаёт про неё вопросов. Это и делает лес уязвимым к сдвигу: выпечка, съехавшая к краю, оказывается в зоне, где у модели почти нет «знаний»."
+  },
+  "ch14/03-classic/knn-k": {
+   "chapter": "ch14",
+   "lesson": "03-classic",
+   "lesson_title": "Модели на пикселях: ошибки, аугментация, устойчивость",
+   "id": "knn-k",
+   "title": "Сколько соседей брать",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom sklearn.model_selection import train_test_split\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\nflat = lambda Z: Z.reshape(len(Z), -1)",
+   "check": "from sklearn.neighbors import KNeighborsClassifier as _K\nX0, y0, tr0, te0 = need('X'), need('y'), need('tr'), need('te')\nfl = lambda Z: Z.reshape(len(Z), -1)\nw = {k: round(_K(k).fit(fl(X0[tr0]), y0[tr0]).score(fl(X0[te0]), y0[te0]), 3) for k in [1, 3, 5, 15, 40]}\ng = {int(k): v for k, v in need('acc_by_k', dict).items()}\nassert all(close(g[k], w[k], 0.0011) for k in w), f'acc_by_k = {g}, а нужно {w}.'\nassert need('best_k') == max(w, key=w.get), f'best_k = {need(\"best_k\")}.'\nassert close(need('drop_1_to_40'), round(w[1] - w[40], 3), 0.0021), f'drop_1_to_40 = {need(\"drop_1_to_40\")}.'",
+   "starter": "from sklearn.neighbors import KNeighborsClassifier",
+   "solution": "from sklearn.neighbors import KNeighborsClassifier\n\nacc_by_k = {k: round(KNeighborsClassifier(k).fit(flat(X[tr]), y[tr]).score(flat(X[te]), y[te]), 3)\n            for k in [1, 3, 5, 15, 40]}\nbest_k = max(acc_by_k, key=acc_by_k.get)\ndrop_1_to_40 = round(acc_by_k[1] - acc_by_k[40], 3)\nprint(acc_by_k, best_k, drop_1_to_40)",
+   "hints": [
+    "Словарное выражение по `k`: обучить на `flat(X[tr])`, оценить на `flat(X[te])`.",
+    "`acc_by_k = {k: round(KNeighborsClassifier(k).fit(flat(X[tr]), y[tr]).score(flat(X[te]), y[te]), 3) for k in [...]}`; `best_k = max(acc_by_k, key=acc_by_k.get)`."
+   ],
+   "explain": "Обычно больше соседей — устойчивее ответ (глава 6). Здесь наоборот: лучше всего один ближайший сосед, и с ростом `k` точность падает. Причина — пиксельное расстояние из урока «Картинка — это массив чисел». Самый близкий кадр — обычно кадр той же выпечки, лежащей почти в том же месте; это хороший сосед. А следующие десятки «близких» уже определяются в основном совпадением фона и положения, а не формой, — среди них много чужих классов. Когда мера сходства плохая, «голосование большинства» её не спасает.\n\nЗаметьте ещё: 1-NN (около 0.92) на обычном тесте даже чуть обходит лес из 100 деревьев (0.91). Вы не ошиблись — среди 1500 обучающих кадров почти для каждого тестового находится та же выпечка почти в том же месте. Устойчивее леса он от этого не становится: на тусклых кадрах (× 0.7) 1-NN падает примерно до 0.56 — он сравнивает те же пиксели, что и лес. Дальше в уроке мы работаем с лесом не потому, что он точнее, а потому, что у него есть важности пикселей и его удобно переучивать на расширенной выборке."
+  },
+  "ch14/03-classic/augment": {
+   "chapter": "ch14",
+   "lesson": "03-classic",
+   "lesson_title": "Модели на пикселях: ошибки, аугментация, устойчивость",
+   "id": "augment",
+   "title": "Аугментация",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom sklearn.model_selection import train_test_split\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\nflat = lambda Z: Z.reshape(len(Z), -1)",
+   "check": "import numpy as _np\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nd0 = _np.load('showcase.npz'); X0, y0 = d0['X'] / 255, d0['y']\ntr, te = _tts(_np.arange(2000), test_size=0.25, random_state=42, stratify=y0)\nf = need('augment')\nZa, la = f(X0[tr][:5], y0[tr][:5], _np.random.default_rng(1))\nassert len(Za) == 15 and len(la) == 15, 'augment должна вернуть втрое больше кадров и меток.'\nassert _np.allclose(Za[5], X0[tr][0][:, ::-1]), 'Вторая треть — отражения по горизонтали (Z[:, :, ::-1]).'\nr = _np.random.default_rng(0); sh = r.integers(-4, 5, size=(len(tr), 2))\nXs = _np.stack([_np.roll(z, tuple(s), axis=(0, 1)) for z, s in zip(X0[tr], sh)])\nXa = _np.concatenate([X0[tr], X0[tr][:, :, ::-1], Xs]); ya = _np.concatenate([y0[tr]] * 3)\nfl = lambda Z: Z.reshape(len(Z), -1)\nwb = round(_RF(100, random_state=0).fit(fl(X0[tr]), y0[tr]).score(fl(X0[te]), y0[te]), 3)\nwa = round(_RF(100, random_state=0).fit(fl(Xa), ya).score(fl(X0[te]), y0[te]), 3)\nassert need('n_train_aug') == 4500, f'n_train_aug = {need(\"n_train_aug\")}.'\nassert close(need('acc_base'), wb, 0.005), f'acc_base = {need(\"acc_base\")}, а нужно {wb}.'\nassert close(need('acc_aug'), wa, 0.006), f'acc_aug = {need(\"acc_aug\")}, а нужно {wa}.'",
+   "starter": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\ndef augment(Z, labels, rng):\n    ...",
+   "solution": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\ndef augment(Z, labels, rng):\n    flipped = Z[:, :, ::-1]\n    shifts = rng.integers(-4, 5, size=(len(Z), 2))\n    shifted = np.stack([np.roll(z, tuple(s), axis=(0, 1)) for z, s in zip(Z, shifts)])\n    return np.concatenate([Z, flipped, shifted]), np.concatenate([labels, labels, labels])\n\nX_aug, y_aug = augment(X[tr], y[tr], np.random.default_rng(0))\nn_train_aug = len(X_aug)\nacc_base = round(RandomForestClassifier(100, random_state=0).fit(flat(X[tr]), y[tr]).score(flat(X[te]), y[te]), 3)\nacc_aug = round(RandomForestClassifier(100, random_state=0).fit(flat(X_aug), y_aug).score(flat(X[te]), y[te]), 3)\nprint(n_train_aug, acc_base, acc_aug)",
+   "hints": [
+    "Функция возвращает две вещи: склеенные кадры и склеенные метки. Порядок кусков — исходные, отражённые, сдвинутые.",
+    "Сдвиг одной картинки: `np.roll(z, (dy, dx), axis=(0, 1))`. Метки — `np.concatenate([labels, labels, labels])`.",
+    "Сдвиги удобно получить одним вызовом `rng.integers(-4, 5, size=(len(Z), 2))` до цикла — по паре `(dy, dx)` на кадр."
+   ],
+   "explain": "Аугментация добавила пять пунктов точности на обычном тесте: лес увидел выпечку в большем числе положений и меньше полагается на «центр кадра». Две ошибки, которые встречаются чаще всего: аугментировать весь набор до разбиения (копии тестовых кадров попадают в обучение — тест завышен) и забыть повторить метки (тогда `fit` упадёт: кадров 4500, а меток 1500). Ещё одна тонкость: отражение подходит не для всего — для цифр или надписей зеркальная «5» уже не «5»."
+  },
+  "ch14/03-classic/stress": {
+   "chapter": "ch14",
+   "lesson": "03-classic",
+   "lesson_title": "Модели на пикселях: ошибки, аугментация, устойчивость",
+   "id": "stress",
+   "title": "Стресс-тест сдвигом",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nfrom sklearn.model_selection import train_test_split\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\nflat = lambda Z: Z.reshape(len(Z), -1)\n_r = np.random.default_rng(0); _sh = _r.integers(-4, 5, size=(len(tr), 2))\nX_aug = np.concatenate([X[tr], X[tr][:, :, ::-1], np.stack([np.roll(z, tuple(s), axis=(0, 1)) for z, s in zip(X[tr], _sh)])])\ny_aug = np.concatenate([y[tr]] * 3)\nSX = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])\nLAP = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])\nBLUR = np.ones((3, 3)) / 9\ndef global_features(Z):\n    fm = lambda k: np.stack([ndi.correlate(z, k, mode=\"nearest\") for z in Z]).reshape(len(Z), -1)\n    cols = []\n    for k in [SX, SX.T, LAP]:\n        a = np.abs(fm(k)); cols += [a.mean(1), a.max(1)]\n    b = fm(BLUR); cols += [b.min(1), b.mean(1), (b < 0.4).mean(1)]\n    return np.column_stack(cols)",
+   "check": "import numpy as _np\nimport pandas as _pd\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nX0, y0, tr0, te0 = need('X'), need('y'), need('tr'), need('te')\ngf, fl = need('global_features'), need('flat')\nXs = _np.roll(X0[te0], 4, axis=2)\nm1 = _RF(100, random_state=0).fit(fl(X0[tr0]), y0[tr0])\nm2 = _RF(100, random_state=0).fit(fl(need('X_aug')), need('y_aug'))\nm3 = _RF(100, random_state=0).fit(gf(X0[tr0]), y0[tr0])\nw = _pd.DataFrame({'обычный': [m1.score(fl(X0[te0]), y0[te0]), m2.score(fl(X0[te0]), y0[te0]), m3.score(gf(X0[te0]), y0[te0])],\n                   'сдвиг': [m1.score(fl(Xs), y0[te0]), m2.score(fl(Xs), y0[te0]), m3.score(gf(Xs), y0[te0])]},\n                  index=['пиксели', 'пиксели + аугментация', 'глобальные признаки']).round(3)\ng = need('stress', _pd.DataFrame)\nassert list(g.index) == list(w.index) and list(g.columns) == ['обычный', 'сдвиг'], f'Индекс {list(g.index)}, столбцы {list(g.columns)}.'\nassert ((g - w).abs() < 0.006).all().all(), f'stress:\\n{g}\\nа нужно\\n{w}'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import RandomForestClassifier\n\nX_shift = np.roll(X[te], 4, axis=2)",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import RandomForestClassifier\n\nX_shift = np.roll(X[te], 4, axis=2)\nm_pix = RandomForestClassifier(100, random_state=0).fit(flat(X[tr]), y[tr])\nm_aug = RandomForestClassifier(100, random_state=0).fit(flat(X_aug), y_aug)\nm_glob = RandomForestClassifier(100, random_state=0).fit(global_features(X[tr]), y[tr])\n\nstress = pd.DataFrame({\n    \"обычный\": [m_pix.score(flat(X[te]), y[te]), m_aug.score(flat(X[te]), y[te]), m_glob.score(global_features(X[te]), y[te])],\n    \"сдвиг\": [m_pix.score(flat(X_shift), y[te]), m_aug.score(flat(X_shift), y[te]), m_glob.score(global_features(X_shift), y[te])],\n}, index=[\"пиксели\", \"пиксели + аугментация\", \"глобальные признаки\"]).round(3)\nprint(stress)",
+   "hints": [
+    "Сдвинутый тест — один раз: `X_shift = np.roll(X[te], 4, axis=2)`. Его используют все три модели.",
+    "Три модели, каждая — `.fit(...)` и два `.score(...)`. Для глобальных признаков и обучение, и оба теста пропустите через `global_features`.",
+    "`pd.DataFrame({\"обычный\": [три числа], \"сдвиг\": [три числа]}, index=[...]).round(3)`."
+   ],
+   "explain": "Лес на пикселях теряет около 9 пунктов. С аугментацией точность выше в обоих столбцах (на сдвинутых кадрах около 0.87 против 0.82), но падение почти такое же: обучающие сдвиги были случайными в обе стороны и редко ровно на 4 вправо. На глобальных признаках сдвиг почти ничего не меняет (около 0.95): признаки по построению не знают, где лежит выпечка. Аугментация учит терпимости «на примерах», признаки дают её «по конструкции». Свёрточные сети используют оба приёма сразу."
+  },
+  "ch14/03-classic/bright-aug": {
+   "chapter": "ch14",
+   "lesson": "03-classic",
+   "lesson_title": "Модели на пикселях: ошибки, аугментация, устойчивость",
+   "id": "bright-aug",
+   "title": "Аугментация яркостью",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom sklearn.model_selection import train_test_split\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\nflat = lambda Z: Z.reshape(len(Z), -1)",
+   "check": "import numpy as _np\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nX0, y0, tr0, te0 = need('X'), need('y'), need('tr'), need('te')\nfl = lambda Z: Z.reshape(len(Z), -1)\nfac = _np.random.default_rng(0).uniform(0.6, 1.1, size=len(tr0))\nXa = _np.concatenate([X0[tr0], X0[tr0] * fac[:, None, None]]); ya = _np.concatenate([y0[tr0], y0[tr0]])\nm = _RF(100, random_state=0).fit(fl(Xa), ya); b = _RF(100, random_state=0).fit(fl(X0[tr0]), y0[tr0])\nassert close(need('acc_normal'), round(m.score(fl(X0[te0]), y0[te0]), 3), 0.006), f'acc_normal = {need(\"acc_normal\")}.'\nassert close(need('acc_dim'), round(m.score(fl(X0[te0] * 0.7), y0[te0]), 3), 0.006), f'acc_dim = {need(\"acc_dim\")}.'\nassert close(need('acc_dim_base'), round(b.score(fl(X0[te0] * 0.7), y0[te0]), 3), 0.006), f'acc_dim_base = {need(\"acc_dim_base\")}.'",
+   "starter": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\nrng = np.random.default_rng(0)",
+   "solution": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\nrng = np.random.default_rng(0)\nfac = rng.uniform(0.6, 1.1, size=len(tr))\nX_aug = np.concatenate([X[tr], X[tr] * fac[:, None, None]])\ny_aug = np.concatenate([y[tr], y[tr]])\naug = RandomForestClassifier(100, random_state=0).fit(flat(X_aug), y_aug)\nbase = RandomForestClassifier(100, random_state=0).fit(flat(X[tr]), y[tr])\nacc_normal = round(aug.score(flat(X[te]), y[te]), 3)\nacc_dim = round(aug.score(flat(X[te] * 0.7), y[te]), 3)\nacc_dim_base = round(base.score(flat(X[te] * 0.7), y[te]), 3)\nprint(acc_normal, acc_dim, acc_dim_base)",
+   "hints": [
+    "Множители — массив длины 1500. Чтобы умножить каждый кадр `(32, 32)` на свой множитель, добавьте множителю две оси: `fac[:, None, None]`.",
+    "`X_aug = np.concatenate([X[tr], X[tr] * fac[:, None, None]])`, `y_aug = np.concatenate([y[tr], y[tr]])`.",
+    "Базовый лес — обычный `fit(flat(X[tr]), y[tr])`; оба леса проверьте на `flat(X[te] * 0.7)`."
+   ],
+   "explain": "Лес, который видел тёмные копии, на тусклом тесте даёт около 0.90 вместо 0.47 — и на обычном тесте не хуже прежнего (даже чуть лучше: аугментация добавила разнообразия). Нормировка из следующей задачи делает модель нечувствительной к яркости «по построению», аугментация — «на примерах». Аугментация защищает только от того, что вы предусмотрели: если вечером свет окажется 0.5, а копии были от 0.6, модель снова начнёт ошибаться."
+  },
+  "ch14/03-classic/light": {
+   "chapter": "ch14",
+   "lesson": "03-classic",
+   "lesson_title": "Модели на пикселях: ошибки, аугментация, устойчивость",
+   "id": "light",
+   "title": "Вечерний свет",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom sklearn.model_selection import train_test_split\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\nflat = lambda Z: Z.reshape(len(Z), -1)",
+   "check": "import numpy as _np\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nX0, y0, tr0, te0 = need('X'), need('y'), need('tr'), need('te')\nf = need('normalize')\nt = f(X0[:3])\nassert t.shape == (3, 1024), f'normalize(X[:3]).shape = {t.shape}, а нужно (3, 1024).'\nassert _np.allclose(t.mean(1), 0, atol=1e-9) and _np.allclose(t.std(1), 1), 'У каждой строки среднее 0 и стандартное отклонение 1.'\nfl = lambda Z: Z.reshape(len(Z), -1)\nnz = lambda Z: (fl(Z) - fl(Z).mean(1, keepdims=True)) / fl(Z).std(1, keepdims=True)\nXd = X0[te0] * 0.7\na = _RF(100, random_state=0).fit(fl(X0[tr0]), y0[tr0]); b = _RF(100, random_state=0).fit(nz(X0[tr0]), y0[tr0])\nw = {'сырые': (round(a.score(fl(X0[te0]), y0[te0]), 3), round(a.score(fl(Xd), y0[te0]), 3)),\n     'нормированные': (round(b.score(nz(X0[te0]), y0[te0]), 3), round(b.score(nz(Xd), y0[te0]), 3))}\ng = need('light', dict)\nassert set(g) == set(w), f'Ключи: {list(g)}.'\nassert all(close(g[k][i], w[k][i], 0.006) for k in w for i in range(2)), f'light = {g}, а нужно {w}.'",
+   "starter": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\ndef normalize(Z):\n    ...\n\nX_dim = X[te] * 0.7",
+   "solution": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\ndef normalize(Z):\n    A = Z.reshape(len(Z), -1)\n    return (A - A.mean(axis=1, keepdims=True)) / A.std(axis=1, keepdims=True)\n\nX_dim = X[te] * 0.7\nraw = RandomForestClassifier(100, random_state=0).fit(flat(X[tr]), y[tr])\nnrm = RandomForestClassifier(100, random_state=0).fit(normalize(X[tr]), y[tr])\nlight = {\n    \"сырые\": (round(raw.score(flat(X[te]), y[te]), 3), round(raw.score(flat(X_dim), y[te]), 3)),\n    \"нормированные\": (round(nrm.score(normalize(X[te]), y[te]), 3), round(nrm.score(normalize(X_dim), y[te]), 3)),\n}\nprint(light)",
+   "hints": [
+    "Нормировать нужно каждую строку (кадр) отдельно: среднее и отклонение — по `axis=1`. `keepdims=True` оставляет форму `(n, 1)`, чтобы вычитание шло построчно.",
+    "`A = Z.reshape(len(Z), -1)`; `(A - A.mean(axis=1, keepdims=True)) / A.std(axis=1, keepdims=True)`. Модель на нормированных признаках проверяйте тоже на нормированных кадрах: `normalize(X_dim)`.",
+    "Две модели: `raw` на `flat(X[tr])` и `nrm` на `normalize(X[tr])`. Каждую — на своём обычном и тусклом тесте."
+   ],
+   "explain": "Сырая модель на тусклых кадрах падает примерно до 0.47, нормированная не замечает разницы: умножение на 0.7 после нормировки исчезает полностью. Нормировка подняла точность и на обычном тесте — около 0.94 против 0.91: у дневных кадров тоже разная общая яркость, и лесу, похоже, больше не приходится тратить на неё вопросы. В жизни вечерний свет — не только «темнее», но и другой контраст и цвет, поэтому нормировка помогает не на 100 %. Насколько — проверим в проекте на настоящих вечерних кадрах."
+  },
+  "ch14/04-cnn/params": {
+   "chapter": "ch14",
+   "lesson": "04-cnn",
+   "lesson_title": "Свёрточные нейросети",
+   "id": "params",
+   "title": "Считаем параметры",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "f, g = need('dense_params'), need('conv_params')\nassert f(10, 3) == 33, f'dense_params(10, 3) = {f(10, 3)}, а нужно 33: веса 10·3 и 3 сдвига.'\nassert g(5, 3, 8) == 608, f'conv_params(5, 3, 8) = {g(5, 3, 8)}, а нужно 608: (5·5·3 + 1)·8.'\nassert need('p_net') == 23556, f'p_net = {need(\"p_net\")}.'",
+   "starter": "def dense_params(n_in, n_out):\n    ...\n\ndef conv_params(k, c_in, c_out):\n    ...\n\np_net = ...\nprint(p_net)",
+   "solution": "def dense_params(n_in, n_out):\n    return n_in * n_out + n_out\n\ndef conv_params(k, c_in, c_out):\n    return (k * k * c_in + 1) * c_out\n\np_net = conv_params(3, 1, 16) + conv_params(3, 16, 32) + conv_params(3, 32, 64) + dense_params(64, 4)\nprint(p_net)",
+   "hints": [
+    "Сначала проверьте формулы на маленьких числах: слой 10 → 3 — это 30 весов и 3 сдвига.",
+    "Сдвиг — по одному на выход (нейрон или фильтр). Сеть: `conv_params(3, 1, 16) + conv_params(3, 16, 32) + conv_params(3, 32, 64) + dense_params(64, 4)`."
+   ],
+   "explain": ""
+  },
+  "ch14/04-cnn/p-shapes": {
+   "chapter": "ch14",
+   "lesson": "04-cnn",
+   "lesson_title": "Свёрточные нейросети",
+   "id": "p-shapes",
+   "title": "Формы по слоям",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert _lines == ['15', '6'], f'Сейчас: {_lines}.'",
+   "starter": "",
+   "solution": "n = 32\nn = n - 3 + 1\nn = n // 2\nprint(n)\nn = n - 3 + 1\nn = n // 2\nprint(n)",
+   "hints": [
+    "Свёртка без дополнения: n − k + 1. Пулинг 2: целочисленное деление на 2.",
+    "32 → 30 → 15 → 13 → 6."
+   ],
+   "explain": ""
+  },
+  "ch14/04-cnn/layer": {
+   "chapter": "ch14",
+   "lesson": "04-cnn",
+   "lesson_title": "Свёрточные нейросети",
+   "id": "layer",
+   "title": "Свёрточный слой",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nX = np.load(\"showcase.npz\")[\"X\"] / 255\n_r = np.random.default_rng(1)\nW1 = _r.normal(0, 0.3, size=(6, 3, 3))\nb1 = _r.normal(0, 0.1, size=6)",
+   "check": "import numpy as _np\nfrom scipy import ndimage as _ndi\nX0 = need('X'); W, b = need('W1'), need('b1')\nf, g = need('conv_layer'), need('pool2')\nc = _np.maximum(_np.stack([_ndi.correlate(X0[0], w, mode='nearest') + bb for w, bb in zip(W, b)]), 0)\ngot = _np.asarray(f(X0[0], W, b))\nassert got.shape == (6, 32, 32), f'conv_layer(...).shape = {got.shape}, а нужно (6, 32, 32).'\nassert _np.allclose(got, c), 'conv_layer: свёртка каждым фильтром + сдвиг, потом ReLU (np.maximum(..., 0)).'\np = c.reshape(6, 16, 2, 16, 2).max(axis=(2, 4))\nassert _np.allclose(g(c), p), 'pool2: максимум в блоках 2 × 2 для каждого канала.'\no = need('out')\nassert o.shape == (6, 16, 16) and _np.allclose(o, p), f'out.shape = {o.shape}.'\nassert close(need('active'), round(float((p > 0).mean()), 3), 0.0015), f'active = {need(\"active\")}.'",
+   "starter": "import numpy as np\nfrom scipy import ndimage as ndi\n\ndef conv_layer(img, W, b):\n    ...\n\ndef pool2(maps):\n    ...",
+   "solution": "import numpy as np\nfrom scipy import ndimage as ndi\n\ndef conv_layer(img, W, b):\n    maps = np.stack([ndi.correlate(img, w, mode=\"nearest\") + bb for w, bb in zip(W, b)])\n    return np.maximum(maps, 0)\n\ndef pool2(maps):\n    c, h, w = maps.shape\n    return maps.reshape(c, h // 2, 2, w // 2, 2).max(axis=(2, 4))\n\nout = pool2(conv_layer(X[0], W1, b1))\nactive = round(float((out > 0).mean()), 3)\nprint(out.shape, active)",
+   "hints": [
+    "В `conv_layer` цикл по парам «фильтр — сдвиг»: `for w, bb in zip(W, b)`. Для каждой — `ndi.correlate(img, w, mode=\"nearest\") + bb`.",
+    "`np.stack([...])` по фильтрам, `np.maximum(..., 0)`. Пулинг: `maps.reshape(c, h // 2, 2, w // 2, 2).max(axis=(2, 4))`.",
+    "Доля положительных — `(out > 0).mean()`; после ReLU и пулинга нули остаются там, где все отклики блока были отрицательными."
+   ],
+   "explain": "Это ровно то, что делает слой `nn.Conv2d` + `nn.ReLU` + `nn.MaxPool2d(2)` в PyTorch, только для одной картинки и одного входного канала. Доля «активных» чисел после ReLU зависит от знаков сдвигов и фильтров: у фильтра с отрицательной суммой весов на светлом фоне отклик почти везде отрицательный, и его карта почти вся обнулится. В обученной сети такие «мёртвые» фильтры — признак проблем с инициализацией или слишком большим шагом обучения."
+  },
+  "ch14/04-cnn/softmax": {
+   "chapter": "ch14",
+   "lesson": "04-cnn",
+   "lesson_title": "Свёрточные нейросети",
+   "id": "softmax",
+   "title": "Голова сети",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nd = np.load(\"showcase.npz\")\nX, classes = d[\"X\"] / 255, d[\"classes\"]\n_r = np.random.default_rng(1)\nW1 = _r.normal(0, 0.3, size=(6, 3, 3)); b1 = _r.normal(0, 0.1, size=6)\n_m = np.maximum(np.stack([ndi.correlate(X[0], w, mode=\"nearest\") + b for w, b in zip(W1, b1)]), 0)\nout = _m.reshape(6, 16, 2, 16, 2).max(axis=(2, 4))\nW2 = _r.normal(0, 0.05, size=(1536, 4)); b2 = np.zeros(4)",
+   "check": "import numpy as _np\no, W, b, c = need('out'), need('W2'), need('b2'), need('classes')\nlg = o.ravel() @ W + b\npr = _np.exp(lg - lg.max()); pr = pr / pr.sum()\nassert _np.allclose(need('logits'), lg), 'logits = out.ravel() @ W2 + b2.'\np = _np.asarray(need('probs'))\nassert close(p.sum(), 1, 1e-9), f'Сумма probs = {p.sum()}, а должна быть 1.'\nassert _np.allclose(p, pr), 'probs — softmax от logits.'\nassert str(need('pred_class')) == str(c[pr.argmax()]), f'pred_class = {need(\"pred_class\")}.'",
+   "starter": "import numpy as np",
+   "solution": "import numpy as np\n\nlogits = out.ravel() @ W2 + b2\nz = np.exp(logits - logits.max())\nprobs = z / z.sum()\npred_class = str(classes[probs.argmax()])\nprint(probs.round(3), pred_class)",
+   "hints": [
+    "Вектор — `out.ravel()` (6 · 16 · 16 = 1536 чисел); логиты — `out.ravel() @ W2 + b2`.",
+    "`z = np.exp(logits - logits.max())`, `probs = z / z.sum()`, `classes[probs.argmax()]`."
+   ],
+   "explain": "Это полный прямой проход маленькой свёрточной сети. С случайными весами её ответ — случайность. Всё, что делает обучение, — подбирает `W1`, `b1`, `W2`, `b2`."
+  },
+  "ch14/04-cnn/random": {
+   "chapter": "ch14",
+   "lesson": "04-cnn",
+   "lesson_title": "Свёрточные нейросети",
+   "id": "random",
+   "title": "Сколько случайных фильтров нужно",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nfrom sklearn.model_selection import train_test_split\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\ndef random_conv_features(Z, W, s=4):\n    out = []\n    for w in W:\n        f = np.maximum(np.stack([ndi.correlate(z, w, mode=\"nearest\") for z in Z]), 0)\n        n = len(Z)\n        out.append(f.reshape(n, 32 // s, s, 32 // s, s).max(axis=(2, 4)).reshape(n, -1))\n    return np.hstack(out)",
+   "check": "import numpy as _np\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.linear_model import LogisticRegression as _LR\nX0, y0, tr0, te0, rcf = need('X'), need('y'), need('tr'), need('te'), need('random_conv_features')\nw = {}\nfor n in [4, 8, 16, 32]:\n    F = rcf(X0, _np.random.default_rng(0).normal(size=(n, 5, 5)))\n    w[n] = round(float(_mp(_SS(), _LR(max_iter=3000)).fit(F[tr0], y0[tr0]).score(F[te0], y0[te0])), 3)\ng = {int(k): v for k, v in need('acc_by_n', dict).items()}\nassert sorted(g) == [4, 8, 16, 32], f'Ключи: {sorted(g)}.'\nassert all(close(g[k], w[k], 0.006) for k in w), f'acc_by_n = {g}, а нужно {w}.'\nne = min([k for k in w if w[k] > 0.93], default=None)\nassert need('n_enough') == ne, f'n_enough = {need(\"n_enough\")}, а нужно {ne}.'",
+   "starter": "import numpy as np\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression",
+   "solution": "import numpy as np\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\nacc_by_n = {}\nfor n in [4, 8, 16, 32]:\n    F = random_conv_features(X, np.random.default_rng(0).normal(size=(n, 5, 5)))\n    m = make_pipeline(StandardScaler(), LogisticRegression(max_iter=3000)).fit(F[tr], y[tr])\n    acc_by_n[n] = round(m.score(F[te], y[te]), 3)\nn_enough = min([n for n in acc_by_n if acc_by_n[n] > 0.93])\nprint(acc_by_n, n_enough)",
+   "hints": [
+    "Генератор создавайте заново внутри цикла: `np.random.default_rng(0).normal(size=(n, 5, 5))` — тогда первые фильтры одинаковы во всех вариантах, как в эталоне.",
+    "Цикл по `n`; внутри — веса, признаки, модель, `score`. `min([n for n in acc_by_n if acc_by_n[n] > 0.93])`."
+   ],
+   "explain": "Четырёх случайных фильтров мало (около 0.86 — даже хуже наших продуманных), к 16 — около 0.94, дальше рост замедляется. Больше фильтров — больше признаков и дольше расчёт. Обученная сеть получает то же качество гораздо меньшим числом фильтров, потому что они подобраны под задачу."
+  },
+  "ch14/04-cnn/rand-light": {
+   "chapter": "ch14",
+   "lesson": "04-cnn",
+   "lesson_title": "Свёрточные нейросети",
+   "id": "rand-light",
+   "title": "Случайные фильтры и вечерний свет",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nfrom sklearn.model_selection import train_test_split\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\ndef random_conv_features(Z, W, s=4):\n    out = []\n    for w in W:\n        f = np.maximum(np.stack([ndi.correlate(z, w, mode=\"nearest\") for z in Z]), 0)\n        n = len(Z)\n        out.append(f.reshape(n, 32 // s, s, 32 // s, s).max(axis=(2, 4)).reshape(n, -1))\n    return np.hstack(out)",
+   "check": "import numpy as _np\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.linear_model import LogisticRegression as _LR\nX0, y0, tr0, te0, rcf = need('X'), need('y'), need('tr'), need('te'), need('random_conv_features')\nW = _np.random.default_rng(0).normal(size=(16, 5, 5))\nnf = lambda Z: (Z - Z.mean(axis=(1, 2), keepdims=True)) / Z.std(axis=(1, 2), keepdims=True)\ndef _run(prep):\n    m = _mp(_SS(), _LR(max_iter=3000)).fit(rcf(prep(X0[tr0]), W), y0[tr0])\n    return (round(float(m.score(rcf(prep(X0[te0]), W), y0[te0])), 3), round(float(m.score(rcf(prep(X0[te0] * 0.7), W), y0[te0])), 3))\nw = {'без нормировки': _run(lambda Z: Z), 'с нормировкой': _run(nf)}\ng = need('res', dict)\nassert set(g) == set(w), f'Ключи: {list(g)}.'\nassert all(close(g[k][i], w[k][i], 0.006) for k in w for i in range(2)), f'res = {g}, а нужно {w}.'",
+   "starter": "import numpy as np\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\nW = np.random.default_rng(0).normal(size=(16, 5, 5))\n\ndef norm_frames(Z):\n    ...",
+   "solution": "import numpy as np\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\nW = np.random.default_rng(0).normal(size=(16, 5, 5))\n\ndef norm_frames(Z):\n    return (Z - Z.mean(axis=(1, 2), keepdims=True)) / Z.std(axis=(1, 2), keepdims=True)\n\ndef run(prep):\n    m = make_pipeline(StandardScaler(), LogisticRegression(max_iter=3000))\n    m.fit(random_conv_features(prep(X[tr]), W), y[tr])\n    normal = m.score(random_conv_features(prep(X[te]), W), y[te])\n    dim = m.score(random_conv_features(prep(X[te] * 0.7), W), y[te])\n    return round(normal, 3), round(dim, 3)\n\nres = {\"без нормировки\": run(lambda Z: Z), \"с нормировкой\": run(norm_frames)}\nprint(res)",
+   "hints": [
+    "Нормировка кадров здесь сохраняет форму `(n, 32, 32)` — фильтрам нужны картинки. Среднее и отклонение — по осям 1 и 2.",
+    "`(Z - Z.mean(axis=(1, 2), keepdims=True)) / Z.std(axis=(1, 2), keepdims=True)`. Нормируйте и обучающие, и тестовые, и тусклые кадры — одинаково.",
+    "Удобна функция `run(prep)`, которая принимает функцию подготовки (`lambda Z: Z` или `norm_frames`) и возвращает пару точностей."
+   ],
+   "explain": "Без нормировки тусклые кадры ломают и эти признаки (около 0.64 вместо 0.94): отклики фильтров пропорциональны яркости, а модель помнит дневной масштаб. С нормировкой разница между обычными и тусклыми кадрами исчезает — ценой пары пунктов на обычных кадрах (около 0.91): нормировка заодно стирает полезную информацию об абсолютной яркости. Устойчивость часто стоит немного точности. Вход нормируют и в больших сетях: `weights.transforms()` у ResNet вычитает средние и делит на разбросы каналов — правда, общие для всех фото ImageNet, а не свои у каждого кадра. От перепадов освещения там спасает аугментация яркости и контраста при обучении."
+  },
+  "ch14/04-cnn/out-size": {
+   "chapter": "ch14",
+   "lesson": "04-cnn",
+   "lesson_title": "Свёрточные нейросети",
+   "id": "out-size",
+   "title": "Размер выхода слоя",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "f = need('out_size')\nassert f(5, 3) == 3 and f(32, 3, pad=1) == 32 and f(32, 2, stride=2) == 16 and f(7, 3, stride=2) == 3, 'out_size: (n + 2·pad − k) // stride + 1.'\nassert need('sizes', list) == [32, 16, 16, 8, 8], f'sizes = {need(\"sizes\")}.'\nassert need('no_pad', list) == [30, 15, 13, 6, 4], f'no_pad = {need(\"no_pad\")}.'",
+   "starter": "def out_size(n, k, pad=0, stride=1):\n    ...",
+   "solution": "def out_size(n, k, pad=0, stride=1):\n    return (n + 2 * pad - k) // stride + 1\n\ndef chain(layers, n=32):\n    out = []\n    for k, pad, stride in layers:\n        n = out_size(n, k, pad, stride)\n        out.append(n)\n    return out\n\nsizes = chain([(3, 1, 1), (2, 0, 2), (3, 1, 1), (2, 0, 2), (3, 1, 1)])\nno_pad = chain([(3, 0, 1), (2, 0, 2), (3, 0, 1), (2, 0, 2), (3, 0, 1)])\nprint(sizes, no_pad)",
+   "hints": [
+    "Пулинг 2 × 2 — это окно `k=2` с шагом `stride=2` и без дополнения.",
+    "Цепочка: начните с `n = 32`, на каждом слое `n = out_size(n, ...)` и добавляйте `n` в список.",
+    "```python\nn, sizes = 32, []\nfor k, pad, stride in [(3, 1, 1), (2, 0, 2), (3, 1, 1), (2, 0, 2), (3, 1, 1)]:\n    n = out_size(n, k, pad, stride)\n    sizes.append(n)\n```"
+   ],
+   "explain": "Без дополнения каждая свёртка 3 × 3 «съедает» по пикселю с каждой стороны, и к последнему слою от 32 остаётся 4. В глубоких сетях это быстро съело бы всю картинку, поэтому почти всегда ставят `padding` так, чтобы свёртка сохраняла размер, а уменьшение делал только пулинг или шаг. Формулу `(n + 2p − k) // s + 1` полезно помнить: ошибка «size mismatch» в PyTorch почти всегда означает, что размер на каком-то слое посчитан не так, как ожидает следующий."
+  },
+  "ch14/04-cnn/receptive": {
+   "chapter": "ch14",
+   "lesson": "04-cnn",
+   "lesson_title": "Свёрточные нейросети",
+   "id": "receptive",
+   "title": "Рецептивное поле",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "f = need('receptive_field')\nassert f([('conv', 3)]) == 3 and f([('conv', 3), ('conv', 3)]) == 5 and f([('conv', 3), ('pool', 2), ('conv', 3)]) == 8, 'Проверьте формулу: свёртка добавляет (k − 1)·jump, пулинг ещё и умножает jump на k.'\nassert need('rf_lesson') == 18, f'rf_lesson = {need(\"rf_lesson\")}.'\nassert need('rf_no_pool') == 11, f'rf_no_pool = {need(\"rf_no_pool\")}.'\nassert need('n_convs_needed') == 16, f'n_convs_needed = {need(\"n_convs_needed\")}.'",
+   "starter": "def receptive_field(layers):\n    rf, jump = 1, 1\n    ...\n    return rf",
+   "solution": "def receptive_field(layers):\n    rf, jump = 1, 1\n    for kind, k in layers:\n        rf += (k - 1) * jump\n        if kind == \"pool\":\n            jump *= k\n    return rf\n\nrf_lesson = receptive_field([(\"conv\", 3), (\"pool\", 2), (\"conv\", 3), (\"pool\", 2), (\"conv\", 3)])\nrf_no_pool = receptive_field([(\"conv\", 3)] * 5)\nn_convs_needed = 0\nwhile receptive_field([(\"conv\", 3)] * n_convs_needed) < 32:\n    n_convs_needed += 1\nprint(rf_lesson, rf_no_pool, n_convs_needed)",
+   "hints": [
+    "Каждый слой расширяет поле на `(k − 1) * jump`. После пулинга `jump` умножается на `k`.",
+    "Число свёрток подберите циклом `while`: добавляйте по `(\"conv\", 3)`, пока поле меньше 32.",
+    "```python\nn = 0\nwhile receptive_field([(\"conv\", 3)] * n) < 32:\n    n += 1\n```"
+   ],
+   "explain": "Без пулинга каждая свёртка 3 × 3 расширяет поле всего на 2 пикселя: чтобы «увидеть» весь кадр 32 × 32, понадобилось бы 16 слоёв. С двумя пулингами три свёртки уже видят 18 × 18 — больше половины кадра. Это вторая (помимо экономии вычислений) причина ставить пулинг: он позволяет глубоким слоям смотреть на большие части картинки при небольшом числе слоёв."
+  },
+  "ch14/04-cnn/pool-size": {
+   "chapter": "ch14",
+   "lesson": "04-cnn",
+   "lesson_title": "Свёрточные нейросети",
+   "id": "pool-size",
+   "title": "Пулинг против сдвига",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom scipy import ndimage as ndi\nfrom sklearn.model_selection import train_test_split\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\ntr, te = train_test_split(np.arange(len(X)), test_size=0.25, random_state=42, stratify=y)\nW = np.random.default_rng(0).normal(size=(16, 5, 5))\ndef features(Z, s):\n    out = []\n    for w in W:\n        f = np.maximum(np.stack([ndi.correlate(z, w, mode=\"nearest\") for z in Z]), 0)\n        out.append(f.reshape(len(Z), 32 // s, s, 32 // s, s).max(axis=(2, 4)).reshape(len(Z), -1))\n    return np.hstack(out)",
+   "check": "import numpy as _np\nimport pandas as _pd\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.linear_model import LogisticRegression as _LR\nX0, y0, tr0, te0, ft = need('X'), need('y'), need('tr'), need('te'), need('features')\nXs = _np.roll(X0[te0], 4, axis=2)\nw = {}\nfor s_ in [4, 8, 32]:\n    m = _mp(_SS(), _LR(max_iter=3000)).fit(ft(X0[tr0], s_), y0[tr0])\n    w[s_] = (16 * (32 // s_) ** 2, round(m.score(ft(X0[te0], s_), y0[te0]), 3), round(m.score(ft(Xs, s_), y0[te0]), 3))\nr = need('res', _pd.DataFrame)\nassert sorted(int(i) for i in r.index) == [4, 8, 32] and {'n_features', 'test', 'shifted'} <= set(r.columns), f'res: индекс 4, 8, 32; столбцы n_features, test, shifted. Сейчас {list(r.index)}, {list(r.columns)}.'\nfor s_, (nf, t, sh) in w.items():\n    assert int(r.loc[s_, 'n_features']) == nf and close(r.loc[s_, 'test'], t, 0.006) and close(r.loc[s_, 'shifted'], sh, 0.006), f'Для s={s_}: {dict(r.loc[s_])}, а нужно {nf}, {t}, {sh}.'\nassert int(need('best_test')) == max(w, key=lambda k: w[k][1]), f'best_test = {need(\"best_test\")}.'\nassert int(need('most_robust')) == min(w, key=lambda k: w[k][1] - w[k][2]), f'most_robust = {need(\"most_robust\")}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\nX_shift = np.roll(X[te], 4, axis=2)\nrows = []",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\nX_shift = np.roll(X[te], 4, axis=2)\nrows = []\nfor s in [4, 8, 32]:\n    m = make_pipeline(StandardScaler(), LogisticRegression(max_iter=3000)).fit(features(X[tr], s), y[tr])\n    rows.append({\"s\": s, \"n_features\": 16 * (32 // s) ** 2,\n                 \"test\": round(m.score(features(X[te], s), y[te]), 3),\n                 \"shifted\": round(m.score(features(X_shift, s), y[te]), 3)})\nres = pd.DataFrame(rows).set_index(\"s\")\nbest_test = int(res[\"test\"].idxmax())\nmost_robust = int((res[\"test\"] - res[\"shifted\"]).idxmin())\nprint(res, best_test, most_robust)",
+   "hints": [
+    "Для каждого `s`: признаки обучения, обычного и сдвинутого теста — все через `features(..., s)`; модель обучается один раз на обучении.",
+    "Число признаков: 16 фильтров × `(32 // s) ** 2` чисел от каждого.",
+    "`res = pd.DataFrame(rows).set_index(\"s\")`; самый устойчивый — `(res[\"test\"] - res[\"shifted\"]).idxmin()`."
+   ],
+   "explain": "Лучший на обычном тесте и самый устойчивый — разные варианты. Это типичный компромисс «точность против устойчивости», и выбирать между ними должна задача: если камеру никогда не двигают, берите пулинг 4; если сдвиги неизбежны, нужен больший пулинг или — лучше — аугментация сдвигами и глубокая сеть, у которой есть и детали, и глобальный пулинг в конце."
+  },
+  "ch14/04b-transfer/folders": {
+   "chapter": "ch14",
+   "lesson": "04b-transfer",
+   "lesson_title": "Перенос обучения и дообучение",
+   "id": "folders",
+   "title": "Загрузить фото из папок",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as _np\nfrom pathlib import Path as _P\nfrom PIL import Image as _I\n_d = _np.load(\"showcase.npz\")\n_root = _P(\"vitrina/train\")\nfor _c in range(4):\n    _f = _root / str(_d[\"classes\"][_c]); _f.mkdir(parents=True, exist_ok=True)\n    for _k, _i in enumerate(_np.flatnonzero(_d[\"y\"] == _c)[:10]):\n        _I.fromarray(_d[\"X\"][_i]).save(_f / f\"{_k:04d}.png\")\n_I.fromarray(_d[\"X\"][_np.flatnonzero(_d[\"y\"] == 1)[50]]).save(_root / \"круассан\" / \"IMG_7.PNG\", format=\"PNG\")\n(_root / \".DS_Store\").write_bytes(b\"\\x00\\x00\\x00\\x01Bud1\")\n(_root / \"маффин\" / \"Thumbs.db\").write_bytes(b\"\\xd0\\xcf\\x11\\xe0\")\n(_root.parent / \"readme.txt\").write_text(\"фото с витрины KZN-1, август\", encoding=\"utf-8\")\n(_root / \"печенье\" / \"битый.png\").write_bytes(b\"\\x89PNG\\r\\n\\x1a\\n\" + b\"oops\" * 5)",
+   "check": "import numpy as _np\nfrom pathlib import Path as _P\nfrom PIL import Image as _I\n_root = _P('vitrina/train')\nps = sorted(p for p in _root.rglob('*') if p.is_file() and p.suffix.lower() == '.png')\ngood, lab, badw = [], [], []\nnames = sorted({p.parent.name for p in ps})\nfor p in ps:\n    try:\n        good.append(_np.array(_I.open(p).convert('L'))); lab.append(names.index(p.parent.name))\n    except Exception:\n        badw.append(p.name)\nassert list(need('classes')) == names, f'classes = {list(need(\"classes\"))}, а нужно {names}: имена папок по алфавиту.'\nXs = _np.asarray(need('X'))\nassert Xs.shape == (len(good), 32, 32), f'X.shape = {Xs.shape}, а нужно {(len(good), 32, 32)}. Проверьте, что нашлись файлы .PNG в верхнем регистре и пропущены битые и не-картинки.'\norder = sorted(range(len(good)), key=lambda i: (lab[i], good[i].tobytes()))\nmine = sorted(range(len(Xs)), key=lambda i: (int(need('y')[i]), Xs[i].astype(_np.uint8).tobytes()))\nassert all(_np.array_equal(Xs[mine[k]], good[order[k]]) and int(need('y')[mine[k]]) == lab[order[k]] for k in range(len(good))), 'Картинки или метки не совпадают: метка — номер имени родительской папки в отсортированном списке classes.'\nwant = {n: lab.count(i) for i, n in enumerate(names)}\nassert dict(need('counts', dict)) == want, f'counts = {need(\"counts\")}, а нужно {want}.'\nassert sorted(need('bad')) == sorted(badw), f'bad = {need(\"bad\")}, а нужно {badw}: имена PNG-файлов, на которых Image.open упал.'",
+   "starter": "from pathlib import Path\nimport numpy as np\nfrom PIL import Image\n\nroot = Path(\"vitrina/train\")\nprint(sorted(p.relative_to(root).as_posix() for p in root.rglob(\"*\") if p.is_file())[:6])",
+   "solution": "from pathlib import Path\nimport numpy as np\nfrom PIL import Image\n\nroot = Path(\"vitrina/train\")\npaths = sorted(p for p in root.rglob(\"*\") if p.is_file() and p.suffix.lower() == \".png\")\nclasses = sorted({p.parent.name for p in paths})\n\nimages, labels, bad = [], [], []\nfor p in paths:\n    try:\n        images.append(np.array(Image.open(p).convert(\"L\")))\n        labels.append(classes.index(p.parent.name))\n    except Exception:\n        bad.append(p.name)\n\nX = np.stack(images)\ny = np.array(labels)\ncounts = {c: int((y == i).sum()) for i, c in enumerate(classes)}\nprint(X.shape, classes, counts, bad)",
+   "hints": [
+    "Соберите все файлы `root.rglob(\"*\")`, оставьте те, у которых `p.is_file()` и `p.suffix.lower() == \".png\"`, отсортируйте. Классы — `sorted({p.parent.name for p in paths})`.",
+    "Читайте в `try/except`: `img = np.array(Image.open(p).convert(\"L\"))`; при ошибке добавьте `p.name` в `bad` и переходите к следующему файлу. Метку берите там же, где картинку, — только для удачно прочитанных.",
+    "```python\npaths = sorted(p for p in root.rglob(\"*\") if p.is_file() and p.suffix.lower() == \".png\")\nclasses = sorted({p.parent.name for p in paths})\nimages, labels, bad = [], [], []\nfor p in paths:\n    try:\n        images.append(np.array(Image.open(p).convert(\"L\")))\n        labels.append(classes.index(p.parent.name))\n    except Exception:\n        bad.append(p.name)\nX, y = ..., ...\ncounts = {c: ... for i, c in enumerate(classes)}\n```"
+   ],
+   "explain": "Читаемых фото — 41: по 10 в каждой папке плюс `IMG_7.PNG` у круассанов, которую пропустил бы шаблон `rglob(\"*.png\")` (на Linux регистр важен). `.DS_Store`, `Thumbs.db` и `readme.txt` отсеялись по расширению, а `битый.png` — по ошибке чтения: у него правильное начало файла, но дальше мусор. Без `try/except` загрузка остановилась бы на нём с `UnidentifiedImageError`, а без фильтра по расширению — на `Thumbs.db`. Типичная ошибка — добавлять метку до чтения картинки: тогда после битого файла метки «съедут» на одну позицию относительно картинок, и ошибки не будет, просто модель будет учиться на неверных ответах."
+  },
+  "ch14/04c-detection/iou": {
+   "chapter": "ch14",
+   "lesson": "04c-detection",
+   "lesson_title": "Регрессия по фото, детекция и сегментация",
+   "id": "iou",
+   "title": "Пересечение на объединение",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": true,
+   "setup": "",
+   "check": "def _iou(a, b):\n    w = min(a[2], b[2]) - max(a[0], b[0]); h = min(a[3], b[3]) - max(a[1], b[1])\n    inter = max(0, w) * max(0, h); ar = lambda r: (r[2] - r[0]) * (r[3] - r[1])\n    return inter / (ar(a) + ar(b) - inter)\nf = need('iou')\nfor a, b in [((0, 0, 4, 4), (2, 2, 6, 6)), ((0, 0, 4, 4), (1, 0, 4, 4)), ((0, 0, 2, 2), (3, 3, 5, 5)), ((0, 0, 2, 2), (-3, 3, -1, 5))]:\n    r = f(a, b)\n    assert r is not None and close(r, _iou(a, b), 1e-9), f'iou({a}, {b}) = {r}, а нужно {round(_iou(a, b), 3)}. Если рамки не пересекаются, IoU = 0: ширину и высоту пересечения ограничьте нулём снизу.'\nT = [(2, 3, 30, 29), (34, 2, 62, 30), (66, 4, 94, 31), (1, 34, 29, 62), (33, 35, 63, 61), (65, 33, 95, 63)]\nP = [(4, 5, 31, 30), (40, 8, 62, 30), (66, 4, 94, 31), (10, 40, 29, 62), (30, 30, 60, 60), (80, 45, 95, 63)]\nw = [round(_iou(p, t), 3) for p, t in zip(P, T)]\nassert [round(float(v), 3) for v in need('ious')] == w, f'ious = {need(\"ious\")}, а нужно {w}.'\nassert need('n_hits') == sum(v >= 0.5 for v in w), f'n_hits = {need(\"n_hits\")}.'",
+   "starter": "true = [(2, 3, 30, 29), (34, 2, 62, 30), (66, 4, 94, 31), (1, 34, 29, 62), (33, 35, 63, 61), (65, 33, 95, 63)]\npred = [(4, 5, 31, 30), (40, 8, 62, 30), (66, 4, 94, 31), (10, 40, 29, 62), (30, 30, 60, 60), (80, 45, 95, 63)]\n\ndef iou(a, b):\n    ...",
+   "solution": "true = [(2, 3, 30, 29), (34, 2, 62, 30), (66, 4, 94, 31), (1, 34, 29, 62), (33, 35, 63, 61), (65, 33, 95, 63)]\npred = [(4, 5, 31, 30), (40, 8, 62, 30), (66, 4, 94, 31), (10, 40, 29, 62), (30, 30, 60, 60), (80, 45, 95, 63)]\n\ndef iou(a, b):\n    w = min(a[2], b[2]) - max(a[0], b[0])\n    h = min(a[3], b[3]) - max(a[1], b[1])\n    inter = max(0, w) * max(0, h)\n    area = lambda r: (r[2] - r[0]) * (r[3] - r[1])\n    return inter / (area(a) + area(b) - inter)\n\nious = [round(iou(p, t), 3) for p, t in zip(pred, true)]\nn_hits = sum(v >= 0.5 for v in ious)\nprint(ious, n_hits)",
+   "hints": [
+    "Ширина пересечения — `min(a[2], b[2]) - max(a[0], b[0])`, высота — то же по индексам 1 и 3. Пересечения нет, если хотя бы одна из них отрицательна.",
+    "Площадь рамки — `(x2 - x1) * (y2 - y1)`. IoU = пересечение / (площадь a + площадь b − пересечение).",
+    "```python\ndef iou(a, b):\n    w = min(a[2], b[2]) - max(a[0], b[0])\n    h = min(a[3], b[3]) - max(a[1], b[1])\n    inter = max(0, w) * max(0, h)\n    ...\n```"
+   ],
+   "explain": "Пять рамок из шести засчитаны: от точного совпадения (1.0) до «еле-еле» (0.53 — рамка на треть уже, короче по высоте и прижата к правому нижнему углу выпечки). Шестая (IoU 0.30) накрыла только угол выпечки — это промах, хотя рамка и «где-то рядом». Порог 0.5 — договорённость: в строгих оценках берут 0.75 или усредняют по порогам 0.5–0.95. Если бы вы не ограничили ширину и высоту нулём, у рамок, разнесённых и по горизонтали, и по вертикали, «пересечение» стало бы положительным (минус на минус) — проверка ловит это на паре `(0, 0, 2, 2)` и `(-3, 3, -1, 5)`."
+  },
+  "ch14/04c-detection/match": {
+   "chapter": "ch14",
+   "lesson": "04c-detection",
+   "lesson_title": "Регрессия по фото, детекция и сегментация",
+   "id": "match",
+   "title": "Точность и полнота детектора",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": true,
+   "setup": "def iou(a, b):\n    w = min(a[2], b[2]) - max(a[0], b[0])\n    h = min(a[3], b[3]) - max(a[1], b[1])\n    inter = max(0, w) * max(0, h)\n    area = lambda r: (r[2] - r[0]) * (r[3] - r[1])\n    return inter / (area(a) + area(b) - inter)",
+   "check": "T = [(2, 3, 30, 29), (34, 2, 62, 30), (66, 4, 94, 31), (1, 34, 29, 62), (33, 35, 63, 61), (65, 33, 95, 63)]\nD = [((4, 2, 31, 28), 0.81), ((66, 5, 93, 31), 0.95), ((35, 36, 62, 60), 0.77), ((3, 4, 30, 30), 0.97),\n     ((70, 40, 90, 60), 0.41), ((34, 3, 50, 29), 0.64), ((60, 0, 96, 10), 0.30)]\nused = set(); t0 = f0 = 0\nfor box, _ in sorted(D, key=lambda d: -d[1]):\n    cand = [(iou(box, t), j) for j, t in enumerate(T) if j not in used]\n    best = max(cand) if cand else (0, None)\n    if best[0] >= 0.5:\n        t0 += 1; used.add(best[1])\n    else:\n        f0 += 1\nn0 = len(T) - t0\nassert (need('tp'), need('fp'), need('fn')) == (t0, f0, n0), f'tp, fp, fn = {need(\"tp\")}, {need(\"fp\")}, {need(\"fn\")}, а нужно {t0}, {f0}, {n0}. Каждая настоящая рамка может быть занята только один раз, и идти нужно по убыванию уверенности.'\nassert close(need('precision'), round(t0 / (t0 + f0), 3), 0.0015), f'precision = {need(\"precision\")}: tp / (tp + fp).'\nassert close(need('recall'), round(t0 / (t0 + n0), 3), 0.0015), f'recall = {need(\"recall\")}: tp / (tp + fn).'",
+   "starter": "# уже есть: iou(a, b)\ntrue = [(2, 3, 30, 29), (34, 2, 62, 30), (66, 4, 94, 31), (1, 34, 29, 62), (33, 35, 63, 61), (65, 33, 95, 63)]\ndets = [((4, 2, 31, 28), 0.81), ((66, 5, 93, 31), 0.95), ((35, 36, 62, 60), 0.77), ((3, 4, 30, 30), 0.97),\n        ((70, 40, 90, 60), 0.41), ((34, 3, 50, 29), 0.64), ((60, 0, 96, 10), 0.30)]",
+   "solution": "true = [(2, 3, 30, 29), (34, 2, 62, 30), (66, 4, 94, 31), (1, 34, 29, 62), (33, 35, 63, 61), (65, 33, 95, 63)]\ndets = [((4, 2, 31, 28), 0.81), ((66, 5, 93, 31), 0.95), ((35, 36, 62, 60), 0.77), ((3, 4, 30, 30), 0.97),\n        ((70, 40, 90, 60), 0.41), ((34, 3, 50, 29), 0.64), ((60, 0, 96, 10), 0.30)]\n\nused, tp, fp = set(), 0, 0\nfor box, conf in sorted(dets, key=lambda d: -d[1]):\n    cand = [(iou(box, t), j) for j, t in enumerate(true) if j not in used]\n    best_iou, best_j = max(cand) if cand else (0, None)\n    if best_iou >= 0.5:\n        tp += 1\n        used.add(best_j)\n    else:\n        fp += 1\nfn = len(true) - tp\nprecision = round(tp / (tp + fp), 3)\nrecall = round(tp / (tp + fn), 3)\nprint(tp, fp, fn, precision, recall)",
+   "hints": [
+    "Отсортируйте `dets` по уверенности: `sorted(dets, key=lambda d: -d[1])`. Занятые настоящие рамки храните в множестве номеров `used`.",
+    "Для очередной рамки: `cand = [(iou(box, t), j) for j, t in enumerate(true) if j not in used]`; лучшая — `max(cand)` (сравнивает по IoU). Если `cand` пуст или лучший IoU < 0.5 — `fp += 1`.",
+    "```python\nused, tp, fp = set(), 0, 0\nfor box, conf in sorted(dets, key=lambda d: -d[1]):\n    cand = [(iou(box, t), j) for j, t in enumerate(true) if j not in used]\n    best_iou, best_j = max(cand) if cand else (0, None)\n    if best_iou >= 0.5:\n        ...\n    else:\n        ...\nfn = len(true) - tp\n```"
+   ],
+   "explain": "4 попадания, 3 ложных срабатывания, 2 пропуска: точность около 0.57, полнота около 0.67. Самое поучительное — рамка с уверенностью 0.81: она хорошо накрывает первую выпечку на подносе, но её уже «занял» более уверенный дубль (0.97), поэтому она — ложное срабатывание. Если разрешить одной настоящей рамке засчитываться несколько раз, вышло бы 5 попаданий, и детектор, рисующий по три рамки на каждый объект, казался бы лучше честного. Именно такие дубли убирает NMS. Ещё один промах — рамка 0.41 на последней выпечке с IoU 0.44: чуть-чуть не дотянула до порога. Снизив порог уверенности или IoU, можно поменять точность на полноту — та же развилка, что с порогом классификатора в главе 7."
+  },
+  "ch14/05-project/day": {
+   "chapter": "ch14",
+   "lesson": "05-project",
+   "lesson_title": "Проект: что закончилось на витрине",
+   "id": "day",
+   "title": "Шаг 1. День и вечер",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz",
+    "showcase_day.npz"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nd0 = _np.load('showcase.npz'); D0 = _np.load('showcase_day.npz')\nfl = lambda Z: Z.reshape(len(Z), -1)\np = _RF(100, random_state=0).fit(fl(d0['X'] / 255), d0['y']).predict(fl(D0['X'] / 255))\nev = D0['time'] >= '18:00'; t = D0['y']\nassert (_np.asarray(need('pred_raw')) == p).mean() > 0.99, 'pred_raw — предсказания леса для всех 732 кадров дня.'\nassert close(need('acc_day'), round(float((p == t)[~ev].mean()), 3), 0.006), f'acc_day = {need(\"acc_day\")}.'\nassert close(need('acc_evening'), round(float((p == t)[ev].mean()), 3), 0.006), f'acc_evening = {need(\"acc_evening\")}.'\nassert need('n_empty_evening') == int(((t == 0) & ev).sum()), f'n_empty_evening = {need(\"n_empty_evening\")}.'\nassert abs(need('n_found_evening') - int(((t == 0) & (p == 0) & ev).sum())) <= 1, f'n_found_evening = {need(\"n_found_evening\")}.'",
+   "starter": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\nD = np.load(\"showcase_day.npz\")\nXD, slot, tm, yD = D[\"X\"] / 255, D[\"slot\"], D[\"time\"], D[\"y\"]\nflat = lambda Z: Z.reshape(len(Z), -1)",
+   "solution": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\nD = np.load(\"showcase_day.npz\")\nXD, slot, tm, yD = D[\"X\"] / 255, D[\"slot\"], D[\"time\"], D[\"y\"]\nflat = lambda Z: Z.reshape(len(Z), -1)\n\nforest = RandomForestClassifier(100, random_state=0).fit(flat(X), y)\npred_raw = forest.predict(flat(XD))\nev = tm >= \"18:00\"\nacc_day = round(float((pred_raw == yD)[~ev].mean()), 3)\nacc_evening = round(float((pred_raw == yD)[ev].mean()), 3)\nn_empty_evening = int(((yD == 0) & ev).sum())\nn_found_evening = int(((yD == 0) & (pred_raw == 0) & ev).sum())\nprint(acc_day, acc_evening, n_empty_evening, n_found_evening)",
+   "hints": [
+    "Лес обучается на всех вырезках `showcase.npz` (вытянутых в строки `flat(X)`), а предсказывает кадры дня `flat(XD)`. Оба набора — в долях 0–1.",
+    "Вечер — `ev = tm >= \"18:00\"` (строки времени сравниваются как текст, и это работает для формата «ЧЧ:ММ»). Доля верных днём — `(pred_raw == yD)[~ev].mean()`."
+   ],
+   "explain": "Днём — около 0.94, как на тесте. Вечером — около 0.23, хуже случайного угадывания из четырёх классов. А главное: из 94 вечерних пустых ячеек модель не нашла ни одной (или одну — лес на вашем компьютере может чуть отличаться) — пустой поднос она почти всегда называет печеньем. Если бы систему запустили по результатам обычного теста, вечером пекарь не получил бы ни одного оповещения, и никто бы не понял почему."
+  },
+  "ch14/05-project/light": {
+   "chapter": "ch14",
+   "lesson": "05-project",
+   "lesson_title": "Проект: что закончилось на витрине",
+   "id": "light",
+   "title": "Шаг 2. Что изменилось",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz",
+    "showcase_day.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nD = np.load(\"showcase_day.npz\")\nXD, slot, tm, yD = D[\"X\"] / 255, D[\"slot\"], D[\"time\"], D[\"y\"]",
+   "check": "import numpy as _np\nimport pandas as _pd\nD0 = _np.load('showcase_day.npz'); X0, t0 = D0['X'] / 255, D0['time']\nb = _pd.Series(X0.reshape(len(X0), -1).mean(1)).groupby(t0).mean()\ng = need('bright', _pd.Series)\nassert len(g) == 61 and _np.allclose(g.values, b.values), 'bright: средняя яркость кадров, сгруппированная по времени.'\nr = round(float(X0[t0 >= '18:00'].mean() / X0[t0 < '18:00'].mean()), 3)\nassert close(need('ratio'), r, 0.002), f'ratio = {need(\"ratio\")}, а нужно {r}.'\nassert str(need('step_time')) == str(b.diff().idxmin()), f'step_time = {need(\"step_time\")}.'\nassert len(figs) >= 1, 'Нарисуйте bright.'",
+   "starter": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt",
+   "solution": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\nbright = pd.Series(XD.reshape(len(XD), -1).mean(axis=1)).groupby(tm).mean()\nratio = round(float(XD[tm >= \"18:00\"].mean() / XD[tm < \"18:00\"].mean()), 3)\nstep_time = bright.diff().idxmin()\nprint(ratio, step_time)\nax = bright.plot(figsize=(9, 3), marker=\".\")\nax.set_ylabel(\"средняя яркость кадра\")",
+   "hints": [
+    "`pd.Series(XD.reshape(len(XD), -1).mean(axis=1)).groupby(tm).mean()`; самое сильное падение — `bright.diff().idxmin()`.",
+    "Отношение вечера к дню: `XD[tm >= \"18:00\"].mean() / XD[tm < \"18:00\"].mean()` — среднее по всем пикселям всех кадров каждой части дня."
+   ],
+   "explain": "Ступенька ровно в 18:00: кадры стали на треть темнее — в зале включили вечерний свет. Днём яркость тоже немного колеблется (выпечку раскупают — светлого подноса становится больше), но это плавные изменения в пределах того, что модель видела при обучении. Вечерних кадров в обучающих данных не было вовсе. Это типичная история: модель ломает не сложный случай, а простое изменение условий съёмки, о котором никто не подумал."
+  },
+  "ch14/05-project/fix": {
+   "chapter": "ch14",
+   "lesson": "05-project",
+   "lesson_title": "Проект: что закончилось на витрине",
+   "id": "fix",
+   "title": "Шаг 3. Нормировка",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz",
+    "showcase_day.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nd = np.load(\"showcase.npz\")\nX, y = d[\"X\"] / 255, d[\"y\"]\nD = np.load(\"showcase_day.npz\")\nXD, slot, tm, yD = D[\"X\"] / 255, D[\"slot\"], D[\"time\"], D[\"y\"]\nev = tm >= \"18:00\"",
+   "check": "import numpy as _np\nfrom sklearn.ensemble import RandomForestClassifier as _RF\nd0 = _np.load('showcase.npz'); D0 = _np.load('showcase_day.npz')\nfl = lambda Z: Z.reshape(len(Z), -1)\nnz = lambda Z: (fl(Z) - fl(Z).mean(1, keepdims=True)) / fl(Z).std(1, keepdims=True)\np = _RF(100, random_state=0).fit(nz(d0['X'] / 255), d0['y']).predict(nz(D0['X'] / 255))\nev = D0['time'] >= '18:00'; t = D0['y']\nassert (_np.asarray(need('pred_norm')) == p).mean() > 0.99, 'pred_norm — предсказания леса на нормированных кадрах дня.'\nw = {'acc_day_n': (p == t)[~ev].mean(), 'acc_evening_n': (p == t)[ev].mean(),\n     'recall_empty': ((p == 0) & (t == 0) & ev).sum() / ((t == 0) & ev).sum(),\n     'precision_empty': ((p == 0) & (t == 0) & ev).sum() / ((p == 0) & ev).sum()}\nfor k, v in w.items():\n    assert close(need(k), round(float(v), 3), 0.008), f'{k} = {need(k)}, а нужно {v:.3f}.'",
+   "starter": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\ndef normalize(Z):\n    ...",
+   "solution": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\n\ndef normalize(Z):\n    A = Z.reshape(len(Z), -1)\n    return (A - A.mean(axis=1, keepdims=True)) / A.std(axis=1, keepdims=True)\n\nforest_n = RandomForestClassifier(100, random_state=0).fit(normalize(X), y)\npred_norm = forest_n.predict(normalize(XD))\nacc_day_n = round(float((pred_norm == yD)[~ev].mean()), 3)\nacc_evening_n = round(float((pred_norm == yD)[ev].mean()), 3)\nfound = ((pred_norm == 0) & (yD == 0) & ev).sum()\nrecall_empty = round(float(found / ((yD == 0) & ev).sum()), 3)\nprecision_empty = round(float(found / ((pred_norm == 0) & ev).sum()), 3)\nprint(acc_day_n, acc_evening_n, recall_empty, precision_empty)",
+   "hints": [
+    "`normalize` — та же функция, что в задаче «Вечерний свет» урока «Модели на пикселях: ошибки, аугментация, устойчивость»: каждая строка минус её среднее, делённая на её отклонение (`axis=1, keepdims=True`).",
+    "Обучение — `normalize(X)`, предсказание — `normalize(XD)`. Полнота «пусто» вечером: `((pred_norm == 0) & (yD == 0) & ev).sum() / ((yD == 0) & ev).sum()`."
+   ],
+   "explain": "Днём точность даже чуть выросла (около 0.96), вечером — около 0.86 вместо 0.23. Для оповещений главное: вечером модель находит все пустые ячейки, а около 8 % её ответов «пусто» — ложные (круассан в тусклом свете иногда принимает за пустой поднос). Виды выпечки вечером по-прежнему путаются чаще, чем днём: свет меняет не только общую яркость, но и контраст. Следующий шаг для пекарни — доразметить сотню вечерних кадров и добавить их в обучение.\n\nПочему лес на пикселях, а не признаки из фильтров уроков «Свёртка и фильтры» и «Свёрточные нейросети»? Мы проверили: 16 случайных фильтров с той же нормировкой кадров и логистической регрессией дают днём около 0.94, а вечером — около 0.65 против 0.86 у леса. Представление, которое лучше на дневном тесте, не обязательно лучше в новых условиях, поэтому выбирали по вечерним кадрам."
+  },
+  "ch14/05-project/hours": {
+   "chapter": "ch14",
+   "lesson": "05-project",
+   "lesson_title": "Проект: что закончилось на витрине",
+   "id": "hours",
+   "title": "Шаг 4. Часы пустой витрины",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz",
+    "showcase_day.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom sklearn.ensemble import RandomForestClassifier\nd = np.load(\"showcase.npz\")\nD = np.load(\"showcase_day.npz\")\nXD, slot, tm, yD = D[\"X\"] / 255, D[\"slot\"], D[\"time\"], D[\"y\"]\ndef normalize(Z):\n    A = Z.reshape(len(Z), -1)\n    return (A - A.mean(axis=1, keepdims=True)) / A.std(axis=1, keepdims=True)\npred = RandomForestClassifier(100, random_state=0).fit(normalize(d[\"X\"] / 255), d[\"y\"]).predict(normalize(XD))",
+   "check": "import numpy as _np\nimport pandas as _pd\nD0 = _np.load('showcase_day.npz'); p = need('pred')\npr = _np.array(['круассан'] * 4 + ['маффин'] * 4 + ['печенье'] * 4)\ndf0 = _pd.DataFrame({'time': D0['time'], 'slot': D0['slot'], 'true': D0['y'], 'pred': p}); df0['product'] = pr[df0['slot']]\ng = need('df', _pd.DataFrame)\nassert {'time', 'slot', 'product', 'true', 'pred'} <= set(g.columns), f'Колонки df: {list(g.columns)}.'\nassert (g['product'].values == df0['product'].values).all(), 'product: по номеру ячейки (0–3 круассан, 4–7 маффин, 8–11 печенье).'\nm = df0[df0['time'] < '13:00']\nw = _pd.DataFrame({'модель': (m['pred'] == 0).groupby(m['product']).sum() * 0.25, 'факт': (m['true'] == 0).groupby(m['product']).sum() * 0.25})\ne = need('empty_hours', _pd.DataFrame)\nassert list(e.columns) == ['модель', 'факт'], f'Столбцы: {list(e.columns)}.'\nassert ((e.loc[w.index] - w).abs() < 1e-9).all().all(), f'empty_hours:\\n{e}\\nа нужно\\n{w}'",
+   "starter": "import numpy as np\nimport pandas as pd\n\nproduct = np.array([\"круассан\"] * 4 + [\"маффин\"] * 4 + [\"печенье\"] * 4)",
+   "solution": "import numpy as np\nimport pandas as pd\n\nproduct = np.array([\"круассан\"] * 4 + [\"маффин\"] * 4 + [\"печенье\"] * 4)\ndf = pd.DataFrame({\"time\": tm, \"slot\": slot, \"true\": yD, \"pred\": pred})\ndf[\"product\"] = product[df[\"slot\"]]\n\nm = df[df[\"time\"] < \"13:00\"]\nempty_hours = pd.DataFrame({\n    \"модель\": (m[\"pred\"] == 0).groupby(m[\"product\"]).sum() * 0.25,\n    \"факт\": (m[\"true\"] == 0).groupby(m[\"product\"]).sum() * 0.25,\n})\nprint(empty_hours)",
+   "hints": [
+    "Начните с таблицы: `pd.DataFrame({\"time\": tm, \"slot\": slot, \"true\": yD, \"pred\": pred})`.",
+    "`product[df[\"slot\"]]` раздаст названия по номеру ячейки. Утро — `df[df[\"time\"] < \"13:00\"]`; часы — `(m[\"pred\"] == 0).groupby(m[\"product\"]).sum() * 0.25`."
+   ],
+   "explain": "Модель оценивает простой почти точно: расхождение с фактом — четверть часа. За утро ячейки суммарно простояли пустыми около 21 часа — в среднем почти два часа на ячейку. Пустая ячейка в часы пик — недополученная выручка."
+  },
+  "ch14/05-project/alerts": {
+   "chapter": "ch14",
+   "lesson": "05-project",
+   "lesson_title": "Проект: что закончилось на витрине",
+   "id": "alerts",
+   "title": "Шаг 5. Правило оповещений",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz",
+    "showcase_day.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import RandomForestClassifier\nd = np.load(\"showcase.npz\")\nD = np.load(\"showcase_day.npz\")\ndef normalize(Z):\n    A = Z.reshape(len(Z), -1)\n    return (A - A.mean(axis=1, keepdims=True)) / A.std(axis=1, keepdims=True)\npred = RandomForestClassifier(100, random_state=0).fit(normalize(d[\"X\"] / 255), d[\"y\"]).predict(normalize(D[\"X\"] / 255))\nproduct = np.array([\"круассан\"] * 4 + [\"маффин\"] * 4 + [\"печенье\"] * 4)\ndf = pd.DataFrame({\"time\": D[\"time\"], \"slot\": D[\"slot\"], \"true\": D[\"y\"], \"pred\": pred})\ndf[\"product\"] = product[df[\"slot\"]]",
+   "check": "import numpy as _np\nimport pandas as _pd\nd0 = need('df', _pd.DataFrame)\nP0 = d0.pivot(index='time', columns='slot', values='pred') == 0\nT0 = d0.pivot(index='time', columns='slot', values='true') == 0\np1, p2 = P0.shift(1, fill_value=False), P0.shift(2, fill_value=False)\nA0 = P0 & p1 & ~(p1 & p2)\nwant = sorted((str(t), int(s)) for t, s in A0.stack()[A0.stack()].index)\na = need('alerts', _pd.DataFrame)\ngot = sorted((str(t), int(s)) for t, s in zip(a['time'], a['slot']))\nassert not (len(got) > len(want) and set(want) <= set(got)), f'Оповещений {len(got)}, а нужно {len(want)}. Похоже, оповещения повторяются внутри одной серии — нужно только её начало: «пусто» в t и t − 15, но не в t − 30.'\nassert got == want, f'Оповещений {len(got)}, а нужно {len(want)}. Первые нужные: {want[:5]}.'\nassert need('n_alerts') == len(want), f'n_alerts = {need(\"n_alerts\")}.'\nassert need('n_correct') == int(sum(bool(T0.loc[t, s]) for t, s in want)), f'n_correct = {need(\"n_correct\")}.'\nmiss = 0\nfor s in T0.columns:\n    col, run = T0[s].values, []\n    for i, v in enumerate(list(col) + [False]):\n        if v: run.append(i)\n        elif run:\n            if not A0[s].values[run].any(): miss += 1\n            run = []\nassert need('n_missed') == miss, f'n_missed = {need(\"n_missed\")}, а нужно {miss}.'",
+   "starter": "import numpy as np\nimport pandas as pd\n\nP = df.pivot(index=\"time\", columns=\"slot\", values=\"pred\") == 0\nT = df.pivot(index=\"time\", columns=\"slot\", values=\"true\") == 0",
+   "solution": "import numpy as np\nimport pandas as pd\n\nP = df.pivot(index=\"time\", columns=\"slot\", values=\"pred\") == 0\nT = df.pivot(index=\"time\", columns=\"slot\", values=\"true\") == 0\np1, p2 = P.shift(1, fill_value=False), P.shift(2, fill_value=False)\nA = P & p1 & ~(p1 & p2)\n\nst = A.stack()\nalerts = st[st].reset_index()[[\"time\", \"slot\"]]\nn_alerts = len(alerts)\nn_correct = int(sum(T.loc[t, s] for t, s in zip(alerts[\"time\"], alerts[\"slot\"])))\n\nn_missed = 0\nfor s in T.columns:\n    run = []\n    for i, v in enumerate(list(T[s].values) + [False]):\n        if v:\n            run.append(i)\n        elif run:\n            if not A[s].values[run].any():\n                n_missed += 1\n            run = []\nprint(n_alerts, n_correct, n_missed)\nprint(alerts.head(10))",
+   "hints": [
+    "Таблица «время × ячейка» — `df.pivot(index=\"time\", columns=\"slot\", values=\"pred\") == 0`. Строки идут по времени, поэтому `shift(1)` сдвигает на один кадр (15 минут) назад.",
+    "`P.shift(1, fill_value=False)` — «пусто в предыдущем кадре». Оповещения: `A = P & p1 & ~(p1 & p2)`; список — `A.stack()` и отбор `True`. Для пропусков пройдите по каждой ячейке и найдите серии подряд идущих `True` в `T`; эпизод пропущен, если в его кадрах `A` нигде не `True`."
+   ],
+   "explain": "За день — 24 оповещения на 22 эпизода пустоты: все эпизоды пойманы, ложное одно (вечерний круассан). Ещё одно оповещение — повторное: модель на один кадр «увидела» печенье в пустой ячейке, серия прервалась и началась заново. Цена правила «два кадра подряд» — задержка: пекарь узнаёт о пустой ячейке через 15 минут после того, как камера её впервые увидела. Для выпечки это приемлемо; для чего-то срочного правило было бы другим."
+  },
+  "ch14/05-project/restock": {
+   "chapter": "ch14",
+   "lesson": "05-project",
+   "lesson_title": "Проект: что закончилось на витрине",
+   "id": "restock",
+   "title": "Шаг 6. Когда допекать",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "showcase.npz",
+    "showcase_day.npz"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimport pandas as pd\nD = np.load(\"showcase_day.npz\")\nproduct = np.array([\"круассан\"] * 4 + [\"маффин\"] * 4 + [\"печенье\"] * 4)\ndf = pd.DataFrame({\"time\": D[\"time\"], \"slot\": D[\"slot\"], \"true\": D[\"y\"]})\ndf[\"product\"] = product[df[\"slot\"]]\nT = df.pivot(index=\"time\", columns=\"slot\", values=\"true\") == 0",
+   "check": "import numpy as _np\nimport pandas as _pd\nT0, pr, d0 = need('T'), need('product'), need('df')\nshare = T0.T.groupby(pr).mean().T\nw = _pd.Series({p: share.index[(share[p] >= 0.5).values][0] for p in share.columns})\ng = need('half_empty', _pd.Series)\nassert all(str(g[p]) == str(w[p]) for p in w.index), f'half_empty:\\n{g}\\nа нужно\\n{w}'\nm = d0[(d0['time'] >= '11:00') & (d0['time'] < '13:00')]\nassert close(need('saved_hours'), (m['true'] == 0).sum() * 0.25), f'saved_hours = {need(\"saved_hours\")}.'\nsb = (m['true'] == 0).groupby(m['product']).sum() * 0.25\ngs = need('saved_by_product', _pd.Series)\nassert all(close(gs[p], sb[p]) for p in sb.index), f'saved_by_product:\\n{gs}'",
+   "starter": "import numpy as np\nimport pandas as pd",
+   "solution": "import numpy as np\nimport pandas as pd\n\nshare = T.T.groupby(product).mean().T\nhalf_empty = pd.Series({p: share.index[(share[p] >= 0.5).values][0] for p in share.columns})\n\nm = df[(df[\"time\"] >= \"11:00\") & (df[\"time\"] < \"13:00\")]\nsaved_hours = (m[\"true\"] == 0).sum() * 0.25\nsaved_by_product = (m[\"true\"] == 0).groupby(m[\"product\"]).sum() * 0.25\nprint(half_empty, saved_hours, saved_by_product, sep=\"\\n\\n\")",
+   "hints": [
+    "`T` — таблица «время × ячейка». Чтобы сгруппировать ячейки по товару, транспонируйте её (`T.T` — строки становятся ячейками), сгруппируйте и транспонируйте обратно.",
+    "Доля пустых ячеек товара по времени: `T.T.groupby(product).mean().T` — таблица «время × товар». Первое время, где доля ≥ 0.5, — `share.index[(share[p] >= 0.5).values][0]`.",
+    "Простой между 11:00 и 13:00: `m = df[(df[\"time\"] >= \"11:00\") & (df[\"time\"] < \"13:00\")]`, затем `(m[\"true\"] == 0).sum() * 0.25`."
+   ],
+   "explain": "К 11:00 половина ячеек каждого товара уже пуста (печенье — с 9:45), а допекают только в 13:00. Между 11:00 и 13:00 витрина набирает 15 часов пустых ячеек — больше двух третей утреннего простоя. Это один день, и вывод стоит подтвердить за 2–3 недели — но камера с моделью как раз и даёт такие данные каждый день.\n\n## Итог для управляющей KZN-1\n\n> **Камера над витриной: один размеченный день, 732 кадра ячеек.**\n>\n> 1. **Модель распознаёт ячейку днём в 96 % случаев, вечером — в 86 %.** Первая версия вечером не находила пустые ячейки совсем: в 18:00 включается другой свет, и кадры становятся на треть темнее. Исправлено нормировкой яркости каждого кадра. Чтобы поднять вечернюю точность, нужна сотня размеченных вечерних кадров.\n> 2. **Оповещения:** сигнал, если ячейка пуста на двух кадрах подряд (через 15 минут после того, как опустела). За проверочный день пойманы все 22 случая пустоты, ложных сигналов — один.\n> 3. **Допекание:** к 11:00 половина ячеек каждого товара уже пустует, печенье — с 9:45. С 11:00 до 13:00 витрина набирает 15 часов пустых ячеек. **Предложение:** перенести утреннее допекание на 11:00 (печенье — раньше) и проверить на 2–3 неделях данных с камеры, как изменится выручка выпечки.\n\n::: tip\nВ работе модель будет видеть кадры, которых не было ни в обучении, ни в проверочном дне: новую выпечку, другую раскладку, солнце в окне. Раз в месяц размечайте день вручную и пересчитывайте точность, как в шаге 1, — это мониторинг из главы 8.\n:::"
+  }
+ }
+}

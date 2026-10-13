@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PyTorch: то же самое, но в промышленном масштабе — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/katex/katex.min.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch11">Глава 11. Нейросети</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 11</div><div class="side-title">Нейросети</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02"><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03"><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05"><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11" open><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" aria-current="page" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 5 · <span class="deep-eb" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубление</span> · ≈ 55 мин · задач: 3</div>
+      <h1>PyTorch: то же самое, но в промышленном масштабе</h1>
+      <p class="lead">Нейросети на практике пишут на PyTorch. Он делает за вас самое трудоёмкое из обратного прохода — считает градиенты автоматически — и умеет обучать сети на видеокарте. Разбираем, как наш numpy-код превращается в PyTorch: тензоры, автоматические градиенты, класс сети <code>nn.Module</code>, цикл обучения и сохранение весов.</p>
+      <div class="data-files"><span class="df-label">Данные урока</span><a class="data-file" href="../data/guests_churn.csv" download title="Скачать guests_churn.csv"><span class="df-name">guests_churn.csv</span><span class="df-info">2400 строк · 131 КБ</span></a><span class="df-note">В примерах файлы уже подключены — скачивать нужно, только чтобы открыть их у себя.</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 3</span></div>
+    </div>
+    <article class="prose theory"><h2 id="почему-pytorch">Почему PyTorch</h2>
+<p>В уроке «Обучение сети: обратное распространение ошибки» мы писали обратный проход руками: для двух слоёв это 4 строки, для сети из 50 слоёв — невозможно. PyTorch решает три задачи:</p>
+<ol>
+<li><strong>автоматические градиенты</strong> — вы пишете только прямой проход, обратный PyTorch строит сам;</li>
+<li><strong>готовые слои и оптимизаторы</strong> — <code>nn.Linear</code>, <code>nn.Conv2d</code>, <code>Adam</code> и сотни других;</li>
+<li><strong>видеокарта</strong> — те же операции на GPU в десятки раз быстрее.</li>
+</ol>
+<aside class="callout callout-note"><div class="callout-title">Заметка</div>
+<p>PyTorch не работает в браузере, поэтому код этого урока на PyTorch показан без кнопки «Запустить». Чтобы попробовать его, поставьте библиотеку в свой проект (глава 2): <code>uv add torch</code> и запустите код в Jupyter. Задачи урока — на numpy: они про те же идеи, и их можно проверить прямо здесь.</p>
+<p>Для работы на своём компьютере есть готовый блокнот <a href="../notebooks/extra/ch11-pytorch-tabular.ipynb">ch11-pytorch-tabular.ipynb</a>: сеть на PyTorch предсказывает минуты доставки «Зерна», с классом <code>nn.Module</code>, функцией <code>train_loop</code>, smoke-тестом, журналом экспериментов в DataFrame и честным сравнением с бустингом. В архиве курса он лежит в папке <code>notebooks/extra/</code>, данные (<a class="data-link" href="../data/deliveries.csv" download title="Скачать deliveries.csv"><code>deliveries.csv</code></a>) блокнот находит сам в папке <code>data</code> курса. Поставьте <code>torch</code> и выполняйте сверху вниз; на обычном ноутбуке весь блокнот выполняется за несколько минут.</p>
+</aside>
+<div class="fb" data-sec="почему-pytorch"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="тензоры-и-автоматические-градиенты">Тензоры и автоматические градиенты</h2>
+<p>Тензор — это массив numpy с одним дополнительным умением: если попросить (<code>requires_grad=True</code>), он запоминает, какие операции с ним делали, и может посчитать производные.</p>
+<pre class="static code"><code class="lang-python">import torch
+
+w = torch.tensor(5.0, requires_grad=True)
+km = torch.tensor([1.0, 2.0, 3.0, 4.5, 6.0])
+minutes = torch.tensor([18.0, 25.0, 34.0, 44.0, 55.0])
+
+loss = ((w * km - minutes) ** 2).mean()     # потеря из главы 10
+loss.backward()                              # обратный проход — автоматически
+print(w.grad)                                # tensor(-138.7000) — та же производная, что мы считали руками</code></pre>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>torch.tensor(5.0, requires_grad=True)</code> — число-параметр, за которым PyTorch будет следить.</li>
+<li><code>loss = ((w * km - minutes) ** 2).mean()</code> — обычная формула, но каждый шаг PyTorch записывает в «граф вычислений».</li>
+<li><code>loss.backward()</code> — проход по графу назад по цепному правилу; результат кладётся в <code>w.grad</code>.</li>
+</ul>
+<p>Сравните с главой 10: там мы вывели формулу <span class="math inline">\operatorname{mean}\big(2 \cdot (w \cdot x - y) \cdot x\big)</span> и получили −138.7. Здесь формулу никто не писал — PyTorch прошёл по цепочке операций назад сам.</p>
+<aside class="callout callout-note"><div class="callout-title">Практика — в своём блокноте</div>
+<p>В браузере PyTorch не запускается, поэтому задач на этот раздел здесь нет — проверьте автоматический градиент у себя (<code>uv add torch</code>, глава 2):</p>
+<ol>
+<li>Выполните код выше и сравните <code>w.grad</code> с −138.7 — значением, посчитанным по формуле в главе 10.</li>
+<li>Не обнуляя градиент, ещё раз посчитайте <code>loss</code> и вызовите <code>loss.backward()</code>. В <code>w.grad</code> окажется −277.4: PyTorch <strong>сложил</strong> два градиента. Отсюда <code>optimizer.zero_grad()</code> в каждом шаге обучения (раздел ниже).</li>
+<li>Возьмите <code>w = torch.tensor(9.0, requires_grad=True)</code> — градиент станет −26.3: ближе к минимуму потеря меняется медленнее.</li>
+</ol>
+<p>Ручную проверку градиента числами (центральная разность) вы уже делали в задаче «Проверка формулы p − y» урока «Обучение сети: обратное распространение ошибки» — это тот же приём, которым проверяют и автоматический градиент.</p>
+</aside>
+<div class="fb" data-sec="тензоры-и-автоматические-градиенты"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="тензоры-и-numpy-туда-и-обратно">Тензоры и numpy: туда и обратно</h2>
+<p><strong>Зачем.</strong> Данные «Зерна» приходят в pandas и numpy, сеть работает с тензорами, а прогнозы снова нужны в DataFrame — для отчёта или выгрузки в базу. На этих переходах ошибаются чаще, чем в самой сети: тип чисел не тот, тензор «застрял» на видеокарте или массив неожиданно меняется вместе с тензором.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Есть два способа поделиться таблицей с коллегой: дать ссылку на общий документ или отправить копию файлом. По ссылке коллега видит все ваши правки, копия живёт своей жизнью. <code>torch.from_numpy</code> — это ссылка на ту же память, <code>torch.tensor(...)</code> — копия. Хромает аналогия в одном: «по ссылке» нельзя поменять тип чисел — для float32 из float64 всё равно нужна копия.</p>
+</aside>
+<p><strong>Игрушечный пример руками</strong> — то же явление в чистом numpy, на нём можно проверить себя прямо здесь. <code>np.asarray</code> не копирует массив, если он уже подходящий, а <code>np.array</code> копирует:</p>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">import numpy as np
+a = np.array([1.0, 2.0, 3.0])
+b = np.asarray(a)        # тот же массив, что a
+c = np.array(a)          # копия
+a[0] = 10
+print(b[0], c[0])</code></pre>
+<ul>
+<li><code>1.0 1.0</code></li>
+<li>[x] <code>10.0 1.0</code></li>
+<li><code>10.0 10.0</code></li>
+</ul>
+<p>Почему: <code>b</code> смотрит в ту же память, что <code>a</code>, и видит правку; <code>c</code> — независимая копия, сделанная до правки.</p>
+</div>
+<p>В PyTorch то же самое:</p>
+<pre class="static code"><code class="lang-python">import numpy as np
+import torch
+
+a = np.array([1.5, 2.0, 3.0])                      # float64 — так numpy хранит дроби по умолчанию
+t_shared = torch.from_numpy(a)                     # общая память с a, тип float64
+t_copy = torch.tensor(a, dtype=torch.float32)      # копия, тип float32
+a[0] = 100.0
+print(t_shared[0].item(), t_copy[0].item())        # 100.0 1.5
+print(t_shared.dtype, t_copy.dtype, torch.tensor([1.0]).dtype)
+# torch.float64 torch.float32 torch.float32
+
+w = torch.tensor([0.5, -1.0], requires_grad=True)
+loss = (w * 2).sum()
+loss.backward()
+print(w.detach().numpy(), w.grad.numpy())          # [ 0.5 -1. ] [2. 2.]</code></pre>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>torch.from_numpy(a)</code> — тензор поверх той же памяти: правка <code>a[0]</code> видна в <code>t_shared</code>. Тип сохраняется: float64.</li>
+<li><code>torch.tensor(a, dtype=torch.float32)</code> — новая копия в типе float32, по умолчанию в PyTorch все слои и веса — float32.</li>
+<li><code>.item()</code> — число из тензора с одним элементом в обычный Python-<code>float</code> (для печати и журналов).</li>
+<li><code>w.detach().numpy()</code> — тензор с <code>requires_grad=True</code> напрямую в numpy не превращается: сначала <code>.detach()</code> («отцепить от графа вычислений»). Тензор на видеокарте — ещё и <code>.cpu()</code>: <code>t.detach().cpu().numpy()</code>.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>откуда → куда</th>
+<th>как</th>
+<th>копия?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>numpy → тензор</td>
+<td><code>torch.from_numpy(a)</code></td>
+<td>нет, общая память, тип прежний</td>
+</tr>
+<tr>
+<td>numpy или pandas → тензор</td>
+<td><code>torch.tensor(df[cols].to_numpy(), dtype=torch.float32)</code></td>
+<td>да</td>
+</tr>
+<tr>
+<td>тензор → numpy</td>
+<td><code>t.numpy()</code></td>
+<td>нет — только для тензора на процессоре и без градиентов</td>
+</tr>
+<tr>
+<td>тензор с градиентом или на GPU → numpy</td>
+<td><code>t.detach().cpu().numpy()</code></td>
+<td>на GPU — да</td>
+</tr>
+<tr>
+<td>тензор из одного числа → Python</td>
+<td><code>t.item()</code></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<figure class="fig" data-fig="nn-tensor-memory"><div class="fig-scroll"><svg viewBox="0 0 700 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-nn-tensor-memory">
+  <title id="t-nn-tensor-memory">torch.from_numpy делит память с массивом, torch.tensor делает копию</title>
+  <defs><marker id="ah-nn-tensor-memory" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="mut sm b" x="186" y="24" text-anchor="start">до правки</text>
+  <text class="mut sm b" x="486" y="24" text-anchor="start">после a[0] = 100.0</text>
+  <text class="ink sm b" x="20" y="62" text-anchor="start">a (numpy)</text>
+  <text class="ink sm b" x="20" y="104" text-anchor="start">t_shared</text>
+  <text class="mut sm" x="20" y="120" text-anchor="start">torch.from_numpy(a)</text>
+  <path class="ln" d="M140,58 L178,66" marker-end="url(#ah-nn-tensor-memory)"/>
+  <path class="ln" d="M140,100 L178,84" marker-end="url(#ah-nn-tensor-memory)"/>
+  <rect class="box-acc" x="180" y="36" width="200" height="92" rx="8"/>
+  <rect class="box" x="211" y="54" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="234.0" y="72" text-anchor="middle">1.5</text>
+  <rect class="box" x="257" y="54" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="280.0" y="72" text-anchor="middle">2.0</text>
+  <rect class="box" x="303" y="54" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="326.0" y="72" text-anchor="middle">3.0</text>
+  <text class="acc sm" x="280" y="112" text-anchor="middle">одна память: float64, 24 байта</text>
+  <text class="ink sm b" x="20" y="182" text-anchor="start">t_copy</text>
+  <text class="mut sm" x="20" y="198" text-anchor="start">torch.tensor(a,</text>
+  <text class="mut sm" x="20" y="213" text-anchor="start">  dtype=torch.float32)</text>
+  <rect class="box" x="180" y="162" width="200" height="64" rx="8"/>
+  <rect class="box" x="211" y="170" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="234.0" y="188" text-anchor="middle">1.5</text>
+  <rect class="box" x="257" y="170" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="280.0" y="188" text-anchor="middle">2.0</text>
+  <rect class="box" x="303" y="170" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="326.0" y="188" text-anchor="middle">3.0</text>
+  <text class="ink2 sm" x="280" y="216" text-anchor="middle">своя память: float32, 12 байт</text>
+  <path class="ln dash" d="M280,128 L280,160" marker-end="url(#ah-nn-tensor-memory)"/>
+  <text class="mut sm" x="288" y="150" text-anchor="start">копия при создании</text>
+  <path class="ln-acc" d="M384,82 L476,82" marker-end="url(#ah-nn-tensor-memory)"/>
+  <text class="acc sm b" x="430" y="72" text-anchor="middle">a[0] = 100.0</text>
+  <rect class="box-acc" x="480" y="36" width="200" height="92" rx="8"/>
+  <rect class="box" x="511" y="54" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="534.0" y="72" text-anchor="middle">100.0</text>
+  <rect class="box" x="557" y="54" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="580.0" y="72" text-anchor="middle">2.0</text>
+  <rect class="box" x="603" y="54" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="626.0" y="72" text-anchor="middle">3.0</text>
+  <rect class="box-warn" x="511" y="54" width="46" height="26" rx="2"/>
+  <text class="ink sm b" x="534" y="72" text-anchor="middle">100.0</text>
+  <text class="acc sm" x="580" y="112" text-anchor="middle">a[0] и t_shared[0] → 100.0</text>
+  <rect class="box" x="480" y="162" width="200" height="64" rx="8"/>
+  <rect class="box" x="511" y="170" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="534.0" y="188" text-anchor="middle">1.5</text>
+  <rect class="box" x="557" y="170" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="580.0" y="188" text-anchor="middle">2.0</text>
+  <rect class="box" x="603" y="170" width="46" height="26" rx="2"/>
+  <text class="ink sm" x="626.0" y="188" text-anchor="middle">3.0</text>
+  <text class="ink2 sm" x="580" y="216" text-anchor="middle">t_copy[0] → 1.5</text>
+  <path class="ln-mut" d="M20,242 L680,242"/>
+  <text class="ink sm b" x="20" y="274" text-anchor="start">обратно в numpy</text>
+  <rect class="box" x="172" y="252" width="112" height="44" rx="6"/>
+  <text class="ink sm b" x="228" y="270" text-anchor="middle">тензор на GPU</text>
+  <text class="mut sm" x="228" y="287" text-anchor="middle">с requires_grad</text>
+  <path class="ln" d="M284,274 L300,274" marker-end="url(#ah-nn-tensor-memory)"/>
+  <rect class="box" x="300" y="252" width="112" height="44" rx="6"/>
+  <text class="ink sm b" x="356" y="270" text-anchor="middle">.detach()</text>
+  <text class="mut sm" x="356" y="287" text-anchor="middle">без графа</text>
+  <path class="ln" d="M412,274 L428,274" marker-end="url(#ah-nn-tensor-memory)"/>
+  <rect class="box" x="428" y="252" width="112" height="44" rx="6"/>
+  <text class="ink sm b" x="484" y="270" text-anchor="middle">.cpu()</text>
+  <text class="mut sm" x="484" y="287" text-anchor="middle">в память CPU</text>
+  <path class="ln" d="M540,274 L556,274" marker-end="url(#ah-nn-tensor-memory)"/>
+  <rect class="box-ok" x="556" y="252" width="112" height="44" rx="6"/>
+  <text class="ink sm b" x="612" y="270" text-anchor="middle">.numpy()</text>
+  <text class="mut sm" x="612" y="287" text-anchor="middle">массив numpy</text>
+  <text class="mut sm" x="350" y="318" text-anchor="middle">одно число из тензора — t.item(); на процессоре и без градиентов хватает t.numpy()</text>
+</svg>
+</div><figcaption>
+<p>Пример из кода выше: <code>t_shared</code> смотрит в ту же память, что и массив <code>a</code>, поэтому правка <code>a[0]</code> видна в нём; <code>t_copy</code> — отдельная копия во float32, её правка не касается. Внизу — путь тензора с градиентом с видеокарты обратно в numpy.</p>
+</figcaption></figure>
+<p><strong>Почему float32, а не float64.</strong> float32 занимает вдвое меньше памяти и на видеокартах считается в разы быстрее, а точности в 7 значащих цифр сетям хватает: шум от батчей всё равно больше. Посмотрим, что теряется:</p>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+x64 = np.array([0.1, 123456789.12, 16_777_217.0])
+x32 = x64.astype(np.float32)
+print(x64.dtype, x64.nbytes, &quot;байт;&quot;, x32.dtype, x32.nbytes, &quot;байт&quot;)
+print([float(v) for v in x32])</code></pre></div>
+<p><strong>Что получилось:</strong> три числа занимают 24 байта во float64 и 12 во float32. Цена — около 7 значащих цифр: 0.1 хранится как 0.10000000149…, выручка 123 456 789.12 превратилась в 123 456 792, а 16 777 217 — в 16 777 216: float32 хранит 24 двоичных разряда значащих цифр, поэтому все целые он записывает точно только до <span class="math inline">2^{24} = 16\,777\,216</span>, а дальше — через одно. Для весов сети это неважно, для денег в отчёте — критично: суммы и итоги считайте в pandas во float64, в тензоры отдавайте признаки.</p>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong><code>RuntimeError: mat1 and mat2 must have the same dtype, but got Double and Float</code>.</strong> Признаки пришли из numpy во float64 (<code>Double</code>), а веса слоя — float32 (<code>Float</code>). Лечится <code>torch.tensor(X, dtype=torch.float32)</code> или <code>X.float()</code>.</li>
+<li><strong><code>RuntimeError: Can't call numpy() on Tensor that requires grad</code>.</strong> Нужно <code>t.detach().numpy()</code>; для прогнозов удобнее сразу считать в <code>with torch.no_grad():</code>.</li>
+<li><strong>Массив «сам» поменялся.</strong> После <code>torch.from_numpy(a)</code> операции на месте над тензором (<code>t += 1</code>, <code>t[0] = …</code>) меняют и <code>a</code>. Если массив ещё нужен — берите копию: <code>torch.tensor(a)</code>.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-float32"><b>2</b> float64 → float32</a></div>
+<div class="fb" data-sec="тензоры-и-numpy-туда-и-обратно"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="наша-numpy-сеть-на-pytorch">Наша numpy-сеть на PyTorch</h2>
+<p>Возьмём сеть с полумесяцами из урока «Обучение сети: обратное распространение ошибки» — 2 входа, 16 нейронов с ReLU, сигмоида на выходе — и перепишем её на PyTorch:</p>
+<pre class="static code"><code class="lang-python">import torch
+from torch import nn
+from sklearn.datasets import make_moons
+
+X, y = make_moons(400, noise=0.2, random_state=0)
+X = torch.tensor(X, dtype=torch.float32)
+y = torch.tensor(y, dtype=torch.float32)
+
+torch.manual_seed(0)
+model = nn.Sequential(
+    nn.Linear(2, 16),      # X @ W1 + b1
+    nn.ReLU(),
+    nn.Linear(16, 1),      # H @ w2 + b2 — логит (оценка до сигмоиды)
+)
+loss_fn = nn.BCEWithLogitsLoss()            # сигмоида + логистическая потеря в одном
+optimizer = torch.optim.SGD(model.parameters(), lr=0.5)
+
+for step in range(2000):
+    optimizer.zero_grad()                   # обнулить градиенты прошлого шага
+    logits = model(X).squeeze(1)            # прямой проход
+    loss = loss_fn(logits, y)
+    loss.backward()                         # обратный проход
+    optimizer.step()                        # шаг спуска: w -= lr * w.grad
+
+acc = ((logits &gt; 0).float() == y).float().mean()
+print(f&quot;потеря {loss.item():.3f}, верных {acc.item():.3f}&quot;)</code></pre>
+<p>Построчное соответствие с нашим numpy-кодом:</p>
+<table>
+<thead>
+<tr>
+<th>numpy</th>
+<th>PyTorch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>W1 = rng.normal(...) * 0.5</code></td>
+<td><code>nn.Linear(2, 16)</code> (инициализация внутри)</td>
+</tr>
+<tr>
+<td><code>np.maximum(0, Z1)</code></td>
+<td><code>nn.ReLU()</code></td>
+</tr>
+<tr>
+<td><code>1 / (1 + np.exp(-z))</code> + логистическая потеря</td>
+<td><code>nn.BCEWithLogitsLoss()</code></td>
+</tr>
+<tr>
+<td>четыре строки градиентов (<code>d2</code>, <code>g_w2, g_b2</code>, <code>dH</code>, <code>g_W1, g_b1</code>)</td>
+<td><code>loss.backward()</code></td>
+</tr>
+<tr>
+<td><code>W1 -= lr * g_W1</code> и т. д.</td>
+<td><code>optimizer.step()</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>optimizer.zero_grad()</code> нужен потому, что PyTorch <strong>складывает</strong> градиенты от вызова к вызову (так удобно в сложных случаях). Забыть его — частая ошибка: градиенты копятся, и обучение идёт вразнос.</p>
+<figure class="fig" data-fig="nn-torch-loop"><div class="fig-scroll"><svg viewBox="0 0 700 270" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-nn-torch-loop">
+  <title id="t-nn-torch-loop">Один шаг обучения в PyTorch и его аналог в numpy-коде обратного прохода</title>
+  <defs><marker id="ah-nn-torch-loop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box-warn" x="10" y="66" width="128" height="76" rx="10"/>
+  <text class="ink2 sm" x="74.0" y="84" text-anchor="middle">optimizer.</text>
+  <text class="ink sm b" x="74.0" y="102" text-anchor="middle">zero_grad()</text>
+  <text class="ink2 sm" x="74.0" y="126" text-anchor="middle">обнулить .grad</text>
+  <rect class="box-acc" x="148" y="66" width="128" height="76" rx="10"/>
+  <text class="ink sm b" x="212.0" y="96" text-anchor="middle">model(xb)</text>
+  <text class="ink2 sm" x="212.0" y="126" text-anchor="middle">прямой проход</text>
+  <text class="mut sm" x="212.0" y="164" text-anchor="middle">Z1, H, z</text>
+  <path class="ln" d="M139,104 L147,104" marker-end="url(#ah-nn-torch-loop)"/>
+  <rect class="box-acc" x="286" y="66" width="128" height="76" rx="10"/>
+  <text class="ink sm b" x="350.0" y="96" text-anchor="middle">loss_fn(logits, yb)</text>
+  <text class="ink2 sm" x="350.0" y="126" text-anchor="middle">потеря</text>
+  <text class="mut sm" x="350.0" y="164" text-anchor="middle">логистич. потеря</text>
+  <path class="ln" d="M277,104 L285,104" marker-end="url(#ah-nn-torch-loop)"/>
+  <rect class="box-err" x="424" y="66" width="128" height="76" rx="10"/>
+  <text class="ink2 sm" x="488.0" y="84" text-anchor="middle">loss.</text>
+  <text class="ink sm b" x="488.0" y="102" text-anchor="middle">backward()</text>
+  <text class="ink2 sm" x="488.0" y="126" text-anchor="middle">градиенты → .grad</text>
+  <text class="mut sm" x="488.0" y="164" text-anchor="middle">4 строки градиентов</text>
+  <path class="ln" d="M415,104 L423,104" marker-end="url(#ah-nn-torch-loop)"/>
+  <rect class="box-ok" x="562" y="66" width="128" height="76" rx="10"/>
+  <text class="ink2 sm" x="626.0" y="84" text-anchor="middle">optimizer.</text>
+  <text class="ink sm b" x="626.0" y="102" text-anchor="middle">step()</text>
+  <text class="ink2 sm" x="626.0" y="126" text-anchor="middle">w ← w − lr·grad</text>
+  <text class="mut sm" x="626.0" y="164" text-anchor="middle">W1 -= lr * g_W1 …</text>
+  <path class="ln" d="M553,104 L561,104" marker-end="url(#ah-nn-torch-loop)"/>
+  <text class="ink2 sm" x="350" y="26" text-anchor="middle">повторяется для каждого батча, каждой эпохи</text>
+  <path class="ln-acc" d="M626.0,172 L626.0,196 L74.0,196 L74.0,144" marker-end="url(#ah-nn-torch-loop)"/>
+  <text class="acc sm b" x="350" y="190" text-anchor="middle">следующий батч</text>
+  <path class="ln-err dash" d="M557.0,56 L557.0,150"/>
+  <text class="err sm" x="557.0" y="50" text-anchor="middle">здесь — clip_grad_norm_</text>
+  <text class="mut sm" x="14" y="230" text-anchor="start">под блоками — то же в numpy, из обратного прохода</text>
+  <text class="mut sm" x="14" y="252" text-anchor="start">без zero_grad градиенты складываются с прошлого шага (+= в графе вычислений)</text>
+</svg>
+</div><figcaption>
+<p>Пять вызовов одного шага обучения в PyTorch и что им соответствует в нашем numpy-коде. Обрезка градиента, если она нужна, встаёт между <code>backward()</code> и <code>step()</code>.</p>
+</figcaption></figure>
+<aside class="callout callout-tip"><div class="callout-title">Совет</div>
+<p>Вместо <code>torch.optim.SGD</code> почти всегда берут <code>torch.optim.Adam(model.parameters(), lr=1e-3)</code> — тот же Adam, что внутри <code>MLPClassifier</code>. Он менее чувствителен к выбору шага.</p>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-p-torch-order"><b>1</b> Порядок шагов обучения</a></div>
+<div class="fb" data-sec="наша-numpy-сеть-на-pytorch"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="сеть-как-класс-nn-module">Сеть как класс: nn.Module</h2>
+<p><strong>Зачем.</strong> <code>nn.Sequential</code> подходит, пока сеть — прямая цепочка слоёв. Но часто нужна сеть сложнее — например, общий скрытый слой и отдельные выходы («головы») для минут доставки, ухода гостя и его покупок; о таких выходах — урок «Softmax, выход под задачу и мини-батчи». Такую — и любую нестандартную — сеть описывают классом, наследником <code>nn.Module</code>. Так написан почти весь код на PyTorch, который вы встретите.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Класс сети похож на техкарту напитка: в шапке перечислено оборудование и ингредиенты (<code>__init__</code> — слои с их весами), а ниже — порядок действий (<code>forward</code> — как из входа получить ответ). Одна техкарта — сколько угодно чашек. Хромает аналогия в одном: «ингредиенты» сети, веса, меняются при обучении, а техкарта — нет.</p>
+</aside>
+<p><strong>Игрушечный пример: тот же каркас на numpy.</strong> Класс из главы 9 с <code>fit</code> и <code>predict</code> вы уже писали; у сети всё устроено так же — в конструкторе создаются веса, метод <code>forward</code> считает прогноз, <code>parameters</code> отдаёт список всех обучаемых массивов:</p>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+
+class NumpyNet:
+    def __init__(self, n_in, hidden, seed=0):
+        rng = np.random.default_rng(seed)
+        self.W1 = rng.normal(size=(n_in, hidden)) * np.sqrt(2 / n_in)    # He для ReLU (урок «Граф вычислений, инициализация и обрезка градиента»)
+        self.b1 = np.zeros(hidden)
+        self.w2 = rng.normal(size=hidden) * np.sqrt(1 / hidden)
+        self.b2 = np.zeros(1)
+
+    def forward(self, X):
+        H = np.maximum(0, X @ self.W1 + self.b1)
+        return H @ self.w2 + self.b2                                       # логит, без сигмоиды
+
+    def parameters(self):
+        return [self.W1, self.b1, self.w2, self.b2]
+
+net = NumpyNet(n_in=8, hidden=16)
+X = np.random.default_rng(1).normal(size=(5, 8))                          # 5 гостей, 8 признаков
+print(net.forward(X).shape, sum(p.size for p in net.parameters()))</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>__init__</code> создаёт веса и кладёт их в атрибуты <code>self.…</code> — они живут вместе с объектом.</li>
+<li><code>forward(X)</code> — прямой проход: из таблицы 5 × 8 получается 5 логитов.</li>
+<li><code>parameters()</code> — список всех обучаемых массивов: 8 · 16 + 16 + 16 + 1 = 161 число. Оптимизатору нужен именно такой список.</li>
+</ul>
+<p>Оптимизатор обновляет только то, что вернул <code>parameters()</code>. Что в список не попало, не обучается, и никакой ошибки при этом нет:</p>
+<div class="predict" data-q="q2"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">import numpy as np
+
+class Net:
+    def __init__(self):
+        self.W1 = np.ones((3, 4))
+        self.b1 = np.zeros(4)
+    def parameters(self):
+        return [self.W1]          # сдвиг b1 забыли
+
+net = Net()
+print(sum(p.size for p in net.parameters()))</code></pre>
+<ul>
+<li><code>16</code></li>
+<li>[x] <code>12</code></li>
+<li><code>2</code></li>
+</ul>
+<p>Почему: в список попала только матрица 3 × 4, то есть 12 чисел. Сдвиги <code>b1</code> есть у объекта, но оптимизатор о них не узнает, и они навсегда останутся нулями. В PyTorch так же ведут себя слои, сложенные в обычный список вместо <code>nn.ModuleList</code> (см. «Типичные ошибки» ниже).</p>
+</div>
+<p>На PyTorch — та же структура, но веса создают и регистрируют сами слои:</p>
+<pre class="static code"><code class="lang-python">import torch
+from torch import nn
+
+class ChurnNet(nn.Module):
+    def __init__(self, n_in, hidden=16, p_drop=0.2):
+        super().__init__()                         # обязательно первой строкой
+        self.layer1 = nn.Linear(n_in, hidden)
+        self.drop = nn.Dropout(p_drop)
+        self.out = nn.Linear(hidden, 1)
+
+    def forward(self, x):
+        h = torch.relu(self.layer1(x))
+        return self.out(self.drop(h)).squeeze(1)   # логиты, форма (число гостей,)
+
+model = ChurnNet(n_in=8)
+print(model)
+print(sum(p.numel() for p in model.parameters()))  # 161
+for name, p in model.named_parameters():
+    print(name, tuple(p.shape))</code></pre>
+<pre class="static output"><code class="lang-text">ChurnNet(
+  (layer1): Linear(in_features=8, out_features=16, bias=True)
+  (drop): Dropout(p=0.2, inplace=False)
+  (out): Linear(in_features=16, out_features=1, bias=True)
+)
+161
+layer1.weight (16, 8)
+layer1.bias (16,)
+out.weight (1, 16)
+out.bias (1,)</code></pre>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>super().__init__()</code> подготавливает внутренности <code>nn.Module</code>; без неё присвоение <code>self.layer1 = …</code> падает.</li>
+<li>Каждый слой, записанный в атрибут, <strong>регистрируется</strong>: его веса попадают в <code>model.parameters()</code> и в <code>state_dict()</code> для сохранения.</li>
+<li><code>forward</code> вызывают не напрямую, а через <code>model(x)</code> — так PyTorch заодно выполняет свою служебную работу.</li>
+<li><code>layer1.weight</code> имеет форму (16, 8) — <strong>выходы × входы</strong>, наоборот по сравнению с нашим <code>W1</code> (8 × 16): слой считает <code>x @ W.T + b</code>. Число параметров то же — 161.</li>
+</ul>
+<figure class="fig" data-fig="nn-module-anatomy"><div class="fig-scroll"><svg viewBox="0 0 700 350" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-nn-module-anatomy">
+  <title id="t-nn-module-anatomy">Класс ChurnNet: __init__ регистрирует слои, forward задаёт порядок вычислений</title>
+  <defs><marker id="ah-nn-module-anatomy" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="20" y="20" width="270" height="170" rx="8"/>
+  <text class="ink sm b" x="32" y="42" text-anchor="start">class ChurnNet(nn.Module):</text>
+  <text class="acc sm b" x="44" y="66" text-anchor="start">__init__ — что есть у сети</text>
+  <text class="ink2 sm" x="56" y="88" text-anchor="start">super().__init__()</text>
+  <text class="ink2 sm" x="56" y="108" text-anchor="start">self.layer1 = nn.Linear(8, 16)</text>
+  <text class="ink2 sm" x="56" y="128" text-anchor="start">self.drop = nn.Dropout(0.2)</text>
+  <text class="ink2 sm" x="56" y="148" text-anchor="start">self.out = nn.Linear(16, 1)</text>
+  <text class="acc sm b" x="44" y="178" text-anchor="start">forward — как из входа получить ответ</text>
+  <path class="ln-acc" d="M292,110 L384,110" marker-end="url(#ah-nn-module-anatomy)"/>
+  <text class="acc sm" x="338" y="100" text-anchor="middle">регистрация</text>
+  <rect class="box-acc" x="386" y="20" width="294" height="170" rx="8"/>
+  <text class="ink sm b" x="533" y="42" text-anchor="middle">model.parameters()</text>
+  <text class="ink2 sm" x="400" y="68" text-anchor="start">layer1.weight</text>
+  <text class="mut sm" x="560" y="68" text-anchor="start">(16, 8)</text>
+  <text class="ink sm" x="668" y="68" text-anchor="end">128</text>
+  <text class="ink2 sm" x="400" y="92" text-anchor="start">layer1.bias</text>
+  <text class="mut sm" x="560" y="92" text-anchor="start">(16,)</text>
+  <text class="ink sm" x="668" y="92" text-anchor="end">16</text>
+  <text class="ink2 sm" x="400" y="116" text-anchor="start">out.weight</text>
+  <text class="mut sm" x="560" y="116" text-anchor="start">(1, 16)</text>
+  <text class="ink sm" x="668" y="116" text-anchor="end">16</text>
+  <text class="ink2 sm" x="400" y="140" text-anchor="start">out.bias</text>
+  <text class="mut sm" x="560" y="140" text-anchor="start">(1,)</text>
+  <text class="ink sm" x="668" y="140" text-anchor="end">1</text>
+  <path class="ln-mut" d="M400,160 L668,160"/>
+  <text class="ink sm b" x="400" y="178" text-anchor="start">итого → оптимизатор</text>
+  <text class="acc b" x="668" y="178" text-anchor="end">161</text>
+  <text class="ink sm b" x="20" y="222" text-anchor="start">model(x) вызывает forward:</text>
+  <rect class="box" x="20" y="234" width="96" height="44" rx="6"/>
+  <text class="ink sm b" x="68" y="252" text-anchor="middle">x</text>
+  <text class="mut sm" x="68" y="269" text-anchor="middle">(n, 8)</text>
+  <path class="ln" d="M116,256 L133,256" marker-end="url(#ah-nn-module-anatomy)"/>
+  <rect class="box" x="133" y="234" width="96" height="44" rx="6"/>
+  <text class="ink sm b" x="181" y="252" text-anchor="middle">layer1</text>
+  <text class="mut sm" x="181" y="269" text-anchor="middle">(n, 16)</text>
+  <path class="ln" d="M229,256 L246,256" marker-end="url(#ah-nn-module-anatomy)"/>
+  <rect class="box" x="246" y="234" width="96" height="44" rx="6"/>
+  <text class="ink sm b" x="294" y="252" text-anchor="middle">relu</text>
+  <text class="mut sm" x="294" y="269" text-anchor="middle">(n, 16)</text>
+  <path class="ln" d="M342,256 L359,256" marker-end="url(#ah-nn-module-anatomy)"/>
+  <rect class="box" x="359" y="234" width="96" height="44" rx="6"/>
+  <text class="ink sm b" x="407" y="252" text-anchor="middle">drop</text>
+  <text class="mut sm" x="407" y="269" text-anchor="middle">(n, 16)</text>
+  <path class="ln" d="M455,256 L472,256" marker-end="url(#ah-nn-module-anatomy)"/>
+  <rect class="box" x="472" y="234" width="96" height="44" rx="6"/>
+  <text class="ink sm b" x="520" y="252" text-anchor="middle">out</text>
+  <text class="mut sm" x="520" y="269" text-anchor="middle">(n, 1)</text>
+  <path class="ln" d="M568,256 L585,256" marker-end="url(#ah-nn-module-anatomy)"/>
+  <rect class="box-ok" x="585" y="234" width="96" height="44" rx="6"/>
+  <text class="ink sm b" x="633" y="252" text-anchor="middle">squeeze(1)</text>
+  <text class="mut sm" x="633" y="269" text-anchor="middle">логиты (n,)</text>
+  <rect class="box-warn" x="20" y="296" width="660" height="44" rx="8"/>
+  <text class="ink sm" x="350" y="314" text-anchor="middle">веса nn.Linear хранятся как выходы × входы: layer1.weight — (16, 8), слой считает x @ W.T + b</text>
+  <text class="ink sm" x="350" y="332" text-anchor="middle">слои в обычном списке Python не регистрируются: parameters() их не увидит — нужен nn.ModuleList</text>
+</svg>
+</div><figcaption>
+<p>Две половины класса: в <code>__init__</code> слои записываются в атрибуты и регистрируются — их веса попадают в <code>model.parameters()</code> (те же 161 число, что напечатал код); <code>forward</code> описывает путь батча из n гостей от 8 признаков до n логитов.</p>
+</figcaption></figure>
+<aside class="callout callout-deep"><div class="callout-title">Если вы видели Keras</div>
+<p>Keras — другая популярная библиотека для сетей; с версии 3 она умеет работать поверх PyTorch. Идеи те же, разница — в том, сколько кода пишете вы:</p>
+<table>
+<thead>
+<tr>
+<th>Keras</th>
+<th>PyTorch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>keras.Sequential([...])</code></td>
+<td><code>nn.Sequential(...)</code> или класс-наследник <code>nn.Module</code></td>
+</tr>
+<tr>
+<td><code>layers.Dense(16, activation=&quot;relu&quot;)</code></td>
+<td><code>nn.Linear(n_in, 16)</code> + <code>nn.ReLU()</code>; число входов пишут явно</td>
+</tr>
+<tr>
+<td><code>layers.Dropout(0.3)</code>, <code>layers.BatchNormalization()</code></td>
+<td><code>nn.Dropout(0.3)</code>, <code>nn.BatchNorm1d(n)</code></td>
+</tr>
+<tr>
+<td><code>model.compile(optimizer=&quot;adam&quot;, loss=&quot;binary_crossentropy&quot;)</code></td>
+<td><code>opt = torch.optim.Adam(model.parameters())</code>, <code>loss_fn = nn.BCEWithLogitsLoss()</code></td>
+</tr>
+<tr>
+<td><code>model.fit(X, y, epochs=10, batch_size=32, validation_data=...)</code></td>
+<td>свой цикл: <code>DataLoader</code>, эпохи, <code>zero_grad</code> → <code>backward</code> → <code>step</code>, оценка на валидации</td>
+</tr>
+<tr>
+<td><code>callbacks.EarlyStopping(patience=5)</code></td>
+<td>своя проверка в цикле: лучшая валидационная потеря и счётчик эпох без улучшения</td>
+</tr>
+<tr>
+<td><code>model.predict(X)</code></td>
+<td><code>model.eval()</code> и <code>with torch.no_grad(): model(X)</code></td>
+</tr>
+<tr>
+<td><code>model.summary()</code></td>
+<td><code>print(model)</code> и <code>sum(p.numel() for p in model.parameters())</code></td>
+</tr>
+<tr>
+<td><code>model.save(&quot;churn.keras&quot;)</code></td>
+<td><code>torch.save(model.state_dict(), &quot;churn.pt&quot;)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Главное отличие — <code>fit</code>: в PyTorch цикл обучения пишут сами. Это больше кода, зато всё видно: где считается потеря, когда валидация, что пишется в журнал. Ещё одна ловушка при переносе: в Keras выход часто заканчивают <code>activation=&quot;sigmoid&quot;</code> и считают потерю по вероятностям, а в PyTorch последний слой оставляют без активации и берут потерю по логитам (урок «Softmax, выход под задачу и мини-батчи», раздел «Выход и потеря под тип задачи»).</p>
+</aside>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Забыли <code>super().__init__()</code>.</strong> Падает <code>AttributeError: cannot assign module before Module.__init__() call</code>.</li>
+<li><strong>Слои в обычном списке.</strong> <code>self.layers = [nn.Linear(2, 4), nn.Linear(4, 1)]</code> — PyTorch не видит слои внутри списка: <code>model.parameters()</code> пуст (0 параметров вместо 17), оптимизатор ничего не обучает, ошибки нет. Нужен <code>nn.ModuleList([...])</code>.</li>
+<li><strong>Сигмоида в <code>forward</code> и <code>BCEWithLogitsLoss</code>.</strong> Потеря применит сигмоиду второй раз: ошибки нет, но сеть учится хуже и медленнее. В <code>forward</code> возвращайте логиты, вероятности — <code>torch.sigmoid(model(x))</code> на прогнозе.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-module-class"><b>3</b> Сеть классом на numpy</a></div>
+<div class="fb" data-sec="сеть-как-класс-nn-module"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="разберём-вместе-сохранить-и-загрузить-сеть">Разберём вместе: сохранить и загрузить сеть</h2>
+<p>Обученную сеть сохраняют так же, как модель sklearn в главе 7, только в PyTorch принято сохранять не объект целиком, а <strong>веса</strong> — словарь «имя слоя → тензор» (<code>state_dict</code>):</p>
+<pre class="static code"><code class="lang-python">torch.save(model.state_dict(), &quot;moons_net.pt&quot;)      # только веса
+
+model2 = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 1))   # та же архитектура
+model2.load_state_dict(torch.load(&quot;moons_net.pt&quot;))
+model2.eval()                                        # режим прогноза
+with torch.no_grad():
+    print(torch.equal(model(X), model2(X)))           # True</code></pre>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>state_dict()</code> — только числа: веса и сдвиги. Архитектуру (какие слои и в каком порядке) нужно описать в коде заново — поэтому её хранят рядом с весами, например в паспорте модели (глава 15).</li>
+<li><code>load_state_dict</code> — заливает сохранённые числа в новую сеть той же формы. Если архитектура отличается хотя бы размером слоя, будет ошибка про несовпадение форм.</li>
+<li><code>torch.no_grad()</code> — режим без записи графа вычислений: прогноз быстрее и не тратит память.</li>
+</ul>
+<aside class="callout callout-note"><div class="callout-title">Практика — в блокноте</div>
+<p>PyTorch в браузере не запускается, поэтому задачи на сохранение здесь нет. Потренируйтесь в своём блокноте:</p>
+<ol>
+<li>Обучите сеть из раздела «Наша numpy-сеть на PyTorch», сохраните <code>state_dict</code> и загрузите его в новую сеть той же архитектуры — <code>torch.equal(...)</code> должен дать <code>True</code>.</li>
+<li>Посмотрите, что лежит в файле: <code>list(model.state_dict())</code> — четыре тензора <code>0.weight</code>, <code>0.bias</code>, <code>2.weight</code>, <code>2.bias</code> (номера — позиции слоёв в <code>nn.Sequential</code>, у <code>ReLU</code> весов нет), всего 65 чисел.</li>
+<li>Попробуйте загрузить веса в сеть с 32 нейронами вместо 16 — получите <code>RuntimeError: … size mismatch for 0.weight: copying a param with shape torch.Size([16, 2]) …</code>. Так выглядит ошибка «архитектура не та».</li>
+</ol>
+<p>Сохранение лучших весов во время обучения — в функции <code>train_loop</code> готового блокнота <a href="../notebooks/extra/ch11-pytorch-tabular.ipynb">ch11-pytorch-tabular.ipynb</a> (раздел 4): она запоминает <code>state_dict</code> лучшей эпохи и в конце загружает его обратно в модель.</p>
+</aside>
+<div class="fb" data-sec="разберём-вместе-сохранить-и-загрузить-сеть"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-p-torch-order" data-task="p-torch-order" data-level="warmup" data-kind="parsons">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Порядок шагов обучения</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#наша-numpy-сеть-на-pytorch">↑ К теории: Наша numpy-сеть на PyTorch</a>
+  <div class="task-text prose"><p>Соберите в правильном порядке шаги обучения в духе PyTorch — здесь они записаны на numpy, чтобы код можно было запустить.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-float32" data-task="float32" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">float64 → float32</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#тензоры-и-numpy-туда-и-обратно">↑ К теории: Тензоры и numpy: туда и обратно</a>
+  <div class="task-text prose"><p>PyTorch по умолчанию работает во float32, а numpy и pandas отдают float64. Посмотрите, что меняется при переходе. В заготовке — признаки гостей <code>X64</code>. Сохраните:</p>
+<ul>
+<li><code>X32</code> — та же матрица во float32 (<code>astype</code>);</li>
+<li><code>ratio</code> — во сколько раз <code>X64</code> занимает больше байт, чем <code>X32</code> (<code>.nbytes</code>);</li>
+<li><code>max_err</code> — наибольшее расхождение <code>|X64 − X32|</code> по всем клеткам, две значащие цифры: <code>float(f&quot;{v:.2g}&quot;)</code>;</li>
+<li><code>revenue32</code> — годовая выручка 123 456 789.12 рубля, записанная во float32 и возвращённая в обычный <code>float</code>, и <code>lost_rub</code> — на сколько рублей она отличается от исходной (2 знака).</li>
+</ul>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-module-class" data-task="module-class" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">Сеть классом на numpy</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#сеть-как-класс-nn-module">↑ К теории: Сеть как класс: nn.Module</a>
+  <div class="task-text prose"><p>Напишите класс <code>TinyNet</code> — сеть произвольной глубины в стиле <code>nn.Module</code>:</p>
+<ul>
+<li><code>__init__(self, sizes, seed=0)</code> — <code>sizes</code> вроде <code>[4, 16, 8, 1]</code>; генератор <code>rng = np.random.default_rng(seed)</code> создаётся один раз, и для каждой пары соседних размеров <code>(a, b)</code> по порядку создаются веса <code>rng.normal(size=(a, b)) * np.sqrt(2 / a)</code> (He) и нулевые сдвиги длины <code>b</code>; храните их в списках <code>self.Ws</code> и <code>self.bs</code>;</li>
+<li><code>forward(self, X)</code> — ReLU во всех слоях, кроме последнего; последний слой без активации; вернуть логиты формы <code>(число объектов,)</code>;</li>
+<li><code>n_params(self)</code> — общее число весов и сдвигов.</li>
+</ul>
+<p>Создайте <code>net = TinyNet([4, 16, 8, 1])</code> и примените к первым пяти гостям из стандартизованной матрицы <code>X</code> (она в заготовке). Сохраните <code>n_par</code>, <code>out_shape</code> — форму выхода и <code>p</code> — вероятности ухода этих гостей (сигмоида от логитов, 3 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>Тензор (<code>torch.tensor</code>) — массив numpy, который умеет запоминать операции и считать градиенты.</li><li><code>loss.backward()</code> — автоматический обратный проход: градиенты всех весов появляются в <code>.grad</code>.</li><li><code>nn.Module</code> описывает сеть, <code>nn.Linear(n_in, n_out)</code> — слой X @ W + b, <code>nn.ReLU()</code> — активация.</li><li>Цикл обучения: <code>optimizer.zero_grad()</code> → прогноз → <code>loss</code> → <code>loss.backward()</code> → <code>optimizer.step()</code>.</li><li><code>torch.from_numpy(a)</code> делит память с массивом, <code>torch.tensor(a, dtype=torch.float32)</code> — копия. Слои PyTorch ждут float32; назад в numpy — <code>t.detach().cpu().numpy()</code>, одно число — <code>t.item()</code>.</li><li>Сеть описывают классом-наследником <code>nn.Module</code>: слои — в <code>__init__</code> (после <code>super().__init__()</code>), порядок вычислений — в <code>forward</code>. Веса <code>nn.Linear</code> хранятся как выходы × входы.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="03-mlp.html"><span class="pl">← Предыдущий</span><span class="pt">4. Нейросеть в sklearn: MLP</span></a><a class="next" href="04b-softmax.html"><span class="pl">Следующий урок →</span><span class="pt">6. Softmax, выход под задачу и мини-батчи</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#почему-pytorch">Почему PyTorch</a></li><li><a href="#тензоры-и-автоматические-градиенты">Тензоры и автоматические градиенты</a></li><li><a href="#тензоры-и-numpy-туда-и-обратно">Тензоры и numpy: туда и обратно</a></li><li><a href="#наша-numpy-сеть-на-pytorch">Наша numpy-сеть на PyTorch</a></li><li><a href="#сеть-как-класс-nn-module">Сеть как класс: nn.Module</a></li><li><a href="#разберём-вместе-сохранить-и-загрузить-сеть">Разберём вместе: сохранить и загрузить сеть</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch11/04-pytorch", "title": "PyTorch: то же самое, но в промышленном масштабе", "chapter": "Нейросети", "tasks": [{"id": "p-torch-order", "title": "Порядок шагов обучения", "level": "warmup", "starter": "", "setup": "", "check": "assert _lines == ['2.0'], f'Сейчас: {_lines}.'\nassert _code.index('grad = 0.0\\n    pred') >= 0 if 'grad = 0.0\\n    pred' in _code else False, 'Обнуление градиента (zero_grad) — первым шагом в цикле.'", "hints": ["<p>Порядок как в PyTorch: обнулить градиент → прогноз → потеря → градиент (backward) → шаг (step).<\/p>\n", "<p>Шаг нельзя сделать до того, как посчитан градиент, а градиент — до того, как посчитана потеря.<\/p>\n"], "solution": "import numpy as np\nx = np.array([1.0, 2.0, 3.0]); y = np.array([2.0, 4.0, 6.0])\nw, grad, lr = 0.0, 0.0, 0.05\nfor step in range(100):\n    grad = 0.0\n    pred = w * x\n    loss = np.mean((pred - y) ** 2)\n    grad = np.mean(2 * (pred - y) * x)\n    w = w - lr * grad\nprint(round(w, 2))", "explain": "", "parsons": "import numpy as np\nx = np.array([1.0, 2.0, 3.0]); y = np.array([2.0, 4.0, 6.0])\nw, grad, lr = 0.0, 0.0, 0.05\nfor step in range(100):\n    grad = 0.0\n    pred = w * x\n    loss = np.mean((pred - y) ** 2)\n    grad = np.mean(2 * (pred - y) * x)\n    w = w - lr * grad\nprint(round(w, 2))"}, {"id": "float32", "title": "float64 → float32", "level": "warmup", "starter": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nX64 = g[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"delivery_share\"]].to_numpy(float)", "setup": "", "check": "import numpy as _np\nimport pandas as _pd\n_X = _pd.read_csv(\"guests_churn.csv\")[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"delivery_share\"]].to_numpy(float)\nx32 = need('X32')\nassert getattr(x32, 'dtype', None) == _np.float32, f'X32 должна быть во float32, сейчас dtype = {getattr(x32, \"dtype\", type(x32))}.'\nassert x32.shape == _X.shape, f'Форма X32 {x32.shape}, а нужна {_X.shape}.'\nassert close(need('ratio'), 2.0), f'ratio = {need(\"ratio\")}: float64 — 8 байт на число, float32 — 4.'\nme = float(f\"{_np.abs(_X - _X.astype(_np.float32)).max():.2g}\")\nassert abs(need('max_err') / me - 1) < 0.01, f'max_err = {need(\"max_err\")}, а нужно {me}. Разность считайте между X64 и X32 по модулю.'\nr = float(_np.float32(123456789.12))\nassert close(need('revenue32'), r), f'revenue32 = {need(\"revenue32\")}, а нужно {r}: np.float32(...) и затем float(...).'\nassert close(need('lost_rub'), round(r - 123456789.12, 2), 0.006), f'lost_rub = {need(\"lost_rub\")}.'", "hints": ["<p>Тип меняет <code>X64.astype(np.float32)<\/code>; размер в байтах — атрибут <code>.nbytes<\/code>. Расхождение — <code>np.abs(X64 - X32).max()<\/code>.<\/p>\n", "<p><code>revenue32 = float(np.float32(123456789.12))<\/code>, <code>lost_rub = round(revenue32 - 123456789.12, 2)<\/code>.<\/p>\n"], "solution": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nX64 = g[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"delivery_share\"]].to_numpy(float)\n\nX32 = X64.astype(np.float32)\nratio = X64.nbytes / X32.nbytes\nmax_err = float(f\"{np.abs(X64 - X32).max():.2g}\")\nrevenue32 = float(np.float32(123456789.12))\nlost_rub = round(revenue32 - 123456789.12, 2)\nprint(ratio, max_err, revenue32, lost_rub)", "explain": "<p>Память — ровно вдвое меньше: 4 байта на число вместо 8. Признаки почти не пострадали: целые месяцы и визиты float32 хранит точно, а у долей доставки расхождение порядка <span class=\"math inline\">3 \\cdot 10^{-8}<\/span> — на прогноз сети это не влияет. А вот деньги: 123 456 789.12 рубля превратились в 123 456 792 — плюс 2.88 рубля из воздуха, копейки потеряны совсем. Поэтому суммы для отчётов считают в pandas во float64 (или в копейках целыми числами), а во float32 отдают сети только признаки.<\/p>\n", "parsons": ""}, {"id": "module-class", "title": "Сеть классом на numpy", "level": "base", "starter": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nX = g[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"complaints\"]].to_numpy(float)\nX = (X - X.mean(axis=0)) / X.std(axis=0)\n\nclass TinyNet:\n    def __init__(self, sizes, seed=0):\n        rng = np.random.default_rng(seed)\n        self.Ws, self.bs = [], []\n        ...\n\n    def forward(self, X):\n        ...\n\n    def n_params(self):\n        ...", "setup": "", "check": "import numpy as _np\nimport pandas as _pd\n_X = _pd.read_csv(\"guests_churn.csv\")[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"complaints\"]].to_numpy(float)\n_X = (_X - _X.mean(axis=0)) / _X.std(axis=0)\ndef _ref(sizes, X, seed=0):\n    r = _np.random.default_rng(seed); Ws, bs = [], []\n    for a, b in zip(sizes[:-1], sizes[1:]):\n        Ws.append(r.normal(size=(a, b)) * _np.sqrt(2 / a)); bs.append(_np.zeros(b))\n    A = X\n    for i, (W, b) in enumerate(zip(Ws, bs)):\n        Z = A @ W + b; A = _np.maximum(0, Z) if i < len(Ws) - 1 else Z\n    return A[:, 0], sum(W.size + b.size for W, b in zip(Ws, bs))\nT = need('TinyNet')\nsmall = T([4, 3, 1], seed=5)\nzs, ns = _ref([4, 3, 1], _X[:7], 5)\nassert small.n_params() == ns, f'Для sizes=[4, 3, 1] n_params() = {small.n_params()}, а нужно {ns}: веса a·b плюс b сдвигов на каждый слой.'\nout = _np.asarray(small.forward(_X[:7]))\nassert out.shape == (7,), f'forward должен возвращать логиты формы (число объектов,), сейчас {out.shape}. Последний столбец можно взять как A[:, 0].'\nassert _np.allclose(out, zs), 'forward для sizes=[4, 3, 1] не совпал с эталоном. Проверьте порядок создания весов (W, затем следующий W — генератор один на все слои), He-масштаб np.sqrt(2 / a) и отсутствие ReLU на последнем слое.'\nz5, n5 = _ref([4, 16, 8, 1], _X[:5])\nassert need('n_par') == n5, f'n_par = {need(\"n_par\")}, а нужно {n5}.'\nassert tuple(need('out_shape')) == (5,), f'out_shape = {need(\"out_shape\")}.'\nassert _np.allclose(need('p'), (1 / (1 + _np.exp(-z5))).round(3), atol=1e-3), f'p = {need(\"p\")}, а нужно {(1 / (1 + _np.exp(-z5))).round(3)}.'", "hints": ["<p>В <code>__init__<\/code> — цикл <code>for a, b in zip(sizes[:-1], sizes[1:])<\/code>, внутри два <code>append<\/code>. В <code>forward<\/code> — цикл по слоям с <code>enumerate<\/code>, чтобы узнать, последний ли слой.<\/p>\n", "<p>Внутри <code>forward<\/code>: <code>Z = A @ W + b<\/code>, затем <code>A = np.maximum(0, Z) if i &lt; len(self.Ws) - 1 else Z<\/code>; в конце <code>return A[:, 0]<\/code>. Параметры: <code>sum(W.size + b.size for W, b in zip(self.Ws, self.bs))<\/code>.<\/p>\n", "<p>После класса: <code>net = TinyNet([4, 16, 8, 1])<\/code>, <code>z = net.forward(X[:5])<\/code>, <code>p = (1 / (1 + np.exp(-z))).round(3)<\/code>.<\/p>\n"], "solution": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nX = g[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"complaints\"]].to_numpy(float)\nX = (X - X.mean(axis=0)) / X.std(axis=0)\n\nclass TinyNet:\n    def __init__(self, sizes, seed=0):\n        rng = np.random.default_rng(seed)\n        self.Ws, self.bs = [], []\n        for a, b in zip(sizes[:-1], sizes[1:]):\n            self.Ws.append(rng.normal(size=(a, b)) * np.sqrt(2 / a))\n            self.bs.append(np.zeros(b))\n\n    def forward(self, X):\n        A = X\n        for i, (W, b) in enumerate(zip(self.Ws, self.bs)):\n            Z = A @ W + b\n            A = np.maximum(0, Z) if i < len(self.Ws) - 1 else Z\n        return A[:, 0]\n\n    def n_params(self):\n        return sum(W.size + b.size for W, b in zip(self.Ws, self.bs))\n\nnet = TinyNet([4, 16, 8, 1])\nz = net.forward(X[:5])\nn_par = net.n_params()\nout_shape = z.shape\np = (1 / (1 + np.exp(-z))).round(3)\nprint(n_par, out_shape, p)", "explain": "<p>225 параметров: 4·16 + 16 = 80, 16·8 + 8 = 136, 8·1 + 1 = 9. Сеть ещё не обучена, поэтому вероятности ухода у пяти гостей — 0.29…0.41: случайные веса дают случайные, но умеренные ответы, без 0 и 1 — так и должно быть при He-инициализации и стандартизованных признаках. Списки <code>self.Ws<\/code> и <code>self.bs<\/code> — numpy-аналог регистрации слоёв: всё, что лежит в них, попадает в <code>n_params()<\/code>, и оптимизатор знал бы, что обновлять. В PyTorch роль такого списка играет <code>nn.ModuleList<\/code>; если сложить слои в обычный Python-список, <code>model.parameters()<\/code> их не увидит. Последний слой без ReLU — иначе отрицательные логиты обнулялись бы, и вероятность никогда не опускалась бы ниже 0.5.<\/p>\n", "parsons": ""}], "files": ["guests_churn.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/katex/katex.min.js?v=b555cf35b0"></script>
+<script>document.querySelectorAll(".math").forEach(function(e){try{katex.render(e.textContent.trim(),e,{displayMode:e.classList.contains("block"),throwOnError:false})}catch(x){}});</script>
+
+</body>
+</html>

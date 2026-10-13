@@ -1,0 +1,2081 @@
+{
+ "chapter": "ch05",
+ "title": "Статистика и проверка гипотез",
+ "tasks": {
+  "ch05/01-probability/p-late": {
+   "chapter": "ch05",
+   "lesson": "01-probability",
+   "lesson_title": "Вероятность: частота и симуляция",
+   "id": "p-late",
+   "title": "Вероятность опоздания",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)]\np = round((o['actual_min'] > o['promised_min']).mean(), 3)\nassert close(need('p_late'), p), f'p_late = {need(\"p_late\")}, а нужно {p}.'\nassert close(need('p_on_time'), round(1 - (o['actual_min'] > o['promised_min']).mean(), 3)), 'p_on_time = 1 − p_late.'",
+   "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()",
+   "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nlate = ok[\"actual_min\"] > ok[\"promised_min\"]\np_late = round(late.mean(), 3)\np_on_time = round(1 - late.mean(), 3)",
+   "hints": [
+    "Среднее столбца True/False — доля `True`: это и есть оценка вероятности.",
+    "`(ok[\"actual_min\"] > ok[\"promised_min\"]).mean()`; вовремя — `1 - …`."
+   ],
+   "explain": ""
+  },
+  "ch05/01-probability/two-late": {
+   "chapter": "ch05",
+   "lesson": "01-probability",
+   "lesson_title": "Вероятность: частота и симуляция",
+   "id": "two-late",
+   "title": "Две доставки",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert close(need('both'), 0.058, 0.0011), f'both = {need(\"both\")}. Обе — p × p.'\nassert close(need('none'), 0.578, 0.0011), f'none = {need(\"none\")}. Ни одна — (1 − p) × (1 − p).'\nassert close(need('exactly_one'), 0.365, 0.0011), f'exactly_one = {need(\"exactly_one\")}. Ровно одна — первая да и вторая нет, или наоборот.'",
+   "starter": "p = 0.24",
+   "solution": "p = 0.24\nboth = round(p * p, 3)\nnone = round((1 - p) * (1 - p), 3)\nexactly_one = round(2 * p * (1 - p), 3)",
+   "hints": [
+    "«Обе» — p × p, «ни одна» — (1 − p) × (1 − p): для независимых событий вероятности перемножаются.",
+    "«Ровно одна» — два варианта: p × (1 − p) + (1 − p) × p. Или проще: `1 - both - none`."
+   ],
+   "explain": "0.058 + 0.578 + 0.365 = 1 (с точностью до округления): других исходов у двух доставок нет. Заметьте, что «ровно одна» почти в шесть раз вероятнее, чем «обе»: двойное опоздание подряд — редкость, если опоздания независимы. Если в данных двойных опозданий заметно больше 6 %, значит, они связаны — например, общей причиной вроде снегопада."
+  },
+  "ch05/01-probability/cond": {
+   "chapter": "ch05",
+   "lesson": "01-probability",
+   "lesson_title": "Вероятность: частота и симуляция",
+   "id": "cond",
+   "title": "Условная вероятность",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\na = round(o.loc[o['courier'] == 'пеший', 'late'].mean(), 3)\nb = round((o.loc[o['late'], 'courier'] == 'пеший').mean(), 3)\ngot_a, got_b = need('p_late_walk'), need('p_walk_late')\nif close(got_a, b) and close(got_b, a):\n    raise AssertionError('Перепутаны местами: P(A | B) — доля A среди строк, где выполнено B.')\nassert close(got_a, a), f'p_late_walk = {got_a}, а нужно {a}.'\nassert close(got_b, b), f'p_walk_late = {got_b}, а нужно {b}.'",
+   "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]",
+   "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\np_late_walk = round(ok.loc[ok[\"courier\"] == \"пеший\", \"late\"].mean(), 3)\np_walk_late = round((ok.loc[ok[\"late\"], \"courier\"] == \"пеший\").mean(), 3)",
+   "hints": [
+    "P(опоздание | пеший) — доля опозданий среди пеших: `ok.loc[ok[\"courier\"] == \"пеший\", \"late\"].mean()`.",
+    "P(пеший | опоздание) — доля пеших среди опоздавших: `(ok.loc[ok[\"late\"], \"courier\"] == \"пеший\").mean()`."
+   ],
+   "explain": "Три четверти пеших доставок опаздывают, а среди всех опозданий пешие — около двух третей. Это разные вопросы: первый — «насколько плохо работают пешие», второй — «какую часть проблемы они составляют»."
+  },
+  "ch05/01-probability/p-sim": {
+   "chapter": "ch05",
+   "lesson": "01-probability",
+   "lesson_title": "Вероятность: частота и симуляция",
+   "id": "p-sim",
+   "title": "Симуляция монетки",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert _lines in (['0.5'], ['0.49'], ['0.51']), f'Доля орлов должна быть около 0.5. Сейчас: {_lines}'",
+   "starter": "",
+   "solution": "import numpy as np\nrng = np.random.default_rng(42)\nheads = rng.random(100_000) < 0.5\nshare = heads.mean()\nprint(round(share, 2))",
+   "hints": [
+    "Генератор создаётся до бросков, доля считается после.",
+    "Порядок: импорт → `rng = ...` → `flips = rng.random(100_000) < 0.5` → `print(round(flips.mean(), 2))`."
+   ],
+   "explain": ""
+  },
+  "ch05/01-probability/at-least": {
+   "chapter": "ch05",
+   "lesson": "01-probability",
+   "lesson_title": "Вероятность: частота и симуляция",
+   "id": "at-least",
+   "title": "Хотя бы одна",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "want = round(1 - (1 - 0.24) ** 5, 3)\nassert close(need('p_formula'), want), f'p_formula = {need(\"p_formula\")}, а нужно {want}: 1 − (1 − p)ⁿ.'\nassert abs(need('p_sim') - want) < 0.01, f'p_sim = {need(\"p_sim\")} — слишком далеко от {want}. Нужно 100 000 строк по n доставок и any(axis=1).'\nassert 'rng.random' in _code, 'Посчитайте p_sim симуляцией: rng.random((100_000, n)) < p.'",
+   "starter": "import numpy as np\np, n = 0.24, 5\nrng = np.random.default_rng(5)",
+   "solution": "import numpy as np\np, n = 0.24, 5\nrng = np.random.default_rng(5)\np_formula = round(1 - (1 - p) ** n, 3)\nsims = rng.random((100_000, n)) < p\np_sim = round(sims.any(axis=1).mean(), 3)",
+   "hints": [
+    "Формула: `1 - (1 - p) ** n`.",
+    "Симуляция: `sims = rng.random((100_000, n)) < p`, затем `sims.any(axis=1).mean()`."
+   ],
+   "explain": "Формула даёт 0.746, симуляция — 0.745: совпадение до третьего знака. За две недели почти три гостя из четырёх хотя бы раз получат опоздавшую доставку — хотя каждая отдельная доставка опаздывает в 24 % случаев."
+  },
+  "ch05/01-probability/independence": {
+   "chapter": "ch05",
+   "lesson": "01-probability",
+   "lesson_title": "Вероятность: частота и симуляция",
+   "id": "independence",
+   "title": "Независимы ли события",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)]\nlate = o['actual_min'] > o['promised_min']\ns = o['weather'] == 'снег'\nj, pr = (late & s).mean(), late.mean() * s.mean()\nassert close(need('p_joint'), round(j, 4)), f'p_joint = {need(\"p_joint\")}, а нужно {round(j, 4)}.'\nassert close(need('p_product'), round(pr, 4)), f'p_product = {need(\"p_product\")}.'\nassert close(need('ratio'), round(j / pr, 2)), f'ratio = {need(\"ratio\")}.'",
+   "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nsnow = ok[\"weather\"] == \"снег\"",
+   "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nsnow = ok[\"weather\"] == \"снег\"\njoint = (ok[\"late\"] & snow).mean()\nproduct = ok[\"late\"].mean() * snow.mean()\np_joint = round(joint, 4)\np_product = round(product, 4)\nratio = round(joint / product, 2)",
+   "hints": [
+    "Оба события сразу — `(ok[\"late\"] & snow).mean()`.",
+    "Произведение — `ok[\"late\"].mean() * snow.mean()`. Отношение считайте по неокруглённым значениям."
+   ],
+   "explain": "Отношение больше 1 — опоздание и снег встречаются вместе чаще, чем было бы при независимости. Отношение `P(A и B) / (P(A) × P(B))` в маркетинге называют **lift** — им, например, ищут товары, которые чаще покупают вместе."
+  },
+  "ch05/01-probability/snow-table": {
+   "chapter": "ch05",
+   "lesson": "01-probability",
+   "lesson_title": "Вероятность: частота и симуляция",
+   "id": "snow-table",
+   "title": "Снег в двух направлениях",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd0 = _pd.read_csv('deliveries.csv'); o = d0[d0['actual_min'].between(1, 299)].copy(); o['late'] = o['actual_min'] > o['promised_min']\nsn = o['weather'] == 'снег'\nassert need('n_snow_late') == int((sn & o['late']).sum()), f'n_snow_late = {need(\"n_snow_late\")}.'\nassert close(need('p_late_snow'), round(o.loc[sn, 'late'].mean(), 3)), f'p_late_snow = {need(\"p_late_snow\")} — делите на число снежных доставок.'\nassert close(need('p_snow_late'), round(sn[o['late']].mean(), 3)), f'p_snow_late = {need(\"p_snow_late\")} — делите на число опозданий.'\nassert close(need('extra'), round(sn.sum() * o['late'].mean(), 1), 0.051), f'extra = {need(\"extra\")}.'\nassert close(need('added'), round(int((sn & o['late']).sum()) - sn.sum() * o['late'].mean(), 1), 0.051), f'added = {need(\"added\")}. Это n_snow_late − extra.'",
+   "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]",
+   "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\n\nt = pd.crosstab(ok[\"weather\"] == \"снег\", ok[\"late\"], margins=True)\nn_snow_late = int(t.loc[True, True])\np_late_snow = round(t.loc[True, True] / t.loc[True, \"All\"], 3)\np_snow_late = round(t.loc[True, True] / t.loc[\"All\", True], 3)\nextra = round(t.loc[True, \"All\"] * ok[\"late\"].mean(), 1)\nadded = round(n_snow_late - t.loc[True, \"All\"] * ok[\"late\"].mean(), 1)",
+   "hints": [
+    "В таблице строки — снег (`True`) или нет, столбцы — опоздание, `All` — итоги. Опоздавшие в снег — `t.loc[True, True]`.",
+    "P(опоздание | снег) = `t.loc[True, True] / t.loc[True, \"All\"]`; P(снег | опоздание) = `t.loc[True, True] / t.loc[\"All\", True]`. Для `extra`: `t.loc[True, \"All\"] * ok[\"late\"].mean()`."
+   ],
+   "explain": "В снег опоздали 57 доставок из 166 — 34 %. Но среди всех 441 опоздания на снег приходится лишь 13 %: снежных дней мало. При обычной частоте опозданий в снег было бы около 40 опозданий — снег «добавил» примерно 17. Для отчёта это честнее, чем «в снег опаздываем в полтора раза чаще»: эффект заметный, но на общую картину опозданий влияет слабо."
+  },
+  "ch05/01-probability/running": {
+   "chapter": "ch05",
+   "lesson": "01-probability",
+   "lesson_title": "Вероятность: частота и симуляция",
+   "id": "running",
+   "title": "Закон больших чисел",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nr = need('running')\nassert len(r) == 5000, f'В running {len(r)} значений, а нужно 5000.'\nl = _np.random.default_rng(11).random(5000) < 0.24\nwant = l.cumsum() / _np.arange(1, 5001)\nassert _np.allclose(r, want), 'running — накопленная сумма опозданий, делённая на номер доставки (1, 2, …).'\nassert close(need('after_100'), abs(want[99] - 0.24)) and close(need('after_5000'), abs(want[-1] - 0.24)), 'Отклонение — доля минус 0.24 по модулю. Проверьте номер элемента: нумерация с нуля.'\nax = ax_of()\nassert ax.lines and len(ax.lines[0].get_ydata()) == 5000, 'Нарисуйте running линией.'\nassert any(len(set(l.get_ydata())) == 1 for l in ax.lines[1:]), 'Добавьте горизонтальную линию: ax.axhline(0.24).'",
+   "starter": "import numpy as np\nimport matplotlib.pyplot as plt\nrng = np.random.default_rng(11)",
+   "solution": "import numpy as np\nimport matplotlib.pyplot as plt\nrng = np.random.default_rng(11)\nlate = rng.random(5000) < 0.24\nrunning = late.cumsum() / np.arange(1, 5001)\nafter_100 = abs(running[99] - 0.24)\nafter_5000 = abs(running[-1] - 0.24)\n\nfig, ax = plt.subplots(figsize=(8, 3))\nax.plot(running)\nax.axhline(0.24, color=\"tab:red\", linestyle=\"--\")",
+   "hints": [
+    "`late = rng.random(5000) < 0.24`; `running = late.cumsum() / np.arange(1, 5001)`.",
+    "После 100-й доставки — элемент с индексом 99. Модуль — `abs(...)`."
+   ],
+   "explain": "После 100 доставок доля отклоняется от 0.24 на 0.09 — почти на половину самой вероятности. После 5 000 — на 0.005. Отклонение уменьшилось в 17 раз при росте числа доставок в 50 раз: точность растёт медленнее числа данных (примерно как корень — подробнее в уроке «Выборки и центральная предельная теорема»)."
+  },
+  "ch05/01-probability/small-groups": {
+   "chapter": "ch05",
+   "lesson": "01-probability",
+   "lesson_title": "Вероятность: частота и симуляция",
+   "id": "small-groups",
+   "title": "Почему маленькие группы шумят",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\ns = need('shares')\nassert len(s) == 20, f'В shares {len(s)} значений, а кофеен 20.'\nw = (_np.random.default_rng(8).random((20, 30)) < 0.24).mean(axis=1)\nassert _np.allclose(sorted(s), sorted(w)), 'shares — доля True в каждой строке таблицы 20 × 30: mean(axis=1).'\nassert close(need('spread'), round(w.max() - w.min(), 2)), f'spread = {need(\"spread\")}.'",
+   "starter": "import numpy as np\nrng = np.random.default_rng(8)",
+   "solution": "import numpy as np\nrng = np.random.default_rng(8)\nsims = rng.random((20, 30)) < 0.24\nshares = sims.mean(axis=1)\nspread = round(shares.max() - shares.min(), 2)\nshares.round(2)",
+   "hints": [
+    "`sims = rng.random((20, 30)) < 0.24` — строка = кофейня. Доля по строкам — `sims.mean(axis=1)`.",
+    "`spread = round(shares.max() - shares.min(), 2)`."
+   ],
+   "explain": "Все кофейни работают одинаково, а «лучшая» и «худшая» различаются на десятки процентных пунктов — только из-за случайности при 30 доставках. Если бы это были настоящие данные, кто-то обязательно похвалил бы «лучшую» кофейню. Вот почему нужны статистические тесты — к ним идём."
+  },
+  "ch05/01-probability/shift": {
+   "chapter": "ch05",
+   "lesson": "01-probability",
+   "lesson_title": "Вероятность: частота и симуляция",
+   "id": "shift",
+   "title": "Восемь опозданий за смену",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nfrom scipy import stats as _st\nwant = _st.binom.sf(7, 20, 0.24)\nassert abs(need('p_8plus') - want) < 0.003, f'p_8plus = {need(\"p_8plus\")} — далеко от ожидаемого ≈ {want:.4f}.'\nassert int(need('typical')) == 4 or int(need('typical')) == 5, f'typical = {need(\"typical\")}. Самое частое число опозданий — около 20 × 0.24.'",
+   "starter": "import numpy as np\nrng = np.random.default_rng(21)",
+   "solution": "import numpy as np\nrng = np.random.default_rng(21)\nlate = rng.random((200_000, 20)) < 0.24\ncounts = late.sum(axis=1)\np_8plus = round((counts >= 8).mean(), 4)\ntypical = np.bincount(counts).argmax()",
+   "hints": [
+    "`late = rng.random((200_000, 20)) < 0.24`, число опозданий в смене — `late.sum(axis=1)`.",
+    "Самое частое значение: `np.bincount(counts).argmax()` — `bincount` считает, сколько раз встретилось каждое целое число."
+   ],
+   "explain": "Получилось распределение числа «успехов» в 20 независимых попытках. У него есть имя — **биномиальное**, и для него есть готовые формулы. О них — в следующем уроке."
+  },
+  "ch05/02-distributions/pmf": {
+   "chapter": "ch05",
+   "lesson": "02-distributions",
+   "lesson_title": "Распределения: мат. ожидание, биномиальное, Пуассона",
+   "id": "pmf",
+   "title": "Ровно пять",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "arrivals.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from scipy import stats as _st\nassert close(need('p5'), round(_st.binom.pmf(5, 20, 0.24), 4)), f'p5 = {need(\"p5\")}.'\ngot = need('p_le3')\nif close(got, round(_st.binom.cdf(2, 20, 0.24), 4)):\n    raise AssertionError('«Не больше 3» включает 3: cdf(3, n, p).')\nassert close(got, round(_st.binom.cdf(3, 20, 0.24), 4)), f'p_le3 = {got}.'",
+   "starter": "from scipy import stats\nn, p = 20, 0.24",
+   "solution": "from scipy import stats\nn, p = 20, 0.24\np5 = round(stats.binom.pmf(5, n, p), 4)\np_le3 = round(stats.binom.cdf(3, n, p), 4)",
+   "hints": [
+    "`pmf` — «ровно k», `cdf` — «не больше k».",
+    "`stats.binom.pmf(5, n, p)` и `stats.binom.cdf(3, n, p)`."
+   ],
+   "explain": ""
+  },
+  "ch05/02-distributions/tail": {
+   "chapter": "ch05",
+   "lesson": "02-distributions",
+   "lesson_title": "Распределения: мат. ожидание, биномиальное, Пуассона",
+   "id": "tail",
+   "title": "Плохая смена",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "arrivals.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from scipy import stats as _st\ngot = need('p_bad')\nif close(got, round(_st.binom.sf(8, 20, 0.24), 4)):\n    raise AssertionError('sf(8, …) — это «больше 8», то есть 9 и больше. «8 и больше» = sf(7, …).')\nassert close(got, round(_st.binom.sf(7, 20, 0.24), 4)), f'p_bad = {got}.'",
+   "starter": "from scipy import stats",
+   "solution": "from scipy import stats\np_bad = round(stats.binom.sf(7, 20, 0.24), 4)",
+   "hints": [
+    "«8 и больше» = «больше 7»: `stats.binom.sf(7, 20, 0.24)`.",
+    "Проверка: то же самое — `1 - stats.binom.cdf(7, 20, 0.24)`."
+   ],
+   "explain": ""
+  },
+  "ch05/02-distributions/ev-toy": {
+   "chapter": "ch05",
+   "lesson": "02-distributions",
+   "lesson_title": "Распределения: мат. ожидание, биномиальное, Пуассона",
+   "id": "ev-toy",
+   "title": "Десерты к заказу",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "arrivals.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "ev = need('ev')\nif close(ev, 1.5):\n    raise AssertionError('ev = 1.5 — это простое среднее значений 0, 1, 2, 3. Ожидание учитывает вероятности: каждое значение умножьте на свою вероятность.')\nassert close(ev, 0.57), f'ev = {ev}. Сложите произведения «значение × вероятность».'\nassert not has_literal(0.57), 'Посчитайте ожидание кодом из values и probs, а не впишите число.'\nassert need('per_500') == 285, f'per_500 = {need(\"per_500\")}. Ожидание суммы — сумма ожиданий: 500 × ev.'",
+   "starter": "import numpy as np\nvalues = np.array([0, 1, 2, 3])\nprobs = np.array([0.55, 0.35, 0.08, 0.02])",
+   "solution": "import numpy as np\nvalues = np.array([0, 1, 2, 3])\nprobs = np.array([0.55, 0.35, 0.08, 0.02])\nev = round((values * probs).sum(), 2)\nper_500 = round(500 * (values * probs).sum())",
+   "hints": [
+    "Ожидание — сумма «значение × вероятность» по всем значениям.",
+    "`(values * probs).sum()`; на 500 заказов — то же, умноженное на 500.",
+    "`ev = round((values * probs).sum(), 2)`, `per_500 = round(500 * ...)`."
+   ],
+   "explain": ""
+  },
+  "ch05/02-distributions/binom-moments": {
+   "chapter": "ch05",
+   "lesson": "02-distributions",
+   "lesson_title": "Распределения: мат. ожидание, биномиальное, Пуассона",
+   "id": "binom-moments",
+   "title": "Среднее и разброс",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "arrivals.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from scipy import stats as _st\nassert close(need('mu'), 48.0), f'mu = {need(\"mu\")}.'\nassert close(need('sigma'), round((200 * 0.24 * 0.76) ** 0.5, 2)), f'sigma = {need(\"sigma\")}.'\nassert close(need('p60'), round(_st.binom.sf(59, 200, 0.24), 4)), f'p60 = {need(\"p60\")}: «60 и более» — sf(59, …).'",
+   "starter": "from scipy import stats\nn, p = 200, 0.24",
+   "solution": "from scipy import stats\nn, p = 200, 0.24\nmu = round(n * p, 2)\nsigma = round((n * p * (1 - p)) ** 0.5, 2)\np60 = round(stats.binom.sf(59, n, p), 4)",
+   "hints": [
+    "Корень — `** 0.5`. Проверить себя можно через `stats.binom.mean(n, p)` и `stats.binom.std(n, p)`.",
+    "«60 и более» — `stats.binom.sf(59, n, p)`."
+   ],
+   "explain": "60 опозданий — всего на 12 больше среднего, но это уже около 2σ, и такая неделя случается лишь в нескольких процентах случаев. Если она случилась — стоит искать причину, а не списывать на невезение."
+  },
+  "ch05/02-distributions/pmf-plot": {
+   "chapter": "ch05",
+   "lesson": "02-distributions",
+   "lesson_title": "Распределения: мат. ожидание, биномиальное, Пуассона",
+   "id": "pmf-plot",
+   "title": "Нарисовать распределение",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "arrivals.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from scipy import stats as _st\nax = ax_of()\nh = [p.get_height() for p in ax.patches]\nassert len(h) == 31, f'Столбцов {len(h)}, а нужно 31 (от 0 до 30).'\nassert all(close(a, b, 1e-9) for a, b in zip(h, _st.binom.pmf(range(31), 30, 0.24))), 'Высоты — binom.pmf(k, 30, 0.24).'\nv = [l for l in ax.lines if len(set(l.get_xdata())) == 1]\nassert v and close(float(v[0].get_xdata()[0]), 7.2), 'Отметьте среднее 30 × 0.24 = 7.2: ax.axvline(...).'",
+   "starter": "from scipy import stats\nimport matplotlib.pyplot as plt\nn, p = 30, 0.24",
+   "solution": "from scipy import stats\nimport matplotlib.pyplot as plt\nn, p = 30, 0.24\nk = range(0, n + 1)\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.bar(k, stats.binom.pmf(k, n, p))\nax.axvline(n * p, color=\"tab:red\", linestyle=\"--\")\nax.set_title(\"n = 30, p = 0.24\")",
+   "hints": [
+    "`k = range(0, n + 1)`; `ax.bar(k, stats.binom.pmf(k, n, p))`; `ax.axvline(n * p)`.",
+    "`range` до `n + 1`, чтобы включить 30 опозданий. Линия среднего — на 30 × 0.24 = 7.2."
+   ],
+   "explain": "Пик — около 7, линия среднего — на 7.2. Распределение чуть скошено вправо: слева оно упирается в ноль, а справа ещё встречаются 12–15 опозданий. При большом n и p не слишком близко к 0 или 1 биномиальное распределение становится похожим на нормальное — это пригодится в следующем уроке."
+  },
+  "ch05/02-distributions/ev-comp": {
+   "chapter": "ch05",
+   "lesson": "02-distributions",
+   "lesson_title": "Распределения: мат. ожидание, биномиальное, Пуассона",
+   "id": "ev-comp",
+   "title": "Сколько стоит купон с льготой",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "arrivals.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nimport pandas as _pd\n_d = _pd.read_csv('deliveries.csv')\n_ok = _d[_d['actual_min'].between(1, 299)]\n_lm = _ok['actual_min'] - _ok['promised_min']\n_c = _np.select([_lm <= 5, _lm <= 20], [0, 150], default=400)\nev = need('ev')\nif ev > 100:\n    raise AssertionError(f'ev = {ev} — слишком много. Проверьте порядок условий в np.select: первым должно идти «опоздание ≤ 5», иначе вовремя приехавшие тоже получат купон.')\nassert close(need('p_150'), round((_c == 150).mean(), 4)), f'p_150 = {need(\"p_150\")}. Купон 150 ₽ — опоздание больше 5, но не больше 20 минут.'\nassert close(need('p_400'), round((_c == 400).mean(), 4)), f'p_400 = {need(\"p_400\")}. Купон 400 ₽ — опоздание больше 20 минут.'\nassert close(ev, round(_c.mean(), 2)), f'ev = {ev}. Ожидание — 150 × p_150 + 400 × p_400 (или среднее столбца coupon).'\nassert need('week') == round(200 * _c.mean()), f'week = {need(\"week\")}. Неделя — 200 доставок: 200 × ожидание на одну.'",
+   "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate_min = ok[\"actual_min\"] - ok[\"promised_min\"]",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate_min = ok[\"actual_min\"] - ok[\"promised_min\"]\ncoupon = np.select([late_min <= 5, late_min <= 20], [0, 150], default=400)\np_150 = round((coupon == 150).mean(), 4)\np_400 = round((coupon == 400).mean(), 4)\nev = round(coupon.mean(), 2)\nweek = round(200 * coupon.mean())",
+   "hints": [
+    "Сначала столбец купонов через `np.select` с условиями по порядку: «≤ 5» → 0, «≤ 20» → 150, остальное → 400. Потом доли и ожидание.",
+    "`coupon = np.select([late_min <= 5, late_min <= 20], [0, 150], default=400)`; доля купонов 150 ₽ — `(coupon == 150).mean()`.",
+    "`ev = round(coupon.mean(), 2)` — это то же, что `150 * p_150 + 400 * p_400` без округлений; `week = round(200 * coupon.mean())`."
+   ],
+   "explain": "Льгота в 5 минут сильно меняет картину: без купона остаются 86 % доставок, купон 150 ₽ получают 11.7 %, а 400 ₽ — только 2.2 %. Ожидание — 26.29 ₽ на доставку, около 5 260 ₽ за неделю: дешевле правила из теории (38 ₽), хотя сами купоны крупнее. Ожидание складывается из «сумма × вероятность», и маленькая вероятность крупного купона весит немного. Типичная ошибка — переставить условия в `np.select`: если первым стоит «≤ 20», под него попадут и вовремя приехавшие, ожидание вырастет почти до 155 ₽, и правило «не пройдёт» по бюджету без всякой причины."
+  },
+  "ch05/02-distributions/poisson-queue": {
+   "chapter": "ch05",
+   "lesson": "02-distributions",
+   "lesson_title": "Распределения: мат. ожидание, биномиальное, Пуассона",
+   "id": "poisson-queue",
+   "title": "Очередь в Уфе",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "arrivals.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\n_a = _pd.read_csv('arrivals.csv')\n_k = _a.loc[_a['shop_id'] == 'UFA-1', 'guests']\n_lam = _k.mean()\nassert close(need('lam'), round(_lam, 3)), f'lam = {need(\"lam\")}. Возьмите только строки UFA-1 и среднее столбца guests.'\nassert close(need('ratio'), round(_k.var() / _lam, 2)), f'ratio = {need(\"ratio\")}. Дисперсия — .var(), делим на среднее.'\npq = need('p_queue')\nif close(pq, round(_st.poisson.sf(4, _lam), 4)):\n    raise AssertionError('sf(4, …) — это «больше 4», то есть 5 и больше. «4 и больше» = sf(3, …).')\n_ok = [round(_st.poisson.sf(3, x), 4) for x in (_lam, round(_lam, 3))]\nassert any(close(pq, w, 0.00006) for w in _ok), f'p_queue = {pq}. Пуассон с mu = lam, хвост «4 и больше»: sf(3, lam).'\nassert close(need('share_queue'), round((_k >= 4).mean(), 4)), f'share_queue = {need(\"share_queue\")}. Доля пятиминуток, где guests >= 4.'\nassert close(need('per_day'), round(24 * _st.poisson.sf(3, _lam), 2), 0.016), f'per_day = {need(\"per_day\")}. Ожидание числа таких пятиминуток — 24 × вероятность.'",
+   "starter": "import pandas as pd\nfrom scipy import stats\na = pd.read_csv(\"arrivals.csv\")",
+   "solution": "import pandas as pd\nfrom scipy import stats\na = pd.read_csv(\"arrivals.csv\")\nk = a.loc[a[\"shop_id\"] == \"UFA-1\", \"guests\"]\nlam = round(k.mean(), 3)\nratio = round(k.var() / k.mean(), 2)\np_queue = round(stats.poisson.sf(3, k.mean()), 4)\nshare_queue = round((k >= 4).mean(), 4)\nper_day = round(24 * stats.poisson.sf(3, k.mean()), 2)",
+   "hints": [
+    "Отфильтруйте `a[\"shop_id\"] == \"UFA-1\"` и возьмите столбец `guests`. $\\lambda$ — его среднее, проверка Пуассона — `var() / mean()` около 1.",
+    "«4 и больше» = «больше 3»: `stats.poisson.sf(3, lam)`. Доля по данным — `(k >= 4).mean()`.",
+    "`per_day = round(24 * stats.poisson.sf(3, k.mean()), 2)` — ожидание суммы 24 одинаковых событий «0 или 1»."
+   ],
+   "explain": "В Уфе в среднем 1.456 гостя за пятиминутку, дисперсия почти такая же (отношение 0.97) — данные похожи на пуассоновские. Модель даёт 6.0 % пятиминуток с очередью, данные — 5.9 %: совпадение отличное. За двухчасовое окно ожидается около 1.45 таких пятиминуток — то есть почти каждый день бариста раз-другой будет работать с очередью. Если бы отношение дисперсии к среднему вышло 2–3, модель Пуассона занизила бы очереди, и считать пришлось бы по данным. Заметьте и последнюю строку: «24 пятиминутки × вероятность» — это линейность ожидания из первого раздела."
+  },
+  "ch05/02b-normal/p-norm": {
+   "chapter": "ch05",
+   "lesson": "02b-normal",
+   "lesson_title": "Нормальное распределение, приближение и z-оценка",
+   "id": "p-norm",
+   "title": "Сборка дольше 15 минут",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert _lines == ['0.159'], f'Должно вывестись 0.159. Сейчас: {_lines}'",
+   "starter": "",
+   "solution": "from scipy import stats\nsborka = stats.norm(loc=12, scale=3)\np = sborka.sf(15)\nprint(round(p, 3))",
+   "hints": [
+    "Сначала распределение, потом вероятность хвоста.",
+    "«Больше 15» — правый хвост: `sf(15)`. Импорт `stats` — первая строка."
+   ],
+   "explain": ""
+  },
+  "ch05/02b-normal/quantile": {
+   "chapter": "ch05",
+   "lesson": "02b-normal",
+   "lesson_title": "Нормальное распределение, приближение и z-оценка",
+   "id": "quantile",
+   "title": "Квантиль нормального",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from scipy import stats as _st\nassert close(need('t90'), round(_st.norm.ppf(0.9, 12, 3), 3)), f't90 = {need(\"t90\")}.'\nassert close(need('p_9_15'), round(_st.norm.cdf(15, 12, 3) - _st.norm.cdf(9, 12, 3), 3)), f'p_9_15 = {need(\"p_9_15\")}.'",
+   "starter": "from scipy import stats",
+   "solution": "from scipy import stats\nsborka = stats.norm(loc=12, scale=3)\nt90 = round(sborka.ppf(0.9), 3)\np_9_15 = round(sborka.cdf(15) - sborka.cdf(9), 3)",
+   "hints": [
+    "Квантиль — `ppf(0.9)`; вероятность попасть в отрезок — разность `cdf` на концах.",
+    "`sborka = stats.norm(loc=12, scale=3)`, затем `sborka.ppf(0.9)` и `sborka.cdf(15) - sborka.cdf(9)`."
+   ],
+   "explain": "От 9 до 15 — это ±1σ, и ответ — знакомые 68 %."
+  },
+  "ch05/02b-normal/norm-approx": {
+   "chapter": "ch05",
+   "lesson": "02b-normal",
+   "lesson_title": "Нормальное распределение, приближение и z-оценка",
+   "id": "norm-approx",
+   "title": "Месяц большой кофейни",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import math as _m\nfrom scipy import stats as _st\n_mu, _s = 500 * 0.24, _m.sqrt(500 * 0.24 * 0.76)\n_e = _st.binom.sf(139, 500, 0.24)\n_a = _st.norm.sf(139.5, _mu, _s)\nassert close(need('exact'), round(_e, 4)), f'exact = {need(\"exact\")}. «140 и больше» = binom.sf(139, n, p).'\nap = need('approx')\nif close(ap, round(_st.norm.sf(140, _mu, _s), 4)):\n    raise AssertionError('Это приближение без поправки. Столбик «140» начинается с 139.5 — возьмите norm.sf(k - 0.5, …).')\nif close(ap, round(_st.norm.sf(139.5, _mu, _s ** 2), 4)):\n    raise AssertionError('scale — это σ, а не дисперсия: σ = √(n·p·(1−p)).')\nassert close(ap, round(_a, 4)), f'approx = {ap}. Нормальное со средним n·p и σ = √(n·p·(1−p)), правее k − 0.5.'\nassert close(need('rel_err'), round(abs(_a - _e) / _e, 3), 0.0011), f'rel_err = {need(\"rel_err\")}. |approx − exact| / exact по неокруглённым значениям.'\nassert need('rule_ok') is True or need('rule_ok') == True, 'n·p = 120 и n·(1 − p) = 380 — оба не меньше 10, rule_ok должно быть True.'\nassert not has_literal(120) and not has_literal(380), 'Посчитайте n·p и n·(1 − p) кодом, а не впишите числа.'",
+   "starter": "import math\nfrom scipy import stats\nn, p, k = 500, 0.24, 140",
+   "solution": "import math\nfrom scipy import stats\nn, p, k = 500, 0.24, 140\nmu = n * p\nsigma = math.sqrt(n * p * (1 - p))\ne = stats.binom.sf(k - 1, n, p)\na = stats.norm.sf(k - 0.5, mu, sigma)\nexact = round(e, 4)\napprox = round(a, 4)\nrel_err = round(abs(a - e) / e, 3)\nrule_ok = n * p >= 10 and n * (1 - p) >= 10",
+   "hints": [
+    "Среднее и σ — как у биномиального: `n * p` и `math.sqrt(n * p * (1 - p))`.",
+    "Точно: `stats.binom.sf(k - 1, n, p)`. Приближённо: `stats.norm.sf(k - 0.5, mu, sigma)`.",
+    "`rel_err = round(abs(a - e) / e, 3)`, где `e` и `a` — неокруглённые; `rule_ok = n * p >= 10 and n * (1 - p) >= 10`."
+   ],
+   "explain": "Точная вероятность — 0.0219, приближённая — 0.0206, ошибка около 6 %. Ожидается 120 опозданий и 380 доставок вовремя — правило выполнено с запасом, и для решения «такой месяц — редкость, около 2 %» приближения хватает. Без поправки на непрерывность вышло бы 0.0181 — ошибка уже 17 %. А если взять в `scale` дисперсию (91.2) вместо σ (9.55), колокол станет в десять раз шире, и вероятность выйдет абсурдной — около 0.4. Такие «странно большие» хвосты — верный признак перепутанного σ."
+  },
+  "ch05/02b-normal/zday": {
+   "chapter": "ch05",
+   "lesson": "02b-normal",
+   "lesson_title": "Нормальное распределение, приближение и z-оценка",
+   "id": "zday",
+   "title": "Самый загруженный день",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nc = d.groupby(d['created'].dt.date).size()\nz = (c - c.mean()) / c.std()\nassert close(need('z_max'), round(z.max(), 2)), f'z_max = {need(\"z_max\")}, а нужно {round(z.max(), 2)}.'\nassert need('n_unusual') == int((z.abs() > 2).sum()), f'n_unusual = {need(\"n_unusual\")}.'",
+   "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])",
+   "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nper_day = d.groupby(d[\"created\"].dt.date).size()\nz = (per_day - per_day.mean()) / per_day.std()\nz_max = round(z.max(), 2)\nn_unusual = (z.abs() > 2).sum()",
+   "hints": [
+    "`per_day = d.groupby(d[\"created\"].dt.date).size()`, `z = (per_day - per_day.mean()) / per_day.std()`.",
+    "`z_max = round(z.max(), 2)`, необычные дни — `(z.abs() > 2).sum()`."
+   ],
+   "explain": "Самый загруженный день — 10 октября, 31 доставка при среднем 20.6 и σ = 3.6: z ≈ 2.84. Таких «необычных» дней (|z| > 2) пять из 91 — 5.5 %, почти столько, сколько обещает нормальное распределение (5 %). Значит, необычные дни — скорее обычный шум, а 10 октября стоит проверить отдельно."
+  },
+  "ch05/02b-normal/pilot50": {
+   "chapter": "ch05",
+   "lesson": "02b-normal",
+   "lesson_title": "Нормальное распределение, приближение и z-оценка",
+   "id": "pilot50",
+   "title": "Подозрительный пилот",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from scipy import stats as _st\nassert close(need('expected'), 12), f'expected = {need(\"expected\")}. Среднее — n · p.'\nassert close(need('p_20plus'), round(_st.binom.sf(19, 50, 0.24), 4), 0.00011), f'p_20plus = {need(\"p_20plus\")}. «20 и более» = sf(19, …).'\nzz = round((20 - 12) / (50 * 0.24 * 0.76) ** 0.5, 2)\nassert close(need('z'), zz, 0.011), f'z = {need(\"z\")}, а нужно {zz}.'",
+   "starter": "from scipy import stats\nn, p, observed = 50, 0.24, 20",
+   "solution": "from scipy import stats\nn, p, observed = 50, 0.24, 20\nexpected = n * p\np_20plus = round(stats.binom.sf(observed - 1, n, p), 4)\nz = round((observed - expected) / (n * p * (1 - p)) ** 0.5, 2)",
+   "hints": [
+    "Ожидаемое — `n * p`. Хвост «20 и более» — `stats.binom.sf(19, n, p)`.",
+    "z = (наблюдение − среднее) / σ, где σ = √(n · p · (1 − p))."
+   ],
+   "explain": "Ожидалось 12 опозданий, случилось 20 — на 2.6 стандартных отклонения больше. При обычной для сети частоте 20+ опозданий из 50 случаются примерно в 1 % недель. Это сильный сигнал, что у новой кофейни что-то не так (далёкие адреса, новый курьер), — но не доказательство: в сети из десятков кофеен раз в несколько недель такое случится и просто так. Как отличать сигнал от случайности строго — уроки «Проверка гипотез: логика и p-value»–6."
+  },
+  "ch05/02b-normal/tails": {
+   "chapter": "ch05",
+   "lesson": "02b-normal",
+   "lesson_title": "Нормальное распределение, приближение и z-оценка",
+   "id": "tails",
+   "title": "Хвост суммы заказа",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\n_a = _pd.read_csv('deliveries.csv')['amount']\n_rt = (_a > _a.mean() + 2 * _a.std()).mean()\nassert close(need('real_tail'), round(_rt, 4)), f'real_tail = {need(\"real_tail\")}. Доля заказов, где amount > среднее + 2σ.'\nassert close(need('normal_tail'), round(_st.norm.sf(2), 4)), f'normal_tail = {need(\"normal_tail\")}.'\nassert close(need('ratio'), round(_rt / _st.norm.sf(2), 1), 0.051), f'ratio = {need(\"ratio\")}. real_tail / normal_tail.'\nax = ax_of()\nassert ax.patches and ax.lines, 'Нужны гистограмма и линия нормальной плотности.'\narea = sum(p.get_height() * p.get_width() for p in ax.patches)\nassert area < 1.01, 'Гистограмма — с density=True, чтобы сравнивать с плотностью.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\na = d[\"amount\"]",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\na = d[\"amount\"]\nm, s = a.mean(), a.std()\ntail = (a > m + 2 * s).mean()\nreal_tail = round(tail, 4)\nnormal_tail = round(stats.norm.sf(2), 4)\nratio = round(tail / stats.norm.sf(2), 1)\n\nx = np.linspace(0, 2000, 300)\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.hist(a, bins=40, density=True, color=\"lightgray\")\nax.plot(x, stats.norm.pdf(x, m, s), color=\"tab:red\")",
+   "hints": [
+    "`m, s = a.mean(), a.std()`; `real_tail = (a > m + 2 * s).mean()`. Сравнивайте с моделью по неокруглённым долям.",
+    "Кривая: `x = np.linspace(0, 2000, 300)`, `ax.plot(x, stats.norm.pdf(x, m, s))`; гистограмма — `ax.hist(a, bins=40, density=True)`."
+   ],
+   "explain": "Дорогих заказов (дороже 602 + 2 × 364 ≈ 1 330 ₽) в данных 5.3 %, а колокол обещает 2.3 % — в 2.3 раза меньше. У времени доставки тот же порог превышают 4.5 % доставок — хвост денег даже тяжелее. Слева же колокол ошибается в другую сторону: «среднее − 2σ» для денег отрицательно, и нормальная модель отводит почти 5 % заказов на суммы дешевле нуля. Деньги, время и расстояния почти всегда скошены вправо — поэтому выводы о них строят на квантилях, бутстрэпе или логарифме, а не на правиле 68–95–99.7."
+  },
+  "ch05/02b-normal/log": {
+   "chapter": "ch05",
+   "lesson": "02b-normal",
+   "lesson_title": "Нормальное распределение, приближение и z-оценка",
+   "id": "log",
+   "title": "Логарифм выпрямляет хвост",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nt = d.loc[d['actual_min'].between(1, 299), 'actual_min']\nassert close(need('skew_raw'), round(t.skew(), 2)) and close(need('skew_log'), round(_np.log(t).skew(), 2)), f'skew_raw, skew_log = {need(\"skew_raw\")}, {need(\"skew_log\")}.'\nassert len(figs) == 1 and len(figs[0].axes) == 2, 'Две гистограммы рядом: plt.subplots(1, 2).'\nassert [a.get_title() for a in figs[0].axes] == ['минуты', 'log(минуты)'], 'Заголовки: «минуты» и «log(минуты)».'",
+   "starter": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]",
+   "solution": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nskew_raw = round(t.skew(), 2)\nskew_log = round(np.log(t).skew(), 2)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.5))\naxes[0].hist(t, bins=40)\naxes[0].set_title(\"минуты\")\naxes[1].hist(np.log(t), bins=40)\naxes[1].set_title(\"log(минуты)\")\nfig.tight_layout()",
+   "hints": [
+    "`skew()` у Series: 0 — симметрично, больше 0 — хвост вправо. Логарифм — `np.log(t)`.",
+    "Две гистограммы рядом — `fig, axes = plt.subplots(1, 2)`, затем `axes[0].hist(...)` и `axes[1].hist(...)`."
+   ],
+   "explain": "Асимметрия упала в несколько раз. Логарифм часто применяют к деньгам, времени и расстояниям перед моделированием — вернёмся к этому в главе 6."
+  },
+  "ch05/03-sampling/population": {
+   "chapter": "ch05",
+   "lesson": "03-sampling",
+   "lesson_title": "Выборки и центральная предельная теорема",
+   "id": "population",
+   "title": "Параметры «совокупности»",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nt = d.loc[d['actual_min'].between(1, 299), 'actual_min']\nassert close(need('mu'), round(t.mean(), 2)) and close(need('sigma'), round(t.std(), 2)), f'mu, sigma = {need(\"mu\")}, {need(\"sigma\")}.'",
+   "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]",
+   "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nmu = round(t.mean(), 2)\nsigma = round(t.std(), 2)",
+   "hints": [
+    "`t` — Series времени доставки; у неё есть методы среднего и стандартного отклонения.",
+    "`mu = round(t.mean(), 2)`, `sigma = round(t.std(), 2)`."
+   ],
+   "explain": ""
+  },
+  "ch05/03-sampling/one-sample": {
+   "chapter": "ch05",
+   "lesson": "03-sampling",
+   "lesson_title": "Выборки и центральная предельная теорема",
+   "id": "one-sample",
+   "title": "Одна выборка",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nt = d.loc[d['actual_min'].between(1, 299), 'actual_min']\nm = t.sample(50, random_state=7).mean()\nassert close(need('m50'), round(m, 2)), f'm50 = {need(\"m50\")}, а нужно {round(m, 2)}.'\nassert close(need('error'), round(abs(m - t.mean()), 2)), f'error = {need(\"error\")}.'",
+   "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]",
+   "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\ns = t.sample(50, random_state=7)\nm50 = round(s.mean(), 2)\nerror = round(abs(s.mean() - t.mean()), 2)",
+   "hints": [
+    "`s = t.sample(50, random_state=7)`; модуль разницы — `abs(s.mean() - t.mean())`.",
+    "Округляйте только в конце: сначала разница неокруглённых средних, потом `round(..., 2)`."
+   ],
+   "explain": "Выборка из 50 доставок дала среднее 35.9 минуты при «настоящих» 34.5 — ошибка 1.4 минуты. Ожидаемая ошибка такой выборки — SE = 11 / √50 ≈ 1.6 минуты, так что нам выпал вполне типичный случай."
+  },
+  "ch05/03-sampling/p-means": {
+   "chapter": "ch05",
+   "lesson": "03-sampling",
+   "lesson_title": "Выборки и центральная предельная теорема",
+   "id": "p-means",
+   "title": "Много выборок",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert len(_lines) == 1 and 1.8 <= float(_lines[0]) <= 2.6, f'Разброс средних должен быть около σ/√25 ≈ 2.2. Сейчас: {_lines}'",
+   "starter": "",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].to_numpy()\nrng = np.random.default_rng(3)\nmeans = [rng.choice(t, size=25).mean() for _ in range(1000)]\nprint(round(np.std(means), 1))",
+   "hints": [
+    "Генератор и данные — до цикла; вывод — в конце.",
+    "Внутри генератора списка — `rng.choice(t, size=25).mean()`; разброс списка средних — `np.std(means)`."
+   ],
+   "explain": ""
+  },
+  "ch05/03-sampling/se-check": {
+   "chapter": "ch05",
+   "lesson": "03-sampling",
+   "lesson_title": "Выборки и центральная предельная теорема",
+   "id": "se-check",
+   "title": "Формула против симуляции",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nt = d.loc[d['actual_min'].between(1, 299), 'actual_min'].to_numpy()\nm = need('means')\nassert len(m) == 3000, f'В means {len(m)} значений, а нужно 3000.'\nf = round(t.std() / 30 ** 0.5, 2)\nassert close(need('se_formula'), f), f'se_formula = {need(\"se_formula\")}, а нужно {f}.'\nassert abs(need('se_sim') - f) < 0.15, f'se_sim = {need(\"se_sim\")} — должно быть близко к {f}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].to_numpy()\nrng = np.random.default_rng(2)",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].to_numpy()\nrng = np.random.default_rng(2)\nmeans = np.array([rng.choice(t, size=30).mean() for _ in range(3000)])\nse_sim = round(means.std(), 2)\nse_formula = round(t.std() / np.sqrt(30), 2)",
+   "hints": [
+    "`means = np.array([rng.choice(t, size=30).mean() for _ in range(3000)])`.",
+    "`se_sim = round(means.std(), 2)`; `se_formula = round(t.std() / np.sqrt(30), 2)`."
+   ],
+   "explain": "`t.std()` у массива numpy и у Series pandas считают немного по-разному (делят на n и на n − 1), но при сотнях значений разница незаметна."
+  },
+  "ch05/03-sampling/se-fn": {
+   "chapter": "ch05",
+   "lesson": "03-sampling",
+   "lesson_title": "Выборки и центральная предельная теорема",
+   "id": "se-fn",
+   "title": "Функция стандартной ошибки",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "f = need('se')\nassert close(f(11, 25), 2.2) and close(f(10, 4), 5), 'se(sigma, n) = sigma / √n.'\nassert [round(x, 2) for x in need('ses')] == [2.2, 1.1, 0.55], f'ses = {need(\"ses\")}.'",
+   "starter": "import math\n\ndef se(sigma, n):\n    ...\n\nses = []",
+   "solution": "import math\n\ndef se(sigma, n):\n    return sigma / math.sqrt(n)\n\nses = [round(se(11, n), 2) for n in (25, 100, 400)]",
+   "hints": [
+    "Функция возвращает одно число и ничего не печатает.",
+    "`return sigma / math.sqrt(n)`; список — генератором: `[round(se(11, n), 2) for n in (25, 100, 400)]`."
+   ],
+   "explain": "0.55 — 1.1 — 2.2: каждое увеличение выборки вчетверо уменьшает ошибку вдвое. Чтобы знать среднее время с точностью до полминуты (SE 0.55), нужно 400 доставок, а не 100."
+  },
+  "ch05/03-sampling/n-needed": {
+   "chapter": "ch05",
+   "lesson": "03-sampling",
+   "lesson_title": "Выборки и центральная предельная теорема",
+   "id": "n-needed",
+   "title": "Сколько нужно данных",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert need('n_needed') == 484, f'n_needed = {need(\"n_needed\")}. Из SE = σ/√n: n = (σ / SE)².'",
+   "starter": "import math\nsigma = 11",
+   "solution": "import math\nsigma = 11\nn_needed = math.ceil((sigma / 0.5) ** 2)",
+   "hints": [
+    "Выразите n из формулы: SE = σ / √n → √n = σ / SE → n = (σ / SE)².",
+    "Округление вверх — `math.ceil(...)`."
+   ],
+   "explain": "Почему SE 0.5 даёт «±1 минуту»: около 95 % выборочных средних лежат в пределах двух стандартных ошибок от настоящего значения (правило 68–95–99.7 плюс ЦПТ). Это и есть идея доверительного интервала — следующий урок."
+  },
+  "ch05/03-sampling/hall-survey": {
+   "chapter": "ch05",
+   "lesson": "03-sampling",
+   "lesson_title": "Выборки и центральная предельная теорема",
+   "id": "hall-survey",
+   "title": "Анкета на чеке",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_g = _pd.read_csv('guests_churn.csv')\n_v = _g['visits_90d']\n_h = _g.sample(500, weights='visits_90d', replace=True, random_state=5)['visits_90d'].mean()\nassert close(need('true_mean'), round(_v.mean(), 2)), f'true_mean = {need(\"true_mean\")}. Среднее visits_90d по всем 2 400 гостям.'\nhm = need('hall_mean')\nif close(hm, round(_g.sample(500, random_state=5)['visits_90d'].mean(), 2)):\n    raise AssertionError('Это случайная выборка гостей. Опрос по чекам — с weights=\"visits_90d\" и replace=True.')\nassert close(hm, round(_h, 2)), f'hall_mean = {hm}. Выборка: g.sample(500, weights=\"visits_90d\", replace=True, random_state=5).'\nassert close(need('bias'), round(_h - _v.mean(), 2), 0.011), f'bias = {need(\"bias\")}. Смещение — hall_mean минус true_mean.'\nth = need('theory')\nassert close(th, round((_v ** 2).sum() / _v.sum(), 2)), f'theory = {th}. Как в примере с четырьмя гостями: сумма v·v, делённая на сумму v.'",
+   "starter": "import pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nv = g[\"visits_90d\"]",
+   "solution": "import pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nv = g[\"visits_90d\"]\ntrue_mean = round(v.mean(), 2)\nhall = g.sample(500, weights=\"visits_90d\", replace=True, random_state=5)\nhall_mean = round(hall[\"visits_90d\"].mean(), 2)\nbias = round(hall[\"visits_90d\"].mean() - v.mean(), 2)\ntheory = round((v ** 2).sum() / v.sum(), 2)",
+   "hints": [
+    "Опрос по чекам — `sample` с весами: шанс гостя пропорционален `visits_90d`. Смещение — насколько среднее опроса отличается от среднего всех.",
+    "`hall = g.sample(500, weights=\"visits_90d\", replace=True, random_state=5)`; формула — `(v ** 2).sum() / v.sum()`.",
+    "`bias = round(hall[\"visits_90d\"].mean() - v.mean(), 2)`."
+   ],
+   "explain": "Средний гость приходит 6.42 раза за 90 дней, а опрос по 500 чекам показал 10.34 — смещение почти четыре визита. Формула «сумма квадратов на сумму» предсказывает, куда опрос будет попадать в среднем (10.62), и конкретная выборка легла рядом с ней, а не рядом с правдой. Смещение тем больше, чем сильнее различаются гости: если бы все ходили одинаково часто, отбор по чекам не отличался бы от отбора по гостям. Заметить такую ошибку можно, только если знать, как собиралась выборка, — по самим ответам её не видно."
+  },
+  "ch05/03-sampling/app-survey": {
+   "chapter": "ch05",
+   "lesson": "03-sampling",
+   "lesson_title": "Выборки и центральная предельная теорема",
+   "id": "app-survey",
+   "title": "Приложение против обзвона",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import math as _m\nimport pandas as _pd\n_g = _pd.read_csv('guests_churn.csv')\n_t = _g['churned'].mean()\n_a = _g.loc[_g['app'] == 1, 'churned'].mean()\n_c = _g.sample(150, random_state=7)['churned'].mean()\nassert close(need('true_rate'), round(_t, 3)), f'true_rate = {need(\"true_rate\")}. Доля churned по всем гостям.'\nassert close(need('app_rate'), round(_a, 3)), f'app_rate = {need(\"app_rate\")}. Только строки с app == 1.'\nassert close(need('call_rate'), round(_c, 3)), f'call_rate = {need(\"call_rate\")}. Обзвон — g.sample(150, random_state=7) по всей базе.'\nassert close(need('err_app'), round(abs(_a - _t), 3), 0.0011), f'err_app = {need(\"err_app\")}. Модуль разницы app_rate и true_rate.'\nassert close(need('err_call'), round(abs(_c - _t), 3), 0.0011), f'err_call = {need(\"err_call\")}. Модуль разницы call_rate и true_rate.'\nassert close(need('se_call'), round(_m.sqrt(_c * (1 - _c) / 150), 3), 0.0011), f'se_call = {need(\"se_call\")}. SE доли: √(p·(1 − p) / n).'\nassert need('better') == ('call' if abs(_c - _t) < abs(_a - _t) else 'app'), 'better — у какого способа ошибка меньше: \"app\" или \"call\".'",
+   "starter": "import pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")",
+   "solution": "import math\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nt = g[\"churned\"].mean()\na = g.loc[g[\"app\"] == 1, \"churned\"].mean()\nc = g.sample(150, random_state=7)[\"churned\"].mean()\ntrue_rate = round(t, 3)\napp_rate = round(a, 3)\ncall_rate = round(c, 3)\nerr_app = round(abs(a - t), 3)\nerr_call = round(abs(c - t), 3)\nse_call = round(math.sqrt(c * (1 - c) / 150), 3)\nbetter = \"call\" if abs(c - t) < abs(a - t) else \"app\"",
+   "hints": [
+    "Три доли — `mean()` столбца `churned`: по всем строкам, по строкам `app == 1` и по выборке из 150.",
+    "Ошибки — `abs(app_rate - true_rate)` и `abs(call_rate - true_rate)`; SE доли — `math.sqrt(p * (1 - p) / n)`.",
+    "`call = g.sample(150, random_state=7)`; `better = \"call\" if err_call < err_app else \"app\"` — сравнивайте неокруглённые ошибки или округлённые, результат здесь одинаковый."
+   ],
+   "explain": "На самом деле ушли 22.3 % гостей. Приложение показывает 16.4 % — ошибка 5.9 п.п., хотя анкет в семь раз больше. Обзвон 150 случайных гостей дал 26.0 % — ошибка 3.7 п.п., примерно одна стандартная ошибка (3.6 п.п.) и заметно меньше двух: обычный промах случайной выборки, так она и должна себя вести. Пользователи приложения — более лояльная часть базы, и опрос в приложении измеряет отток именно среди них. Обратите внимание: в другой случайной выборке обзвон мог промахнуться и сильнее, но его промахи — в обе стороны и описываются SE; промах приложения всегда в одну сторону и с ростом числа анкет не исчезает."
+  },
+  "ch05/03-sampling/clt": {
+   "chapter": "ch05",
+   "lesson": "03-sampling",
+   "lesson_title": "Выборки и центральная предельная теорема",
+   "id": "clt",
+   "title": "ЦПТ своими глазами",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nimport pandas as _pd\nkm = _pd.read_csv('deliveries.csv')['distance_km']\nassert close(need('skew_data'), round(km.skew(), 2)), f'skew_data = {need(\"skew_data\")}.'\nsm = need('skew_means')\nassert sm < need('skew_data') / 3, f'skew_means = {sm} — у средних асимметрия должна быть намного меньше.'\nassert len(figs) == 1 and len(figs[0].axes) == 2, 'Две гистограммы рядом.'",
+   "starter": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nd = pd.read_csv(\"deliveries.csv\")\nkm = d[\"distance_km\"].to_numpy()\nrng = np.random.default_rng(4)",
+   "solution": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nd = pd.read_csv(\"deliveries.csv\")\nkm = d[\"distance_km\"].to_numpy()\nrng = np.random.default_rng(4)\nmeans = np.array([rng.choice(km, size=50).mean() for _ in range(3000)])\nskew_data = round(pd.Series(km).skew(), 2)\nskew_means = round(pd.Series(means).skew(), 2)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.5))\naxes[0].hist(km, bins=40)\naxes[0].set_title(\"Расстояния\")\naxes[1].hist(means, bins=40)\naxes[1].set_title(\"Средние выборок по 50\")\nfig.tight_layout()",
+   "hints": [
+    "`km = d[\"distance_km\"].to_numpy()`; `means = np.array([rng.choice(km, size=50).mean() for _ in range(3000)])`.",
+    "Асимметрия: `pd.Series(km).skew()` и `pd.Series(means).skew()`. Две гистограммы — `fig, axes = plt.subplots(1, 2)`."
+   ],
+   "explain": "Асимметрия расстояний — 1.94 (длинный хвост дальних заказов), а средних по 50 — всего 0.26: почти симметричный колокол. Это и есть центральная предельная теорема в действии. Небольшой остаток асимметрии говорит, что для очень скошенных данных 50 — ещё не «бесконечность»: с ростом выборки он уйдёт."
+  },
+  "ch05/03-sampling/se-share": {
+   "chapter": "ch05",
+   "lesson": "03-sampling",
+   "lesson_title": "Выборки и центральная предельная теорема",
+   "id": "se-share",
+   "title": "Ошибка доли",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "want = round((0.24 * 0.76 / 100) ** 0.5, 4)\nassert close(need('se_100'), want), f'se_100 = {need(\"se_100\")}, а нужно {want}.'\nassert abs(need('se_sim') - want) < 0.003, f'se_sim = {need(\"se_sim\")} — должно быть близко к {want}.'\nimport math as _m\n_n = _m.ceil(0.24 * 0.76 / 0.02 ** 2)\nassert need('n_2pp') in (_n, _n - 1), f'n_2pp = {need(\"n_2pp\")}. Из SE = √(p(1−p)/n): n = p(1−p) / SE², вверх до целого.'",
+   "starter": "import math\nimport numpy as np\nrng = np.random.default_rng(6)",
+   "solution": "import math\nimport numpy as np\nrng = np.random.default_rng(6)\nse_100 = round(math.sqrt(0.24 * 0.76 / 100), 4)\nshares = (rng.random((5000, 100)) < 0.24).mean(axis=1)\nse_sim = round(shares.std(), 4)\nn_2pp = math.ceil(0.24 * 0.76 / 0.02 ** 2)",
+   "hints": [
+    "Формула: `math.sqrt(p * (1 - p) / n)`.",
+    "Симуляция: `shares = (rng.random((5000, 100)) < 0.24).mean(axis=1)`, разброс — `shares.std()`.",
+    "Для `n_2pp` выразите n из формулы SE: `math.ceil(0.24 * 0.76 / 0.02 ** 2)`."
+   ],
+   "explain": "Формула даёт 0.0427, симуляция — 0.0420: совпадение до десятых долей пункта. По 100 доставкам долю опозданий 24 % мы знаем с точностью ±4 п.п. (одна SE) — именно поэтому месячные отчёты маленьких кофеен так «прыгают». Чтобы сузить SE до 2 п.п., нужно 456 доставок: вдвое точнее — вчетверо больше данных."
+  },
+  "ch05/03-sampling/coverage": {
+   "chapter": "ch05",
+   "lesson": "03-sampling",
+   "lesson_title": "Выборки и центральная предельная теорема",
+   "id": "coverage",
+   "title": "95 % в пределах двух ошибок",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert 0.93 <= need('share_within') <= 0.97, f'share_within = {need(\"share_within\")} — должно быть около 0.95.'\nassert '1.96' in _code, 'Используйте границы ± 1.96 · SE.'",
+   "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].to_numpy()\nrng = np.random.default_rng(9)",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].to_numpy()\nrng = np.random.default_rng(9)\nmeans = np.array([rng.choice(t, size=40).mean() for _ in range(4000)])\nmu, se = t.mean(), t.std() / np.sqrt(40)\nshare_within = (np.abs(means - mu) <= 1.96 * se).mean()",
+   "hints": [
+    "`mu, se = t.mean(), t.std() / np.sqrt(40)`; средние — как в задаче «Формула против симуляции».",
+    "Доля попавших: `(np.abs(means - mu) <= 1.96 * se).mean()`."
+   ],
+   "explain": "Это и есть основа доверительного интервала. Если 95 % выборочных средних лежат в пределах ±1.96·SE от настоящего среднего, то верно и обратное: интервал «выборочное среднее ± 1.96·SE» в 95 % случаев накрывает настоящее среднее. Им займёмся в следующем уроке."
+  },
+  "ch05/04-confidence/ci-mean": {
+   "chapter": "ch05",
+   "lesson": "04-confidence",
+   "lesson_title": "Доверительные интервалы",
+   "id": "ci-mean",
+   "title": "Интервал для среднего",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\np = ok.loc[ok['shop_id'] == 'PRM-1', 'actual_min']\nse = p.std() / _np.sqrt(len(p))\nassert close(need('lo'), round(p.mean() - 1.96 * se, 2)) and close(need('hi'), round(p.mean() + 1.96 * se, 2)), f'lo, hi = {need(\"lo\")}, {need(\"hi\")}, а нужно {round(p.mean() - 1.96 * se, 2)}, {round(p.mean() + 1.96 * se, 2)}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\np = ok.loc[ok[\"shop_id\"] == \"PRM-1\", \"actual_min\"]",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\np = ok.loc[ok[\"shop_id\"] == \"PRM-1\", \"actual_min\"]\nse = p.std() / np.sqrt(len(p))\nlo = round(p.mean() - 1.96 * se, 2)\nhi = round(p.mean() + 1.96 * se, 2)",
+   "hints": [
+    "`p` — Series времени доставок кофейни; `len(p)` — число доставок.",
+    "`se = p.std() / np.sqrt(len(p))`; границы — `p.mean() - 1.96 * se` и `p.mean() + 1.96 * se`."
+   ],
+   "explain": "PRM-1: 453 доставки, среднее 34.2 минуты, SE ≈ 0.53, интервал примерно 33.2–35.3. На такой выборке среднее известно с точностью около минуты — хотя отдельные доставки разбросаны на ±11 минут."
+  },
+  "ch05/04-confidence/t-interval": {
+   "chapter": "ch05",
+   "lesson": "04-confidence",
+   "lesson_title": "Доверительные интервалы",
+   "id": "t-interval",
+   "title": "Через scipy",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nimport pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\np = ok.loc[ok['shop_id'] == 'PRM-1', 'actual_min']\nlo, hi = _st.t.interval(0.95, len(p) - 1, loc=p.mean(), scale=p.std() / _np.sqrt(len(p)))\nassert close(need('lo_t'), round(lo, 2)) and close(need('hi_t'), round(hi, 2)), f'lo_t, hi_t = {need(\"lo_t\")}, {need(\"hi_t\")}.'\nassert close(need('t_mult'), round(_st.t.ppf(0.975, len(p) - 1), 3)), f't_mult = {need(\"t_mult\")}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\np = ok.loc[ok[\"shop_id\"] == \"PRM-1\", \"actual_min\"]",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\np = ok.loc[ok[\"shop_id\"] == \"PRM-1\", \"actual_min\"]\nse = p.std() / np.sqrt(len(p))\nlo, hi = stats.t.interval(0.95, len(p) - 1, loc=p.mean(), scale=se)\nlo_t, hi_t = round(lo, 2), round(hi, 2)\nt_mult = round(stats.t.ppf(0.975, len(p) - 1), 3)",
+   "hints": [
+    "`stats.t.interval(0.95, len(p) - 1, loc=p.mean(), scale=se)`.",
+    "Функция возвращает пару чисел: `lo, hi = stats.t.interval(...)`."
+   ],
+   "explain": "При сотнях наблюдений множитель t почти равен 1.96, и интервалы совпадают до сотых."
+  },
+  "ch05/04-confidence/p-wilson": {
+   "chapter": "ch05",
+   "lesson": "04-confidence",
+   "lesson_title": "Доверительные интервалы",
+   "id": "p-wilson",
+   "title": "Интервал Уилсона",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from statsmodels.stats.proportion import proportion_confint as _pc\nlo, hi = _pc(12, 40, method='wilson')\nassert _lines == [f'{round(lo, 3)} {round(hi, 3)}'], f'Сейчас: {_lines}'",
+   "starter": "",
+   "solution": "from statsmodels.stats.proportion import proportion_confint\nlate, n = 12, 40\nlo, hi = proportion_confint(late, n, method=\"wilson\")\nprint(round(lo, 3), round(hi, 3))",
+   "hints": [
+    "Импорт — первым, вывод — последним.",
+    "`proportion_confint(12, 40, method=\"wilson\")` возвращает две границы; печатайте их округлёнными через пробел."
+   ],
+   "explain": ""
+  },
+  "ch05/04-confidence/courier-ci": {
+   "chapter": "ch05",
+   "lesson": "04-confidence",
+   "lesson_title": "Доверительные интервалы",
+   "id": "courier-ci",
+   "title": "Интервалы по курьерам",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom statsmodels.stats.proportion import proportion_confint as _pc\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\ng = o.groupby('courier')['late'].agg(['sum', 'size'])\nc = need('ci', _pd.DataFrame)\nif 'courier' in c.columns:\n    c = c.set_index('courier')\nassert list(c.columns) == ['n', 'late', 'lo', 'hi'], f'Столбцы: {list(c.columns)}.'\nfor k, r in g.iterrows():\n    lo, hi = _pc(r['sum'], r['size'], method='wilson')\n    assert c.loc[k, 'n'] == r['size'] and close(c.loc[k, 'late'], round(r['sum'] / r['size'], 3)), f'{k}: n или late не совпадают.'\n    assert close(c.loc[k, 'lo'], round(lo, 3)) and close(c.loc[k, 'hi'], round(hi, 3)), f'{k}: границы {c.loc[k, \"lo\"]}–{c.loc[k, \"hi\"]}, а нужно {round(lo, 3)}–{round(hi, 3)}.'",
+   "starter": "import pandas as pd\nfrom statsmodels.stats.proportion import proportion_confint\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]",
+   "solution": "import pandas as pd\nfrom statsmodels.stats.proportion import proportion_confint\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"courier\")[\"late\"].agg([\"sum\", \"size\"])\nrows = []\nfor name, r in g.iterrows():\n    lo, hi = proportion_confint(r[\"sum\"], r[\"size\"], method=\"wilson\")\n    rows.append({\"courier\": name, \"n\": r[\"size\"], \"late\": round(r[\"sum\"] / r[\"size\"], 3),\n                 \"lo\": round(lo, 3), \"hi\": round(hi, 3)})\nci = pd.DataFrame(rows).set_index(\"courier\")\nci",
+   "hints": [
+    "`g = ok.groupby(\"courier\")[\"late\"].agg([\"sum\", \"size\"])` — опозданий и всего по группе.",
+    "Пройдите по строкам `for name, row in g.iterrows():` и посчитайте `proportion_confint(row[\"sum\"], row[\"size\"], method=\"wilson\")`. Результаты соберите в список словарей и превратите в DataFrame.",
+    "Каркас: `rows = []`, в цикле `rows.append({\"courier\": name, \"n\": int(row[\"size\"]), \"share\": ..., \"lo\": lo, \"hi\": hi})`, после цикла `pd.DataFrame(rows).set_index(\"courier\")`."
+   ],
+   "explain": "Интервалы трёх типов курьеров не пересекаются, и пешие отстоят от остальных очень далеко. Это уже почти доказательство, что разница не случайна."
+  },
+  "ch05/04-confidence/widths": {
+   "chapter": "ch05",
+   "lesson": "04-confidence",
+   "lesson_title": "Доверительные интервалы",
+   "id": "widths",
+   "title": "Уровень доверия и ширина",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nimport pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\nu = d.loc[d['actual_min'].between(1, 299) & (d['shop_id'] == 'UFA-1'), 'actual_min']\nse = u.std() / _np.sqrt(len(u))\nwant = {}\nfor lv in (0.90, 0.95, 0.99):\n    lo, hi = _st.t.interval(lv, len(u) - 1, loc=u.mean(), scale=se)\n    want[lv] = round(hi - lo, 2)\ngot = dict(need('widths'))\nassert set(round(k, 2) for k in got) == {0.9, 0.95, 0.99}, f'Ключи: {list(got)}.'\nassert all(close(got[k], want[round(k, 2)]) for k in got), f'widths = {got}, а нужно {want}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nu = d.loc[d[\"actual_min\"].between(1, 299) & (d[\"shop_id\"] == \"UFA-1\"), \"actual_min\"]",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nu = d.loc[d[\"actual_min\"].between(1, 299) & (d[\"shop_id\"] == \"UFA-1\"), \"actual_min\"]\nse = u.std() / np.sqrt(len(u))\nwidths = {}\nfor level in (0.90, 0.95, 0.99):\n    lo, hi = stats.t.interval(level, len(u) - 1, loc=u.mean(), scale=se)\n    widths[level] = round(hi - lo, 2)\nwidths",
+   "hints": [
+    "SE и число степеней свободы не зависят от уровня — посчитайте их до цикла.",
+    "Цикл `for level in (0.90, 0.95, 0.99):` — внутри `stats.t.interval(level, ...)` и ширина `hi - lo`."
+   ],
+   "explain": "90 % — 2.78 минуты, 95 % — 3.32, 99 % — 4.38. Чем увереннее мы хотим быть, тем шире интервал: за каждый «девяточный» пункт уверенности платим точностью. 95 % — договорённость, а не закон; для дорогих решений берут 99 %."
+  },
+  "ch05/04-confidence/bootstrap": {
+   "chapter": "ch05",
+   "lesson": "04-confidence",
+   "lesson_title": "Доверительные интервалы",
+   "id": "bootstrap",
+   "title": "Бутстрэп для медианы",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nt = d.loc[d['actual_min'].between(1, 299) & (d['courier'] == 'вело'), 'actual_min'].to_numpy()\nassert close(need('med'), _np.median(t)), f'med = {need(\"med\")}.'\nlo, hi = need('lo'), need('hi')\nassert lo <= _np.median(t) <= hi and 0 < hi - lo <= 4, f'Интервал {lo}–{hi} не похож на бутстрэп-ДИ медианы: он должен накрывать медиану и быть шириной в пару минут.'\nassert 'choice(' in _code, 'Перевыборка — с возвращением: rng.choice(t, size=len(t), replace=True).'",
+   "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299) & (d[\"courier\"] == \"вело\"), \"actual_min\"].to_numpy()\nrng = np.random.default_rng(12)",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299) & (d[\"courier\"] == \"вело\"), \"actual_min\"].to_numpy()\nrng = np.random.default_rng(12)\nboot = [np.median(rng.choice(t, size=len(t), replace=True)) for _ in range(5000)]\nmed = np.median(t)\nlo, hi = np.percentile(boot, [2.5, 97.5])",
+   "hints": [
+    "`boot = [np.median(rng.choice(t, size=len(t), replace=True)) for _ in range(5000)]`.",
+    "`lo, hi = np.percentile(boot, [2.5, 97.5])`."
+   ],
+   "explain": "Медиана вело-доставок — 32 минуты, бутстрэп-интервал — 31–33. Для медианы нет простой формулы SE, а бутстрэп даёт интервал одной и той же схемой для любой статистики. Ступенчатые границы (целые минуты) — потому что медиана целых чисел сама почти всегда целая."
+  },
+  "ch05/04-confidence/errorbars": {
+   "chapter": "ch05",
+   "lesson": "04-confidence",
+   "lesson_title": "Доверительные интервалы",
+   "id": "errorbars",
+   "title": "Интервалы на графике",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\nm = o.groupby('shop_id')['late'].mean().sort_values()\nax = ax_of()\npts = [l for l in ax.lines if len(l.get_ydata()) == len(m)]\nassert pts, 'Нужны точки ax.errorbar(x, y, yerr=..., fmt=\"o\").'\nys = [float(v) for v in pts[0].get_ydata()]\nassert all(close(a, b) for a, b in zip(ys, m.values)), 'Точки — доля опозданий по кофейням, по возрастанию.'\nassert ax.collections, 'Не видно «усов» интервала: передайте yerr.'\nassert ax.get_ylabel() == 'доля опозданий'",
+   "starter": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"shop_id\")[\"late\"].agg([\"sum\", \"size\", \"mean\"]).sort_values(\"mean\")",
+   "solution": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"shop_id\")[\"late\"].agg([\"sum\", \"size\", \"mean\"]).sort_values(\"mean\")\nlo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n\nfig, ax = plt.subplots(figsize=(7, 3.5))\nax.errorbar(g.index, g[\"mean\"], yerr=[g[\"mean\"] - lo, hi - g[\"mean\"]], fmt=\"o\", capsize=4)\nax.set_ylabel(\"доля опозданий\")\nax.set_title(\"Опоздания по кофейням с 95 % интервалами\")",
+   "hints": [
+    "Границы для каждой кофейни: `lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")` — функция принимает и Series.",
+    "`ax.errorbar(g.index, g[\"mean\"], yerr=[g[\"mean\"] - lo, hi - g[\"mean\"]], fmt=\"o\", capsize=4)` — `yerr` — расстояние вниз и вверх от точки."
+   ],
+   "explain": "Интервалы соседних кофеен перекрываются — различия между ними могут быть случайными. А у KZN-2 нижняя граница выше верхних границ у трёх кофеен из пяти — это уже серьёзный сигнал."
+  },
+  "ch05/04-confidence/diff-ci": {
+   "chapter": "ch05",
+   "lesson": "04-confidence",
+   "lesson_title": "Доверительные интервалы",
+   "id": "diff-ci",
+   "title": "Интервал для разницы",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\npk = o['created'].dt.hour.isin([12, 13, 18, 19])\np1, n1, p2, n2 = o.loc[pk, 'late'].mean(), pk.sum(), o.loc[~pk, 'late'].mean(), (~pk).sum()\nse = _np.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2)\ndf_ = p1 - p2\nassert close(need('diff'), round(df_ * 100, 1)), f'diff = {need(\"diff\")}, а нужно {round(df_ * 100, 1)}.'\nassert close(need('lo'), round((df_ - 1.96 * se) * 100, 1)) and close(need('hi'), round((df_ + 1.96 * se) * 100, 1)), f'lo, hi = {need(\"lo\")}, {need(\"hi\")}.'\nassert need('zero_inside') == bool(df_ - 1.96 * se <= 0 <= df_ + 1.96 * se), 'zero_inside — попадает ли 0 между lo и hi.'",
+   "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\npeak = ok[\"created\"].dt.hour.isin([12, 13, 18, 19])",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\npeak = ok[\"created\"].dt.hour.isin([12, 13, 18, 19])\np1, n1 = ok.loc[peak, \"late\"].mean(), peak.sum()\np2, n2 = ok.loc[~peak, \"late\"].mean(), (~peak).sum()\nse = np.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2)\nd_ = p1 - p2\ndiff = round(d_ * 100, 1)\nlo = round((d_ - 1.96 * se) * 100, 1)\nhi = round((d_ + 1.96 * se) * 100, 1)\nzero_inside = bool(lo <= 0 <= hi)",
+   "hints": [
+    "Маска пика: `ok[\"created\"].dt.hour.isin([12, 13, 18, 19])`.",
+    "Как в примере со снегом: `p1, n1` — для пика, `p2, n2` — для остальных; `se = np.sqrt(p1*(1-p1)/n1 + p2*(1-p2)/n2)`."
+   ],
+   "explain": "В часы пик опаздывает 31.4 % доставок, в остальное время — 18.0 %: разница 13.3 п.п., интервал 9.4–17.3. Ноль далеко за пределами — эффект пика устойчивый. Нижняя граница (9 п.п.) полезнее для планирования, чем точечная оценка: «как минимум на 9 пунктов больше» — это то, на что можно опереться."
+  },
+  "ch05/04-confidence/coverage-small": {
+   "chapter": "ch05",
+   "lesson": "04-confidence",
+   "lesson_title": "Доверительные интервалы",
+   "id": "coverage-small",
+   "title": "Когда 95 % — не 95 %",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "c = need('coverage')\nif 0.905 <= c < 0.92:\n    raise AssertionError(f'coverage = {c}. Похоже, σ выборки посчитана с делением на n: s.std() у массива numpy — ddof=0. Нужно s.std(ddof=1).')\nassert 0.92 <= c <= 0.94, f'coverage = {c} — для 8 наблюдений из скошенных данных ожидается около 0.93.'\nassert 't.interval' in _code or 't.ppf' in _code, 'Стройте именно t-интервал.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].to_numpy()\nmu = t.mean()\nrng = np.random.default_rng(13)",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].to_numpy()\nmu = t.mean()\nrng = np.random.default_rng(13)\nhits = 0\nfor _ in range(4000):\n    s = rng.choice(t, size=8)\n    lo, hi = stats.t.interval(0.95, 7, loc=s.mean(), scale=s.std(ddof=1) / np.sqrt(8))\n    hits += lo <= mu <= hi\ncoverage = round(hits / 4000, 3)",
+   "hints": [
+    "В цикле: `s = rng.choice(t, size=8)`, `lo, hi = stats.t.interval(0.95, 7, loc=s.mean(), scale=s.std(ddof=1) / np.sqrt(8))`, засчитать попадание `lo <= mu <= hi`.",
+    "`ddof=1` — стандартное отклонение выборки с делением на n − 1, как у pandas `std()`."
+   ],
+   "explain": "Обещанные 95 % держатся, когда выборка большая или данные близки к нормальным. На 8 наблюдениях из скошенного распределения ЦПТ ещё не сработала, и интервал промахивается чаще. Для маленьких выборок из несимметричных данных надёжнее бутстрэп или преобразование (логарифм)."
+  },
+  "ch05/05-hypotheses/observed": {
+   "chapter": "ch05",
+   "lesson": "05-hypotheses",
+   "lesson_title": "Проверка гипотез: логика и p-value",
+   "id": "observed",
+   "title": "Наблюдаемая разница",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\ns = o['weather'] == 'снег'\nw = round((o.loc[s, 'late'].mean() - o.loc[~s, 'late'].mean()) * 100, 1)\nassert close(need('observed'), w), f'observed = {need(\"observed\")}, а нужно {w}.'",
+   "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nsnow = ok[\"weather\"] == \"снег\"",
+   "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nsnow = ok[\"weather\"] == \"снег\"\nobserved = round((ok.loc[snow, \"late\"].mean() - ok.loc[~snow, \"late\"].mean()) * 100, 1)",
+   "hints": [
+    "Маска `snow = ok[\"weather\"] == \"снег\"`; `~snow` — все остальные доставки.",
+    "`(ok.loc[snow, \"late\"].mean() - ok.loc[~snow, \"late\"].mean()) * 100`."
+   ],
+   "explain": ""
+  },
+  "ch05/05-hypotheses/decision": {
+   "chapter": "ch05",
+   "lesson": "05-hypotheses",
+   "lesson_title": "Проверка гипотез: логика и p-value",
+   "id": "decision",
+   "title": "Решение по p-value",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "f = need('decision')\nassert f(0.01) == 'отвергаем H0' and f(0.2) == 'не отвергаем H0', 'Проверьте строки: \"отвергаем H0\" и \"не отвергаем H0\".'\nassert f(0.05) == 'не отвергаем H0', 'p = α — не отвергаем: условие строгое, p < alpha.'\nassert f(0.07, alpha=0.1) == 'отвергаем H0', 'Учитывайте параметр alpha.'\nassert need('answers') == ['отвергаем H0', 'отвергаем H0', 'не отвергаем H0', 'не отвергаем H0'], f'answers = {need(\"answers\")}.'",
+   "starter": "def decision(p, alpha=0.05):\n    ...\n\nanswers = []",
+   "solution": "def decision(p, alpha=0.05):\n    return \"отвергаем H0\" if p < alpha else \"не отвергаем H0\"\n\nanswers = [decision(p) for p in (0.001, 0.049, 0.05, 0.3)]",
+   "hints": [
+    "Строгое неравенство: при p = 0.05 ровно — «не отвергаем».",
+    "`return \"отвергаем H0\" if p < alpha else \"не отвергаем H0\"`."
+   ],
+   "explain": ""
+  },
+  "ch05/05-hypotheses/p-perm": {
+   "chapter": "ch05",
+   "lesson": "05-hypotheses",
+   "lesson_title": "Проверка гипотез: логика и p-value",
+   "id": "p-perm",
+   "title": "Одно перемешивание",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert len(_lines) == 1 and float(_lines[0]) in (-0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75), f'Сейчас: {_lines}'",
+   "starter": "",
+   "solution": "import numpy as np\nlate = np.array([1, 0, 0, 1, 1, 0, 0, 0])\ngrp = np.array([True, True, True, True, False, False, False, False])\nrng = np.random.default_rng(0)\nshuffled = rng.permutation(grp)\nprint(late[shuffled].mean() - late[~shuffled].mean())",
+   "hints": [
+    "Данные и генератор — до перемешивания, вывод — последним.",
+    "`shuffled = rng.permutation(is_tmn)` — затем разница долей `late[shuffled].mean() - late[~shuffled].mean()`."
+   ],
+   "explain": ""
+  },
+  "ch05/05-hypotheses/perm-snow": {
+   "chapter": "ch05",
+   "lesson": "05-hypotheses",
+   "lesson_title": "Проверка гипотез: логика и p-value",
+   "id": "perm-snow",
+   "title": "Перестановочный тест: снег",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\ndd = need('diffs')\nassert len(dd) == 3000, f'В diffs {len(dd)} значений, а нужно 3000.'\nassert abs(_np.mean(dd)) < 0.01, 'Среднее разниц при перемешивании должно быть около нуля.'\nassert need('p_value') <= 0.005, f'p_value = {need(\"p_value\")} — для снега разница почти никогда не получается случайно.'",
+   "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate = (ok[\"actual_min\"] > ok[\"promised_min\"]).to_numpy()\nsnow = (ok[\"weather\"] == \"снег\").to_numpy()\nrng = np.random.default_rng(0)",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate = (ok[\"actual_min\"] > ok[\"promised_min\"]).to_numpy()\nsnow = (ok[\"weather\"] == \"снег\").to_numpy()\nrng = np.random.default_rng(0)\nobserved = late[snow].mean() - late[~snow].mean()\ndiffs = []\nfor _ in range(3000):\n    s = rng.permutation(snow)\n    diffs.append(late[s].mean() - late[~s].mean())\ndiffs = np.array(diffs)\np_value = (np.abs(diffs) >= abs(observed)).mean()",
+   "hints": [
+    "В цикле: `s = rng.permutation(snow)`, разница — `late[s].mean() - late[~s].mean()`.",
+    "`p_value = (np.abs(diffs) >= abs(observed)).mean()`."
+   ],
+   "explain": "Если ни одно перемешивание не дало такой разницы, p-value получается 0. Честнее писать «p < 1/3000», то есть «меньше 0.0003»: перемешиваний просто не хватило, чтобы увидеть такую редкость."
+  },
+  "ch05/05-hypotheses/one-sided": {
+   "chapter": "ch05",
+   "lesson": "05-hypotheses",
+   "lesson_title": "Проверка гипотез: логика и p-value",
+   "id": "one-sided",
+   "title": "Одно- и двусторонний",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "p2, p1 = need('p_two'), need('p_one')\nassert 0.12 <= p2 <= 0.24, f'p_two = {p2} — ожидается около 0.18.'\nassert 0.05 <= p1 <= 0.13 and p1 < p2, f'p_one = {p1} — одностороннее p должно быть примерно вдвое меньше двустороннего.'\nassert need('same_verdict') == ((p2 < 0.05) == (p1 < 0.05)), 'same_verdict — совпадают ли решения при α = 0.05.'",
+   "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nx = ok[ok[\"shop_id\"].isin([\"TMN-1\", \"PRM-1\"])]\nlate = (x[\"actual_min\"] > x[\"promised_min\"]).to_numpy()\ngrp = (x[\"shop_id\"] == \"TMN-1\").to_numpy()\nrng = np.random.default_rng(1)",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nx = ok[ok[\"shop_id\"].isin([\"TMN-1\", \"PRM-1\"])]\nlate = (x[\"actual_min\"] > x[\"promised_min\"]).to_numpy()\ngrp = (x[\"shop_id\"] == \"TMN-1\").to_numpy()\nrng = np.random.default_rng(1)\nobserved = late[grp].mean() - late[~grp].mean()\ndiffs = np.array([late[s].mean() - late[~s].mean() for s in (rng.permutation(grp) for _ in range(5000))])\np_two = (np.abs(diffs) >= abs(observed)).mean()\np_one = (diffs >= observed).mean()\nsame_verdict = (p_two < 0.05) == (p_one < 0.05)",
+   "hints": [
+    "Двустороннее: `(np.abs(diffs) >= abs(observed)).mean()`; одностороннее «больше»: `(diffs >= observed).mean()`.",
+    "`same_verdict = (p_two < 0.05) == (p_one < 0.05)`."
+   ],
+   "explain": "TMN-1 опаздывает на 4.8 п.п. чаще. Двустороннее p ≈ 0.17, одностороннее ≈ 0.09 — оба выше 0.05, решение одинаковое: «не отвергаем». Заметьте, что одностороннее p вдвое меньше: если бы направление было выбрано заранее и p вышло бы, скажем, 0.04 против 0.08, решения бы разошлись. Поэтому направление фиксируют до данных."
+  },
+  "ch05/05-hypotheses/aa": {
+   "chapter": "ch05",
+   "lesson": "05-hypotheses",
+   "lesson_title": "Проверка гипотез: логика и p-value",
+   "id": "aa",
+   "title": "Ложные тревоги",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert 0.035 <= need('false_rate') <= 0.065, f'false_rate = {need(\"false_rate\")} — при отсутствии эффекта должно быть около 0.05.'",
+   "starter": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(3)\nn = 250",
+   "solution": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(3)\nn = 250\nalarms = 0\nfor _ in range(2000):\n    a = rng.random(n) < 0.24\n    b = rng.random(n) < 0.24\n    p_pool = (a.sum() + b.sum()) / (2 * n)\n    se = np.sqrt(p_pool * (1 - p_pool) * 2 / n)\n    z = (a.mean() - b.mean()) / se\n    alarms += 2 * stats.norm.sf(abs(z)) < 0.05\nfalse_rate = alarms / 2000",
+   "hints": [
+    "В каждом эксперименте две группы из одного и того же распределения: `a = rng.random(n) < 0.24`, `b = rng.random(n) < 0.24`.",
+    "Шаги — как в разделе про z-тест: общая доля `p_pool`, `se = np.sqrt(p_pool * (1 - p_pool) * 2 / n)` (при равных группах `1/n + 1/n = 2/n`), `z`, `p = 2 * stats.norm.sf(abs(z))`."
+   ],
+   "explain": "Ложных тревог — около 5 % (у нас 5.2 %): ровно столько, сколько мы разрешили, выбрав α = 0.05. Это и есть смысл α: доля экспериментов «без эффекта», в которых мы всё равно закричим «эффект есть». Если проводить 20 таких тестов в месяц, раз в месяц будет ложная находка."
+  },
+  "ch05/05-hypotheses/power": {
+   "chapter": "ch05",
+   "lesson": "05-hypotheses",
+   "lesson_title": "Проверка гипотез: логика и p-value",
+   "id": "power",
+   "title": "Мощность",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert 0.2 <= need('power_200') <= 0.36, f'power_200 = {need(\"power_200\")} — ожидается около 0.28.'\nassert 0.70 <= need('power_800') <= 0.85, f'power_800 = {need(\"power_800\")} — ожидается около 0.77.'",
+   "starter": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(4)\n\ndef power(n, pa=0.24, pb=0.30, sims=2000):\n    ...\n\npower_200 = power(200)\npower_800 = power(800)",
+   "solution": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(4)\n\ndef power(n, pa=0.24, pb=0.30, sims=2000):\n    hits = 0\n    for _ in range(sims):\n        a = rng.random(n) < pa\n        b = rng.random(n) < pb\n        p_pool = (a.sum() + b.sum()) / (2 * n)\n        se = np.sqrt(p_pool * (1 - p_pool) * 2 / n)\n        z = (b.mean() - a.mean()) / se\n        hits += 2 * stats.norm.sf(abs(z)) < 0.05\n    return hits / sims\n\npower_200 = power(200)\npower_800 = power(800)",
+   "hints": [
+    "Внутри функции — тот же цикл, что в задаче про ложные тревоги, но вероятности групп разные: `a = rng.random(n) < pa`, `b = rng.random(n) < pb`.",
+    "Оформите функцию `power(n, pa=0.24, pb=0.30, sims=2000)` и вызовите её дважды. Генератор создайте один раз до обоих вызовов."
+   ],
+   "explain": "Эффект в 6 п.п. реален, но на 200 доставках в группе тест находит его лишь примерно в четверти случаев — в остальных «не отвергаем H₀». На 800 — примерно в трёх случаях из четырёх. Вот почему эксперимент планируют заранее: сколько данных нужно, чтобы увидеть эффект нужного размера. Это урок «A/B-тест: от дизайна до решения»."
+  },
+  "ch05/05-hypotheses/perm-fn": {
+   "chapter": "ch05",
+   "lesson": "05-hypotheses",
+   "lesson_title": "Проверка гипотез: логика и p-value",
+   "id": "perm-fn",
+   "title": "Функция перестановочного теста",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nf = need('perm_test')\nsame = f(_np.array([1.0, 2, 3, 4, 5]), _np.array([1.0, 2, 3, 4, 5]), 500)\nassert abs(same[0]) < 1e-12 and same[1] > 0.9, f'Для одинаковых массивов разница 0 и p около 1, а получилось {same}.'\nfar = f(_np.array([10.0, 11, 12, 13, 14, 15]), _np.array([1.0, 2, 3, 4, 5, 6]), 2000)\nassert close(far[0], 9) and far[1] < 0.01, f'Для сильно разных массивов разница 9 и p очень мало, а получилось {far}.'\nr = need('res')\nassert len(r) == 2 and r[1] <= 1, 'res — пара (разница, p-value).'",
+   "starter": "import numpy as np\nimport pandas as pd\n\ndef perm_test(a, b, n_perm=2000, seed=0):\n    ...\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nauto = ok.loc[ok[\"courier\"] == \"авто\", \"actual_min\"].to_numpy()\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"].to_numpy()\nres = perm_test(auto, velo)\nres",
+   "solution": "import numpy as np\nimport pandas as pd\n\ndef perm_test(a, b, n_perm=2000, seed=0):\n    rng = np.random.default_rng(seed)\n    observed = a.mean() - b.mean()\n    pooled = np.concatenate([a, b])\n    k = len(a)\n    count = 0\n    for _ in range(n_perm):\n        perm = rng.permutation(pooled)\n        if abs(perm[:k].mean() - perm[k:].mean()) >= abs(observed):\n            count += 1\n    return observed, count / n_perm\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nauto = ok.loc[ok[\"courier\"] == \"авто\", \"actual_min\"].to_numpy()\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"].to_numpy()\nres = perm_test(auto, velo)\nres",
+   "hints": [
+    "Соедините массивы: `pooled = np.concatenate([a, b])`. В каждом перемешивании первые `len(a)` значений — «новая a», остальные — «новая b».",
+    "`perm = rng.permutation(pooled)`; `diff = perm[:len(a)].mean() - perm[len(a):].mean()`."
+   ],
+   "explain": "Авто-доставки в среднем на 0.4 минуты быстрее вело, p ≈ 0.47 — разница неотличима от случайной. При этом машины ездят дальше (4.1 км против 2.9): на одинаковом расстоянии они быстрее, но в среднем по всем заказам выигрыш съедается дальностью. Тест отвечает только на заданный вопрос — «различаются ли средние», — а не на «какой курьер быстрее при прочих равных»."
+  },
+  "ch05/05-hypotheses/many": {
+   "chapter": "ch05",
+   "lesson": "05-hypotheses",
+   "lesson_title": "Проверка гипотез: логика и p-value",
+   "id": "many",
+   "title": "Двадцать сегментов",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert close(need('p_formula'), round(1 - 0.95 ** 20, 3)), f'p_formula = {need(\"p_formula\")}.'\nassert abs(need('p_any') - (1 - 0.95 ** 20)) < 0.05, f'p_any = {need(\"p_any\")} — ожидается около {1 - 0.95 ** 20:.2f}.'",
+   "starter": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(5)",
+   "solution": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(5)\nn = 300\na = rng.binomial(n, 0.24, size=(2000, 20)) / n\nb = rng.binomial(n, 0.24, size=(2000, 20)) / n\np_pool = (a + b) / 2\nse = np.sqrt(p_pool * (1 - p_pool) * 2 / n)\np = 2 * stats.norm.sf(np.abs(a - b) / se)\np_any = (p < 0.05).any(axis=1).mean()\np_formula = round(1 - 0.95 ** 20, 3)",
+   "hints": [
+    "Не обязательно моделировать каждую доставку: число опозданий из 300 — биномиальная случайная величина (урок «Распределения: мат. ожидание, биномиальное, Пуассона»), и `rng.binomial` симулирует её одной строкой. `rng.binomial(300, 0.24, size=(2000, 20)) / 300` — сразу доли для 2000 исследований × 20 сегментов. То же для группы B.",
+    "Дальше z и p по формуле для всех сразу; «хотя бы одно» — `(p < 0.05).any(axis=1).mean()`."
+   ],
+   "explain": "Почти в двух исследованиях из трёх «нашёлся» значимый сегмент, хотя эффекта нет вообще. Это проблема **множественных сравнений**: чем больше проверок, тем больше ложных находок. Как с ней бороться — в уроке «Ловушки статистики»."
+  },
+  "ch05/06-tests/welch": {
+   "chapter": "ch05",
+   "lesson": "06-tests",
+   "lesson_title": "Статистические тесты: какой выбрать",
+   "id": "welch",
+   "title": "Пешие против вело",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nr = _st.ttest_ind(ok.loc[ok['courier'] == 'пеший', 'actual_min'], ok.loc[ok['courier'] == 'вело', 'actual_min'], equal_var=False)\nassert close(need('t_stat'), round(r.statistic, 4)), f't_stat = {need(\"t_stat\")}, а нужно {round(r.statistic, 4)}. Порядок групп: пешие, потом вело; equal_var=False.'\nassert close(need('p_value'), round(r.pvalue, 4)), f'p_value = {need(\"p_value\")}.'",
+   "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]",
+   "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nwalk = ok.loc[ok[\"courier\"] == \"пеший\", \"actual_min\"]\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"]\nres = stats.ttest_ind(walk, velo, equal_var=False)\nt_stat = round(res.statistic, 4)\np_value = round(res.pvalue, 4)",
+   "hints": [
+    "Две группы: `walk` — время пеших доставок, `velo` — вело; обе — Series `actual_min` с фильтром по `courier`.",
+    "`stats.ttest_ind(walk, velo, equal_var=False)`; результат — `.statistic`, `.pvalue`."
+   ],
+   "explain": "Пешие в среднем доставляют за 39.9 минуты, вело — за 33.1; t ≈ 9.3, p ≈ 2 · 10⁻¹⁹. В отчёт такое p пишут как «p < 0.0001», а не «p = 0.0». Разница почти 7 минут на сотнях доставок — это не может быть случайностью. Но тест не говорит почему: пешие могут возить на другие расстояния (урок «Ловушки статистики» — про такие ловушки)."
+  },
+  "ch05/06-tests/one-sample": {
+   "chapter": "ch05",
+   "lesson": "06-tests",
+   "lesson_title": "Статистические тесты: какой выбрать",
+   "id": "one-sample",
+   "title": "Обещание 30 минут",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nt = ok.loc[ok['promised_min'] == 30, 'actual_min']\nr = _st.ttest_1samp(t, 30)\nassert close(need('mean_30'), round(t.mean(), 1)), f'mean_30 = {need(\"mean_30\")}.'\nassert close(need('p_value'), r.pvalue, 6e-5), f'p_value = {need(\"p_value\")}, а нужно около {r.pvalue:.4f}. Тест — stats.ttest_1samp(t30, 30).'\nassert need('beyond') == bool(t.mean() > 30 and r.pvalue < 0.05), 'beyond — среднее больше 30 и p < 0.05.'",
+   "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]",
+   "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nt30 = ok.loc[ok[\"promised_min\"] == 30, \"actual_min\"]\nres = stats.ttest_1samp(t30, 30)\nmean_30 = round(t30.mean(), 1)\np_value = res.pvalue\nbeyond = bool(t30.mean() > 30 and res.pvalue < 0.05)",
+   "hints": [
+    "`t30` — время доставок с обещанием 30 минут: `ok.loc[ok[\"promised_min\"] == 30, \"actual_min\"]`.",
+    "`stats.ttest_1samp(t30, 30)`; `beyond = bool(t30.mean() > 30 and p < 0.05)`."
+   ],
+   "explain": "Среднее в зоне 30 минут — 30.1, на 0.1 минуты выше обещания, p ≈ 0.65: в среднем обещание выполняется впритык, значимого превышения нет, и `beyond = False`. Но «в среднем» — не то же, что «для гостя»: при среднем около 30 минут почти половина доставок (45 %) приезжает позже обещанного. Беда зоны 30 — не среднее, а доля опозданий (глава 4); средним её не увидеть."
+  },
+  "ch05/06-tests/p-ztest": {
+   "chapter": "ch05",
+   "lesson": "06-tests",
+   "lesson_title": "Статистические тесты: какой выбрать",
+   "id": "p-ztest",
+   "title": "z-тест для долей",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from statsmodels.stats.proportion import proportions_ztest as _z\nassert _lines == [str(round(_z([30, 45], [200, 210])[1], 3))], f'Сейчас: {_lines}'",
+   "starter": "",
+   "solution": "from statsmodels.stats.proportion import proportions_ztest\ncount = [30, 45]\nnobs = [200, 210]\nz, p = proportions_ztest(count, nobs)\nprint(round(p, 3))",
+   "hints": [
+    "Списки «успехов» и «попыток» — до вызова теста.",
+    "`proportions_ztest` возвращает пару (статистика, p-value); печатайте второе число."
+   ],
+   "explain": ""
+  },
+  "ch05/06-tests/paired": {
+   "chapter": "ch05",
+   "lesson": "06-tests",
+   "lesson_title": "Статистические тесты: какой выбрать",
+   "id": "paired",
+   "title": "До и после",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\nm = o.pivot_table(index='shop_id', columns=o['created'].dt.month, values='late', aggfunc='mean')\nr = _st.ttest_rel(m[11], m[10])\nassert close(need('mean_change'), round((m[11] - m[10]).mean() * 100, 1)), f'mean_change = {need(\"mean_change\")}.'\nassert close(need('p_value'), round(r.pvalue, 3)), f'p_value = {need(\"p_value\")}, а нужно {round(r.pvalue, 3)}. Тест — ttest_rel(ноябрь, октябрь).'",
+   "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"month\"] = ok[\"created\"].dt.month",
+   "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"month\"] = ok[\"created\"].dt.month\nm = ok.pivot_table(index=\"shop_id\", columns=\"month\", values=\"late\", aggfunc=\"mean\")\nmean_change = round((m[11] - m[10]).mean() * 100, 1)\np_value = round(stats.ttest_rel(m[11], m[10]).pvalue, 3)",
+   "hints": [
+    "Месяц — `ok[\"created\"].dt.month`, его нужно добавить в `ok` до сводной таблицы.",
+    "`m = ok.pivot_table(index=\"shop_id\", columns=\"month\", values=\"late\", aggfunc=\"mean\")`; столбцы — `m[10]`, `m[11]`. Тест — `stats.ttest_rel(m[11], m[10])`."
+   ],
+   "explain": "Ноябрь хуже октября в среднем на 4.8 п.п., но p ≈ 0.19: на шести кофейнях с разнонаправленными изменениями это может быть шумом. Парный тест сравнивает каждую кофейню с самой собой — и всё равно не находит уверенного эффекта."
+  },
+  "ch05/06-tests/chi2": {
+   "chapter": "ch05",
+   "lesson": "06-tests",
+   "lesson_title": "Статистические тесты: какой выбрать",
+   "id": "chi2",
+   "title": "Погода и опоздания",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\nct = _pd.crosstab(o['weather'], o['late'])\nchi2, p, dof, exp = _st.chi2_contingency(ct)\nc = need('ct', _pd.DataFrame)\nassert c.shape == ct.shape, 'ct — pd.crosstab(погода, late).'\nassert close(need('chi2_p'), p, 6e-5), f'chi2_p = {need(\"chi2_p\")}, а нужно около {p:.6f}.'\ngap = ct[True] - exp[:, list(ct.columns).index(True)]\nassert need('max_gap_weather') == gap.idxmax(), f'max_gap_weather = {need(\"max_gap_weather\")!r}, а нужно {gap.idxmax()!r}.'",
+   "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]",
+   "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nct = pd.crosstab(ok[\"weather\"], ok[\"late\"])\nchi2, chi2_p, dof, expected = stats.chi2_contingency(ct)\ngap = ct[True] - expected[:, 1]\nmax_gap_weather = gap.idxmax()",
+   "hints": [
+    "`chi2, p, dof, expected = stats.chi2_contingency(ct)`; `expected` — массив той же формы, что `ct`.",
+    "Опоздания — столбец `True`. Ожидаемые опоздания — `expected[:, 1]` (второй столбец). Разница — Series с индексом погоды: `ct[True] - expected[:, 1]`, и её `idxmax()`."
+   ],
+   "explain": "p ≈ 0.0003: погода и опоздания связаны. Сильнее всего ожидание при независимости превышено в снег — на 17 опозданий больше, чем было бы при общей частоте; в облачную погоду, наоборот, на 30 меньше. Хи-квадрат говорит «связь есть», а таблица «наблюдаемое − ожидаемое» — где она."
+  },
+  "ch05/06-tests/mwu": {
+   "chapter": "ch05",
+   "lesson": "06-tests",
+   "lesson_title": "Статистические тесты: какой выбрать",
+   "id": "mwu",
+   "title": "Оценки: Манна — Уитни",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nr = ok.dropna(subset=['rating'])\ns = r['weather'] == 'снег'\nassert close(need('med_snow'), r.loc[s, 'rating'].median()) and close(need('med_other'), r.loc[~s, 'rating'].median()), 'Медианы оценок не совпадают.'\nassert close(need('p_value'), round(_st.mannwhitneyu(r.loc[s, 'rating'], r.loc[~s, 'rating']).pvalue, 4)), f'p_value = {need(\"p_value\")}.'",
+   "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nr = ok.dropna(subset=[\"rating\"])",
+   "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nr = ok.dropna(subset=[\"rating\"])\nsnow = r[\"weather\"] == \"снег\"\nmed_snow = r.loc[snow, \"rating\"].median()\nmed_other = r.loc[~snow, \"rating\"].median()\np_value = round(stats.mannwhitneyu(r.loc[snow, \"rating\"], r.loc[~snow, \"rating\"]).pvalue, 4)",
+   "hints": [
+    "Оценки есть не у всех доставок: возьмите строки с непустым `rating` (`r = ok.dropna(subset=[\"rating\"])`).",
+    "`stats.mannwhitneyu(r.loc[snow, \"rating\"], r.loc[~snow, \"rating\"]).pvalue`."
+   ],
+   "explain": "Медианы одинаковые — пятёрки, а p около 0.06 — на грани. Манна — Уитни сравнивает распределения целиком: в снег оценок 1–3 больше (около 16 % против 7 %), но снежных оценок всего несколько десятков, и уверенно сказать, что различие не случайно, нельзя. Медиана для оценок 1–5 — грубая мера; доля «не пятёрок» часто говорит больше."
+  },
+  "ch05/06-tests/alt-rain": {
+   "chapter": "ch05",
+   "lesson": "06-tests",
+   "lesson_title": "Статистические тесты: какой выбрать",
+   "id": "alt-rain",
+   "title": "Дождь в Казани: дольше ли",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\n_d = _pd.read_csv('deliveries.csv')\n_ok = _d[_d['actual_min'].between(1, 299) & (_d['shop_id'] == 'KZN-2')]\n_r = _ok.loc[_ok['weather'] == 'дождь', 'actual_min']\n_c = _ok.loc[_ok['weather'] == 'ясно', 'actual_min']\n_p = {a: _st.ttest_ind(_r, _c, equal_var=False, alternative=a).pvalue for a in ('two-sided', 'greater', 'less')}\nassert close(need('p_two'), round(_p['two-sided'], 4)), f'p_two = {need(\"p_two\")}. Двусторонний тест Уэлча: ttest_ind(rain, clear, equal_var=False).'\npg, pl = need('p_greater'), need('p_less')\nif close(pg, round(_p['less'], 4)) and close(pl, round(_p['greater'], 4)):\n    raise AssertionError('p_greater и p_less поменялись местами. alternative говорит о первом аргументе: ttest_ind(rain, clear, alternative=\"greater\") — «в дождь больше».')\nassert close(pg, round(_p['greater'], 4)), f'p_greater = {pg}. H₁ «в дождь дольше»: первый аргумент — дождь, alternative=\"greater\".'\nassert close(pl, round(_p['less'], 4)), f'p_less = {pl}. H₁ «в дождь быстрее»: alternative=\"less\".'\nassert need('add_5min') == (_p['greater'] < 0.05), 'add_5min — решение по одностороннему тесту «дольше» из плана при α = 0.05.'",
+   "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299) & (d[\"shop_id\"] == \"KZN-2\")]",
+   "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299) & (d[\"shop_id\"] == \"KZN-2\")]\nrain = ok.loc[ok[\"weather\"] == \"дождь\", \"actual_min\"]\nclear = ok.loc[ok[\"weather\"] == \"ясно\", \"actual_min\"]\np_two = round(stats.ttest_ind(rain, clear, equal_var=False).pvalue, 4)\np_greater = round(stats.ttest_ind(rain, clear, equal_var=False, alternative=\"greater\").pvalue, 4)\np_less = round(stats.ttest_ind(rain, clear, equal_var=False, alternative=\"less\").pvalue, 4)\nadd_5min = p_greater < 0.05",
+   "hints": [
+    "Разделите доставки KZN-2 на дождь и ясно и трижды запустите `stats.ttest_ind(rain, clear, equal_var=False, alternative=...)`.",
+    "Значения `alternative`: `\"two-sided\"`, `\"greater\"`, `\"less\"`. План говорит «дольше в дождь» — это `\"greater\"` при первом аргументе `rain`.",
+    "`add_5min = p_greater < 0.05` — сравнивайте с α именно p из плана, а не самое маленькое из трёх."
+   ],
+   "explain": "В KZN-2 в дождь доставка дольше на 3 минуты, но групп немного (50 дождливых и 106 ясных доставок). Двустороннее p = 0.108, одностороннее по плану — 0.054: тоже выше 0.05, поэтому `add_5min = False` — данных пока недостаточно, решение откладываем до новых наблюдений. Заметьте: p_greater + p_less = 1 — это два хвоста одной и той же статистики. Типичная подгонка — увидеть 0.054, «вспомнить», что α можно взять 0.1, или сравнить с α самое маленькое из трёх p. План для того и пишут заранее, чтобы таких соблазнов не было."
+  },
+  "ch05/06-tests/choose": {
+   "chapter": "ch05",
+   "lesson": "06-tests",
+   "lesson_title": "Статистические тесты: какой выбрать",
+   "id": "choose",
+   "title": "Какой тест",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "f = need('choose_test')\ncases = [(('share', 2), {}, 'proportions_ztest'), (('category', 3), {}, 'chi2_contingency'), (('category', 2), {}, 'chi2_contingency'),\n         (('mean', 1), {}, 'ttest_1samp'), (('mean', 2), {'paired': True}, 'ttest_rel'), (('mean', 2), {'skewed': True}, 'mannwhitneyu'),\n         (('mean', 2), {}, 'ttest_ind')]\nfor args, kw, want in cases:\n    got = f(*args, **kw)\n    assert got == want, f'choose_test{args}{\", \" + str(kw) if kw else \"\"} = {got!r}, а нужно {want!r}.'",
+   "starter": "def choose_test(kind, groups, paired=False, skewed=False):\n    ...\n\nchoose_test(\"mean\", 2)",
+   "solution": "def choose_test(kind, groups, paired=False, skewed=False):\n    if kind == \"share\":\n        return \"proportions_ztest\"\n    if kind == \"category\":\n        return \"chi2_contingency\"\n    if groups == 1:\n        return \"ttest_1samp\"\n    if paired:\n        return \"ttest_rel\"\n    if skewed:\n        return \"mannwhitneyu\"\n    return \"ttest_ind\"\n\nchoose_test(\"mean\", 2)",
+   "hints": [
+    "Сначала разберите `kind`, внутри «mean» — число групп, потом `paired` и `skewed`.",
+    "Порядок проверок внутри «mean» важен: `groups == 1` → `paired` → `skewed` → иначе `ttest_ind`."
+   ],
+   "explain": "Функция повторяет логику аналитика: что сравниваем (доли, категории, средние), сколько групп, связаны ли наблюдения, похоже ли распределение на колокол. Проверку `paired` до `skewed` делают потому, что для парных скошенных данных есть свой тест (Уилкоксона), а не Манна — Уитни."
+  },
+  "ch05/06-tests/agree": {
+   "chapter": "ch05",
+   "lesson": "06-tests",
+   "lesson_title": "Статистические тесты: какой выбрать",
+   "id": "agree",
+   "title": "Формула и перемешивание согласны",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from statsmodels.stats.proportion import proportions_ztest as _z\nimport numpy as _np\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nx = ok[ok['shop_id'].isin(['KZN-2', 'KZN-1'])]\nlate = (x['actual_min'] > x['promised_min']).to_numpy()\ng = (x['shop_id'] == 'KZN-2').to_numpy()\npz = _z([late[g].sum(), late[~g].sum()], [g.sum(), (~g).sum()])[1]\nassert close(need('p_z'), pz, 6e-5), f'p_z = {need(\"p_z\")}, а нужно около {pz:.6f}.'\nassert abs(need('p_perm') - pz) < 0.004, f'p_perm = {need(\"p_perm\")} — должно быть близко к p_z = {pz:.4f}.'\nassert close(need('diff_pp'), round((late[g].mean() - late[~g].mean()) * 100, 1)), f'diff_pp = {need(\"diff_pp\")}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nx = ok[ok[\"shop_id\"].isin([\"KZN-2\", \"KZN-1\"])]\nlate = (x[\"actual_min\"] > x[\"promised_min\"]).to_numpy()\ngrp = (x[\"shop_id\"] == \"KZN-2\").to_numpy()\nrng = np.random.default_rng(2)",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nx = ok[ok[\"shop_id\"].isin([\"KZN-2\", \"KZN-1\"])]\nlate = (x[\"actual_min\"] > x[\"promised_min\"]).to_numpy()\ngrp = (x[\"shop_id\"] == \"KZN-2\").to_numpy()\nrng = np.random.default_rng(2)\nz, p_z = proportions_ztest([late[grp].sum(), late[~grp].sum()], [grp.sum(), (~grp).sum()])\nobserved = late[grp].mean() - late[~grp].mean()\ndiffs = np.array([late[s].mean() - late[~s].mean() for s in (rng.permutation(grp) for _ in range(4000))])\np_perm = (np.abs(diffs) >= abs(observed)).mean()\ndiff_pp = round(observed * 100, 1)",
+   "hints": [
+    "z-тест: `proportions_ztest([late[grp].sum(), late[~grp].sum()], [grp.sum(), (~grp).sum()])`.",
+    "Перестановки — как в уроке «Проверка гипотез: логика и p-value»."
+   ],
+   "explain": "Формула и симуляция дают почти одно и то же p. Формулы — это сокращённый путь, который работает, когда выборки достаточно большие. Перемешивание — запасной вариант на любой случай."
+  },
+  "ch05/06-tests/report": {
+   "chapter": "ch05",
+   "lesson": "06-tests",
+   "lesson_title": "Статистические тесты: какой выбрать",
+   "id": "report",
+   "title": "Фраза для отчёта",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nfrom statsmodels.stats.proportion import proportions_ztest as _z\ndef _w(a, b):\n    p1, p2, n1, n2 = a.mean(), b.mean(), len(a), len(b)\n    se = _np.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2)\n    dd = p1 - p2\n    p = _z([a.sum(), b.sum()], [n1, n2])[1]\n    return f'A: {p1 * 100:.1f} %, B: {p2 * 100:.1f} %, разница {dd * 100:.1f} п.п. (95 % ДИ {(dd - 1.96 * se) * 100:.1f}…{(dd + 1.96 * se) * 100:.1f}), p = {p:.4f}'\nf = need('compare_shares')\na = _np.array([True] * 30 + [False] * 70)\nb = _np.array([True] * 20 + [False] * 80)\nassert f(a, b) == _w(a, b), f'Для 30/100 и 20/100:\\n{f(a, b)!r}\\nа нужно\\n{_w(a, b)!r}'\nassert need('phrase').startswith('A: ') and ' п.п. (95 % ДИ ' in need('phrase'), 'phrase — результат функции на KZN-2 и KZN-1.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef compare_shares(late_a, late_b):\n    ...\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate = ok[\"actual_min\"] > ok[\"promised_min\"]\nphrase = compare_shares(late[ok[\"shop_id\"] == \"KZN-2\"].to_numpy(), late[ok[\"shop_id\"] == \"KZN-1\"].to_numpy())\nphrase",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef compare_shares(late_a, late_b):\n    p1, p2 = late_a.mean(), late_b.mean()\n    n1, n2 = len(late_a), len(late_b)\n    se = np.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2)\n    diff = p1 - p2\n    z, p = proportions_ztest([late_a.sum(), late_b.sum()], [n1, n2])\n    return (f\"A: {p1 * 100:.1f} %, B: {p2 * 100:.1f} %, разница {diff * 100:.1f} п.п. \"\n            f\"(95 % ДИ {(diff - 1.96 * se) * 100:.1f}…{(diff + 1.96 * se) * 100:.1f}), p = {p:.4f}\")\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate = ok[\"actual_min\"] > ok[\"promised_min\"]\nphrase = compare_shares(late[ok[\"shop_id\"] == \"KZN-2\"].to_numpy(), late[ok[\"shop_id\"] == \"KZN-1\"].to_numpy())\nphrase",
+   "hints": [
+    "Внутри: `p1, p2 = a.mean(), b.mean()`, `n1, n2 = len(a), len(b)`, SE разницы — `np.sqrt(p1*(1-p1)/n1 + p2*(1-p2)/n2)`.",
+    "Формат в f-строке: `{p1 * 100:.1f}`, `{p:.4f}`. Многоточие — символ «…»."
+   ],
+   "explain": "Эта функция — заготовка для анализа A/B-теста в следующем уроке: там ровно такой вопрос — различаются ли доли в двух группах, насколько и насколько уверенно."
+  },
+  "ch05/07-ab/srm": {
+   "chapter": "ch05",
+   "lesson": "07-ab",
+   "lesson_title": "A/B-тест: от дизайна до решения",
+   "id": "srm",
+   "title": "Проверка разбиения",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\nab = _pd.read_csv('ab_push.csv')\ns = ab['group'].value_counts().sort_index()\ngot = need('sizes', _pd.Series)\nassert got.sort_index().to_dict() == s.to_dict(), f'sizes = {got.to_dict()}.'\nassert close(need('srm_p'), _st.chisquare(s).pvalue, 6e-5), f'srm_p = {need(\"srm_p\")}, а нужно около {_st.chisquare(s).pvalue:.6f}.'\nassert need('srm_ok') == bool(_st.chisquare(s).pvalue >= 0.01), 'srm_ok — p ≥ 0.01.'",
+   "starter": "import pandas as pd\nfrom scipy import stats\nab = pd.read_csv(\"ab_push.csv\")",
+   "solution": "import pandas as pd\nfrom scipy import stats\nab = pd.read_csv(\"ab_push.csv\")\nsizes = ab[\"group\"].value_counts().sort_index()\nsrm_p = stats.chisquare(sizes).pvalue\nsrm_ok = bool(srm_p >= 0.01)",
+   "hints": [
+    "SRM — проверка, что гости разошлись по группам примерно поровну, как задумано.",
+    "`ab[\"group\"].value_counts().sort_index()`; `stats.chisquare(sizes).pvalue`; `srm_ok = bool(srm_p >= 0.01)`."
+   ],
+   "explain": ""
+  },
+  "ch05/07-ab/conv": {
+   "chapter": "ch05",
+   "lesson": "07-ab",
+   "lesson_title": "A/B-тест: от дизайна до решения",
+   "id": "conv",
+   "title": "Конверсии групп",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nab = _pd.read_csv('ab_push.csv')\nc = ab.groupby('group')['ordered'].mean()\ngot = dict(need('conv'))\nassert set(got) == {'A', 'B'} and all(close(got[k], round(c[k], 4)) for k in got), f'conv = {got}.'\nassert close(need('lift_pp'), round((c['B'] - c['A']) * 100, 2)), f'lift_pp = {need(\"lift_pp\")}.'",
+   "starter": "import pandas as pd\nab = pd.read_csv(\"ab_push.csv\")",
+   "solution": "import pandas as pd\nab = pd.read_csv(\"ab_push.csv\")\nc = ab.groupby(\"group\")[\"ordered\"].mean()\nconv = c.round(4).to_dict()\nlift_pp = round((c[\"B\"] - c[\"A\"]) * 100, 2)",
+   "hints": [
+    "`ab.groupby(\"group\")[\"ordered\"].mean()` — Series; превратите в словарь `.round(4).to_dict()`.",
+    "`lift_pp = round((conv[\"B\"] - conv[\"A\"]) * 100, 2)` — считайте по неокруглённым долям."
+   ],
+   "explain": ""
+  },
+  "ch05/07-ab/p-power": {
+   "chapter": "ch05",
+   "lesson": "07-ab",
+   "lesson_title": "A/B-тест: от дизайна до решения",
+   "id": "p-power",
+   "title": "Размер выборки",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import math\nfrom statsmodels.stats.proportion import proportion_effectsize as _pe\nfrom statsmodels.stats.power import NormalIndPower as _P\nwant = math.ceil(_P().solve_power(effect_size=_pe(0.22, 0.20), alpha=0.05, power=0.8))\nassert _lines == [str(want)], f'Должно вывестись {want}. Сейчас: {_lines}'",
+   "starter": "",
+   "solution": "import math\nfrom statsmodels.stats.proportion import proportion_effectsize\nfrom statsmodels.stats.power import NormalIndPower\nh = proportion_effectsize(0.22, 0.20)\nn = NormalIndPower().solve_power(effect_size=h, alpha=0.05, power=0.8)\nprint(math.ceil(n))",
+   "hints": [
+    "Импорты → размер эффекта → размер выборки → вывод.",
+    "Размер эффекта — `proportion_effectsize(0.22, 0.20)`; размер выборки — `NormalIndPower().solve_power(effect_size=..., alpha=0.05, power=0.8)`."
+   ],
+   "explain": ""
+  },
+  "ch05/07-ab/sample-size": {
+   "chapter": "ch05",
+   "lesson": "07-ab",
+   "lesson_title": "A/B-тест: от дизайна до решения",
+   "id": "sample-size",
+   "title": "Сколько гостей нужно",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import math\nfrom statsmodels.stats.proportion import proportion_effectsize as _pe\nfrom statsmodels.stats.power import NormalIndPower as _P\na = math.ceil(_P().solve_power(effect_size=_pe(0.10, 0.09), alpha=0.05, power=0.8))\nb = math.ceil(_P().solve_power(effect_size=_pe(0.11, 0.09), alpha=0.05, power=0.8))\nassert need('n_needed') == a, f'n_needed = {need(\"n_needed\")}, а нужно {a}.'\nassert need('n_double_mde') == b, f'n_double_mde = {need(\"n_double_mde\")}, а нужно {b}.'\nassert close(need('ratio'), round(a / b, 1)), f'ratio = {need(\"ratio\")}.'",
+   "starter": "import math\nfrom statsmodels.stats.proportion import proportion_effectsize\nfrom statsmodels.stats.power import NormalIndPower",
+   "solution": "import math\nfrom statsmodels.stats.proportion import proportion_effectsize\nfrom statsmodels.stats.power import NormalIndPower\npower = NormalIndPower()\nn_needed = math.ceil(power.solve_power(effect_size=proportion_effectsize(0.10, 0.09), alpha=0.05, power=0.8))\nn_double_mde = math.ceil(power.solve_power(effect_size=proportion_effectsize(0.11, 0.09), alpha=0.05, power=0.8))\nratio = round(n_needed / n_double_mde, 1)",
+   "hints": [
+    "Порядок аргументов: `proportion_effectsize(новая_доля, старая_доля)`.",
+    "`math.ceil(power.solve_power(effect_size=h, alpha=0.05, power=0.8))` — для каждого из двух эффектов."
+   ],
+   "explain": "Вдвое меньший эффект требует примерно вчетверо больше данных — то же правило √n из урока «Выборки и центральная предельная теорема». Поэтому MDE выбирают трезво: искать крошечные эффекты дорого."
+  },
+  "ch05/07-ab/ztest": {
+   "chapter": "ch05",
+   "lesson": "07-ab",
+   "lesson_title": "A/B-тест: от дизайна до решения",
+   "id": "ztest",
+   "title": "Значима ли разница",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nimport pandas as _pd\nfrom statsmodels.stats.proportion import proportions_ztest as _z\nab = _pd.read_csv('ab_push.csv')\na = ab.loc[ab['group'] == 'A', 'ordered']\nb = ab.loc[ab['group'] == 'B', 'ordered']\np = _z([b.sum(), a.sum()], [len(b), len(a)])[1]\nassert close(need('p_value'), round(p, 4)), f'p_value = {need(\"p_value\")}, а нужно {round(p, 4)}.'\ndd = b.mean() - a.mean()\nse = _np.sqrt(a.mean() * (1 - a.mean()) / len(a) + b.mean() * (1 - b.mean()) / len(b))\nassert close(need('ci_lo'), round((dd - 1.96 * se) * 100, 2)) and close(need('ci_hi'), round((dd + 1.96 * se) * 100, 2)), f'ci_lo, ci_hi = {need(\"ci_lo\")}, {need(\"ci_hi\")}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nab = pd.read_csv(\"ab_push.csv\")",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nab = pd.read_csv(\"ab_push.csv\")\na = ab.loc[ab[\"group\"] == \"A\", \"ordered\"]\nb = ab.loc[ab[\"group\"] == \"B\", \"ordered\"]\nz, p = proportions_ztest([b.sum(), a.sum()], [len(b), len(a)])\np_value = round(p, 4)\ndiff = b.mean() - a.mean()\nse = np.sqrt(a.mean() * (1 - a.mean()) / len(a) + b.mean() * (1 - b.mean()) / len(b))\nci_lo = round((diff - 1.96 * se) * 100, 2)\nci_hi = round((diff + 1.96 * se) * 100, 2)",
+   "hints": [
+    "`proportions_ztest([b.sum(), a.sum()], [len(b), len(a)])` — для двустороннего теста порядок групп на p не влияет.",
+    "Интервал разницы — как в уроке «Доверительные интервалы»: `se = np.sqrt(p1*(1-p1)/n1 + p2*(1-p2)/n2)`, границы `(p1 - p2 ± 1.96 * se) * 100`."
+   ],
+   "explain": "p ≈ 0.0086, интервал роста — от 0.5 до 3.6 п.п. (0.52 и 3.56 до округления). Эффект значим, но его размер известен грубо: от «полпункта» до «три с половиной». Если пуш окупается только при росте больше 1 п.п., значимость сама по себе ещё не повод запускать — нужно смотреть на всю ширину интервала."
+  },
+  "ch05/07-ab/per-buyer": {
+   "chapter": "ch05",
+   "lesson": "07-ab",
+   "lesson_title": "A/B-тест: от дизайна до решения",
+   "id": "per-buyer",
+   "title": "Откуда рост выручки",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\nab = _pd.read_csv('ab_push.csv')\nr = ab.groupby('group')['revenue'].mean().round(1).to_dict()\nbuy = ab[ab['ordered'] == 1]\npb = buy.groupby('group')['revenue'].mean().round(1).to_dict()\nassert {k: round(v, 1) for k, v in dict(need('arpu')).items()} == r, f'arpu = {need(\"arpu\")}.'\nassert {k: round(v, 1) for k, v in dict(need('per_buyer')).items()} == pb, f'per_buyer = {need(\"per_buyer\")}.'\np = _st.ttest_ind(buy.loc[buy['group'] == 'B', 'revenue'], buy.loc[buy['group'] == 'A', 'revenue'], equal_var=False).pvalue\nassert close(need('p_buyer'), round(p, 3)), f'p_buyer = {need(\"p_buyer\")}.'",
+   "starter": "import pandas as pd\nfrom scipy import stats\nab = pd.read_csv(\"ab_push.csv\")",
+   "solution": "import pandas as pd\nfrom scipy import stats\nab = pd.read_csv(\"ab_push.csv\")\narpu = ab.groupby(\"group\")[\"revenue\"].mean().round(1).to_dict()\nbuy = ab[ab[\"ordered\"] == 1]\nper_buyer = buy.groupby(\"group\")[\"revenue\"].mean().round(1).to_dict()\np_buyer = round(stats.ttest_ind(buy.loc[buy[\"group\"] == \"B\", \"revenue\"],\n                                buy.loc[buy[\"group\"] == \"A\", \"revenue\"], equal_var=False).pvalue, 3)",
+   "hints": [
+    "Выручка на гостя — среднее `revenue` по **всем** гостям группы, включая нули.",
+    "Покупатели — `buy = ab[ab[\"ordered\"] == 1]`; t-тест Уэлча — `stats.ttest_ind(..., equal_var=False)` для выручки покупателей B и A."
+   ],
+   "explain": "Выручка на покупателя почти не изменилась, и разница не значима. Значит, пуш не заставляет брать больше — он приводит больше людей. Весь рост выручки на гостя — от конверсии."
+  },
+  "ch05/07-ab/boot-arpu": {
+   "chapter": "ch05",
+   "lesson": "07-ab",
+   "lesson_title": "A/B-тест: от дизайна до решения",
+   "id": "boot-arpu",
+   "title": "Бутстрэп выручки",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nab = _pd.read_csv('ab_push.csv')\nr = ab.groupby('group')['revenue'].mean()\nassert close(need('diff'), round(r['B'] - r['A'], 1)), f'diff = {need(\"diff\")}.'\nlo, hi = need('lo'), need('hi')\nassert lo < r['B'] - r['A'] < hi and 0 < lo < 5 and 12 < hi < 20, f'Интервал {lo:.1f}…{hi:.1f} не похож на ожидаемый (примерно 1.5…16).'\nassert need('zero_inside') == bool(lo <= 0 <= hi)",
+   "starter": "import numpy as np\nimport pandas as pd\nab = pd.read_csv(\"ab_push.csv\")\na = ab.loc[ab[\"group\"] == \"A\", \"revenue\"].to_numpy()\nb = ab.loc[ab[\"group\"] == \"B\", \"revenue\"].to_numpy()\nrng = np.random.default_rng(1)",
+   "solution": "import numpy as np\nimport pandas as pd\nab = pd.read_csv(\"ab_push.csv\")\na = ab.loc[ab[\"group\"] == \"A\", \"revenue\"].to_numpy()\nb = ab.loc[ab[\"group\"] == \"B\", \"revenue\"].to_numpy()\nrng = np.random.default_rng(1)\nboot = [rng.choice(b, len(b), replace=True).mean() - rng.choice(a, len(a), replace=True).mean() for _ in range(3000)]\nlo, hi = np.percentile(boot, [2.5, 97.5])\ndiff = round(b.mean() - a.mean(), 1)\nzero_inside = bool(lo <= 0 <= hi)",
+   "hints": [
+    "`a` и `b` — массивы `revenue` групп (`.to_numpy()`).",
+    "`boot = [rng.choice(b, len(b), replace=True).mean() - rng.choice(a, len(a), replace=True).mean() for _ in range(3000)]`."
+   ],
+   "explain": "Выручка на гостя: A — 36.8, B — 45.5, разница 8.7, бутстрэп-интервал примерно 1.6–15.8. Ноль снаружи — рост выручки устойчивый. Интервал широкий, потому что выручка сильно скошена: большинство гостей — нули, немногие — крупные чеки."
+  },
+  "ch05/07-ab/ab-report": {
+   "chapter": "ch05",
+   "lesson": "07-ab",
+   "lesson_title": "A/B-тест: от дизайна до решения",
+   "id": "ab-report",
+   "title": "Отчёт по тесту",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\nfrom statsmodels.stats.proportion import proportions_ztest as _z\ndef _w(df, m):\n    a, b = df.loc[df['group'] == 'A', m], df.loc[df['group'] == 'B', m]\n    srm = _st.chisquare([len(a), len(b)]).pvalue\n    p = _z([b.sum(), a.sum()], [len(b), len(a)])[1]\n    return {'n_a': len(a), 'n_b': len(b), 'srm_p': srm, 'a': round(a.mean(), 4), 'b': round(b.mean(), 4),\n            'diff_pp': round((b.mean() - a.mean()) * 100, 2), 'p': round(p, 4), 'significant': bool(p < 0.05 and srm >= 0.01)}\nf = need('ab_report')\nab = _pd.read_csv('ab_push.csv')\nskew = _pd.concat([ab[ab['group'] == 'A'], ab[ab['group'] == 'B'].iloc[:2500]])\nfor df, name in ((ab, 'весь тест'), (skew, 'тест с потерянными строками в B')):\n    got, want = f(df, 'ordered'), _w(df, 'ordered')\n    for k in want:\n        assert k in got, f'Нет ключа {k!r}.'\n        ok = got[k] == want[k] if isinstance(want[k], (bool, int)) and not isinstance(want[k], float) else close(got[k], want[k], 1e-6)\n        assert ok, f'{name}: {k} = {got[k]!r}, а нужно {want[k]!r}.'",
+   "starter": "import pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef ab_report(df, metric):\n    ...\n\nab = pd.read_csv(\"ab_push.csv\")\nreport = ab_report(ab, \"ordered\")\nreport",
+   "solution": "import pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef ab_report(df, metric):\n    a = df.loc[df[\"group\"] == \"A\", metric]\n    b = df.loc[df[\"group\"] == \"B\", metric]\n    srm_p = stats.chisquare([len(a), len(b)]).pvalue\n    z, p = proportions_ztest([b.sum(), a.sum()], [len(b), len(a)])\n    return {\n        \"n_a\": len(a), \"n_b\": len(b), \"srm_p\": srm_p,\n        \"a\": round(a.mean(), 4), \"b\": round(b.mean(), 4),\n        \"diff_pp\": round((b.mean() - a.mean()) * 100, 2),\n        \"p\": round(p, 4),\n        \"significant\": bool(p < 0.05 and srm_p >= 0.01),\n    }\n\nab = pd.read_csv(\"ab_push.csv\")\nreport = ab_report(ab, \"ordered\")\nreport",
+   "hints": [
+    "`a = df.loc[df[\"group\"] == \"A\", metric]` — так же для B. SRM — `stats.chisquare([len(a), len(b)]).pvalue`.",
+    "Флаг значимости учитывает обе проверки: `bool(p < 0.05 and srm_p >= 0.01)`."
+   ],
+   "explain": "Во втором прогоне проверки из группы B «потерялось» 500 строк — так выглядит сломанное логирование. SRM ловит это, и флаг `significant` становится `False`, какой бы ни была разница."
+  },
+  "ch05/07-ab/mde": {
+   "chapter": "ch05",
+   "lesson": "07-ab",
+   "lesson_title": "A/B-тест: от дизайна до решения",
+   "id": "mde",
+   "title": "Что мы вообще могли увидеть",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import math\nfrom statsmodels.stats.power import NormalIndPower as _P\nh = _P().solve_power(nobs1=3000, alpha=0.05, power=0.8)\npb = math.sin((h + 2 * math.asin(math.sqrt(0.09))) / 2) ** 2\nassert close(need('mde_pp'), round((pb - 0.09) * 100, 2)), f'mde_pp = {need(\"mde_pp\")}, а нужно {round((pb - 0.09) * 100, 2)}.'",
+   "starter": "import math\nfrom statsmodels.stats.power import NormalIndPower\np_a = 0.09",
+   "solution": "import math\nfrom statsmodels.stats.power import NormalIndPower\np_a = 0.09\nh = NormalIndPower().solve_power(nobs1=3000, alpha=0.05, power=0.8)\np_b = math.sin((h + 2 * math.asin(math.sqrt(p_a))) / 2) ** 2\nmde_pp = round((p_b - p_a) * 100, 2)",
+   "hints": [
+    "`h = NormalIndPower().solve_power(nobs1=3000, alpha=0.05, power=0.8)` — если не передать `effect_size`, функция найдёт именно его.",
+    "Формула перевода — обратная к `proportion_effectsize`, которая считает `h = 2·asin(√p_b) − 2·asin(√p_a)`."
+   ],
+   "explain": "Около 2 п.п. — тест мог надёжно увидеть только эффекты такого размера и больше. Если бы реальный эффект был 1 п.п., тест скорее всего «ничего бы не нашёл» — и это не значило бы, что пуш бесполезен. MDE стоит указывать в отчёте рядом с результатом, особенно когда результат незначимый."
+  },
+  "ch05/08-pitfalls/bonferroni": {
+   "chapter": "ch05",
+   "lesson": "08-pitfalls",
+   "lesson_title": "Ловушки статистики",
+   "id": "bonferroni",
+   "title": "Порог Бонферрони",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert close(need('threshold'), 0.05 / 8), f'threshold = {need(\"threshold\")}.'\nassert need('significant') == 2, f'significant = {need(\"significant\")}. Порог 0.00625 проходят только 0.001 и 0.004.'",
+   "starter": "pvals = [0.001, 0.004, 0.008, 0.02, 0.03, 0.04, 0.3, 0.6]",
+   "solution": "pvals = [0.001, 0.004, 0.008, 0.02, 0.03, 0.04, 0.3, 0.6]\nthreshold = 0.05 / len(pvals)\nsignificant = sum(p < threshold for p in pvals)",
+   "hints": [
+    "Бонферрони делит α на число проверок.",
+    "`threshold = 0.05 / len(pvals)`; подсчёт — `sum(p < threshold for p in pvals)`."
+   ],
+   "explain": "Порог 0.00625, проходят две метрики из восьми. Без поправки «значимыми» были бы шесть — четыре из них вполне могут быть ложными находками, которые неизбежно появляются при большом числе проверок."
+  },
+  "ch05/08-pitfalls/holm": {
+   "chapter": "ch05",
+   "lesson": "08-pitfalls",
+   "lesson_title": "Ловушки статистики",
+   "id": "holm",
+   "title": "Поправка Холма",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from statsmodels.stats.multitest import multipletests as _m\nwant = list(_m([0.001, 0.004, 0.008, 0.02, 0.03, 0.04, 0.3, 0.6], method='holm')[0])\nassert [bool(x) for x in need('reject')] == [bool(x) for x in want], f'reject = {list(need(\"reject\"))}.'\nassert need('n_holm') == sum(want), f'n_holm = {need(\"n_holm\")}.'",
+   "starter": "from statsmodels.stats.multitest import multipletests\npvals = [0.001, 0.004, 0.008, 0.02, 0.03, 0.04, 0.3, 0.6]",
+   "solution": "from statsmodels.stats.multitest import multipletests\npvals = [0.001, 0.004, 0.008, 0.02, 0.03, 0.04, 0.3, 0.6]\nreject, p_adj, _, _ = multipletests(pvals, alpha=0.05, method=\"holm\")\nreject = list(reject)\nn_holm = sum(reject)",
+   "hints": [
+    "`reject, p_adj, _, _ = multipletests(pvals, alpha=0.05, method=\"holm\")`; список — `list(reject)`.",
+    "Число отвергнутых — `sum(reject)`."
+   ],
+   "explain": "Холм отверг три гипотезы, Бонферрони — две. Холм проверяет p по очереди от меньшего к большему с всё более мягким порогом (α/m, α/(m−1), …) — поэтому он мощнее, а защита от ложных находок та же."
+  },
+  "ch05/08-pitfalls/p-holm": {
+   "chapter": "ch05",
+   "lesson": "08-pitfalls",
+   "lesson_title": "Ловушки статистики",
+   "id": "p-holm",
+   "title": "Скорректированные p",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert _lines == ['[0.03, 0.04, 0.2]'], f'Сейчас: {_lines}'",
+   "starter": "",
+   "solution": "from statsmodels.stats.multitest import multipletests\npvals = [0.01, 0.02, 0.2]\nreject, p_adj, _, _ = multipletests(pvals, method=\"holm\")\nprint([round(float(p), 2) for p in p_adj])",
+   "hints": [
+    "Импорт → данные → поправка → вывод.",
+    "Скорректированные p — второй элемент результата `multipletests(...)[1]`; округлите `.round(2)` и превратите в список `.tolist()`."
+   ],
+   "explain": ""
+  },
+  "ch05/08-pitfalls/segments": {
+   "chapter": "ch05",
+   "lesson": "08-pitfalls",
+   "lesson_title": "Ловушки статистики",
+   "id": "segments",
+   "title": "Города после теста",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom statsmodels.stats.proportion import proportions_ztest as _z\nfrom statsmodels.stats.multitest import multipletests as _m\nab = _pd.read_csv('ab_push.csv')\nps = {}\nfor c, t in ab.groupby('city'):\n    g = t.groupby('group')['ordered'].agg(['sum', 'size'])\n    ps[c] = _z(g['sum'], g['size'])[1]\ngot = dict(need('p_city'))\nassert set(got) == set(ps) and all(close(got[k], round(ps[k], 4)) for k in ps), f'p_city = {got}.'\nassert list(need('raw_sig')) == sorted(k for k, v in ps.items() if v < 0.05), f'raw_sig = {need(\"raw_sig\")}.'\nrj = _m(list(ps.values()), method='holm')[0]\nassert list(need('holm_sig')) == sorted(k for k, r in zip(ps, rj) if r), f'holm_sig = {need(\"holm_sig\")}.'",
+   "starter": "import pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nfrom statsmodels.stats.multitest import multipletests\nab = pd.read_csv(\"ab_push.csv\")",
+   "solution": "import pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nfrom statsmodels.stats.multitest import multipletests\nab = pd.read_csv(\"ab_push.csv\")\np_city = {}\nfor city, t in ab.groupby(\"city\"):\n    g = t.groupby(\"group\")[\"ordered\"].agg([\"sum\", \"size\"])\n    z, p = proportions_ztest(g[\"sum\"], g[\"size\"])\n    p_city[city] = round(p, 4)\nraw_sig = sorted(c for c, p in p_city.items() if p < 0.05)\ncities = list(p_city)\nreject = multipletests([p_city[c] for c in cities], method=\"holm\")[0]\nholm_sig = sorted(c for c, r in zip(cities, reject) if r)\np_city",
+   "hints": [
+    "Цикл `for city, t in ab.groupby(\"city\"):` — внутри сводка по группам и `proportions_ztest(g[\"sum\"], g[\"size\"])`.",
+    "Для Холма соберите p в список в том же порядке, что и города: `cities = list(p_city)`, `pvals = [p_city[c] for c in cities]`."
+   ],
+   "explain": "Ни один город не значим даже без поправки — хотя в целом эффект есть. Это не противоречие, а нехватка мощности в сегментах. Вывод для отчёта: «эффект есть в целом; данных недостаточно, чтобы сравнивать города»."
+  },
+  "ch05/08-pitfalls/peeking": {
+   "chapter": "ch05",
+   "lesson": "08-pitfalls",
+   "lesson_title": "Ловушки статистики",
+   "id": "peeking",
+   "title": "Цена подглядывания",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert 0.10 <= need('peek_rate') <= 0.24, f'peek_rate = {need(\"peek_rate\")} — ожидается около 0.15–0.18.'\nassert 0.03 <= need('final_rate') <= 0.07, f'final_rate = {need(\"final_rate\")} — при одной проверке должно быть около 0.05.'",
+   "starter": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(2)\ndays, per_day, sims = 7, 200, 1000",
+   "solution": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(2)\ndays, per_day, sims = 7, 200, 1000\nany_hits = last_hits = 0\nfor _ in range(sims):\n    a = rng.random((days, per_day)) < 0.1\n    b = rng.random((days, per_day)) < 0.1\n    ca, cb = a.sum(axis=1).cumsum(), b.sum(axis=1).cumsum()\n    n = np.arange(1, days + 1) * per_day\n    p_pool = (ca + cb) / (2 * n)\n    z = (cb - ca) / n / np.sqrt(p_pool * (1 - p_pool) * 2 / n)\n    p = 2 * stats.norm.sf(np.abs(z))\n    any_hits += (p < 0.05).any()\n    last_hits += p[-1] < 0.05\npeek_rate = any_hits / sims\nfinal_rate = last_hits / sims",
+   "hints": [
+    "Код — из урока. Последняя проверка — `p[-1] < 0.05`.",
+    "Накопленные данные: `a.sum(axis=1).cumsum()` — заказы к концу каждого дня; `n = np.arange(1, 8) * 200` — гостей к концу каждого дня."
+   ],
+   "explain": "Подглядывание раз в день дало «победу» в 16.5 % A/A-тестов — втрое больше обещанных 5 %. Проверка только в конце — 4.6 %, как и положено. Каждый лишний взгляд с правом остановиться — ещё один шанс поймать случайный выброс."
+  },
+  "ch05/08-pitfalls/practical": {
+   "chapter": "ch05",
+   "lesson": "08-pitfalls",
+   "lesson_title": "Ловушки статистики",
+   "id": "practical",
+   "title": "Значимо, но мелко",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from statsmodels.stats.proportion import proportions_ztest as _z\np = _z([402_400, 400_000], [2_000_000, 2_000_000])[1]\nassert close(need('p_value'), p, 6e-5), f'p_value = {need(\"p_value\")}, а нужно около {p:.6f}.'\nassert close(need('diff_pp'), 0.12) and close(need('rel_pct'), 0.6), f'diff_pp, rel_pct = {need(\"diff_pp\")}, {need(\"rel_pct\")}.'\nassert need('worth_it') is False or need('worth_it') == False, 'Рост 0.6 % меньше порога 2 % — не стоит, хотя p маленькое.'",
+   "starter": "from statsmodels.stats.proportion import proportions_ztest",
+   "solution": "from statsmodels.stats.proportion import proportions_ztest\nz, p_value = proportions_ztest([402_400, 400_000], [2_000_000, 2_000_000])\na, b = 400_000 / 2_000_000, 402_400 / 2_000_000\ndiff_pp = round((b - a) * 100, 2)\nrel_pct = round((b - a) / a * 100, 1)\nworth_it = bool(rel_pct >= 2 and p_value < 0.05)",
+   "hints": [
+    "Конверсии: 400 000 / 2 000 000 и 402 400 / 2 000 000. Относительный рост — `(b - a) / a * 100`.",
+    "p-value — `proportions_ztest([402_400, 400_000], [2_000_000, 2_000_000])[1]`; `worth_it = bool(rel_pct >= 2 and p_value < 0.05)`."
+   ],
+   "explain": "Рост конверсии — 0.12 п.п. (с 20.00 до 20.12 %), относительный — 0.6 %. p ≈ 0.003: на четырёх миллионах гостей значимо даже это. Но до договорённых 2 % далеко — внедрение, скорее всего, не окупит затраты. «Значимо» говорит «эффект не ноль», а не «эффект важен»."
+  },
+  "ch05/08-pitfalls/strict-peek": {
+   "chapter": "ch05",
+   "lesson": "08-pitfalls",
+   "lesson_title": "Ловушки статистики",
+   "id": "strict-peek",
+   "title": "Подглядывать можно, но строже",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nfrom scipy import stats as _st\nr = _np.random.default_rng(2); hits = 0\nfor _ in range(1000):\n    a = r.random((7, 200)) < 0.1; b = r.random((7, 200)) < 0.1\n    ca, cb = a.sum(axis=1).cumsum(), b.sum(axis=1).cumsum(); n = _np.arange(1, 8) * 200\n    pp = (ca + cb) / (2 * n); z = (cb - ca) / n / _np.sqrt(pp * (1 - pp) * 2 / n)\n    hits += (2 * _st.norm.sf(_np.abs(z)) < 0.05 / 7).any()\nassert close(need('strict_rate'), hits / 1000, 0.0011), f'strict_rate = {need(\"strict_rate\")}, а нужно {hits / 1000}.'",
+   "starter": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(2)\ndays, per_day, sims = 7, 200, 1000",
+   "solution": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(2)\ndays, per_day, sims = 7, 200, 1000\nhits = 0\nfor _ in range(sims):\n    a = rng.random((days, per_day)) < 0.1\n    b = rng.random((days, per_day)) < 0.1\n    ca, cb = a.sum(axis=1).cumsum(), b.sum(axis=1).cumsum()\n    n = np.arange(1, days + 1) * per_day\n    p_pool = (ca + cb) / (2 * n)\n    z = (cb - ca) / n / np.sqrt(p_pool * (1 - p_pool) * 2 / n)\n    p = 2 * stats.norm.sf(np.abs(z))\n    hits += (p < 0.05 / days).any()\nstrict_rate = hits / sims",
+   "hints": [
+    "Скопируйте решение задачи «Цена подглядывания» и замените условие на `(p < 0.05 / days).any()`.",
+    "Генератор создаётся один раз до цикла, вызовы `rng.random` — в том же порядке: сначала `a`, потом `b`."
+   ],
+   "explain": "Со строгим порогом ложных побед 2.8 % — меньше обещанных 5 %, даже с ежедневными проверками. Цена — мощность: настоящий эффект тоже придётся «доказывать» по порогу 0.007, и для этого нужно больше данных. В индустрии для досрочной остановки используют более тонкие схемы (последовательные тесты), но идея та же: каждый взгляд должен быть «оплачен» более строгим порогом."
+  },
+  "ch05/08-pitfalls/regression": {
+   "chapter": "ch05",
+   "lesson": "08-pitfalls",
+   "lesson_title": "Ловушки статистики",
+   "id": "regression",
+   "title": "Регрессия к среднему",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "w1, w2 = need('worst_m1'), need('worst_m2')\nassert w1 > 0.3, f'worst_m1 = {w1} — у пяти худших в первом месяце доля должна быть заметно выше 0.24.'\nassert abs(w2 - 0.24) < 0.06, f'worst_m2 = {w2} — во втором месяце те же кофейни должны оказаться около 0.24.'\nassert need('improved') == bool(w2 < w1)",
+   "starter": "import numpy as np\nrng = np.random.default_rng(3)\nshops, n, p = 50, 80, 0.24",
+   "solution": "import numpy as np\nrng = np.random.default_rng(3)\nshops, n, p = 50, 80, 0.24\nm1 = (rng.random((shops, n)) < p).mean(axis=1)\nm2 = (rng.random((shops, n)) < p).mean(axis=1)\nworst = np.argsort(m1)[-5:]\nworst_m1 = round(m1[worst].mean(), 3)\nworst_m2 = round(m2[worst].mean(), 3)\nimproved = bool(worst_m2 < worst_m1)",
+   "hints": [
+    "`m1 = (rng.random((shops, n)) < p).mean(axis=1)` — то же для `m2`. Пять худших — `np.argsort(m1)[-5:]`.",
+    "Сначала генерируйте `m1`, потом `m2` — порядок вызовов генератора важен. «Улучшились» — `worst_m2 < worst_m1`."
+   ],
+   "explain": "«Худшие» улучшились на несколько пунктов без каких-либо мер. Если бы в октябре с ними провели «разбор полётов», в ноябре его признали бы успешным — и ошиблись бы."
+  },
+  "ch05/08-pitfalls/holm-rescue": {
+   "chapter": "ch05",
+   "lesson": "08-pitfalls",
+   "lesson_title": "Ловушки статистики",
+   "id": "holm-rescue",
+   "title": "Поправка спасает",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_push.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert 0.55 <= need('p_any_raw') <= 0.72, f'p_any_raw = {need(\"p_any_raw\")} — ожидается около 0.65.'\nassert 0.02 <= need('p_any_holm') <= 0.09, f'p_any_holm = {need(\"p_any_holm\")} — с поправкой должно быть около 0.05.'\nassert need('same') is True or need('same') == True, 'same должно быть True: сравните свой способ с multipletests на p[:100].'",
+   "starter": "import numpy as np\nfrom scipy import stats\nfrom statsmodels.stats.multitest import multipletests\nrng = np.random.default_rng(5)\nn = 300",
+   "solution": "import numpy as np\nfrom scipy import stats\nfrom statsmodels.stats.multitest import multipletests\nrng = np.random.default_rng(5)\nn = 300\na = rng.binomial(n, 0.24, size=(2000, 20)) / n\nb = rng.binomial(n, 0.24, size=(2000, 20)) / n\np_pool = (a + b) / 2\nse = np.sqrt(p_pool * (1 - p_pool) * 2 / n)\np = 2 * stats.norm.sf(np.abs(a - b) / se)\np_any_raw = (p < 0.05).any(axis=1).mean()\np_any_holm = (p.min(axis=1) <= 0.05 / 20).mean()\nsame = all(multipletests(row, method=\"holm\")[0].any() == (row.min() <= 0.05 / 20) for row in p[:100])\nprint(p_any_raw, p_any_holm, same)",
+   "hints": [
+    "Сначала, как в уроке «Проверка гипотез: логика и p-value», получите матрицу p размером 2000 × 20. Без поправки — `(p < 0.05).any(axis=1).mean()`.",
+    "С каким порогом Холм сравнивает самое маленькое p из двадцати? И что он делает, если даже оно порог не проходит?",
+    "Первый шаг Холма — порог 0.05 / 20, как у Бонферрони; если самое маленькое p его не прошло, Холм останавливается. Значит, «хотя бы одна находка» ⟺ `p.min(axis=1) <= 0.05 / 20`. Проверка на 100 строках: `all(multipletests(row, method=\"holm\")[0].any() == (row.min() <= 0.05 / 20) for row in p[:100])`."
+   ],
+   "explain": "Без поправки хотя бы одна ложная «находка» случается примерно в 65 % исследований, с Холмом — примерно в 6 %, около заявленных 5 %. Для вопроса «есть ли хоть одна находка» Холм совпадает с Бонферрони: всё решает первый шаг, минимальное p против 0.05 / 20. Различаются они дальше, когда нужно решить, **сколько** гипотез отклонить: там Холм мягче. Цена любой поправки — меньшая мощность: настоящие эффекты в сегментах тоже станет труднее найти."
+  },
+  "ch05/09-project/design": {
+   "chapter": "ch05",
+   "lesson": "09-project",
+   "lesson_title": "Проект: новое обещание доставки",
+   "id": "design",
+   "title": "Шаг 1. Проверка эксперимента",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_promise.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as _pd0\nimport numpy as _np0\nfrom scipy import stats as _st0\nfrom statsmodels.stats.proportion import proportions_ztest as _z0\ndef _ref_ab():\n    return _pd0.read_csv('ab_promise.csv', parse_dates=['ts'])\ndef _ref_share(x, flag):\n    g = x.groupby('group')[flag].agg(['sum', 'size', 'mean'])\n    a, b = g.loc['A'], g.loc['B']\n    se = _np0.sqrt(a['mean'] * (1 - a['mean']) / a['size'] + b['mean'] * (1 - b['mean']) / b['size'])\n    d = b['mean'] - a['mean']\n    p = _z0([b['sum'], a['sum']], [b['size'], a['size']])[1]\n    return a['mean'], b['mean'], d, d - 1.96 * se, d + 1.96 * se, p",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\na = _ref_ab()\nx = need('ab', _pd.DataFrame)\nassert len(x) == len(a) and _pd.api.types.is_datetime64_any_dtype(x['ts']), 'ab — вся выгрузка, ts — датой (parse_dates).'\nassert close(need('srm_p'), _st.chisquare(a['group'].value_counts()).pvalue, 6e-5), f'srm_p = {need(\"srm_p\")}.'\ns = a[a['distance_km'] < 2]\nok = bool((s.loc[s['group'] == 'A', 'promise_min'] == 30).all() and (s.loc[s['group'] == 'B', 'promise_min'] == 40).all())\nassert need('promise_ok') == ok, f'promise_ok должно быть {ok}.'\nf = a[a['distance_km'] >= 2]\nsame = set(f.loc[f['group'] == 'A', 'promise_min']) == set(f.loc[f['group'] == 'B', 'promise_min'])\nassert need('far_same') == same, f'far_same должно быть {same}.'",
+   "starter": "import pandas as pd\nfrom scipy import stats",
+   "solution": "import pandas as pd\nfrom scipy import stats\nab = pd.read_csv(\"ab_promise.csv\", parse_dates=[\"ts\"])\nsrm_p = stats.chisquare(ab[\"group\"].value_counts()).pvalue\nshort = ab[ab[\"distance_km\"] < 2]\npromise_ok = bool((short.loc[short[\"group\"] == \"A\", \"promise_min\"] == 30).all()\n                  and (short.loc[short[\"group\"] == \"B\", \"promise_min\"] == 40).all())\nfar = ab[ab[\"distance_km\"] >= 2]\nfar_same = set(far.loc[far[\"group\"] == \"A\", \"promise_min\"]) == set(far.loc[far[\"group\"] == \"B\", \"promise_min\"])",
+   "hints": [
+    "Урок «A/B-тест: от дизайна до решения»: `stats.chisquare(ab[\"group\"].value_counts()).pvalue`.",
+    "Проверка «все равны 30»: `(short.loc[short[\"group\"] == \"A\", \"promise_min\"] == 30).all()`."
+   ],
+   "explain": "Прежде чем считать эффект, убеждаемся, что тест вообще проверял то, что задумано: группы сбалансированы, изменение действует только там, где должно. Ошибка в настройке эксперимента обесценивает любой анализ."
+  },
+  "ch05/09-project/late": {
+   "chapter": "ch05",
+   "lesson": "09-project",
+   "lesson_title": "Проект: новое обещание доставки",
+   "id": "late",
+   "title": "Шаг 2. Главная метрика: опоздания",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_promise.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as _pd0\nimport numpy as _np0\nfrom scipy import stats as _st0\nfrom statsmodels.stats.proportion import proportions_ztest as _z0\ndef _ref_ab():\n    return _pd0.read_csv('ab_promise.csv', parse_dates=['ts'])\ndef _ref_share(x, flag):\n    g = x.groupby('group')[flag].agg(['sum', 'size', 'mean'])\n    a, b = g.loc['A'], g.loc['B']\n    se = _np0.sqrt(a['mean'] * (1 - a['mean']) / a['size'] + b['mean'] * (1 - b['mean']) / b['size'])\n    d = b['mean'] - a['mean']\n    p = _z0([b['sum'], a['sum']], [b['size'], a['size']])[1]\n    return a['mean'], b['mean'], d, d - 1.96 * se, d + 1.96 * se, p\nab = _ref_ab()\norders = ab[ab[\"ordered\"] == 1]",
+   "check": "la, lb, d, lo, hi, p = _ref_share(_ref_ab().query('ordered == 1'), 'late')\nassert close(need('late_a'), round(la, 4)) and close(need('late_b'), round(lb, 4)), f'late_a, late_b = {need(\"late_a\")}, {need(\"late_b\")}.'\nassert close(need('diff_pp'), round(d * 100, 1)), f'diff_pp = {need(\"diff_pp\")}.'\nc = tuple(need('ci'))\nassert len(c) == 2 and close(c[0], round(lo * 100, 1)) and close(c[1], round(hi * 100, 1)), f'ci = {c}, а нужно {(round(lo * 100, 1), round(hi * 100, 1))}.'\nassert close(need('p_late'), p, 6e-5), f'p_late = {need(\"p_late\")}.'",
+   "starter": "import numpy as np\nfrom statsmodels.stats.proportion import proportions_ztest\n# ab — вся выгрузка, orders — только сессии с заказом",
+   "solution": "import numpy as np\nfrom statsmodels.stats.proportion import proportions_ztest\ng = orders.groupby(\"group\")[\"late\"].agg([\"sum\", \"size\", \"mean\"])\na, b = g.loc[\"A\"], g.loc[\"B\"]\nlate_a, late_b = round(a[\"mean\"], 4), round(b[\"mean\"], 4)\nd = b[\"mean\"] - a[\"mean\"]\nse = np.sqrt(a[\"mean\"] * (1 - a[\"mean\"]) / a[\"size\"] + b[\"mean\"] * (1 - b[\"mean\"]) / b[\"size\"])\ndiff_pp = round(d * 100, 1)\nci = (round((d - 1.96 * se) * 100, 1), round((d + 1.96 * se) * 100, 1))\nz, p_late = proportions_ztest([b[\"sum\"], a[\"sum\"]], [b[\"size\"], a[\"size\"]])\ng",
+   "hints": [
+    "Уроки «Доверительные интервалы» и «A/B-тест: от дизайна до решения»: доли групп, SE разницы, интервал ±1.96·SE, `proportions_ztest`.",
+    "`late` в данных — 1.0/0.0 (у сессий без заказа — пусто), поэтому сумма и среднее считаются как обычно."
+   ],
+   "explain": "Опозданий стало вдвое меньше, и интервал далеко от нуля. Главная цель эксперимента достигнута. Теперь важно проверить, чем за это заплатили."
+  },
+  "ch05/09-project/conversion": {
+   "chapter": "ch05",
+   "lesson": "09-project",
+   "lesson_title": "Проект: новое обещание доставки",
+   "id": "conversion",
+   "title": "Шаг 3. Конверсия: откуда могут уйти деньги",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_promise.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as _pd0\nimport numpy as _np0\nfrom scipy import stats as _st0\nfrom statsmodels.stats.proportion import proportions_ztest as _z0\ndef _ref_ab():\n    return _pd0.read_csv('ab_promise.csv', parse_dates=['ts'])\ndef _ref_share(x, flag):\n    g = x.groupby('group')[flag].agg(['sum', 'size', 'mean'])\n    a, b = g.loc['A'], g.loc['B']\n    se = _np0.sqrt(a['mean'] * (1 - a['mean']) / a['size'] + b['mean'] * (1 - b['mean']) / b['size'])\n    d = b['mean'] - a['mean']\n    p = _z0([b['sum'], a['sum']], [b['size'], a['size']])[1]\n    return a['mean'], b['mean'], d, d - 1.96 * se, d + 1.96 * se, p\nab = _ref_ab()\norders = ab[ab[\"ordered\"] == 1]",
+   "check": "a = _ref_ab()\nfor nm, x in (('all', a), ('short', a[a['distance_km'] < 2]), ('far', a[a['distance_km'] >= 2])):\n    _, _, d, _, _, p = _ref_share(x, 'ordered')\n    assert close(need('p_' + nm), p, 6e-5), f'p_{nm} = {need(\"p_\" + nm)}, а нужно около {p:.6f}.'\n    assert close(need('d_' + nm), round(d * 100, 2)), f'd_{nm} = {need(\"d_\" + nm)}, а нужно {round(d * 100, 2)}.'",
+   "starter": "import numpy as np\nfrom statsmodels.stats.proportion import proportions_ztest",
+   "solution": "import numpy as np\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef test(x):\n    g = x.groupby(\"group\")[\"ordered\"].agg([\"sum\", \"size\", \"mean\"])\n    z, p = proportions_ztest([g.loc[\"B\", \"sum\"], g.loc[\"A\", \"sum\"]], [g.loc[\"B\", \"size\"], g.loc[\"A\", \"size\"]])\n    return round((g.loc[\"B\", \"mean\"] - g.loc[\"A\", \"mean\"]) * 100, 2), p\n\nd_all, p_all = test(ab)\nd_short, p_short = test(ab[ab[\"distance_km\"] < 2])\nd_far, p_far = test(ab[ab[\"distance_km\"] >= 2])",
+   "hints": [
+    "Удобно написать маленькую функцию `test(x)`, которая возвращает разницу и p для таблицы `x`, и вызвать её трижды.",
+    "Зоны: `short = ab[ab[\"distance_km\"] < 2]`, `far = ab[ab[\"distance_km\"] >= 2]`. Внутри `test`: сводка `x.groupby(\"group\")[\"ordered\"].agg([\"sum\", \"size\", \"mean\"])` и `proportions_ztest`."
+   ],
+   "explain": "В целом падение конверсии на грани значимости, а в зоне до 2 км — значимо: гости, увидевшие «40 минут» вместо «30», чуть реже заказывают. В дальней зоне, где обещание не менялось, разницы нет — это подтверждает, что эффект вызван именно новым обещанием, а не чем-то ещё. Обратите внимание: сегмент «до 2 км» был задуман заранее (в нём и было изменение), поэтому поправка на множественность здесь не нужна."
+  },
+  "ch05/09-project/ratings": {
+   "chapter": "ch05",
+   "lesson": "09-project",
+   "lesson_title": "Проект: новое обещание доставки",
+   "id": "ratings",
+   "title": "Шаг 4. Оценки гостей",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_promise.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as _pd0\nimport numpy as _np0\nfrom scipy import stats as _st0\nfrom statsmodels.stats.proportion import proportions_ztest as _z0\ndef _ref_ab():\n    return _pd0.read_csv('ab_promise.csv', parse_dates=['ts'])\ndef _ref_share(x, flag):\n    g = x.groupby('group')[flag].agg(['sum', 'size', 'mean'])\n    a, b = g.loc['A'], g.loc['B']\n    se = _np0.sqrt(a['mean'] * (1 - a['mean']) / a['size'] + b['mean'] * (1 - b['mean']) / b['size'])\n    d = b['mean'] - a['mean']\n    p = _z0([b['sum'], a['sum']], [b['size'], a['size']])[1]\n    return a['mean'], b['mean'], d, d - 1.96 * se, d + 1.96 * se, p\nab = _ref_ab()\norders = ab[ab[\"ordered\"] == 1]",
+   "check": "o = _ref_ab().query('ordered == 1').dropna(subset=['rating'])\nm = o.groupby('group')['rating'].mean()\nlow = o.assign(l=o['rating'] <= 4).groupby('group')['l'].mean()\nassert close(need('rating_a'), round(m['A'], 2)) and close(need('rating_b'), round(m['B'], 2)), 'Средние оценки не совпадают.'\nassert close(need('low_a'), round(low['A'], 3)) and close(need('low_b'), round(low['B'], 3)), 'Доли «не пятёрок» не совпадают.'\np = _st0.mannwhitneyu(o.loc[o['group'] == 'B', 'rating'], o.loc[o['group'] == 'A', 'rating']).pvalue\nassert close(need('p_rating'), p, 6e-5), f'p_rating = {need(\"p_rating\")}, а нужно около {p:.6f}.'",
+   "starter": "import pandas as pd\nfrom scipy import stats",
+   "solution": "import pandas as pd\nfrom scipy import stats\nr = orders.dropna(subset=[\"rating\"])\nm = r.groupby(\"group\")[\"rating\"].mean()\nrating_a, rating_b = round(m[\"A\"], 2), round(m[\"B\"], 2)\nlow = (r[\"rating\"] <= 4).groupby(r[\"group\"]).mean()\nlow_a, low_b = round(low[\"A\"], 3), round(low[\"B\"], 3)\np_rating = stats.mannwhitneyu(r.loc[r[\"group\"] == \"B\", \"rating\"], r.loc[r[\"group\"] == \"A\", \"rating\"]).pvalue",
+   "hints": [
+    "Урок «Статистические тесты: какой выбрать»: оценки порядковые — Манна — Уитни. Сначала `r = orders.dropna(subset=[\"rating\"])`.",
+    "«Не пятёрка» — флаг `r[\"rating\"] <= 4`, его среднее по группе — доля. Тест — `stats.mannwhitneyu(r.loc[r[\"group\"] == \"B\", \"rating\"], r.loc[r[\"group\"] == \"A\", \"rating\"]).pvalue`."
+   ],
+   "explain": "Средняя оценка выросла с 4.46 до 4.64, доля «не пятёрок» упала с 36 % до 27 %, p ≈ 0.00007. Гости ценят не обещание «30 минут», а то, что обещание выполнено: честные 40 минут лучше сорванных 30."
+  },
+  "ch05/09-project/money": {
+   "chapter": "ch05",
+   "lesson": "09-project",
+   "lesson_title": "Проект: новое обещание доставки",
+   "id": "money",
+   "title": "Шаг 5. Деньги на сессию",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_promise.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as _pd0\nimport numpy as _np0\nfrom scipy import stats as _st0\nfrom statsmodels.stats.proportion import proportions_ztest as _z0\ndef _ref_ab():\n    return _pd0.read_csv('ab_promise.csv', parse_dates=['ts'])\ndef _ref_share(x, flag):\n    g = x.groupby('group')[flag].agg(['sum', 'size', 'mean'])\n    a, b = g.loc['A'], g.loc['B']\n    se = _np0.sqrt(a['mean'] * (1 - a['mean']) / a['size'] + b['mean'] * (1 - b['mean']) / b['size'])\n    d = b['mean'] - a['mean']\n    p = _z0([b['sum'], a['sum']], [b['size'], a['size']])[1]\n    return a['mean'], b['mean'], d, d - 1.96 * se, d + 1.96 * se, p\nab = _ref_ab()\norders = ab[ab[\"ordered\"] == 1]",
+   "check": "a = _ref_ab()\nA = a.loc[a['group'] == 'A', 'amount']\nB = a.loc[a['group'] == 'B', 'amount']\nassert close(need('rev_a'), round(A.mean(), 1)) and close(need('rev_b'), round(B.mean(), 1)), f'rev_a, rev_b = {need(\"rev_a\")}, {need(\"rev_b\")}.'\nassert close(need('p_rev'), _st0.ttest_ind(B, A, equal_var=False).pvalue, 6e-5), f'p_rev = {need(\"p_rev\")}.'\nlo, hi = need('rev_lo'), need('rev_hi')\nassert -35 < lo < -20 and -2 < hi < 6 and lo < B.mean() - A.mean() < hi, f'Интервал {lo:.1f}…{hi:.1f} не похож на ожидаемый (примерно −28…+2).'",
+   "starter": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(0)",
+   "solution": "import numpy as np\nfrom scipy import stats\nrng = np.random.default_rng(0)\nA = ab.loc[ab[\"group\"] == \"A\", \"amount\"].to_numpy()\nB = ab.loc[ab[\"group\"] == \"B\", \"amount\"].to_numpy()\nrev_a, rev_b = round(A.mean(), 1), round(B.mean(), 1)\np_rev = stats.ttest_ind(B, A, equal_var=False).pvalue\nboot = [rng.choice(B, len(B)).mean() - rng.choice(A, len(A)).mean() for _ in range(3000)]\nrev_lo, rev_hi = np.percentile(boot, [2.5, 97.5])",
+   "hints": [
+    "Урок «A/B-тест: от дизайна до решения», задача «Бутстрэп выручки».",
+    "Выручка — по **всем** сессиям `ab` (нули тоже): `a = ab.loc[ab[\"group\"] == \"A\", \"amount\"].to_numpy()`, так же `b`. t-тест — `stats.ttest_ind(b, a, equal_var=False)`."
+   ],
+   "explain": "Выручка на сессию в B ниже примерно на 13 ₽, но интервал захватывает ноль: падение может быть и нулевым, и заметным (до 25–30 ₽). Тест не даёт уверенного ответа про деньги — это важно честно сказать в отчёте. Что делать дальше, тоже можно посчитать: чтобы интервал разницы сузился до ±10 ₽, нужно SE разницы ≈ 10 / 1.96 ≈ 5.1 ₽. При σ около 350 ₽ в каждой группе это (350² + 350²) / 5.1² ≈ 9 400 сессий на группу — в 2.4 раза больше, чем сейчас, то есть около семи недель теста вместо трёх (правило √n из урока «Выборки и центральная предельная теорема»)."
+  },
+  "ch05/09-project/cities": {
+   "chapter": "ch05",
+   "lesson": "09-project",
+   "lesson_title": "Проект: новое обещание доставки",
+   "id": "cities",
+   "title": "Шаг 6. Эффект по городам",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_promise.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as _pd0\nimport numpy as _np0\nfrom scipy import stats as _st0\nfrom statsmodels.stats.proportion import proportions_ztest as _z0\ndef _ref_ab():\n    return _pd0.read_csv('ab_promise.csv', parse_dates=['ts'])\ndef _ref_share(x, flag):\n    g = x.groupby('group')[flag].agg(['sum', 'size', 'mean'])\n    a, b = g.loc['A'], g.loc['B']\n    se = _np0.sqrt(a['mean'] * (1 - a['mean']) / a['size'] + b['mean'] * (1 - b['mean']) / b['size'])\n    d = b['mean'] - a['mean']\n    p = _z0([b['sum'], a['sum']], [b['size'], a['size']])[1]\n    return a['mean'], b['mean'], d, d - 1.96 * se, d + 1.96 * se, p\nab = _ref_ab()\norders = ab[ab[\"ordered\"] == 1]",
+   "check": "from statsmodels.stats.multitest import multipletests as _m\no = _ref_ab().query('ordered == 1')\nrows = {}\nfor c, x in o.groupby('city'):\n    la, lb, d, _, _, p = _ref_share(x, 'late')\n    rows[c] = (la, lb, d * 100, p)\nph = _m([v[3] for v in rows.values()], method='holm')[1]\nt = need('by_city', _pd0.DataFrame)\nif 'city' in t.columns:\n    t = t.set_index('city')\nassert list(t.columns) == ['late_a', 'late_b', 'diff_pp', 'p', 'p_holm'], f'Столбцы: {list(t.columns)}.'\nfor (c, v), h in zip(rows.items(), ph):\n    assert close(t.loc[c, 'late_a'], v[0], 1e-3) and close(t.loc[c, 'late_b'], v[1], 1e-3), f'{c}: доли не совпадают.'\n    assert close(t.loc[c, 'diff_pp'], v[2], 0.06), f'{c}: diff_pp не совпадает.'\n    assert close(t.loc[c, 'p_holm'], h, 1e-6), f'{c}: p_holm не совпадает.'\nassert need('all_cities') == bool((ph < 0.05).all())",
+   "starter": "import pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nfrom statsmodels.stats.multitest import multipletests",
+   "solution": "import pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nfrom statsmodels.stats.multitest import multipletests\nrows = []\nfor city, x in orders.groupby(\"city\"):\n    g = x.groupby(\"group\")[\"late\"].agg([\"sum\", \"size\", \"mean\"])\n    z, p = proportions_ztest([g.loc[\"B\", \"sum\"], g.loc[\"A\", \"sum\"]], [g.loc[\"B\", \"size\"], g.loc[\"A\", \"size\"]])\n    rows.append({\"city\": city, \"late_a\": g.loc[\"A\", \"mean\"], \"late_b\": g.loc[\"B\", \"mean\"],\n                 \"diff_pp\": (g.loc[\"B\", \"mean\"] - g.loc[\"A\", \"mean\"]) * 100, \"p\": p})\nby_city = pd.DataFrame(rows).set_index(\"city\")\nby_city[\"p_holm\"] = multipletests(by_city[\"p\"], method=\"holm\")[1]\nall_cities = bool((by_city[\"p_holm\"] < 0.05).all())\nby_city.round(4)",
+   "hints": [
+    "Урок «Ловушки статистики», задача «Города после теста» — тот же цикл, только метрика `late` и данные `orders`.",
+    "Поправка — `multipletests(by_city[\"p\"], method=\"holm\")[1]` во второй столбец; `all_cities = bool((by_city[\"p_holm\"] < 0.05).all())`."
+   ],
+   "explain": "Здесь сегменты подтверждают общий вывод, а не ищут неожиданный: эффект большой, и его хватает, чтобы быть значимым даже в маленьких городах после поправки. Так выглядит устойчивый результат."
+  },
+  "ch05/09-project/chart": {
+   "chapter": "ch05",
+   "lesson": "09-project",
+   "lesson_title": "Проект: новое обещание доставки",
+   "id": "chart",
+   "title": "Шаг 7. График для руководителя",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_promise.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as _pd0\nimport numpy as _np0\nfrom scipy import stats as _st0\nfrom statsmodels.stats.proportion import proportions_ztest as _z0\ndef _ref_ab():\n    return _pd0.read_csv('ab_promise.csv', parse_dates=['ts'])\ndef _ref_share(x, flag):\n    g = x.groupby('group')[flag].agg(['sum', 'size', 'mean'])\n    a, b = g.loc['A'], g.loc['B']\n    se = _np0.sqrt(a['mean'] * (1 - a['mean']) / a['size'] + b['mean'] * (1 - b['mean']) / b['size'])\n    d = b['mean'] - a['mean']\n    p = _z0([b['sum'], a['sum']], [b['size'], a['size']])[1]\n    return a['mean'], b['mean'], d, d - 1.96 * se, d + 1.96 * se, p\nab = _ref_ab()\norders = ab[ab[\"ordered\"] == 1]",
+   "check": "o = _ref_ab().query('ordered == 1')\ns = _ref_ab().query('distance_km < 2')\nw1 = (o.groupby('group')['late'].mean() * 100).values\nw2 = (s.groupby('group')['ordered'].mean() * 100).values\nassert len(figs) == 1 and len(figs[0].axes) == 2, 'Два графика рядом: plt.subplots(1, 2).'\na1, a2 = figs[0].axes\nfor ax, w, nm in ((a1, w1, 'опозданий'), (a2, w2, 'конверсии')):\n    h = [p.get_height() for p in ax.patches]\n    assert len(h) == 2 and all(close(x, y, 1e-6) for x, y in zip(h, w)), f'Столбцы {nm}: {h}, а нужно {list(w.round(2))} (в процентах, A и B).'\n    assert len(ax.texts) == 2, f'Подпишите значения на графике {nm}: ax.bar_label(bars, fmt=\"%.1f\").'\n    assert ax.get_title().strip(), 'Добавьте заголовок-вывод.'\n    assert ax.lines or ax.collections, f'На графике {nm} нет «усов» интервала: передайте yerr.'",
+   "starter": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint",
+   "solution": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\ndef panel(ax, x, col, title):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n    bars = ax.bar(g.index, g[\"mean\"] * 100, yerr=[(g[\"mean\"] - lo) * 100, (hi - g[\"mean\"]) * 100],\n                  capsize=6, color=[\"lightgray\", \"tab:blue\"])\n    ax.bar_label(bars, fmt=\"%.1f\", padding=8)\n    ax.set_ylabel(\"%\")\n    ax.set_title(title)\n    ax.spines[[\"top\", \"right\"]].set_visible(False)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.8))\npanel(axes[0], orders, \"late\", \"Опозданий вдвое меньше\")\npanel(axes[1], ab[ab[\"distance_km\"] < 2], \"ordered\", \"До 2 км заказывают чуть реже\")\nfig.tight_layout()",
+   "hints": [
+    "Усы на столбцах рисуют так же, как в задаче «Интервалы на графике» урока «Доверительные интервалы»: `yerr` — расстояния от вершины вниз и вверх. Для каждого графика: `g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])`, `lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")`.",
+    "`bars = ax.bar(g.index, g[\"mean\"] * 100, yerr=[(g[\"mean\"] - lo) * 100, (hi - g[\"mean\"]) * 100], capsize=6)`, затем `ax.bar_label(bars, fmt=\"%.1f\")`."
+   ],
+   "explain": "Два столбца рядом с «усами» читаются за секунду: опозданий вдвое меньше, а конверсия в пешей зоне просела на несколько пунктов — и по «усам» видно, насколько эта просадка надёжна. Подписи значений избавляют руководителя от необходимости угадывать по оси, а «усы» сразу показывают, где разница больше шума. Заголовок-вывод («Опозданий вдвое меньше») важнее заголовка-описания («Доля опозданий по группам»)."
+  },
+  "ch05/09-project/decision": {
+   "chapter": "ch05",
+   "lesson": "09-project",
+   "lesson_title": "Проект: новое обещание доставки",
+   "id": "decision",
+   "title": "Шаг 8. Отчёт и решение",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "ab_promise.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as _pd0\nimport numpy as _np0\nfrom scipy import stats as _st0\nfrom statsmodels.stats.proportion import proportions_ztest as _z0\ndef _ref_ab():\n    return _pd0.read_csv('ab_promise.csv', parse_dates=['ts'])\ndef _ref_share(x, flag):\n    g = x.groupby('group')[flag].agg(['sum', 'size', 'mean'])\n    a, b = g.loc['A'], g.loc['B']\n    se = _np0.sqrt(a['mean'] * (1 - a['mean']) / a['size'] + b['mean'] * (1 - b['mean']) / b['size'])\n    d = b['mean'] - a['mean']\n    p = _z0([b['sum'], a['sum']], [b['size'], a['size']])[1]\n    return a['mean'], b['mean'], d, d - 1.96 * se, d + 1.96 * se, p",
+   "check": "a = _ref_ab()\nf = need('promise_report')\ndef _w(x):\n    srm = _st0.chisquare(x['group'].value_counts()).pvalue\n    _, _, dl, _, _, pl = _ref_share(x[x['ordered'] == 1], 'late')\n    _, _, dc, _, _, pc = _ref_share(x[x['distance_km'] < 2], 'ordered')\n    A, B = x.loc[x['group'] == 'A', 'amount'], x.loc[x['group'] == 'B', 'amount']\n    pr = _st0.ttest_ind(B, A, equal_var=False).pvalue\n    rd = B.mean() - A.mean()\n    dec = 'внедрять' if srm >= 0.01 and pl < 0.05 and dl < 0 and not (pr < 0.05 and rd < 0) else 'не внедрять'\n    return {'srm_ok': bool(srm >= 0.01), 'late_diff_pp': round(dl * 100, 1), 'late_p': pl, 'conv_short_diff_pp': round(dc * 100, 2),\n            'conv_short_p': pc, 'rev_diff': round(rd, 1), 'rev_p': pr, 'decision': dec}\nfake = a.copy()\nfake.loc[fake['group'] == 'B', 'amount'] = (fake.loc[fake['group'] == 'B', 'amount'] * 0.7).round()\nfor x, name in ((a, 'весь тест'), (a[a['city'] == 'Казань'], 'только Казань'), (fake, 'выручка B упала на 30 %')):\n    got, want = f(x.copy()), _w(x)\n    for k, v in want.items():\n        assert k in got, f'Нет ключа {k!r}.'\n        ok = (got[k] == v) if isinstance(v, (str, bool)) else close(got[k], v, 6e-5 if k.endswith('_p') else 1e-6)\n        assert ok, f'{name}: {k} = {got[k]!r}, а нужно {v!r}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef promise_report(ab):\n    ...\n\nab = pd.read_csv(\"ab_promise.csv\", parse_dates=[\"ts\"])\npromise_report(ab)",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef share_test(x, col):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    z, p = proportions_ztest([g.loc[\"B\", \"sum\"], g.loc[\"A\", \"sum\"]], [g.loc[\"B\", \"size\"], g.loc[\"A\", \"size\"]])\n    return g.loc[\"B\", \"mean\"] - g.loc[\"A\", \"mean\"], p\n\ndef promise_report(ab):\n    srm_p = stats.chisquare(ab[\"group\"].value_counts()).pvalue\n    late_d, late_p = share_test(ab[ab[\"ordered\"] == 1], \"late\")\n    conv_d, conv_p = share_test(ab[ab[\"distance_km\"] < 2], \"ordered\")\n    A = ab.loc[ab[\"group\"] == \"A\", \"amount\"]\n    B = ab.loc[ab[\"group\"] == \"B\", \"amount\"]\n    rev_d = B.mean() - A.mean()\n    rev_p = stats.ttest_ind(B, A, equal_var=False).pvalue\n    ok = srm_p >= 0.01 and late_p < 0.05 and late_d < 0 and not (rev_p < 0.05 and rev_d < 0)\n    return {\n        \"srm_ok\": bool(srm_p >= 0.01),\n        \"late_diff_pp\": round(late_d * 100, 1), \"late_p\": late_p,\n        \"conv_short_diff_pp\": round(conv_d * 100, 2), \"conv_short_p\": conv_p,\n        \"rev_diff\": round(rev_d, 1), \"rev_p\": rev_p,\n        \"decision\": \"внедрять\" if ok else \"не внедрять\",\n    }\n\nab = pd.read_csv(\"ab_promise.csv\", parse_dates=[\"ts\"])\npromise_report(ab)",
+   "hints": [
+    "Внутри — шаги 2, 3 и 5. Удобно завести вспомогательную функцию для разницы долей и p.",
+    "Условие решения: `srm_ok and late_p < 0.05 and late_diff < 0 and not (rev_p < 0.05 and rev_diff < 0)`."
+   ],
+   "explain": "Глава 5 пройдена. Итог для руководителя: новое обещание для пешей зоны вдвое сокращает опоздания и заметно поднимает оценки; конверсия в пешей зоне падает примерно на 3.5 п.п.; выручка на сессию, возможно, снижается, но тест не может это ни подтвердить, ни исключить. Рекомендация «внедрять» следует из правила, выбранного заранее: защитная метрика в нём — выручка, а она значимо не упала. Падение конверсии — главная оговорка отчёта. Условие — следить за выручкой, а лучше продлить тест примерно до семи недель (около 9 400 сессий на группу), чтобы сузить интервал по деньгам до ±10 ₽. Следующая глава — машинное обучение: научимся не только проверять гипотезы, но и предсказывать."
+  }
+ }
+}

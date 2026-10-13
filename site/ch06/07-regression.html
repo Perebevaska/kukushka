@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Регрессия: сколько минут — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/katex/katex.min.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch06">Глава 6. Первые модели машинного обучения</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 6</div><div class="side-title">Первые модели машинного обучения</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02"><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03"><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05"><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06" open><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" aria-current="page" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11"><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 8 · основной путь · ≈ 85 мин · задач: 10</div>
+      <h1>Регрессия: сколько минут</h1>
+      <p class="lead">«Опоздает или нет» — грубый ответ. Гостю полезнее услышать «привезём примерно через 42 минуты». Предсказываем число — фактическое время доставки: линейная регрессия, дерево и лес для чисел, метрики MAE, RMSE и R², разбор ошибок. И увидим, где машинное обучение наконец заметно обгоняет правило аналитика.</p>
+      <div class="data-files"><span class="df-label">Данные урока</span><a class="data-file" href="../data/deliveries.csv" download title="Скачать deliveries.csv"><span class="df-name">deliveries.csv</span><span class="df-info">1877 строк · 131 КБ</span></a><span class="df-note">В примерах файлы уже подключены — скачивать нужно, только чтобы открыть их у себя.</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 9</span></div>
+    </div>
+    <article class="prose theory"><h2 id="предсказываем-число">Предсказываем число</h2>
+<p>Целевой признак теперь — <code>actual_min</code>, фактическое время доставки в минутах. Признаки те же, что и для опозданий: всё, что известно до отправки курьера. Это <strong>регрессия</strong> (урок «Что такое машинное обучение»): ответ — число, а не категория.</p>
+<p>Сначала — базовая модель. Для средней абсолютной ошибки лучший постоянный ответ — медиана, а не среднее: в задаче «Регрессия: базовая модель» урока «Что такое машинное обучение» медиана давала MAE 8.10 против 8.23 у среднего. Считаем её <strong>только по обучающей части</strong>: тест — это «будущее», которого мы не видели.</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+
+d = pd.read_csv(&quot;deliveries.csv&quot;, parse_dates=[&quot;created&quot;])
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;hour&quot;] = ok[&quot;created&quot;].dt.hour
+y = ok[&quot;actual_min&quot;]
+X = pd.get_dummies(ok[[&quot;distance_km&quot;, &quot;items&quot;, &quot;promised_min&quot;, &quot;hour&quot;, &quot;courier&quot;, &quot;weather&quot;, &quot;shop_id&quot;]], dtype=int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+
+base = y_train.median()
+pred_base = [base] * len(y_test)
+print(f&quot;медиана train: {base} мин&quot;)
+print(f&quot;MAE базовой модели: {mean_absolute_error(y_test, pred_base):.1f} мин&quot;)</code></pre></div>
+<p><strong>MAE</strong> (mean absolute error, средняя абсолютная ошибка) — среднее модулей «факт − прогноз», та же формула, что в уроке «Что такое машинное обучение», только готовой функцией <code>mean_absolute_error(факт, прогноз)</code>. Читается просто: «в среднем ошибаемся на 8 минут». Это планка, которую должна побить модель.</p>
+<div class="fb" data-sec="предсказываем-число"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="линейная-регрессия">Линейная регрессия</h2>
+<p><strong>Линейная регрессия</strong> (linear regression) — это знакомая по логистической регрессии (урок «Логистическая регрессия и вероятности») линейная оценка, только без сигмоиды: <span class="math inline">\text{прогноз минут} = b_0 + w_1 x_1 + w_2 x_2 + \ldots</span> Веса подбираются так, чтобы прогнозы были как можно ближе к фактам (точнее, чтобы сумма квадратов ошибок была наименьшей). Начнём с одного признака — расстояния:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)]
+
+lin = LinearRegression().fit(ok[[&quot;distance_km&quot;]], ok[&quot;actual_min&quot;])
+print(f&quot;минуты ≈ {lin.intercept_:.1f} + {lin.coef_[0]:.2f} × км&quot;)
+
+fig, ax = plt.subplots(figsize=(7, 3.5))
+ax.scatter(ok[&quot;distance_km&quot;], ok[&quot;actual_min&quot;], s=6, alpha=0.4)
+km = pd.DataFrame({&quot;distance_km&quot;: [0, 15]})
+ax.plot(km[&quot;distance_km&quot;], lin.predict(km), color=&quot;black&quot;)
+ax.set_xlabel(&quot;расстояние, км&quot;)
+ax.set_ylabel(&quot;минут&quot;)
+ax.set_title(&quot;Время доставки и расстояние&quot;)</code></pre></div>
+<ul>
+<li><code>intercept_</code> — свободный член: около 26 минут «на старте» (сборка заказа, выход курьера);</li>
+<li><code>coef_</code> — веса признаков, по одному на признак. Здесь один вес: около 2.8 минуты на каждый километр.</li>
+</ul>
+<p>Обратите внимание: <code>X</code> — это таблица (двойные скобки <code>[[&quot;distance_km&quot;]]</code>), даже если признак один. sklearn всегда ждёт таблицу признаков.</p>
+<aside class="callout callout-sql"><div class="callout-title">Как в SQL</div>
+<p>В Excel это линия тренда на точечной диаграмме или функция ЛИНЕЙН. Разница в том, что здесь признаков может быть сколько угодно, и модель подберёт вес каждому.</p>
+</aside>
+<p>Теперь — все признаки:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error
+
+d = pd.read_csv(&quot;deliveries.csv&quot;, parse_dates=[&quot;created&quot;])
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;hour&quot;] = ok[&quot;created&quot;].dt.hour
+y = ok[&quot;actual_min&quot;]
+X = pd.get_dummies(ok[[&quot;distance_km&quot;, &quot;items&quot;, &quot;promised_min&quot;, &quot;hour&quot;, &quot;courier&quot;, &quot;weather&quot;, &quot;shop_id&quot;]], dtype=int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+
+lin = LinearRegression().fit(X_train, y_train)
+print(f&quot;MAE: {mean_absolute_error(y_test, lin.predict(X_test)):.2f} мин&quot;)
+print(pd.Series(lin.coef_, index=X.columns).round(1).sort_values())</code></pre></div>
+<p>MAE упала примерно с 8 до 5.5 минуты. Веса читаются в минутах и — как в логистической регрессии — при прочих равных:</p>
+<ul>
+<li><code>distance_km</code> ≈ 3.9 — каждый километр добавляет около 4 минут;</li>
+<li><code>items</code> ≈ 1.7 — каждая позиция в заказе добавляет почти 2 минуты на сборку;</li>
+<li>флаги сравнивают категории между собой: пеший курьер против авто — разница около 18 минут (10.2 − (−8.3)), снег против ясной погоды — около 5 минут.</li>
+</ul>
+<aside class="callout callout-warn"><div class="callout-title">Частая ошибка</div>
+<p>Как и в логистической регрессии, веса флагов одного признака читаются парами: смысл имеет разница весов внутри признака, а не каждый вес отдельно (урок «Логистическая регрессия и вероятности», раздел «Коэффициенты»).</p>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-p-line"><b>2</b> Минут на километр</a><a href="#task-linear"><b>4</b> Линейная регрессия на всех признаках</a><a href="#task-interaction"><b>10</b> Помочь линейной модели</a></div>
+<div class="fb" data-sec="линейная-регрессия"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="как-мерить-ошибку-mae-rmse-r²">Как мерить ошибку: MAE, RMSE, R²</h2>
+<p>Одной метрики мало — каждая отвечает на свой вопрос.</p>
+<ul>
+<li><strong>MAE</strong> — средняя ошибка в минутах. Понятна заказчику: «ошибаемся в среднем на 5 минут».</li>
+<li><strong>RMSE</strong> (root mean squared error, корень из средней квадратичной ошибки) — тоже в минутах, но ошибки сначала возводятся в квадрат. Один промах на 20 минут весит как сто промахов на 2 минуты, поэтому RMSE всегда не меньше MAE и сильнее растёт от крупных ошибок. Если опоздание на 20 минут для бизнеса намного хуже двух опозданий по 10 — смотрите на RMSE. В sklearn: <code>mean_squared_error(факт, прогноз) ** 0.5</code>.</li>
+<li><strong>R²</strong> (коэффициент детерминации) — какую долю разброса целевого признака объясняет модель. 1 — идеальный прогноз, 0 — модель не лучше постоянного ответа «среднее», меньше 0 — хуже даже его. <code>r2_score(факт, прогноз)</code>. R² удобен, чтобы сравнивать задачи с разными единицами, но заказчику понятнее MAE.</li>
+</ul>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">errors = [1, -1, 10]
+mae = sum(abs(e) for e in errors) / len(errors)
+rmse = (sum(e ** 2 for e in errors) / len(errors)) ** 0.5
+print(round(mae, 2), round(rmse, 2))</code></pre>
+<ul>
+<li><code>4.0 4.0</code></li>
+<li>[x] <code>4.0 5.83</code></li>
+<li><code>3.33 5.83</code></li>
+</ul>
+<p>Почему: MAE берёт модули — (1 + 1 + 10) / 3 = 4. RMSE возводит в квадрат — (1 + 1 + 100) / 3 = 34, корень ≈ 5.83. Одна крупная ошибка раздула RMSE заметно сильнее, чем MAE.</p>
+</div>
+<div class="predict" data-q="q2"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">from sklearn.metrics import r2_score
+print(r2_score([10, 20, 30], [20, 20, 20]))</code></pre>
+<ul>
+<li>[x] <code>0.0</code></li>
+<li><code>0.5</code></li>
+<li><code>-1.0</code></li>
+</ul>
+<p>Почему: прогноз «всегда 20» — это и есть среднее фактов. По определению R² такой модели равен нулю: она ничего не объясняет сверх среднего.</p>
+</div>
+<h3>Разберём вместе: три метрики на четырёх доставках</h3>
+<p>Факт: 20, 30, 40, 50 минут. Прогноз: 22, 27, 41, 40. Ошибки (факт − прогноз): −2, +3, −1, <strong>+10</strong>.</p>
+<ol>
+<li><strong>MAE</strong> = (2 + 3 + 1 + 10) / 4 = <strong>4.0</strong> минуты.</li>
+<li><strong>RMSE</strong>: квадраты 4, 9, 1, 100, среднее 114 / 4 = 28.5, корень ≈ <strong>5.34</strong>. Одна ошибка на 10 минут дала 100 из 114 — почти всю сумму.</li>
+<li><strong>R²</strong>. Среднее факта — 35. Если бы мы всем отвечали «35», квадраты ошибок были бы 225, 25, 25, 225 — сумма 500. У модели сумма квадратов 114. R² = 1 − 114 / 500 = <strong>0.772</strong>: модель убрала 77 % того разброса, который остался бы при ответе «среднее».</li>
+</ol>
+<figure class="fig" data-fig="reg-metrics"><div class="fig-scroll"><svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-reg-metrics">
+  <title id="t-reg-metrics">MAE, RMSE и R² на четырёх доставках</title>
+  <defs><marker id="ah-reg-metrics" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="mut sm" x="120" y="22" text-anchor="middle">ошибки факт − прогноз</text>
+  <text class="ink2 sm" x="30" y="51" text-anchor="start">20 − 22</text>
+  <rect class="box-warn" x="132.0" y="36" width="18.0" height="20" rx="2"/>
+  <text class="ink sm b" x="156.0" y="51" text-anchor="start">-2</text>
+  <text class="ink2 sm" x="30" y="81" text-anchor="start">30 − 27</text>
+  <rect class="box-warn" x="150.0" y="66" width="27.0" height="20" rx="2"/>
+  <text class="ink sm b" x="183.0" y="81" text-anchor="start">+3</text>
+  <text class="ink2 sm" x="30" y="111" text-anchor="start">40 − 41</text>
+  <rect class="box-warn" x="141.0" y="96" width="9.0" height="20" rx="2"/>
+  <text class="ink sm b" x="156.0" y="111" text-anchor="start">-1</text>
+  <text class="ink2 sm" x="30" y="141" text-anchor="start">50 − 40</text>
+  <rect class="box-err" x="150.0" y="126" width="90.0" height="20" rx="2"/>
+  <text class="ink sm b" x="246.0" y="141" text-anchor="start">+10</text>
+  <path class="ln-mut" d="M150,30 L150,156"/>
+  <text class="ink sm b" x="120" y="184" text-anchor="middle">MAE = (2 + 3 + 1 + 10) / 4 = 4.0</text>
+  <text class="mut sm" x="420" y="22" text-anchor="middle">квадраты ошибок (площадь)</text>
+  <rect class="box-warn" x="330" y="132.0" width="18.0" height="18.0" rx="1"/>
+  <text class="ink2 sm" x="339.0" y="168" text-anchor="middle">4</text>
+  <rect class="box-warn" x="360" y="123.0" width="27.0" height="27.0" rx="1"/>
+  <text class="ink2 sm" x="373.5" y="168" text-anchor="middle">9</text>
+  <rect class="box-warn" x="399" y="141.0" width="9.0" height="9.0" rx="1"/>
+  <text class="ink2 sm" x="403.5" y="168" text-anchor="middle">1</text>
+  <rect class="box-err" x="420" y="60.0" width="90.0" height="90.0" rx="1"/>
+  <text class="ink2 sm" x="465.0" y="168" text-anchor="middle">100</text>
+  <text class="ink sm b" x="450" y="184" text-anchor="middle">RMSE = √(114 / 4) ≈ 5.34: промах на 10 даёт 100 из 114</text>
+  <text class="mut sm" x="350" y="222" text-anchor="middle">R²: сравнить с ответом «всегда среднее» (35)</text>
+  <rect class="box" x="140" y="232" width="300.0" height="18" rx="2"/>
+  <text class="ink2 sm" x="446.0" y="246" text-anchor="start">ответ «35»: сумма квадратов 500</text>
+  <rect class="box-acc" x="140" y="256" width="68.4" height="18" rx="2"/>
+  <text class="ink2 sm" x="214.4" y="270" text-anchor="start">модель: 114</text>
+  <text class="ink sm b" x="350" y="294" text-anchor="middle">R² = 1 − 114 / 500 = 0.772: модель убрала 77 % разброса, оставшегося бы при ответе «среднее»</text>
+</svg>
+</div><figcaption>
+<p>Разбор на четырёх доставках. MAE складывает модули ошибок, RMSE — их квадраты (площади), поэтому промах на 10 минут даёт 100 из 114. R² сравнивает сумму квадратов модели с ответом «всегда 35».</p>
+</figcaption></figure>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Два курьера опаздывают в сумме на одно и то же время. Первый — каждый день на 5 минут, второй — обычно вовремя, но раз в неделю на 35 минут. MAE у них одинаковая, а гости второго злее: одно большое опоздание запоминается сильнее многих мелких. RMSE ведёт себя как гость — возводит ошибки в квадрат и сильнее наказывает за крупные промахи.</p>
+</aside>
+<div class="cell"><pre class="cell-src"><code>from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+fact = [20, 30, 40, 50]
+pred = [22, 27, 41, 40]
+print(mean_absolute_error(fact, pred), round(mean_squared_error(fact, pred) ** 0.5, 2), round(r2_score(fact, pred), 3))</code></pre></div>
+<p>Что получилось: MAE — «насколько ошибаемся обычно», RMSE — «насколько больно от худших промахов», R² — «насколько лучше ответа &quot;среднее&quot;». Разрыв между RMSE и MAE (5.34 против 4.0) — сигнал, что среди ошибок есть крупные: стоит посмотреть, где именно.</p>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>У двух моделей MAE одинаковая — 6 минут, но у первой RMSE 8, у второй — 14. Чем они различаются?</p>
+<ul>
+<li>[x] Вторая иногда ошибается очень сильно: RMSE возводит ошибки в квадрат и больше наказывает за крупные промахи
+<blockquote>
+<p>При одинаковой средней ошибке большой RMSE означает редкие, но большие промахи. Для доставки это обиженные гости.</p>
+</blockquote>
+</li>
+<li>[ ] Вторая модель лучше: RMSE больше
+<blockquote>
+<p>Для ошибки «больше» значит «хуже».</p>
+</blockquote>
+</li>
+<li>[ ] Ничем, раз MAE одинаковая
+<blockquote>
+<p>MAE не различает много мелких ошибок и несколько крупных, RMSE различает.</p>
+</blockquote>
+</li>
+<li>[ ] У второй больше данных
+<blockquote>
+<p>Метрики не зависят от размера теста так прямо — дело в распределении ошибок.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-mae-hand"><b>1</b> MAE и RMSE для пяти доставок</a><a href="#task-base-median"><b>3</b> Базовая модель на тесте</a></div>
+<div class="fb" data-sec="как-мерить-ошибку-mae-rmse-r²"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="дерево-и-лес-для-чисел">Дерево и лес для чисел</h2>
+<p>У деревьев и леса есть версии для регрессии: <code>DecisionTreeRegressor</code> и <code>RandomForestRegressor</code>. Устроены они так же, как в уроках «Решающее дерево изнутри» и «Случайный лес», но в листе дерево отвечает не самым частым классом, а <strong>средним</strong> целевого признака по обучающим объектам, попавшим в лист. Лес усредняет ответы своих деревьев.</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+d = pd.read_csv(&quot;deliveries.csv&quot;, parse_dates=[&quot;created&quot;])
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;hour&quot;] = ok[&quot;created&quot;].dt.hour
+y = ok[&quot;actual_min&quot;]
+X = pd.get_dummies(ok[[&quot;distance_km&quot;, &quot;items&quot;, &quot;promised_min&quot;, &quot;hour&quot;, &quot;courier&quot;, &quot;weather&quot;, &quot;shop_id&quot;]], dtype=int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+
+models = {
+    &quot;линейная&quot;: LinearRegression(),
+    &quot;дерево, глубина 5&quot;: DecisionTreeRegressor(max_depth=5, random_state=0),
+    &quot;лес, 50 деревьев&quot;: RandomForestRegressor(n_estimators=50, random_state=0),
+}
+pred_base = [y_train.median()] * len(y_test)          # базовая модель: медиана для каждой доставки
+rows = [{&quot;модель&quot;: &quot;медиана&quot;, &quot;MAE&quot;: mean_absolute_error(y_test, pred_base),
+         &quot;RMSE&quot;: mean_squared_error(y_test, pred_base) ** 0.5, &quot;R2&quot;: r2_score(y_test, pred_base)}]
+for name, m in models.items():
+    pred = m.fit(X_train, y_train).predict(X_test)
+    rows.append({&quot;модель&quot;: name, &quot;MAE&quot;: mean_absolute_error(y_test, pred),
+                 &quot;RMSE&quot;: mean_squared_error(y_test, pred) ** 0.5, &quot;R2&quot;: r2_score(y_test, pred)})
+print(pd.DataFrame(rows).round(2).to_string(index=False))</code></pre></div>
+<p>Лес ошибается в среднем примерно на 4.6 минуты против 5.5 у линейной модели и 8 у медианы, а R² у него около 0.73. У медианы R² чуть ниже нуля: её считали по train, а R² сравнивает со средним теста — постоянный ответ не может быть лучше него. Вот где машинное обучение по-настоящему выигрывает: на опозданиях все модели упирались в правило «пеший — опоздает», а здесь причин много, и они переплетаются.</p>
+<p>Почему линейная модель отстаёт? Она даёт <strong>одну</strong> цену километра для всех. Посмотрим, так ли это в данных:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from sklearn.linear_model import LinearRegression
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)]
+for courier, part in ok.groupby(&quot;courier&quot;):
+    m = LinearRegression().fit(part[[&quot;distance_km&quot;]], part[&quot;actual_min&quot;])
+    print(f&quot;{courier}: {m.coef_[0]:.1f} мин на км&quot;)</code></pre></div>
+<p>Пешему курьеру каждый километр стоит около 13 минут, авто — около 3. Влияние расстояния зависит от типа курьера — это называют <strong>взаимодействием</strong> признаков. Линейная модель сама взаимодействия не видит: она складывает вклады, а не умножает. Дерево и лес ловят их автоматически: сначала спрашивают «пеший?», а потом в каждой ветке по-своему делят по расстоянию.</p>
+<figure class="fig" data-fig="interaction-slopes"><div class="fig-scroll"><svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-interaction-slopes">
+  <title id="t-interaction-slopes">Цена километра зависит от курьера — взаимодействие признаков</title>
+  <defs><marker id="ah-interaction-slopes" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <circle class="mut" cx="317.4" cy="170.4" r="2"/>
+  <circle class="mut" cx="396.6" cy="148.8" r="2"/>
+  <circle class="mut" cx="99.6" cy="196.8" r="2"/>
+  <circle class="mut" cx="363.6" cy="168.0" r="2"/>
+  <circle class="mut" cx="264.6" cy="151.2" r="2"/>
+  <circle class="mut" cx="277.8" cy="170.4" r="2"/>
+  <circle class="mut" cx="218.4" cy="172.8" r="2"/>
+  <circle class="mut" cx="238.2" cy="165.6" r="2"/>
+  <circle class="mut" cx="139.2" cy="165.6" r="2"/>
+  <circle class="mut" cx="271.2" cy="175.2" r="2"/>
+  <circle class="mut" cx="198.6" cy="134.4" r="2"/>
+  <circle class="mut" cx="330.6" cy="158.4" r="2"/>
+  <circle class="mut" cx="172.2" cy="160.8" r="2"/>
+  <circle class="mut" cx="343.8" cy="163.2" r="2"/>
+  <circle class="mut" cx="185.4" cy="160.8" r="2"/>
+  <circle class="mut" cx="159.0" cy="168.0" r="2"/>
+  <circle class="mut" cx="198.6" cy="153.6" r="2"/>
+  <circle class="mut" cx="132.6" cy="160.8" r="2"/>
+  <circle class="mut" cx="376.8" cy="146.4" r="2"/>
+  <circle class="mut" cx="231.6" cy="144.0" r="2"/>
+  <circle class="mut" cx="297.6" cy="175.2" r="2"/>
+  <circle class="mut" cx="304.2" cy="151.2" r="2"/>
+  <circle class="mut" cx="165.6" cy="175.2" r="2"/>
+  <circle class="mut" cx="211.8" cy="165.6" r="2"/>
+  <circle class="mut" cx="396.6" cy="156.0" r="2"/>
+  <circle class="mut" cx="145.8" cy="156.0" r="2"/>
+  <circle class="mut" cx="145.8" cy="158.4" r="2"/>
+  <circle class="mut" cx="211.8" cy="141.6" r="2"/>
+  <circle class="mut" cx="251.4" cy="120.0" r="2"/>
+  <circle class="mut" cx="152.4" cy="177.6" r="2"/>
+  <circle class="mut" cx="225.0" cy="177.6" r="2"/>
+  <circle class="mut" cx="258.0" cy="98.4" r="2"/>
+  <circle class="mut" cx="211.8" cy="168.0" r="2"/>
+  <circle class="mut" cx="396.6" cy="189.6" r="2"/>
+  <circle class="mut" cx="178.8" cy="146.4" r="2"/>
+  <circle class="mut" cx="502.2" cy="139.2" r="2"/>
+  <circle class="mut" cx="172.2" cy="194.4" r="2"/>
+  <circle class="mut" cx="152.4" cy="201.6" r="2"/>
+  <circle class="mut" cx="244.8" cy="163.2" r="2"/>
+  <circle class="mut" cx="145.8" cy="180.0" r="2"/>
+  <circle class="mut" cx="350.4" cy="144.0" r="2"/>
+  <circle class="mut" cx="205.2" cy="165.6" r="2"/>
+  <circle class="mut" cx="277.8" cy="168.0" r="2"/>
+  <circle class="mut" cx="185.4" cy="187.2" r="2"/>
+  <circle class="mut" cx="205.2" cy="148.8" r="2"/>
+  <circle class="mut" cx="271.2" cy="144.0" r="2"/>
+  <circle class="mut" cx="271.2" cy="50.4" r="2"/>
+  <circle class="mut" cx="343.8" cy="168.0" r="2"/>
+  <circle class="mut" cx="264.6" cy="160.8" r="2"/>
+  <circle class="mut" cx="178.8" cy="180.0" r="2"/>
+  <circle class="mut" cx="178.8" cy="182.4" r="2"/>
+  <circle class="mut" cx="284.4" cy="177.6" r="2"/>
+  <circle class="mut" cx="132.6" cy="170.4" r="2"/>
+  <circle class="mut" cx="291.0" cy="175.2" r="2"/>
+  <circle class="mut" cx="139.2" cy="201.6" r="2"/>
+  <circle class="mut" cx="211.8" cy="172.8" r="2"/>
+  <circle class="mut" cx="238.2" cy="136.8" r="2"/>
+  <circle class="mut" cx="165.6" cy="134.4" r="2"/>
+  <circle class="mut" cx="343.8" cy="182.4" r="2"/>
+  <circle class="mut" cx="330.6" cy="76.8" r="2"/>
+  <circle class="mut" cx="291.0" cy="170.4" r="2"/>
+  <circle class="mut" cx="178.8" cy="194.4" r="2"/>
+  <circle class="mut" cx="185.4" cy="187.2" r="2"/>
+  <circle class="mut" cx="258.0" cy="156.0" r="2"/>
+  <circle class="mut" cx="152.4" cy="151.2" r="2"/>
+  <circle class="mut" cx="211.8" cy="163.2" r="2"/>
+  <circle class="mut" cx="132.6" cy="146.4" r="2"/>
+  <circle class="mut" cx="409.8" cy="115.2" r="2"/>
+  <circle class="mut" cx="357.0" cy="144.0" r="2"/>
+  <circle class="mut" cx="403.2" cy="132.0" r="2"/>
+  <circle class="mut" cx="132.6" cy="189.6" r="2"/>
+  <circle class="mut" cx="126.0" cy="122.4" r="2"/>
+  <circle class="mut" cx="225.0" cy="163.2" r="2"/>
+  <circle class="mut" cx="205.2" cy="153.6" r="2"/>
+  <circle class="mut" cx="284.4" cy="148.8" r="2"/>
+  <circle class="mut" cx="159.0" cy="168.0" r="2"/>
+  <circle class="mut" cx="489.0" cy="158.4" r="2"/>
+  <circle class="mut" cx="185.4" cy="180.0" r="2"/>
+  <circle class="mut" cx="330.6" cy="148.8" r="2"/>
+  <circle class="mut" cx="205.2" cy="153.6" r="2"/>
+  <circle class="mut" cx="350.4" cy="144.0" r="2"/>
+  <circle class="mut" cx="251.4" cy="184.8" r="2"/>
+  <circle class="mut" cx="251.4" cy="170.4" r="2"/>
+  <circle class="mut" cx="132.6" cy="180.0" r="2"/>
+  <circle class="mut" cx="343.8" cy="144.0" r="2"/>
+  <circle class="mut" cx="192.0" cy="192.0" r="2"/>
+  <circle class="mut" cx="165.6" cy="172.8" r="2"/>
+  <circle class="mut" cx="251.4" cy="141.6" r="2"/>
+  <circle class="mut" cx="251.4" cy="175.2" r="2"/>
+  <circle class="mut" cx="126.0" cy="177.6" r="2"/>
+  <circle class="mut" cx="152.4" cy="144.0" r="2"/>
+  <circle class="mut" cx="442.8" cy="180.0" r="2"/>
+  <circle class="mut" cx="416.4" cy="136.8" r="2"/>
+  <circle class="mut" cx="218.4" cy="187.2" r="2"/>
+  <circle class="mut" cx="244.8" cy="163.2" r="2"/>
+  <circle class="mut" cx="225.0" cy="160.8" r="2"/>
+  <circle class="mut" cx="225.0" cy="160.8" r="2"/>
+  <circle class="mut" cx="291.0" cy="158.4" r="2"/>
+  <circle class="mut" cx="139.2" cy="170.4" r="2"/>
+  <circle class="mut" cx="264.6" cy="76.8" r="2"/>
+  <circle class="mut" cx="376.8" cy="182.4" r="2"/>
+  <circle class="mut" cx="350.4" cy="151.2" r="2"/>
+  <circle class="mut" cx="126.0" cy="180.0" r="2"/>
+  <circle class="mut" cx="284.4" cy="182.4" r="2"/>
+  <circle class="mut" cx="489.0" cy="134.4" r="2"/>
+  <circle class="mut" cx="297.6" cy="160.8" r="2"/>
+  <circle class="mut" cx="172.2" cy="184.8" r="2"/>
+  <circle class="mut" cx="291.0" cy="151.2" r="2"/>
+  <circle class="mut" cx="159.0" cy="175.2" r="2"/>
+  <circle class="mut" cx="363.6" cy="168.0" r="2"/>
+  <circle class="mut" cx="132.6" cy="172.8" r="2"/>
+  <circle class="mut" cx="93.0" cy="206.4" r="2"/>
+  <circle class="mut" cx="442.8" cy="141.6" r="2"/>
+  <circle class="mut" cx="93.0" cy="199.2" r="2"/>
+  <circle class="mut" cx="198.6" cy="160.8" r="2"/>
+  <circle class="mut" cx="291.0" cy="194.4" r="2"/>
+  <circle class="mut" cx="495.6" cy="105.6" r="2"/>
+  <circle class="mut" cx="469.2" cy="148.8" r="2"/>
+  <circle class="mut" cx="363.6" cy="146.4" r="2"/>
+  <circle class="mut" cx="211.8" cy="115.2" r="2"/>
+  <circle class="mut" cx="310.8" cy="165.6" r="2"/>
+  <circle class="mut" cx="264.6" cy="170.4" r="2"/>
+  <circle class="mut" cx="159.0" cy="168.0" r="2"/>
+  <circle class="mut" cx="337.2" cy="158.4" r="2"/>
+  <circle class="mut" cx="198.6" cy="180.0" r="2"/>
+  <circle class="mut" cx="508.8" cy="172.8" r="2"/>
+  <circle class="mut" cx="126.0" cy="168.0" r="2"/>
+  <circle class="mut" cx="396.6" cy="144.0" r="2"/>
+  <circle class="mut" cx="225.0" cy="182.4" r="2"/>
+  <circle class="mut" cx="218.4" cy="196.8" r="2"/>
+  <circle class="mut" cx="324.0" cy="146.4" r="2"/>
+  <circle class="mut" cx="495.6" cy="156.0" r="2"/>
+  <circle class="mut" cx="357.0" cy="136.8" r="2"/>
+  <circle class="mut" cx="132.6" cy="177.6" r="2"/>
+  <circle class="mut" cx="198.6" cy="189.6" r="2"/>
+  <circle class="mut" cx="152.4" cy="184.8" r="2"/>
+  <circle class="mut" cx="251.4" cy="180.0" r="2"/>
+  <circle class="mut" cx="185.4" cy="172.8" r="2"/>
+  <circle class="mut" cx="139.2" cy="134.4" r="2"/>
+  <circle class="mut" cx="337.2" cy="175.2" r="2"/>
+  <circle class="mut" cx="475.8" cy="153.6" r="2"/>
+  <circle class="mut" cx="284.4" cy="170.4" r="2"/>
+  <circle class="mut" cx="244.8" cy="108.0" r="2"/>
+  <circle class="mut" cx="317.4" cy="120.0" r="2"/>
+  <circle class="mut" cx="284.4" cy="165.6" r="2"/>
+  <circle class="mut" cx="172.2" cy="189.6" r="2"/>
+  <circle class="mut" cx="225.0" cy="151.2" r="2"/>
+  <circle class="mut" cx="152.4" cy="165.6" r="2"/>
+  <circle class="mut" cx="258.0" cy="153.6" r="2"/>
+  <circle class="mut" cx="159.0" cy="134.4" r="2"/>
+  <circle class="mut" cx="205.2" cy="153.6" r="2"/>
+  <circle class="mut" cx="185.4" cy="184.8" r="2"/>
+  <circle class="mut" cx="172.2" cy="180.0" r="2"/>
+  <circle class="mut" cx="126.0" cy="184.8" r="2"/>
+  <circle class="mut" cx="337.2" cy="158.4" r="2"/>
+  <circle class="mut" cx="165.6" cy="175.2" r="2"/>
+  <circle class="mut" cx="178.8" cy="187.2" r="2"/>
+  <circle class="mut" cx="357.0" cy="103.2" r="2"/>
+  <circle class="mut" cx="225.0" cy="163.2" r="2"/>
+  <circle class="mut" cx="132.6" cy="170.4" r="2"/>
+  <circle class="mut" cx="277.8" cy="141.6" r="2"/>
+  <circle class="mut" cx="396.6" cy="156.0" r="2"/>
+  <circle class="mut" cx="231.6" cy="170.4" r="2"/>
+  <circle class="mut" cx="508.8" cy="158.4" r="2"/>
+  <circle class="mut" cx="264.6" cy="160.8" r="2"/>
+  <circle class="mut" cx="198.6" cy="160.8" r="2"/>
+  <circle class="mut" cx="324.0" cy="184.8" r="2"/>
+  <circle class="mut" cx="159.0" cy="158.4" r="2"/>
+  <circle class="mut" cx="218.4" cy="175.2" r="2"/>
+  <circle class="mut" cx="139.2" cy="146.4" r="2"/>
+  <circle class="mut" cx="304.2" cy="141.6" r="2"/>
+  <circle class="mut" cx="317.4" cy="134.4" r="2"/>
+  <circle class="mut" cx="145.8" cy="136.8" r="2"/>
+  <circle class="mut" cx="357.0" cy="136.8" r="2"/>
+  <circle class="mut" cx="145.8" cy="146.4" r="2"/>
+  <circle class="mut" cx="231.6" cy="175.2" r="2"/>
+  <circle class="mut" cx="423.0" cy="156.0" r="2"/>
+  <circle class="mut" cx="106.2" cy="160.8" r="2"/>
+  <circle class="mut" cx="139.2" cy="151.2" r="2"/>
+  <circle class="mut" cx="165.6" cy="177.6" r="2"/>
+  <circle class="mut" cx="126.0" cy="153.6" r="2"/>
+  <circle class="mut" cx="383.4" cy="175.2" r="2"/>
+  <circle class="mut" cx="112.8" cy="182.4" r="2"/>
+  <circle class="mut" cx="251.4" cy="172.8" r="2"/>
+  <circle class="mut" cx="218.4" cy="175.2" r="2"/>
+  <circle class="mut" cx="145.8" cy="163.2" r="2"/>
+  <circle class="mut" cx="225.0" cy="151.2" r="2"/>
+  <circle class="mut" cx="251.4" cy="175.2" r="2"/>
+  <circle class="mut" cx="198.6" cy="136.8" r="2"/>
+  <circle class="mut" cx="238.2" cy="156.0" r="2"/>
+  <circle class="mut" cx="211.8" cy="146.4" r="2"/>
+  <circle class="mut" cx="112.8" cy="194.4" r="2"/>
+  <circle class="mut" cx="383.4" cy="124.8" r="2"/>
+  <circle class="mut" cx="211.8" cy="168.0" r="2"/>
+  <circle class="mut" cx="159.0" cy="189.6" r="2"/>
+  <circle class="mut" cx="192.0" cy="180.0" r="2"/>
+  <circle class="mut" cx="159.0" cy="153.6" r="2"/>
+  <circle class="mut" cx="350.4" cy="165.6" r="2"/>
+  <circle class="mut" cx="251.4" cy="148.8" r="2"/>
+  <circle class="mut" cx="324.0" cy="184.8" r="2"/>
+  <circle class="mut" cx="178.8" cy="160.8" r="2"/>
+  <circle class="mut" cx="132.6" cy="160.8" r="2"/>
+  <circle class="mut" cx="396.6" cy="170.4" r="2"/>
+  <circle class="mut" cx="198.6" cy="172.8" r="2"/>
+  <circle class="mut" cx="304.2" cy="144.0" r="2"/>
+  <circle class="mut" cx="159.0" cy="158.4" r="2"/>
+  <circle class="mut" cx="251.4" cy="194.4" r="2"/>
+  <circle class="mut" cx="317.4" cy="112.8" r="2"/>
+  <circle class="mut" cx="310.8" cy="132.0" r="2"/>
+  <circle class="mut" cx="231.6" cy="146.4" r="2"/>
+  <circle class="mut" cx="482.4" cy="156.0" r="2"/>
+  <circle class="mut" cx="178.8" cy="189.6" r="2"/>
+  <circle class="mut" cx="291.0" cy="172.8" r="2"/>
+  <circle class="mut" cx="304.2" cy="141.6" r="2"/>
+  <circle class="mut" cx="99.6" cy="175.2" r="2"/>
+  <circle class="mut" cx="324.0" cy="158.4" r="2"/>
+  <circle class="mut" cx="225.0" cy="122.4" r="2"/>
+  <circle class="mut" cx="291.0" cy="74.4" r="2"/>
+  <circle class="mut" cx="238.2" cy="177.6" r="2"/>
+  <circle class="mut" cx="139.2" cy="156.0" r="2"/>
+  <circle class="mut" cx="251.4" cy="160.8" r="2"/>
+  <circle class="mut" cx="251.4" cy="146.4" r="2"/>
+  <circle class="mut" cx="211.8" cy="122.4" r="2"/>
+  <circle class="mut" cx="495.6" cy="141.6" r="2"/>
+  <circle class="mut" cx="145.8" cy="180.0" r="2"/>
+  <circle class="mut" cx="165.6" cy="187.2" r="2"/>
+  <circle class="mut" cx="218.4" cy="170.4" r="2"/>
+  <circle class="mut" cx="238.2" cy="117.6" r="2"/>
+  <circle class="mut" cx="337.2" cy="153.6" r="2"/>
+  <circle class="mut" cx="436.2" cy="96.0" r="2"/>
+  <circle class="mut" cx="145.8" cy="165.6" r="2"/>
+  <circle class="mut" cx="297.6" cy="163.2" r="2"/>
+  <circle class="mut" cx="152.4" cy="112.8" r="2"/>
+  <circle class="mut" cx="238.2" cy="170.4" r="2"/>
+  <circle class="mut" cx="337.2" cy="134.4" r="2"/>
+  <circle class="mut" cx="159.0" cy="187.2" r="2"/>
+  <circle class="mut" cx="284.4" cy="76.8" r="2"/>
+  <circle class="mut" cx="310.8" cy="151.2" r="2"/>
+  <circle class="mut" cx="198.6" cy="180.0" r="2"/>
+  <circle class="mut" cx="198.6" cy="182.4" r="2"/>
+  <circle class="mut" cx="152.4" cy="122.4" r="2"/>
+  <circle class="mut" cx="139.2" cy="192.0" r="2"/>
+  <circle class="mut" cx="198.6" cy="148.8" r="2"/>
+  <circle class="mut" cx="324.0" cy="182.4" r="2"/>
+  <circle class="mut" cx="337.2" cy="153.6" r="2"/>
+  <circle class="mut" cx="264.6" cy="103.2" r="2"/>
+  <circle class="mut" cx="251.4" cy="168.0" r="2"/>
+  <circle class="mut" cx="423.0" cy="112.8" r="2"/>
+  <circle class="mut" cx="442.8" cy="148.8" r="2"/>
+  <circle class="mut" cx="218.4" cy="182.4" r="2"/>
+  <circle class="mut" cx="198.6" cy="163.2" r="2"/>
+  <path class="ln-acc" d="M106.2,187.9 L522.0,138.7"/>
+  <path class="ln-ok" d="M79.8,189.0 L522.0,114.9"/>
+  <path class="ln-err" d="M86.4,181.8 L370.2,46.3"/>
+  <path class="ln dash" d="M60.0,176.9 L522.0,130.5"/>
+  <text class="err sm b" x="376.2" y="50.3" text-anchor="start">пеший: 13.1 мин/км</text>
+  <text class="ok sm b" x="528.0" y="118.9" text-anchor="start">вело: 4.6 мин/км</text>
+  <text class="ink2 sm b" x="528.0" y="134.5" text-anchor="start">все вместе: 2.8 мин/км</text>
+  <text class="acc sm b" x="528.0" y="149.5" text-anchor="start">авто: 3.3 мин/км</text>
+  <path class="ln" d="M60,240.0 L522,240.0"/>
+  <path class="ln" d="M60,240.0 L60,24.0"/>
+  <text class="mut sm" x="60" y="256.0" text-anchor="middle">0</text>
+  <text class="mut sm" x="126" y="256.0" text-anchor="middle">1</text>
+  <text class="mut sm" x="192" y="256.0" text-anchor="middle">2</text>
+  <text class="mut sm" x="258" y="256.0" text-anchor="middle">3</text>
+  <text class="mut sm" x="324" y="256.0" text-anchor="middle">4</text>
+  <text class="mut sm" x="390" y="256.0" text-anchor="middle">5</text>
+  <text class="mut sm" x="456" y="256.0" text-anchor="middle">6</text>
+  <text class="mut sm" x="522" y="256.0" text-anchor="middle">7</text>
+  <text class="mut sm" x="54" y="172.0" text-anchor="end">30</text>
+  <text class="mut sm" x="54" y="100.0" text-anchor="end">60</text>
+  <text class="mut sm" x="54" y="28.0" text-anchor="end">90</text>
+  <text class="mut sm" x="350" y="274.0" text-anchor="middle">расстояние, км; по вертикали — минуты доставки (точки — 260 случайных доставок)</text>
+</svg>
+</div><figcaption>
+<p>Отдельная прямая для каждого типа курьера: пешему километр стоит около 13 минут, вело и авто — 3–5. Пунктир — одна прямая по всем доставкам, как в начале урока: одна цена километра для всех.</p>
+</figcaption></figure>
+<div class="quiz-c" data-q="c2"><div class="predict-title">Проверьте себя</div>
+<p>На одних и тех же признаках лес предсказывает минуты доставки точнее линейной регрессии. В чём главная причина?</p>
+<ul>
+<li>[x] Линейная модель даёт одну цену километра для всех, а у пешего и у авто она разная — лес ловит это взаимодействие сам
+<blockquote>
+<p>Линейная модель складывает вклады признаков. Дерево сначала спрашивает «пеший?» и уже внутри ветки по-своему учитывает расстояние.</p>
+</blockquote>
+</li>
+<li>[ ] Лес видит признаки, которых нет у линейной модели
+<blockquote>
+<p>Таблица признаков у них одна и та же. Различается способ, которым модели их комбинируют.</p>
+</blockquote>
+</li>
+<li>[ ] Линейная регрессия годится только для классификации
+<blockquote>
+<p>Наоборот, линейная регрессия — модель для чисел. Для классификации у нас была логистическая.</p>
+</blockquote>
+</li>
+<li>[ ] Лесу досталось больше обучающих данных
+<blockquote>
+<p>Обе модели учились на одном и том же <code>X_train</code>. Бутстрэп в лесу перевыбирает те же строки, новых данных он не добавляет.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-forest-metrics"><b>5</b> Три метрики для леса</a><a href="#task-depth"><b>6</b> Глубина дерева для минут</a></div>
+<div class="fb" data-sec="дерево-и-лес-для-чисел"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="разбор-ошибок">Разбор ошибок</h2>
+<p>Средняя метрика скрывает, <strong>где</strong> модель ошибается. <strong>Остаток</strong> (residual) — это факт − прогноз: плюс — доставка шла дольше прогноза, минус — быстрее. Первый взгляд — график «факт против прогноза»: у идеальной модели все точки лежат на диагонали.</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+
+d = pd.read_csv(&quot;deliveries.csv&quot;, parse_dates=[&quot;created&quot;])
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;hour&quot;] = ok[&quot;created&quot;].dt.hour
+y = ok[&quot;actual_min&quot;]
+X = pd.get_dummies(ok[[&quot;distance_km&quot;, &quot;items&quot;, &quot;promised_min&quot;, &quot;hour&quot;, &quot;courier&quot;, &quot;weather&quot;, &quot;shop_id&quot;]], dtype=int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+forest = RandomForestRegressor(n_estimators=50, random_state=0).fit(X_train, y_train)
+
+res = pd.DataFrame({&quot;fact&quot;: y_test, &quot;pred&quot;: forest.predict(X_test).round(1)})
+res[&quot;err&quot;] = res[&quot;fact&quot;] - res[&quot;pred&quot;]
+
+fig, ax = plt.subplots(figsize=(5, 5))
+ax.scatter(res[&quot;pred&quot;], res[&quot;fact&quot;], s=8, alpha=0.5)
+ax.plot([10, 100], [10, 100], color=&quot;grey&quot;, linestyle=&quot;--&quot;)
+ax.set_xlabel(&quot;прогноз, мин&quot;)
+ax.set_ylabel(&quot;факт, мин&quot;)
+ax.set_title(&quot;Лес: факт против прогноза&quot;)
+
+res[&quot;abs_err&quot;] = res[&quot;err&quot;].abs()
+worst = res.nlargest(5, &quot;abs_err&quot;)
+print(worst.join(ok[[&quot;courier&quot;, &quot;distance_km&quot;, &quot;weather&quot;, &quot;items&quot;, &quot;promised_min&quot;]]).to_string())</code></pre></div>
+<ul>
+<li><code>nlargest(5, &quot;abs_err&quot;)</code> — пять строк с самой большой ошибкой по модулю (знак не важен: и «переоценили», и «недооценили» — промахи);</li>
+<li><code>join</code> подтягивает к ошибкам исходные столбцы по индексу — тому же, что был у строк в <code>ok</code>.</li>
+</ul>
+<p>Что видно:</p>
+<ul>
+<li>облако вытянуто вдоль диагонали — модель в целом понимает, какие доставки долгие;</li>
+<li>самый крупный промах — авто на 15 км: модель ждала больше 70 минут, а доставка заняла 48. Таких дальних заказов в данных единицы, и модели не на чем было учиться;</li>
+<li>пеший курьер на 1.1 км вёз почти час. Ничего в признаках не предвещало такой задержки — это случай, который модель предсказать не может в принципе (курьер заблудился, гость не открыл дверь).</li>
+</ul>
+<p>Разбор крупнейших ошибок — обычная работа аналитика после обучения модели: часть промахов подсказывает новые признаки, часть — проблемы в данных, часть — честный шум.</p>
+<aside class="callout callout-tip"><div class="callout-title">Совет</div>
+<p>Остатки удобно разбивать по группам: <code>res.join(ok[&quot;courier&quot;]).groupby(&quot;courier&quot;)[&quot;err&quot;].mean()</code>. Если в какой-то группе средний остаток заметно отличается от нуля, модель систематически ошибается на ней.</p>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-fact-pred"><b>7</b> График «факт против прогноза»</a><a href="#task-residuals"><b>8</b> Где ошибается лес</a></div>
+<div class="fb" data-sec="разбор-ошибок"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="опоздание-из-прогноза-минут">Опоздание из прогноза минут</h2>
+<p>Прогноз минут легко превратить в ответ на старый вопрос: если модель ждёт больше минут, чем обещано, — доставка опоздает.</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+
+d = pd.read_csv(&quot;deliveries.csv&quot;, parse_dates=[&quot;created&quot;])
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;hour&quot;] = ok[&quot;created&quot;].dt.hour
+y = ok[&quot;actual_min&quot;]
+X = pd.get_dummies(ok[[&quot;distance_km&quot;, &quot;items&quot;, &quot;promised_min&quot;, &quot;hour&quot;, &quot;courier&quot;, &quot;weather&quot;, &quot;shop_id&quot;]], dtype=int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+forest = RandomForestRegressor(n_estimators=50, random_state=0).fit(X_train, y_train)
+
+late_fact = y_test &gt; X_test[&quot;promised_min&quot;]
+late_pred = forest.predict(X_test) &gt; X_test[&quot;promised_min&quot;]
+rule = X_test[&quot;courier_пеший&quot;] == 1
+print(f&quot;прогноз минут &gt; обещания: {(late_pred == late_fact).mean():.1%}&quot;)
+print(f&quot;правило «пеший»:          {(rule == late_fact).mean():.1%}&quot;)</code></pre></div>
+<p>Доля правильных ответов — около 89 %, на уровне классификаторов из прошлых уроков и правила «пеший — опоздает»: как и в уроке «Случайный лес», на вопрос «опоздает или нет» модель почти ничего не добавляет к правилу аналитика. Зато регрессия даёт больше, чем «да/нет»: она говорит, <strong>на сколько</strong> опоздает доставка, — а это можно сообщить гостю.</p>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>R² на обучающих данных.</strong> Как и accuracy, на train он завышен — считайте на тесте.</li>
+<li><strong>Сравнивать MAE разных задач.</strong> «5 минут» для доставки и «5 тысяч» для выручки несравнимы; для сравнения задач — R².</li>
+<li><strong>Знак остатка.</strong> <code>err = fact − pred</code>: плюс — модель занизила (доставка дольше прогноза), минус — завысила.</li>
+<li><strong>Медиана теста как базовая модель.</strong> Базовый ответ берут из обучающей части, иначе базовая модель подглядывает.</li>
+<li><strong>Читать вес линейной модели без «при прочих равных».</strong> «18 минут пешему» — при том же расстоянии, позициях и погоде.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-late-minutes"><b>9</b> Опоздание из линейной модели</a></div>
+<div class="fb" data-sec="опоздание-из-прогноза-минут"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-mae-hand" data-task="mae-hand" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">MAE и RMSE для пяти доставок</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#как-мерить-ошибку-mae-rmse-r²">↑ К теории: Как мерить ошибку: MAE, RMSE, R²</a>
+  <div class="task-text prose"><p>Модель предсказала время пяти доставок. Посчитайте <code>mae</code> и <code>rmse</code> (обе — 2 знака) функциями sklearn <code>mean_absolute_error</code> и <code>mean_squared_error</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-p-line" data-task="p-line" data-level="warmup" data-kind="parsons">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">Минут на километр</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#линейная-регрессия">↑ К теории: Линейная регрессия</a>
+  <div class="task-text prose"><p>Соберите программу: обучить линейную регрессию времени доставки на расстоянии и вывести вес (минут на км) и свободный член, оба — 2 знака, через пробел.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-base-median" data-task="base-median" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">Базовая модель на тесте</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#как-мерить-ошибку-mae-rmse-r²">↑ К теории: Как мерить ошибку: MAE, RMSE, R²</a>
+  <div class="task-text prose"><p>Посчитайте базовую модель для регрессии честно: медиану возьмите <strong>по обучающей части</strong>, а ошибку — на тестовой. Сохраните <code>base</code> — медиану <code>y_train</code> и <code>mae_base</code> — MAE постоянного прогноза <code>base</code> на тесте (2 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-linear" data-task="linear" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">4</span>
+    <h3 class="task-title">Линейная регрессия на всех признаках</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#линейная-регрессия">↑ К теории: Линейная регрессия</a>
+  <div class="task-text prose"><p>Обучите <code>LinearRegression</code> на <code>X_train</code>. Сохраните модель в <code>lin</code>, <code>mae_lin</code> — MAE на тесте (2 знака), <code>r2_lin</code> — R² на тесте (3 знака), <code>per_km</code> — вес признака <code>distance_km</code> (2 знака) и <code>walk_vs_auto</code> — на сколько минут, по мнению модели, пеший курьер медленнее авто при прочих равных (разница весов, 1 знак).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-forest-metrics" data-task="forest-metrics" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">5</span>
+    <h3 class="task-title">Три метрики для леса</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#дерево-и-лес-для-чисел">↑ К теории: Дерево и лес для чисел</a>
+  <div class="task-text prose"><p>Обучите <code>RandomForestRegressor(n_estimators=50, random_state=0)</code> и посчитайте на тесте <code>mae_rf</code>, <code>rmse_rf</code> (2 знака) и <code>r2_rf</code> (3 знака). В <code>gain</code> сохраните, на сколько минут MAE леса меньше MAE медианы обучающей части (2 знака, считайте по неокруглённым значениям).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-depth" data-task="depth" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">6</span>
+    <h3 class="task-title">Глубина дерева для минут</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#дерево-и-лес-для-чисел">↑ К теории: Дерево и лес для чисел</a>
+  <div class="task-text prose"><p>Обучите <code>DecisionTreeRegressor(random_state=0)</code> с глубиной 2, 5 и без ограничения (<code>max_depth=None</code>). Сохраните в <code>mae_by_depth</code> словарь <code>{2: ..., 5: ..., None: ...}</code> с MAE на тесте (2 знака), а в <code>best_depth</code> — глубину с наименьшей MAE.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-fact-pred" data-task="fact-pred" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">7</span>
+    <h3 class="task-title">График «факт против прогноза»</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#разбор-ошибок">↑ К теории: Разбор ошибок</a>
+  <div class="task-text prose"><p>Нарисуйте для линейной регрессии точечный график: по оси X — прогноз на тесте, по оси Y — факт. Добавьте серую пунктирную диагональ <code>ax.plot([10, 100], [10, 100], ...)</code>, подписи осей <code>прогноз, мин</code> и <code>факт, мин</code> и заголовок, в котором есть слово <code>линейная</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-residuals" data-task="residuals" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">8</span>
+    <h3 class="task-title">Где ошибается лес</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#разбор-ошибок">↑ К теории: Разбор ошибок</a>
+  <div class="task-text prose"><p>Для леса <code>RandomForestRegressor(n_estimators=50, random_state=0)</code> соберите таблицу <code>res</code> со столбцами <code>fact</code>, <code>pred</code> и <code>err</code> (факт − прогноз) по тестовым доставкам и добавьте к ней столбец <code>courier</code> из <code>ok</code> (через <code>join</code>). Сохраните:</p>
+<ul>
+<li><code>big_share</code> — долю доставок, где модель ошиблась больше чем на 10 минут в любую сторону (3 знака);</li>
+<li><code>err_by_courier</code> — Series: средний остаток по типу курьера (индекс — тип курьера, значения — 2 знака);</li>
+<li><code>worst_courier</code> — тип курьера в строке с самой большой по модулю ошибкой.</li>
+</ul>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-late-minutes" data-task="late-minutes" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">9</span>
+    <h3 class="task-title">Опоздание из линейной модели</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#опоздание-из-прогноза-минут">↑ К теории: Опоздание из прогноза минут</a>
+  <div class="task-text prose"><p>Превратите прогноз минут <strong>линейной регрессии</strong> в прогноз опоздания: «прогноз &gt; обещания». Сохраните <code>acc_lin</code> — долю правильных ответов на тесте (3 знака), <code>late_minutes</code> — на сколько минут в среднем опаздывают те тестовые доставки, которые модель пометила как опаздывающие (среднее <code>факт − обещание</code> по ним, 1 знак; учитываются все такие доставки, даже приехавшие вовремя).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-interaction" data-task="interaction" data-level="star" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">10</span>
+    <h3 class="task-title">Помочь линейной модели</h3>
+    <span class="lvl lvl-star">Со звёздочкой</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#линейная-регрессия">↑ К теории: Линейная регрессия</a>
+  <div class="task-text prose"><p>Линейная модель не видит, что пешему курьеру километр стоит дороже. Помогите ей: добавьте в <code>X</code> признак-взаимодействие <code>walk_km</code> — расстояние, умноженное на флаг пешего курьера (у остальных курьеров 0). Обучите <code>LinearRegression</code> заново на том же разбиении и сохраните <code>mae_before</code> и <code>mae_after</code> — MAE на тесте без нового признака и с ним (2 знака), а также <code>walk_km_coef</code> — вес нового признака (2 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>Регрессия предсказывает число. Базовая модель — всегда отвечать медианой (или средним) обучающей выборки.</li><li><code>LinearRegression</code>: прогноз = <code>intercept_</code> + Σ <code>coef_</code> · признак. Вес расстояния — «сколько минут добавляет километр при прочих равных».</li><li><code>DecisionTreeRegressor</code> и <code>RandomForestRegressor</code> отвечают средним по похожим объектам и сами ловят взаимодействия признаков (пеший × расстояние).</li><li>MAE — средняя ошибка в минутах: <code>mean_absolute_error</code>. RMSE — <code>mean_squared_error(...) ** 0.5</code>, сильнее штрафует крупные промахи.</li><li>R² (<code>r2_score</code>) — какая доля разброса объяснена: 1 — идеально, 0 — не лучше среднего, меньше 0 — хуже среднего.</li><li>Остаток = факт − прогноз. График «факт против прогноза» и таблица крупнейших ошибок показывают, где модель ошибается.</li><li>Регрессию можно превратить в классификацию: «прогноз минут &gt; обещания» — значит, опоздание.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="06b-probabilities.html"><span class="pl">← Предыдущий</span><span class="pt">7. Что делать с вероятностями: ранжирование и калибровка</span></a><a class="next" href="08-validation.html"><span class="pl">Следующий урок →</span><span class="pt">9. Честное сравнение моделей</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#предсказываем-число">Предсказываем число</a></li><li><a href="#линейная-регрессия">Линейная регрессия</a></li><li><a href="#как-мерить-ошибку-mae-rmse-r²">Как мерить ошибку: MAE, RMSE, R²</a></li><li><a href="#дерево-и-лес-для-чисел">Дерево и лес для чисел</a></li><li><a href="#разбор-ошибок">Разбор ошибок</a></li><li><a href="#опоздание-из-прогноза-минут">Опоздание из прогноза минут</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch06/07-regression", "title": "Регрессия: сколько минут", "chapter": "Первые модели машинного обучения", "tasks": [{"id": "mae-hand", "title": "MAE и RMSE для пяти доставок", "level": "warmup", "starter": "from sklearn.metrics import mean_absolute_error, mean_squared_error\nfact = [30, 42, 25, 55, 38]\npred = [33, 40, 25, 45, 36]", "setup": "", "check": "fact = [30, 42, 25, 55, 38]\npred = [33, 40, 25, 45, 36]\ne = [f - p for f, p in zip(fact, pred)]\nm = round(sum(abs(x) for x in e) / 5, 2)\nr = round((sum(x * x for x in e) / 5) ** 0.5, 2)\nassert close(need('mae'), m), f'mae = {need(\"mae\")}, а нужно {m}. Это среднее модулей ошибок.'\nassert close(need('rmse'), r), f'rmse = {need(\"rmse\")}, а нужно {r}. RMSE — корень из mean_squared_error: ** 0.5.'\nassert not has_literal(m) and not has_literal(r), 'Похоже, ответ вписан руками — посчитайте его функциями.'", "hints": ["<p><code>mean_absolute_error(fact, pred)<\/code>; RMSE — <code>mean_squared_error(fact, pred) ** 0.5<\/code>.<\/p>\n", "<p>Посчитайте ошибки руками, чтобы понять разницу метрик: модули ошибок — 3, 2, 0, 10, 2. MAE — их среднее. RMSE сначала возводит ошибки в квадрат, и одна ошибка в 10 минут весит в нём больше, чем все остальные вместе, поэтому RMSE выйдет заметно больше MAE.<\/p>\n"], "solution": "from sklearn.metrics import mean_absolute_error, mean_squared_error\nfact = [30, 42, 25, 55, 38]\npred = [33, 40, 25, 45, 36]\nmae = round(mean_absolute_error(fact, pred), 2)\nrmse = round(mean_squared_error(fact, pred) ** 0.5, 2)", "explain": "<p>MAE — 3.4 минуты, RMSE — около 5. Почти всю разницу дала одна ошибка в 10 минут (55 против 45).<\/p>\n", "parsons": ""}, {"id": "p-line", "title": "Минут на километр", "level": "warmup", "starter": "", "setup": "", "check": "import pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nm = _LR().fit(ok[['distance_km']], ok['actual_min'])\nwant = f'{round(m.coef_[0], 2)} {round(m.intercept_, 2)}'\nassert _lines == [want], f'Программа вывела {_lines}, а должна — одну строку «вес свободный_член».'", "hints": ["<p>Модель создаётся, потом обучается, потом из неё берут <code>coef_<\/code> и <code>intercept_<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.linear_model import LinearRegression\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlin = LinearRegression()\nlin.fit(ok[[\"distance_km\"]], ok[\"actual_min\"])\nprint(round(lin.coef_[0], 2), round(lin.intercept_, 2))", "explain": "", "parsons": "import pandas as pd\nfrom sklearn.linear_model import LinearRegression\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlin = LinearRegression()\nlin.fit(ok[[\"distance_km\"]], ok[\"actual_min\"])\nprint(round(lin.coef_[0], 2), round(lin.intercept_, 2))"}, {"id": "base-median", "title": "Базовая модель на тесте", "level": "warmup", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\na, b = _tts(ok['actual_min'], test_size=0.25, random_state=42)\nassert close(need('base'), a.median()), f'base = {need(\"base\")}, а медиана y_train — {a.median()}. Медиана всей выборки или теста здесь не подходит.'\nw = round((b - a.median()).abs().mean(), 2)\nassert close(need('mae_base'), w), f'mae_base = {need(\"mae_base\")}, а нужно {w}. Ошибка считается на y_test.'", "hints": ["<p><code>base = y_train.median()<\/code>; прогноз — список <code>[base] * len(y_test)<\/code>.<\/p>\n", "<p>Медиана — единственное число, «обученное» по данным, поэтому берём её по <code>y_train<\/code>: тест модель видеть не должна. Сравните результат с MAE модели из теории — базовую модель нужно обыгрывать, иначе модель не нужна.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nbase = y_train.median()\nmae_base = round(mean_absolute_error(y_test, [base] * len(y_test)), 2)", "explain": "", "parsons": ""}, {"id": "linear", "title": "Линейная регрессия на всех признаках", "level": "base", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error, r2_score\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import mean_absolute_error as _mae, r2_score as _r2\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\ny = ok['actual_min']\nX = _pd.get_dummies(ok[['distance_km', 'items', 'promised_min', 'hour', 'courier', 'weather', 'shop_id']], dtype=int)\na, b, c, e = _tts(X, y, test_size=0.25, random_state=42)\nm = _LR().fit(a, c)\nw = _pd.Series(m.coef_, index=X.columns)\nassert isinstance(need('lin'), _LR), 'lin — обученная LinearRegression.'\nassert close(need('mae_lin'), round(_mae(e, m.predict(b)), 2)), f'mae_lin = {need(\"mae_lin\")}, а нужно {round(_mae(e, m.predict(b)), 2)}. Метрика — на тесте.'\nassert close(need('r2_lin'), round(_r2(e, m.predict(b)), 3)), f'r2_lin = {need(\"r2_lin\")}, а нужно {round(_r2(e, m.predict(b)), 3)}. Порядок аргументов: r2_score(факт, прогноз).'\nassert close(need('per_km'), round(w['distance_km'], 2), 0.006), f'per_km = {need(\"per_km\")}, а нужно {round(w[\"distance_km\"], 2)}.'\ng = round(w['courier_пеший'] - w['courier_авто'], 1)\nassert close(need('walk_vs_auto'), g, 0.051), f'walk_vs_auto = {need(\"walk_vs_auto\")}, а нужно {g}. Это вес courier_пеший минус вес courier_авто.'", "hints": ["<p>Веса удобно взять из Series: <code>w = pd.Series(lin.coef_, index=X.columns)<\/code>, затем <code>w[&quot;distance_km&quot;]<\/code>.<\/p>\n", "<p>Разница весов: <code>w[&quot;courier_пеший&quot;] - w[&quot;courier_авто&quot;]<\/code>. Аргументы метрик — сначала факт, потом прогноз.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error, r2_score\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nlin = LinearRegression().fit(X_train, y_train)\npred = lin.predict(X_test)\nmae_lin = round(mean_absolute_error(y_test, pred), 2)\nr2_lin = round(r2_score(y_test, pred), 3)\nw = pd.Series(lin.coef_, index=X.columns)\nper_km = round(w[\"distance_km\"], 2)\nwalk_vs_auto = round(w[\"courier_пеший\"] - w[\"courier_авто\"], 1)", "explain": "<p>MAE 5.52, R² 0.573. Модель считает, что километр добавляет около 3.9 минуты, а пеший курьер при прочих равных медленнее машины примерно на 18.5 минуты. Веса читаются как формула для диспетчера — в этом сила линейной регрессии, даже если по точности её обгонят.<\/p>\n", "parsons": ""}, {"id": "forest-metrics", "title": "Три метрики для леса", "level": "base", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import RandomForestRegressor as _RF\nfrom sklearn.metrics import mean_absolute_error as _mae, mean_squared_error as _mse, r2_score as _r2\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\ny = ok['actual_min']\nX = _pd.get_dummies(ok[['distance_km', 'items', 'promised_min', 'hour', 'courier', 'weather', 'shop_id']], dtype=int)\na, b, c, e = _tts(X, y, test_size=0.25, random_state=42)\np = _RF(n_estimators=50, random_state=0).fit(a, c).predict(b)\nassert close(need('mae_rf'), round(_mae(e, p), 2)), f'mae_rf = {need(\"mae_rf\")}, а нужно {round(_mae(e, p), 2)}. Лес — n_estimators=50, random_state=0; метрика — на тесте.'\nassert close(need('rmse_rf'), round(_mse(e, p) ** 0.5, 2)), f'rmse_rf = {need(\"rmse_rf\")}, а нужно {round(_mse(e, p) ** 0.5, 2)}. Не забудьте корень: ** 0.5.'\nassert close(need('r2_rf'), round(_r2(e, p), 3)), f'r2_rf = {need(\"r2_rf\")}, а нужно {round(_r2(e, p), 3)}.'\ng = round(_mae(e, [c.median()] * len(e)) - _mae(e, p), 2)\nassert close(need('gain'), g), f'gain = {need(\"gain\")}, а нужно {g}. Медиана — по y_train, обе MAE — на тесте.'", "hints": ["<p><code>forest = RandomForestRegressor(n_estimators=50, random_state=0).fit(X_train, y_train)<\/code>, <code>pred = forest.predict(X_test)<\/code>.<\/p>\n", "<p>MAE медианы: <code>mean_absolute_error(y_test, [y_train.median()] * len(y_test))<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nforest = RandomForestRegressor(n_estimators=50, random_state=0).fit(X_train, y_train)\npred = forest.predict(X_test)\nmae_rf = round(mean_absolute_error(y_test, pred), 2)\nrmse_rf = round(mean_squared_error(y_test, pred) ** 0.5, 2)\nr2_rf = round(r2_score(y_test, pred), 3)\ngain = round(mean_absolute_error(y_test, [y_train.median()] * len(y_test)) - mean_absolute_error(y_test, pred), 2)", "explain": "<p>Лес: MAE 4.55, RMSE 5.76, R² 0.726. Медиана обучающей части ошибается в среднем на 8.15 минуты, лес — на 3.6 минуты меньше. RMSE заметно больше MAE: у леса есть редкие крупные промахи, их разберём в задаче про остатки.<\/p>\n", "parsons": ""}, {"id": "depth", "title": "Глубина дерева для минут", "level": "base", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.tree import DecisionTreeRegressor as _T\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\ny = ok['actual_min']\nX = _pd.get_dummies(ok[['distance_km', 'items', 'promised_min', 'hour', 'courier', 'weather', 'shop_id']], dtype=int)\na, b, c, e = _tts(X, y, test_size=0.25, random_state=42)\nwant = {k: round(_mae(e, _T(max_depth=k, random_state=0).fit(a, c).predict(b)), 2) for k in (2, 5, None)}\ngot = need('mae_by_depth', dict)\nassert set(got) == {2, 5, None}, f'Ключи словаря: {list(got)}. Нужны 2, 5 и None.'\nfor k in want:\n    assert close(got[k], want[k]), f'Для глубины {k} MAE = {got[k]}, а нужно {want[k]}.'\nassert need('best_depth') == min(want, key=want.get), f'best_depth = {need(\"best_depth\")!r}. Это ключ с наименьшей MAE.'", "hints": ["<p>Цикл <code>for depth in [2, 5, None]:<\/code> и внутри — модель с <code>max_depth=depth<\/code>.<\/p>\n", "<p>Ключ с наименьшим значением: <code>min(mae_by_depth, key=mae_by_depth.get)<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nmae_by_depth = {}\nfor depth in [2, 5, None]:\n    tree = DecisionTreeRegressor(max_depth=depth, random_state=0).fit(X_train, y_train)\n    mae_by_depth[depth] = round(mean_absolute_error(y_test, tree.predict(X_test)), 2)\nbest_depth = min(mae_by_depth, key=mae_by_depth.get)", "explain": "<p>Как и в классификации, дерево без ограничения глубины запоминает обучающие доставки (на train его ошибка почти нулевая) и хуже работает на новых. Слишком мелкое дерево не успевает уловить закономерности. Подбирать глубину по тесту, как мы сейчас сделали, на самом деле нечестно — правильный способ с валидационной выборкой будет в следующем уроке.<\/p>\n", "parsons": ""}, {"id": "fact-pred", "title": "График «факт против прогноза»", "level": "base", "starter": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)", "setup": "", "check": "import numpy as _np\nimport pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.linear_model import LinearRegression as _LR\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\ny = ok['actual_min']\nX = _pd.get_dummies(ok[['distance_km', 'items', 'promised_min', 'hour', 'courier', 'weather', 'shop_id']], dtype=int)\na, b, c, e = _tts(X, y, test_size=0.25, random_state=42)\np = _LR().fit(a, c).predict(b)\nax = ax_of()\nassert ax.collections, 'Точек на графике нет — нужен ax.scatter(...).'\npts = _np.asarray(ax.collections[0].get_offsets())\nassert len(pts) == len(e), f'На графике {len(pts)} точек, а тестовых доставок {len(e)}.'\nassert _np.allclose(_np.sort(pts[:, 0]), _np.sort(p), atol=1e-6), 'По оси X должен быть прогноз, а по оси Y — факт. Проверьте порядок аргументов scatter.'\nassert _np.allclose(_np.sort(pts[:, 1]), _np.sort(e.to_numpy(dtype=float))), 'По оси Y должен быть факт y_test.'\nassert any(list(l.get_xdata()) == [10, 100] and list(l.get_ydata()) == [10, 100] for l in ax.lines), 'Не вижу диагонали: ax.plot([10, 100], [10, 100], ...).'\nassert ax.get_xlabel() == 'прогноз, мин' and ax.get_ylabel() == 'факт, мин', f'Подписи осей: {ax.get_xlabel()!r} и {ax.get_ylabel()!r}, а нужны \"прогноз, мин\" и \"факт, мин\".'\nassert 'линейная' in ax.get_title().lower(), f'Заголовок {ax.get_title()!r} — в нём должно быть слово «линейная».'", "hints": ["<p><code>fig, ax = plt.subplots(figsize=(5, 5))<\/code>, затем <code>ax.scatter(pred, y_test, s=8)<\/code>.<\/p>\n", "<p>Диагональ: <code>ax.plot([10, 100], [10, 100], color=&quot;grey&quot;, linestyle=&quot;--&quot;)<\/code>.<\/p>\n"], "solution": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred, y_test, s=8, alpha=0.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")", "explain": "<p>Сравните с графиком леса из теории: облако линейной модели шире. Особенно заметно на долгих доставках (от 50 минут): там прогнозы линейной модели в среднем примерно на 10 минут ниже факта. Отчасти дело в том, что одна цена километра для всех не подходит пешим курьерам.<\/p>\n", "parsons": ""}, {"id": "residuals", "title": "Где ошибается лес", "level": "plus", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestRegressor\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nforest = RandomForestRegressor(n_estimators=50, random_state=0).fit(X_train, y_train)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import RandomForestRegressor as _RF\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\ny = ok['actual_min']\nX = _pd.get_dummies(ok[['distance_km', 'items', 'promised_min', 'hour', 'courier', 'weather', 'shop_id']], dtype=int)\na, b, c, e = _tts(X, y, test_size=0.25, random_state=42)\nr = _pd.DataFrame({'fact': e, 'pred': _RF(n_estimators=50, random_state=0).fit(a, c).predict(b)})\nr['err'] = r['fact'] - r['pred']\nr = r.join(ok['courier'])\nt = need('res', _pd.DataFrame)\nassert {'fact', 'pred', 'err', 'courier'} <= set(t.columns), f'Столбцы res: {list(t.columns)}. Нужны fact, pred, err и courier.'\nassert len(t) == len(r), f'В res {len(t)} строк, а тестовых доставок {len(r)}.'\nassert close(need('big_share'), round((r['err'].abs() > 10).mean(), 3)), f'big_share = {need(\"big_share\")}, а нужно {round((r[\"err\"].abs() > 10).mean(), 3)}. Ошибка в любую сторону — по модулю: .abs().'\ng = r.groupby('courier')['err'].mean().round(2)\ns = need('err_by_courier', _pd.Series)\nassert set(s.index) == set(g.index), f'Индекс err_by_courier: {list(s.index)}. Нужны типы курьеров.'\nassert all(close(s[k], g[k], 0.006) for k in g.index), f'err_by_courier = {dict(s)}, а нужно {dict(g)}. Это среднее err по группам courier.'\nwc = r.loc[r['err'].abs().idxmax(), 'courier']\nassert need('worst_courier') == wc, f'worst_courier = {need(\"worst_courier\")!r}. Найдите строку с наибольшим |err|.'", "hints": ["<p><code>res = pd.DataFrame({&quot;fact&quot;: y_test, &quot;pred&quot;: forest.predict(X_test)})<\/code>, <code>res[&quot;err&quot;] = res[&quot;fact&quot;] - res[&quot;pred&quot;]<\/code>, затем <code>res = res.join(ok[&quot;courier&quot;])<\/code>.<\/p>\n", "<p>Строка с наибольшей по модулю ошибкой: <code>res.loc[res[&quot;err&quot;].abs().idxmax(), &quot;courier&quot;]<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestRegressor\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nforest = RandomForestRegressor(n_estimators=50, random_state=0).fit(X_train, y_train)\n\nres = pd.DataFrame({\"fact\": y_test, \"pred\": forest.predict(X_test)})\nres[\"err\"] = res[\"fact\"] - res[\"pred\"]\nres = res.join(ok[\"courier\"])\nbig_share = round((res[\"err\"].abs() > 10).mean(), 3)\nerr_by_courier = res.groupby(\"courier\")[\"err\"].mean().round(2)\nworst_courier = res.loc[res[\"err\"].abs().idxmax(), \"courier\"]", "explain": "<p>Только 7 % доставок лес промахнулся больше чем на 10 минут. Средние остатки по курьерам слегка отрицательны (−0.6…−0.85): на тесте лес немного завышает время всем — систематического перекоса для пеших нет. Самая большая ошибка — у машины: прогноз 73 минуты, приехала за 48. Это дальний заказ, а для очень дальних доставок в данных мало примеров, и лес «усредняет» их неточно.<\/p>\n", "parsons": ""}, {"id": "late-minutes", "title": "Опоздание из линейной модели", "level": "plus", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.linear_model import LinearRegression as _LR\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\ny = ok['actual_min']\nX = _pd.get_dummies(ok[['distance_km', 'items', 'promised_min', 'hour', 'courier', 'weather', 'shop_id']], dtype=int)\na, b, c, e = _tts(X, y, test_size=0.25, random_state=42)\np = _LR().fit(a, c).predict(b)\nlp = p > b['promised_min']\nlf = e > b['promised_min']\nw1 = round((lp == lf).mean(), 3)\nw2 = round((e - b['promised_min'])[lp].mean(), 1)\nassert close(need('acc_lin'), w1), f'acc_lin = {need(\"acc_lin\")}, а нужно {w1}. Сравните «прогноз > обещания» с «факт > обещания».'\nassert close(need('late_minutes'), w2), f'late_minutes = {need(\"late_minutes\")}, а нужно {w2}. Среднее (факт − обещание) только по доставкам, где прогноз > обещания.'", "hints": ["<p>Обещание для тестовых доставок — <code>X_test[&quot;promised_min&quot;]<\/code>. Маска прогноза: <code>late_pred = pred &gt; X_test[&quot;promised_min&quot;]<\/code>.<\/p>\n", "<p><code>(y_test - X_test[&quot;promised_min&quot;])[late_pred].mean()<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nlate_pred = pred > X_test[\"promised_min\"]\nlate_fact = y_test > X_test[\"promised_min\"]\nacc_lin = round((late_pred == late_fact).mean(), 3)\nlate_minutes = round((y_test - X_test[\"promised_min\"])[late_pred].mean(), 1)", "explain": "<p>Даже простая линейная модель, обученная на минутах, отвечает на вопрос об опоздании не хуже классификаторов. И добавляет то, чего у них нет: по помеченным доставкам видно, на сколько минут ждать опоздания, — это можно честно сообщить гостю.<\/p>\n", "parsons": ""}, {"id": "interaction", "title": "Помочь линейной модели", "level": "star", "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)", "setup": "", "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\ny = ok['actual_min']\nX = _pd.get_dummies(ok[['distance_km', 'items', 'promised_min', 'hour', 'courier', 'weather', 'shop_id']], dtype=int)\na, b, c, e = _tts(X, y, test_size=0.25, random_state=42)\nm0 = round(_mae(e, _LR().fit(a, c).predict(b)), 2)\nX2 = X.copy()\nX2['walk_km'] = X2['distance_km'] * X2['courier_пеший']\na2, b2, c2, e2 = _tts(X2, y, test_size=0.25, random_state=42)\nm = _LR().fit(a2, c2)\nm1 = round(_mae(e2, m.predict(b2)), 2)\nk = round(_pd.Series(m.coef_, index=X2.columns)['walk_km'], 2)\nassert close(need('mae_before'), m0), f'mae_before = {need(\"mae_before\")}, а нужно {m0}. Это линейная модель на исходных признаках.'\nassert close(need('mae_after'), m1), f'mae_after = {need(\"mae_after\")}, а нужно {m1}. Признак walk_km = distance_km * courier_пеший; разбиение — то же (0.25, random_state=42).'\nassert close(need('walk_km_coef'), k, 0.006), f'walk_km_coef = {need(\"walk_km_coef\")}, а нужно {k}.'", "hints": ["<p>Флаг пешего курьера уже есть в <code>X<\/code>: столбец <code>courier_пеший<\/code> (0 или 1). Новый признак: <code>X[&quot;walk_km&quot;] = X[&quot;distance_km&quot;] * X[&quot;courier_пеший&quot;]<\/code>.<\/p>\n", "<p>Посчитайте MAE «до» раньше, чем добавите столбец, или сделайте копию <code>X2 = X.copy()<\/code>. Разбивайте оба варианта с <code>test_size=0.25, random_state=42<\/code> — тогда в тест попадут те же доставки.<\/p>\n", "<p>Вес признака по названию: <code>pd.Series(model.coef_, index=X2.columns)[&quot;walk_km&quot;]<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\n\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nmae_before = round(mean_absolute_error(y_test, LinearRegression().fit(X_train, y_train).predict(X_test)), 2)\n\nX2 = X.copy()\nX2[\"walk_km\"] = X2[\"distance_km\"] * X2[\"courier_пеший\"]\nX_train, X_test, y_train, y_test = train_test_split(X2, y, test_size=0.25, random_state=42)\nmodel = LinearRegression().fit(X_train, y_train)\nmae_after = round(mean_absolute_error(y_test, model.predict(X_test)), 2)\nwalk_km_coef = round(pd.Series(model.coef_, index=X2.columns)[\"walk_km\"], 2)", "explain": "<p>Один признак, придуманный аналитиком, снизил ошибку линейной модели примерно с 5.5 до 4.8 минуты — почти до уровня леса. Вес <code>walk_km<\/code> показывает, сколько минут на километр пеший курьер добавляет <strong>сверх<\/strong> общей цены километра. Лес нашёл это взаимодействие сам, а линейной модели его пришлось подсказать. Понимание данных по-прежнему важно: хороший признак иногда стоит больше, чем сложная модель.<\/p>\n", "parsons": ""}], "files": ["deliveries.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/katex/katex.min.js?v=b555cf35b0"></script>
+<script>document.querySelectorAll(".math").forEach(function(e){try{katex.render(e.textContent.trim(),e,{displayMode:e.classList.contains("block"),throwOnError:false})}catch(x){}});</script>
+
+</body>
+</html>

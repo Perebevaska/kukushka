@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Текст как данные: очистка и токены — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch13">Глава 13. Тексты: от TF-IDF до LLM</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 13</div><div class="side-title">Тексты: от TF-IDF до LLM</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02"><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03"><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05"><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11"><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13" open><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" aria-current="page" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 1 · <span class="deep-eb" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубление</span> · ≈ 60 мин · задач: 9</div>
+      <h1>Текст как данные: очистка и токены</h1>
+      <p class="lead">Модели работают с числами, а отзывы гостей — это слова. Первый шаг любой работы с текстом — привести его к единому виду и разбить на слова-токены. Разбираемся с регистром, знаками препинания, частотами и стоп-словами — и с ловушкой: выкинуть «не» значит перевернуть смысл. В конце собираем первый мешок слов. Формы слов — в уроке «Леммы и словарь исключений».</p>
+      <div class="data-files"><span class="df-label">Данные урока</span><a class="data-file" href="../data/reviews_text.csv" download title="Скачать reviews_text.csv"><span class="df-name">reviews_text.csv</span><span class="df-info">2400 строк · 314 КБ</span></a><span class="df-note">В примерах файлы уже подключены — скачивать нужно, только чтобы открыть их у себя.</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 8</span></div>
+    </div>
+    <article class="prose theory"><h2 id="отзывы-гостей">Отзывы гостей</h2>
+<p><a class="data-link" href="../data/reviews_text.csv" download title="Скачать reviews_text.csv"><code>reviews_text.csv</code></a> — 2 400 отзывов из приложения: текст, оценка от 1 до 5 и основная тема (кофе, еда, обслуживание, доставка, цена, атмосфера), которую разметили сотрудники. Отзывы синтетические — собраны из типичных фраз, — но устроены как настоящие: короткие, с опечатками, иногда смешанные («кофе отличный, но…»).</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+r = pd.read_csv(&quot;reviews_text.csv&quot;)
+print(r.shape)
+for t in r[&quot;text&quot;].head(5):
+    print(&quot;—&quot;, t)
+print(r[&quot;rating&quot;].value_counts().sort_index().to_dict())</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>r.shape</code> — 2400 строк и 5 столбцов: <code>review_id</code>, <code>shop_id</code>, <code>text</code>, <code>rating</code>, <code>topic</code>.</li>
+<li><code>for t in r[&quot;text&quot;].head(5)</code> — печатаем первые пять текстов целиком, по одному в строке: таблица pandas обрезала бы длинные строки.</li>
+<li><code>value_counts().sort_index()</code> — сколько отзывов с каждой оценкой, по порядку оценок.</li>
+</ul>
+<p><strong>Что видно:</strong> отзывы короткие, в одну-две фразы; есть «вступления» («Хожу сюда давно.») и «концовки» («Всем советую.»); оценки 5 встречаются чаще всего, но плохих (1–3) тоже много — почти половина.</p>
+<p>Задачи главы: понять по тексту, недоволен ли гость (тональность), и о чём он пишет (тема). Сначала текст нужно превратить во что-то, с чем работают модели.</p>
+<div class="fb" data-sec="отзывы-гостей"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="токены">Токены</h2>
+<p><strong>Токенизация</strong> — разбиение текста на единицы, обычно слова. Самый простой надёжный способ для русского текста — регулярное выражение «последовательность русских букв» после перевода в нижний регистр:</p>
+<div class="cell"><pre class="cell-src"><code>import re
+text = &quot;Хожу сюда давно. Капучино с идеальной пенкой, но бариста грубил! Не советую.&quot;
+tokens = re.findall(r&quot;[а-яё]+&quot;, text.lower())
+print(tokens)</code></pre></div>
+<ul>
+<li><code>text.lower()</code> — «Капучино» и «капучино» становятся одним словом;</li>
+<li><code>[а-яё]+</code> — одна или больше русских букв подряд; всё остальное (точки, запятые, пробелы, цифры) служит разделителем. Буква «ё» в русском алфавите юникода стоит отдельно, поэтому её добавляют явно.</li>
+</ul>
+<p>Весь путь, который проходит отзыв в этой главе, — на одной схеме. Токены, стоп-слова и мешок слов разберём в этом уроке, леммы — в уроке «Леммы и словарь исключений».</p>
+<figure class="fig" data-fig="text-pipeline"><div class="fig-scroll"><svg viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-text-pipeline">
+  <title id="t-text-pipeline">Подготовка текста: регистр и токены, стоп-слова без отрицаний, леммы, мешок слов</title>
+  <defs><marker id="ah-text-pipeline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink sm b" x="14" y="36" text-anchor="start">отзыв</text>
+  <rect class="box-warn" x="150" y="18" width="536" height="30" rx="4"/>
+  <text class="ink sm" x="418" y="38" text-anchor="middle">Капучино с идеальной пенкой, но бариста грубил! Не советую.</text>
+  <text class="ink sm b" x="14" y="80" text-anchor="start">lower() +</text>
+  <text class="ink2 sm" x="14" y="96" text-anchor="start">findall([а-яё]+)</text>
+  <path class="ln-mut" d="M132,48 L132,68" marker-end="url(#ah-text-pipeline)"/>
+  <text class="ink sm b" x="14" y="138" text-anchor="start">стоп-слова</text>
+  <text class="ink2 sm" x="14" y="154" text-anchor="start">кроме «не», «но»</text>
+  <path class="ln-mut" d="M132,106 L132,126" marker-end="url(#ah-text-pipeline)"/>
+  <text class="ink sm b" x="14" y="196" text-anchor="start">леммы</text>
+  <text class="ink2 sm" x="14" y="212" text-anchor="start">review_lemmas.csv</text>
+  <path class="ln-mut" d="M132,164 L132,184" marker-end="url(#ah-text-pipeline)"/>
+  <text class="ink sm b" x="14" y="254" text-anchor="start">мешок слов</text>
+  <text class="ink2 sm" x="14" y="270" text-anchor="start">Counter</text>
+  <path class="ln-mut" d="M132,222 L132,242" marker-end="url(#ah-text-pipeline)"/>
+  <rect class="box" x="150" y="70" width="75.2" height="26" rx="4"/>
+  <text class="ink sm" x="187.6" y="87.5" text-anchor="middle">капучино</text>
+  <rect class="box" x="231.2" y="70" width="23.4" height="26" rx="4"/>
+  <text class="ink sm" x="242.89999999999998" y="87.5" text-anchor="middle">с</text>
+  <rect class="box" x="260.59999999999997" y="70" width="82.60000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="301.9" y="87.5" text-anchor="middle">идеальной</text>
+  <rect class="box" x="349.2" y="70" width="60.400000000000006" height="26" rx="4"/>
+  <text class="ink sm" x="379.4" y="87.5" text-anchor="middle">пенкой</text>
+  <rect class="box" x="415.6" y="70" width="30.8" height="26" rx="4"/>
+  <text class="ink sm" x="431.0" y="87.5" text-anchor="middle">но</text>
+  <rect class="box" x="452.40000000000003" y="70" width="67.80000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="486.30000000000007" y="87.5" text-anchor="middle">бариста</text>
+  <rect class="box" x="526.2" y="70" width="60.400000000000006" height="26" rx="4"/>
+  <text class="ink sm" x="556.4000000000001" y="87.5" text-anchor="middle">грубил</text>
+  <rect class="box" x="592.6" y="70" width="30.8" height="26" rx="4"/>
+  <text class="ink sm" x="608.0" y="87.5" text-anchor="middle">не</text>
+  <rect class="box" x="629.4" y="70" width="67.80000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="663.3" y="87.5" text-anchor="middle">советую</text>
+  <rect class="box" x="150" y="128" width="75.2" height="26" rx="4"/>
+  <text class="ink sm" x="187.6" y="145.5" text-anchor="middle">капучино</text>
+  <rect class="box-err dash" x="231.2" y="128" width="23.4" height="26" rx="4"/>
+  <text class="err sm" x="242.89999999999998" y="145.5" text-anchor="middle">с</text>
+  <rect class="box" x="260.59999999999997" y="128" width="82.60000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="301.9" y="145.5" text-anchor="middle">идеальной</text>
+  <rect class="box" x="349.2" y="128" width="60.400000000000006" height="26" rx="4"/>
+  <text class="ink sm" x="379.4" y="145.5" text-anchor="middle">пенкой</text>
+  <rect class="box-ok" x="415.6" y="128" width="30.8" height="26" rx="4"/>
+  <text class="ok sm b" x="431.0" y="145.5" text-anchor="middle">но</text>
+  <rect class="box" x="452.40000000000003" y="128" width="67.80000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="486.30000000000007" y="145.5" text-anchor="middle">бариста</text>
+  <rect class="box" x="526.2" y="128" width="60.400000000000006" height="26" rx="4"/>
+  <text class="ink sm" x="556.4000000000001" y="145.5" text-anchor="middle">грубил</text>
+  <rect class="box-ok" x="592.6" y="128" width="30.8" height="26" rx="4"/>
+  <text class="ok sm b" x="608.0" y="145.5" text-anchor="middle">не</text>
+  <rect class="box" x="629.4" y="128" width="67.80000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="663.3" y="145.5" text-anchor="middle">советую</text>
+  <rect class="box-warn" x="150" y="186" width="82.60000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="191.3" y="203.5" text-anchor="middle">капучиный</text>
+  <rect class="box-acc" x="238.60000000000002" y="186" width="82.60000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="279.90000000000003" y="203.5" text-anchor="middle">идеальный</text>
+  <rect class="box-acc" x="327.20000000000005" y="186" width="53.0" height="26" rx="4"/>
+  <text class="ink sm" x="353.70000000000005" y="203.5" text-anchor="middle">пенка</text>
+  <rect class="box-acc" x="386.20000000000005" y="186" width="30.8" height="26" rx="4"/>
+  <text class="ink sm" x="401.6" y="203.5" text-anchor="middle">но</text>
+  <rect class="box-warn" x="423.00000000000006" y="186" width="60.400000000000006" height="26" rx="4"/>
+  <text class="ink sm" x="453.20000000000005" y="203.5" text-anchor="middle">барист</text>
+  <rect class="box-acc" x="489.4000000000001" y="186" width="67.80000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="523.3000000000001" y="203.5" text-anchor="middle">грубить</text>
+  <rect class="box-acc" x="563.2" y="186" width="30.8" height="26" rx="4"/>
+  <text class="ink sm" x="578.6" y="203.5" text-anchor="middle">не</text>
+  <rect class="box-acc" x="600.0" y="186" width="90.0" height="26" rx="4"/>
+  <text class="ink sm" x="645.0" y="203.5" text-anchor="middle">советовать</text>
+  <rect class="box-acc" x="150" y="244" width="82.60000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="191.3" y="261.5" text-anchor="middle">барист: 1</text>
+  <rect class="box-acc" x="238.60000000000002" y="244" width="90.0" height="26" rx="4"/>
+  <text class="ink sm" x="283.6" y="261.5" text-anchor="middle">грубить: 1</text>
+  <rect class="box-acc" x="334.6" y="244" width="104.80000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="387.0" y="261.5" text-anchor="middle">идеальный: 1</text>
+  <rect class="box-acc" x="445.40000000000003" y="244" width="104.80000000000001" height="26" rx="4"/>
+  <text class="ink sm" x="497.80000000000007" y="261.5" text-anchor="middle">капучиный: 1</text>
+  <rect class="box-acc" x="556.2" y="244" width="53.0" height="26" rx="4"/>
+  <text class="ink sm" x="582.7" y="261.5" text-anchor="middle">не: 1</text>
+  <rect class="box-acc" x="150" y="276" width="53.0" height="26" rx="4"/>
+  <text class="ink sm" x="176.5" y="293.5" text-anchor="middle">но: 1</text>
+  <rect class="box-acc" x="209.0" y="276" width="75.2" height="26" rx="4"/>
+  <text class="ink sm" x="246.6" y="293.5" text-anchor="middle">пенка: 1</text>
+  <rect class="box-acc" x="290.2" y="276" width="112.2" height="26" rx="4"/>
+  <text class="ink sm" x="346.3" y="293.5" text-anchor="middle">советовать: 1</text>
+  <rect class="box-err dash" x="150" y="334" width="16" height="14" rx="2"/>
+  <text class="ink2 sm" x="172" y="346" text-anchor="start">выброшено</text>
+  <rect class="box-ok" x="253" y="334" width="16" height="14" rx="2"/>
+  <text class="ink2 sm" x="275" y="346" text-anchor="start">оставили: переворачивают смысл</text>
+  <rect class="box-warn" x="503" y="334" width="16" height="14" rx="2"/>
+  <text class="ink2 sm" x="525" y="346" text-anchor="start">лемма угадана — проверить</text>
+</svg>
+</div><figcaption>
+<p>Путь отзыва от строки до мешка слов: нижний регистр и токены, стоп-слова (отрицания «не» и «но» оставляем), леммы из таблицы <a class="data-link" href="../data/review_lemmas.csv" download title="Скачать review_lemmas.csv"><code>review_lemmas.csv</code></a>, счётчик слов. Жёлтым — леммы, которые лемматизатор угадал и которые стоит проверить.</p>
+</figcaption></figure>
+<p>Посмотрим, что шаблон делает с неудобной строкой:</p>
+<div class="cell"><pre class="cell-src"><code>import re
+for text in [&quot;Не-а, 2 капучино!!! Ёлки, 10/10&quot;, &quot;кофе—супер&quot;, &quot;Кофе,кофе и ещё раз КОФЕ&quot;]:
+    print(f&quot;{text!r:36} → {re.findall(r&#x27;[а-яё]+&#x27;, text.lower())}&quot;)</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li>«Не-а» распалось на два токена: дефис — не буква, значит разделитель.</li>
+<li>Цифры «2» и «10/10» исчезли: в шаблоне только буквы. Для отзывов это нормально, но для заказов («2 капучино») число было бы важным.</li>
+<li>«кофе—супер» разделилось по тире, хотя пробела нет: разделитель — любой не-буквенный символ.</li>
+<li>«КОФЕ», «Кофе» и «кофе» после <code>lower()</code> стали одним словом.</li>
+<li><code>f&quot;{text!r:36}&quot;</code> — оформление вывода: <code>!r</code> печатает строку в кавычках, как <code>repr(text)</code>, а <code>:36</code> задаёт ширину поля, чтобы стрелки встали столбиком.</li>
+</ul>
+<aside class="callout callout-sql"><div class="callout-title">Как в SQL</div>
+<p>Токенизация похожа на <code>STRING_SPLIT</code> или <code>regexp_split_to_table</code> в SQL: строка превращается в набор значений. Разница в том, что разделитель задаётся не одним символом, а правилом «всё, что не буква».</p>
+</aside>
+<p>Регулярные выражения мы использовали в главе 3 для очистки строк. Для английского текста шаблон был бы <code>[a-z]+</code>, для смешанного — <code>\w+</code> (любые буквы и цифры).</p>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-tokenize"><b>1</b> Токенизатор</a><a href="#task-clean"><b>2</b> Нормализация текста</a></div>
+<div class="fb" data-sec="токены"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="частоты-слов">Частоты слов</h2>
+<p>Посчитаем, какие слова встречаются чаще всего. Удобный инструмент — <code>Counter</code> из стандартного модуля <code>collections</code>: он считает, сколько раз встретился каждый элемент списка.</p>
+<div class="cell"><pre class="cell-src"><code>import re
+from collections import Counter
+import pandas as pd
+
+r = pd.read_csv(&quot;reviews_text.csv&quot;)
+words = Counter()
+for text in r[&quot;text&quot;]:
+    words.update(re.findall(r&quot;[а-яё]+&quot;, text.lower()))
+print(&quot;разных слов:&quot;, len(words))
+print(words.most_common(10))</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>Counter()</code> — пустой счётчик: словарь «слово → сколько раз».</li>
+<li><code>words.update(список)</code> добавляет к счётчику каждое слово списка. Если слово уже было, его счёт растёт. Это то же самое, что <code>GROUP BY word</code> с <code>COUNT(*)</code> по всем отзывам сразу.</li>
+<li><code>len(words)</code> — число <strong>разных</strong> слов (размер словаря); <code>most_common(10)</code> — десять самых частых.</li>
+</ul>
+<p>Во всех отзывах — меньше 500 разных слов (в настоящих отзывах было бы много тысяч). Самые частые — «не», «кофе», предлоги и союзы. Такие частые служебные слова называют <strong>стоп-словами</strong>.</p>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">from collections import Counter
+c = Counter([&quot;кофе&quot;, &quot;вкусный&quot;, &quot;кофе&quot;, &quot;горький&quot;, &quot;кофе&quot;])
+print(c.most_common(1))</code></pre>
+<ul>
+<li><code>[('вкусный', 1)]</code></li>
+<li>[x] <code>[('кофе', 3)]</code></li>
+<li><code>{'кофе': 3}</code></li>
+</ul>
+<p>Почему: <code>most_common(n)</code> возвращает список из n пар «слово, частота» по убыванию частоты.</p>
+</div>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-vocab"><b>3</b> Словарь отзывов</a><a href="#task-neg-words"><b>5</b> Слова плохих отзывов</a><a href="#task-bigrams"><b>8</b> Пары слов в плохих отзывах</a></div>
+<div class="fb" data-sec="частоты-слов"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="стоп-слова-осторожно">Стоп-слова — осторожно</h2>
+<p>Стоп-слова часто удаляют: они есть почти в каждом тексте и сами по себе мало что говорят о его смысле. Но список стоп-слов нужно проверять под задачу. В стандартные списки для русского языка обычно входит «не» — а для тональности это одно из самых важных слов:</p>
+<div class="cell"><pre class="cell-src"><code>import re
+stop = {&quot;и&quot;, &quot;в&quot;, &quot;с&quot;, &quot;у&quot;, &quot;но&quot;, &quot;не&quot;, &quot;на&quot;, &quot;для&quot;, &quot;а&quot;, &quot;я&quot;}
+for text in [&quot;Всем советую.&quot;, &quot;Не советую.&quot;, &quot;Приду ещё.&quot;, &quot;Больше не приду.&quot;]:
+    tokens = [w for w in re.findall(r&quot;[а-яё]+&quot;, text.lower()) if w not in stop]
+    print(f&quot;{text:&lt;18} → {tokens}&quot;)</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>stop</code> — множество (<code>set</code>): проверка <code>w not in stop</code> для множества мгновенная, даже если слов тысячи.</li>
+<li>Списковое выражение с условием оставляет только слова, которых нет в стоп-списке.</li>
+<li><code>f&quot;{text:&lt;18}&quot;</code> — выравнивание текста по левому краю в поле шириной 18 символов, чтобы стрелки стояли столбиком.</li>
+</ul>
+<p>После удаления «не» отзыв «Не советую» превратился в «советую». Правило: из списка стоп-слов для анализа тональности убирают отрицания («не», «нет», «ни») и слова-переключатели вроде «но».</p>
+<aside class="callout callout-warn"><div class="callout-title">Частая ошибка</div>
+<p>Готовые списки стоп-слов (например, в nltk) составлены для поиска по документам, а не для тональности. Используйте их как отправную точку и обязательно проверяйте на своих данных — как мы только что сделали.</p>
+</aside>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>Почему опасно выбрасывать «не» как стоп-слово в отзывах?</p>
+<ul>
+<li>[x] «не понравилось» превратится в «понравилось» — модель потеряет отрицание и спутает тональность
+<blockquote>
+<p>Списки стоп-слов составлены для поиска и тем, а для тональности частица «не» — один из главных сигналов.</p>
+</blockquote>
+</li>
+<li>[ ] «не» — редкое слово
+<blockquote>
+<p>Наоборот, оно одно из самых частых.</p>
+</blockquote>
+</li>
+<li>[ ] Стоп-слова нельзя удалять в принципе
+<blockquote>
+<p>Иногда это полезно, но смотреть нужно на задачу.</p>
+</blockquote>
+</li>
+<li>[ ] Модель не обучится без всех слов
+<blockquote>
+<p>Обучится, но без «не» — хуже на отрицательных отзывах.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-p-stop"><b>4</b> Удаление стоп-слов</a><a href="#task-rule"><b>9</b> Правило «не»</a></div>
+<div class="fb" data-sec="стоп-слова-осторожно"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="мешок-слов">Мешок слов</h2>
+<p>Самое простое числовое представление текста — <strong>мешок слов</strong> (bag of words): сколько раз встретилось каждое слово. Порядок слов при этом теряется: «кофе вкусный, но дорого» и «дорого, но кофе вкусный» — одинаковые мешки. Для классификации отзывов этого обычно достаточно. Ниже мы соберём таблицу мешков руками, а в уроке «Мешок слов и TF-IDF» её построит за нас <code>CountVectorizer</code>, и мы поправим веса слов (TF-IDF).</p>
+<p>Соберём мешки для трёх коротких отзывов руками. Сначала <strong>словарь</strong> — все разные слова, по алфавиту: вкусный, горький, кофе, но, холодный. Потом для каждого отзыва — сколько раз встречается каждое слово словаря:</p>
+<table>
+<thead>
+<tr>
+<th>отзыв</th>
+<th>вкусный</th>
+<th>горький</th>
+<th>кофе</th>
+<th>но</th>
+<th>холодный</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>«Кофе вкусный, но холодный»</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>«Кофе горький, кофе холодный»</td>
+<td>0</td>
+<td>1</td>
+<td>2</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>«Холодный, но вкусный кофе»</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>Первая и третья строки совпали, хотя порядок слов разный.</p>
+<figure class="fig" data-fig="bag-order"><div class="fig-scroll"><svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-bag-order">
+  <title id="t-bag-order">Мешок слов: два отзыва с разным порядком слов дают одну и ту же строку чисел</title>
+  <defs><marker id="ah-bag-order" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box-warn" x="14" y="30" width="230" height="34" rx="4"/>
+  <text class="ink sm" x="129" y="52" text-anchor="middle">«Кофе вкусный, но холодный»</text>
+  <path class="ln" d="M248,47 L290,47" marker-end="url(#ah-bag-order)"/>
+  <text class="mut sm" x="269" y="38" text-anchor="middle">Counter</text>
+  <rect class="box" x="296" y="34" width="45.6" height="26" rx="13"/>
+  <text class="ink sm" x="318.8" y="51" text-anchor="middle">кофе</text>
+  <rect class="box" x="345.6" y="34" width="67.80000000000001" height="26" rx="13"/>
+  <text class="ink sm" x="379.5" y="51" text-anchor="middle">вкусный</text>
+  <rect class="box" x="417.40000000000003" y="34" width="30.8" height="26" rx="13"/>
+  <text class="ink sm" x="432.8" y="51" text-anchor="middle">но</text>
+  <rect class="box" x="452.20000000000005" y="34" width="75.2" height="26" rx="13"/>
+  <text class="ink sm" x="489.80000000000007" y="51" text-anchor="middle">холодный</text>
+  <rect class="box-warn" x="14" y="100" width="230" height="34" rx="4"/>
+  <text class="ink sm" x="129" y="122" text-anchor="middle">«Холодный, но вкусный кофе»</text>
+  <path class="ln" d="M248,117 L290,117" marker-end="url(#ah-bag-order)"/>
+  <text class="mut sm" x="269" y="108" text-anchor="middle">Counter</text>
+  <rect class="box" x="296" y="104" width="75.2" height="26" rx="13"/>
+  <text class="ink sm" x="333.6" y="121" text-anchor="middle">холодный</text>
+  <rect class="box" x="375.2" y="104" width="30.8" height="26" rx="13"/>
+  <text class="ink sm" x="390.59999999999997" y="121" text-anchor="middle">но</text>
+  <rect class="box" x="410.0" y="104" width="67.80000000000001" height="26" rx="13"/>
+  <text class="ink sm" x="443.9" y="121" text-anchor="middle">вкусный</text>
+  <rect class="box" x="481.8" y="104" width="45.6" height="26" rx="13"/>
+  <text class="ink sm" x="504.6" y="121" text-anchor="middle">кофе</text>
+  <text class="ink2 sm b" x="290" y="189" text-anchor="end">словарь</text>
+  <rect class="box" x="300" y="170" width="76" height="26" rx="3"/>
+  <text class="ink2 sm b" x="338.0" y="188" text-anchor="middle">вкусный</text>
+  <rect class="box-acc" x="300" y="200" width="76" height="26" rx="3"/>
+  <text class="ink b" x="338.0" y="218" text-anchor="middle">1</text>
+  <rect class="box" x="380" y="170" width="76" height="26" rx="3"/>
+  <text class="ink2 sm b" x="418.0" y="188" text-anchor="middle">кофе</text>
+  <rect class="box-acc" x="380" y="200" width="76" height="26" rx="3"/>
+  <text class="ink b" x="418.0" y="218" text-anchor="middle">1</text>
+  <rect class="box" x="460" y="170" width="76" height="26" rx="3"/>
+  <text class="ink2 sm b" x="498.0" y="188" text-anchor="middle">но</text>
+  <rect class="box-acc" x="460" y="200" width="76" height="26" rx="3"/>
+  <text class="ink b" x="498.0" y="218" text-anchor="middle">1</text>
+  <rect class="box" x="540" y="170" width="76" height="26" rx="3"/>
+  <text class="ink2 sm b" x="578.0" y="188" text-anchor="middle">холодный</text>
+  <rect class="box-acc" x="540" y="200" width="76" height="26" rx="3"/>
+  <text class="ink b" x="578.0" y="218" text-anchor="middle">1</text>
+  <text class="ink2 sm b" x="290" y="218" text-anchor="end">оба отзыва</text>
+  <path class="ln" d="M470,136 L470,166" marker-end="url(#ah-bag-order)"/>
+  <text class="mut sm" x="129" y="186" text-anchor="middle">порядок слов в мешке</text>
+  <text class="mut sm" x="129" y="202" text-anchor="middle">не хранится</text>
+</svg>
+</div><figcaption>
+<p>Отзывы 1 и 3 из таблицы: слова «высыпаются в мешок», порядок теряется, и в строке таблицы остаются только счётчики по словарю — у двух разных фраз они одинаковые.</p>
+</figcaption></figure>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Мешок слов — как чек из кофейни, где позиции отсортированы по алфавиту: видно, что взяли два капучино и круассан, но не видно, в каком порядке их заказывали и что сказали бариста между ними. Для «о чём отзыв» этого обычно хватает, для «не вкусно, но быстро» против «вкусно, но не быстро» — нет.</p>
+</aside>
+<p>Теперь то же кодом:</p>
+<div class="cell"><pre class="cell-src"><code>import re
+import pandas as pd
+from collections import Counter
+
+docs = [&quot;Кофе вкусный, но холодный&quot;, &quot;Кофе горький, кофе холодный&quot;, &quot;Холодный, но вкусный кофе&quot;]
+bags = [Counter(re.findall(r&quot;[а-яё]+&quot;, d.lower())) for d in docs]
+table = pd.DataFrame(bags).fillna(0).astype(int)
+print(table[sorted(table.columns)])</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>Counter(токены)</code> — мешок одного отзыва: словарь «слово → сколько раз».</li>
+<li><code>pd.DataFrame(список_словарей)</code> — каждый словарь стал строкой, ключи — столбцами. Слова, которых в отзыве нет, получились <code>NaN</code>.</li>
+<li><code>.fillna(0).astype(int)</code> — «нет слова» значит 0 раз.</li>
+<li><code>table[sorted(table.columns)]</code> — столбцы по алфавиту, как в таблице выше.</li>
+</ul>
+<p>Каждый отзыв теперь — строка чисел одинаковой длины. С такой таблицей уже может работать любая модель sklearn.</p>
+<div class="quiz-c" data-q="c2"><div class="predict-title">Проверьте себя</div>
+<p>Что именно теряется, когда отзыв превращают в мешок слов?</p>
+<ul>
+<li>[x] Порядок слов: «кофе вкусный, но дорого» и «дорого, но кофе вкусный» дают одинаковые строки таблицы
+<blockquote>
+<p>Мешок помнит только, какие слова и сколько раз встретились, но не где они стояли.</p>
+</blockquote>
+</li>
+<li>[ ] Сколько раз встретилось слово — остаётся только «есть или нет»
+<blockquote>
+<p>Счёт сохраняется: у «Кофе горький, кофе холодный» в столбце «кофе» стоит 2.</p>
+</blockquote>
+</li>
+<li>[ ] Редкие слова — в мешок попадают только самые частые
+<blockquote>
+<p>В мешке есть все слова словаря, просто у каждого отзыва большинство клеток — нули. Редкие слова выбрасывают отдельным решением.</p>
+</blockquote>
+</li>
+<li>[ ] Связь чисел со словами — после превращения в числа уже не понять, какое слово стояло в столбце
+<blockquote>
+<p>Каждый столбец соответствует слову словаря, по таблице всегда видно, о каком слове речь.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-bag"><b>6</b> Мешок слов руками</a></div>
+<div class="fb" data-sec="мешок-слов"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="разберём-вместе-слова-которые-встретились-один-р">Разберём вместе: слова, которые встретились один раз</h2>
+<p>Мы насчитали меньше 500 разных слов. Какие из них редкие и что это за слова? Это важный вопрос: каждое слово мешка — отдельный признак, и признак, который встретился один раз, модели почти бесполезен.</p>
+<p><strong>План:</strong> посчитать частоты всех слов → отобрать слова с частотой 1 → посмотреть на примеры.</p>
+<div class="cell"><pre class="cell-src"><code>import re
+from collections import Counter
+import pandas as pd
+
+r = pd.read_csv(&quot;reviews_text.csv&quot;)
+words = Counter()
+for text in r[&quot;text&quot;]:
+    words.update(re.findall(r&quot;[а-яё]+&quot;, text.lower()))
+
+once = sorted(w for w, n in words.items() if n == 1)
+print(&quot;разных слов:&quot;, len(words), &quot;| встретились один раз:&quot;, len(once))
+print(once[:20])</code></pre></div>
+<p><strong>Что получилось:</strong> почти половина словаря — слова, встретившиеся ровно один раз. И почти все они — опечатки («досавка», «зпомнил», «длго») или слова, склеившиеся из-за пропущенного пробела («быстродаже»). В настоящих отзывах редких слов ещё больше. Отсюда два практических вывода, которые пригодятся в уроке «Мешок слов и TF-IDF»: редкие слова часто выбрасывают из словаря (параметр <code>min_df</code>), а против опечаток помогают признаки из кусочков слов — буквенные n-граммы.</p>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-hapax"><b>7</b> Редкие слова</a></div>
+<div class="fb" data-sec="разберём-вместе-слова-которые-встретились-один-р"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-tokenize" data-task="tokenize" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Токенизатор</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#токены">↑ К теории: Токены</a>
+  <div class="task-text prose"><p>Напишите функцию <code>tokenize(text)</code>, которая возвращает список слов из русских букв в нижнем регистре. Сохраните <code>t = tokenize(&quot;Кофе — ОТЛИЧНЫЙ, ёжики!!! 10/10&quot;)</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-clean" data-task="clean" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">Нормализация текста</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#токены">↑ К теории: Токены</a>
+  <div class="task-text prose"><p>Напишите <code>normalize(text)</code>: перевести в нижний регистр, заменить «ё» на «е», а все символы, кроме русских букв и пробела, заменить пробелами; затем схлопнуть повторяющиеся пробелы в один и убрать пробелы по краям. Примените к <code>raw</code> — результат в <code>clean</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-vocab" data-task="vocab" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">Словарь отзывов</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#частоты-слов">↑ К теории: Частоты слов</a>
+  <div class="task-text prose"><p>Посчитайте частоты всех слов во всех отзывах (<code>Counter</code>). Сохраните <code>n_words</code> — число разных слов, <code>total</code> — общее число словоупотреблений и <code>top5</code> — список пяти самых частых слов (без частот).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-p-stop" data-task="p-stop" data-level="warmup" data-kind="parsons">
+  <header class="task-head">
+    <span class="task-num">4</span>
+    <h3 class="task-title">Удаление стоп-слов</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#стоп-слова-осторожно">↑ К теории: Стоп-слова — осторожно</a>
+  <div class="task-text prose"><p>Соберите код, который удаляет стоп-слова, но сохраняет отрицание «не» и переключатель «но» — по правилу из раздела выше.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-neg-words" data-task="neg-words" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">5</span>
+    <h3 class="task-title">Слова плохих отзывов</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#частоты-слов">↑ К теории: Частоты слов</a>
+  <div class="task-text prose"><p>Разделите отзывы на негативные (<code>rating &lt;= 2</code>) и позитивные (<code>rating &gt;= 4</code>). Посчитайте частоты слов в каждой группе. Сохраните <code>ne_share_neg</code> и <code>ne_share_pos</code> — долю отзывов с токеном «не» в каждой группе (3 знака) и <code>top_neg</code> — список из 10 слов, собранный так: идите по словам негативных отзывов от самых частых к редким и пропускайте те, что входят в 100 самых частых слов позитивных, пока не наберёте 10.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-bag" data-task="bag" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">6</span>
+    <h3 class="task-title">Мешок слов руками</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#мешок-слов">↑ К теории: Мешок слов</a>
+  <div class="task-text prose"><p>Постройте мешок слов для трёх отзывов: словарь <code>vocab</code> — отсортированный список всех слов трёх отзывов, и матрицу <code>bow</code> (список списков или массив 3 × len(vocab)), где в строке i, столбце j — сколько раз слово <code>vocab[j]</code> встречается в отзыве i. Сохраните также <code>same_bag</code> — <code>True</code>, если у отзывов 0 и 2 одинаковые мешки.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-hapax" data-task="hapax" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">7</span>
+    <h3 class="task-title">Редкие слова</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#разберём-вместе-слова-которые-встретились-один-р">↑ К теории: Разберём вместе: слова, которые встретились один раз</a>
+  <div class="task-text prose"><p>Посчитайте частоты всех слов в отзывах (токенизатор <code>tokenize</code> — в заготовке). Сохраните <code>n_words</code> — размер словаря, <code>once</code> — отсортированный список слов, встретившихся ровно один раз, <code>share_once_vocab</code> — их долю среди <strong>разных</strong> слов словаря и <code>share_once_tokens</code> — их долю среди <strong>всех</strong> употреблений слов (обе доли — 4 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-bigrams" data-task="bigrams" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">8</span>
+    <h3 class="task-title">Пары слов в плохих отзывах</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#частоты-слов">↑ К теории: Частоты слов</a>
+  <div class="task-text prose"><p>Мешок слов теряет порядок, но пары соседних слов (<strong>биграммы</strong>) его частично сохраняют: «не понравился» — одна биграмма. Для каждого отзыва соберите множество его биграмм (<code>zip(tokens, tokens[1:])</code>). Посчитайте для каждой биграммы долю плохих (<code>rating &lt;= 3</code>) и долю хороших отзывов, где она встречается. Сохраните <code>top_bad</code> — список из 5 биграмм (кортежей) с наибольшей разностью «доля в плохих − доля в хороших» (по убыванию), и <code>diff_top</code> — эту разность для первой из них (3 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-rule" data-task="rule" data-level="star" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">9</span>
+    <h3 class="task-title">Правило «не»</h3>
+    <span class="lvl lvl-star">Со звёздочкой</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#стоп-слова-осторожно">↑ К теории: Стоп-слова — осторожно</a>
+  <div class="task-text prose"><p>Простейший классификатор тональности: «отзыв негативный, если в нём есть токен &quot;не&quot; <strong>или</strong> &quot;но&quot;». Посчитайте на всех отзывах (негативный — <code>rating &lt;= 3</code>) долю правильных ответов <code>acc_rule</code> и F1 для класса «негативный» <code>f1_rule</code> (3 знака). Затем то же для правила только по «не» — <code>acc_ne</code>, <code>f1_ne</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>Токенизация — разбиение текста на слова (токены). Простой способ — регулярное выражение <code>re.findall(r'[а-яё]+', text.lower())</code>.</li><li>Приведение к нижнему регистру и удаление знаков препинания делают «Кофе», «кофе» и «кофе!» одним словом.</li><li><code>Counter</code> из модуля collections считает частоты слов; самые частые слова — служебные.</li><li>Стоп-слова (предлоги, союзы) часто удаляют, но частицу «не» и подобные трогать нельзя: «не советую» ≠ «советую».</li><li>Мешок слов: текст → счётчик слов; порядок слов теряется, но для многих задач этого хватает.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="index.html"><span class="pl">← О главе</span><span class="pt">Тексты: от TF-IDF до LLM</span></a><a class="next" href="01b-lemmas.html"><span class="pl">Следующий урок →</span><span class="pt">2. Леммы и словарь исключений</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#отзывы-гостей">Отзывы гостей</a></li><li><a href="#токены">Токены</a></li><li><a href="#частоты-слов">Частоты слов</a></li><li><a href="#стоп-слова-осторожно">Стоп-слова — осторожно</a></li><li><a href="#мешок-слов">Мешок слов</a></li><li><a href="#разберём-вместе-слова-которые-встретились-один-р">Разберём вместе: слова, которые встретились один раз</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch13/01-text-prep", "title": "Текст как данные: очистка и токены", "chapter": "Тексты: от TF-IDF до LLM", "tasks": [{"id": "tokenize", "title": "Токенизатор", "level": "warmup", "starter": "import re", "setup": "", "check": "f = need('tokenize')\nassert f('Привет, Мир!') == ['привет', 'мир'], f'tokenize(\"Привет, Мир!\") = {f(\"Привет, Мир!\")}.'\nassert list(need('t')) == ['кофе', 'отличный', 'ёжики'], f't = {need(\"t\")}. Не забудьте букву ё и нижний регистр.'", "hints": ["<p>Сначала нижний регистр, потом поиск всех последовательностей русских букв.<\/p>\n", "<p><code>re.findall(r&quot;[а-яё]+&quot;, text.lower())<\/code>.<\/p>\n"], "solution": "import re\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\nt = tokenize(\"Кофе — ОТЛИЧНЫЙ, ёжики!!! 10/10\")", "explain": "", "parsons": ""}, {"id": "clean", "title": "Нормализация текста", "level": "warmup", "starter": "import re\n\ndef normalize(text):\n    ...\n\nclean = normalize(raw)\nprint(repr(clean))", "setup": "raw = \"  Ёлки!!! Кофе —  ОТЛИЧНЫЙ,   ещё приду :) \"", "check": "f = need('normalize')\nassert need('clean') == 'елки кофе отличный еще приду', f'clean = {need(\"clean\")!r}.'\nassert f('Всё ОК, 10 из 10!') == 'все ок из', f'normalize(\"Всё ОК, 10 из 10!\") = {f(\"Всё ОК, 10 из 10!\")!r}.'\nassert f('') == '', 'Пустая строка должна остаться пустой.'", "hints": ["<p>Порядок шагов важен: сначала <code>lower()<\/code>, потом <code>replace(&quot;ё&quot;, &quot;е&quot;)<\/code>, потом замена не-букв.<\/p>\n", "<p>Всё, что не русская буква и не пробел: <code>re.sub(r&quot;[^а-я ]&quot;, &quot; &quot;, text)<\/code> (после замены «ё» она в шаблоне уже не нужна). Схлопнуть пробелы: <code>re.sub(r&quot; +&quot;, &quot; &quot;, text)<\/code>.<\/p>\n", "<p>В конце — <code>.strip()<\/code>, чтобы убрать пробелы в начале и конце.<\/p>\n"], "solution": "import re\n\ndef normalize(text):\n    text = text.lower().replace(\"ё\", \"е\")\n    text = re.sub(r\"[^а-я ]\", \" \", text)\n    return re.sub(r\" +\", \" \", text).strip()\n\nclean = normalize(raw)\nprint(repr(clean))", "explain": "", "parsons": ""}, {"id": "vocab", "title": "Словарь отзывов", "level": "warmup", "starter": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")", "setup": "", "check": "import re as _re, pandas as _pd\nfrom collections import Counter as _C\nc = _C()\nfor t in _pd.read_csv('reviews_text.csv')['text']:\n    c.update(_re.findall(r'[а-яё]+', t.lower()))\nassert need('n_words') == len(c), f'n_words = {need(\"n_words\")}, а нужно {len(c)}.'\nassert need('total') == sum(c.values()), f'total = {need(\"total\")}.'\nassert list(need('top5')) == [w for w, _ in c.most_common(5)], f'top5 = {need(\"top5\")}.'", "hints": ["<p>Счётчик заводится один раз до цикла: <code>words = Counter()<\/code>, а в цикле по отзывам пополняется.<\/p>\n", "<p><code>words.update(список_токенов)<\/code> для каждого отзыва; всего — <code>sum(words.values())<\/code>.<\/p>\n"], "solution": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\n\nwords = Counter()\nfor text in r[\"text\"]:\n    words.update(re.findall(r\"[а-яё]+\", text.lower()))\nn_words = len(words)\ntotal = sum(words.values())\ntop5 = [w for w, _ in words.most_common(5)]", "explain": "", "parsons": ""}, {"id": "p-stop", "title": "Удаление стоп-слов", "level": "warmup", "starter": "", "setup": "", "check": "assert _lines == [\"['кофе', 'не', 'горячий', 'но', 'горечью']\"], f'Сейчас: {_lines}.'", "hints": ["<p><code>stop - keep<\/code> — разность множеств: стоп-слова без «не» и «но».<\/p>\n", "<p>Фильтр токенов — списковое выражение с условием <code>if w not in stop_clean<\/code>.<\/p>\n"], "solution": "import re\nstop = {\"и\", \"в\", \"с\", \"но\", \"не\", \"на\"}\nkeep = {\"не\", \"но\"}\ntext = \"Кофе не горячий, но с горечью\"\ntokens = [w for w in re.findall(r\"[а-яё]+\", text.lower()) if w not in stop - keep]\nprint(tokens)", "explain": "", "parsons": "import re\nstop = {\"и\", \"в\", \"с\", \"но\", \"не\", \"на\"}\nkeep = {\"не\", \"но\"}\ntext = \"Кофе не горячий, но с горечью\"\ntokens = [w for w in re.findall(r\"[а-яё]+\", text.lower()) if w not in stop - keep]\nprint(tokens)"}, {"id": "neg-words", "title": "Слова плохих отзывов", "level": "base", "starter": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())", "setup": "", "check": "import re as _re, pandas as _pd\nfrom collections import Counter as _C\nr0 = _pd.read_csv('reviews_text.csv'); tk = lambda t: _re.findall(r'[а-яё]+', t.lower())\nng, ps = r0[r0['rating'] <= 2], r0[r0['rating'] >= 4]\nsh = lambda d: round(float(d['text'].map(lambda t: 'не' in tk(t)).mean()), 3)\nassert close(need('ne_share_neg'), sh(ng)) and close(need('ne_share_pos'), sh(ps)), f'ne_share_neg, ne_share_pos = {need(\"ne_share_neg\")}, {need(\"ne_share_pos\")}.'\ncn, cp = _C(), _C()\nfor t in ng['text']: cn.update(tk(t))\nfor t in ps['text']: cp.update(tk(t))\ntop_p = {w for w, _ in cp.most_common(100)}\nwant = [w for w, _ in cn.most_common() if w not in top_p][:10]\nassert list(need('top_neg')) == want, f'top_neg = {need(\"top_neg\")}, а нужно {want}.'", "hints": ["<p>Доля отзывов с «не»: <code>group[&quot;text&quot;].map(lambda t: &quot;не&quot; in tokenize(t)).mean()<\/code>.<\/p>\n", "<p>Пройдите по <code>counter_neg.most_common()<\/code> и берите слова, которых нет в множестве топ-100 позитивных, пока не наберётся 10.<\/p>\n"], "solution": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\nneg = r[r[\"rating\"] <= 2]\npos = r[r[\"rating\"] >= 4]\nne_share_neg = round(float(neg[\"text\"].map(lambda t: \"не\" in tokenize(t)).mean()), 3)\nne_share_pos = round(float(pos[\"text\"].map(lambda t: \"не\" in tokenize(t)).mean()), 3)\nc_neg, c_pos = Counter(), Counter()\nfor t in neg[\"text\"]:\n    c_neg.update(tokenize(t))\nfor t in pos[\"text\"]:\n    c_pos.update(tokenize(t))\ntop_pos = {w for w, _ in c_pos.most_common(100)}\ntop_neg = [w for w, _ in c_neg.most_common() if w not in top_pos][:10]", "explain": "<p>«Не» есть в двух из пяти плохих отзывов и лишь в 5 % хороших — на одном этом слове уже можно построить правило. В <code>top_neg<\/code> первыми идут «но» и «больше» — это не темы, а маркеры тональности: «вкусно, но…», «больше не приду». Дальше — слова, которые подсказывают темы жалоб: «вкуса нет», «холодный», «водянистый».<\/p>\n", "parsons": ""}, {"id": "bag", "title": "Мешок слов руками", "level": "plus", "starter": "import re\ndocs = [\"Кофе вкусный, но дорого.\",\n        \"Кофе горький, кофе холодный.\",\n        \"Дорого, но кофе вкусный!\"]\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())", "setup": "", "check": "import numpy as _np\nv = ['вкусный', 'горький', 'дорого', 'кофе', 'но', 'холодный']\nassert list(need('vocab')) == v, f'vocab = {need(\"vocab\")}.'\nb = _np.asarray(need('bow'))\nassert b.tolist() == [[1, 0, 1, 1, 1, 0], [0, 1, 0, 2, 0, 1], [1, 0, 1, 1, 1, 0]], f'bow = {b.tolist()}.'\nassert need('same_bag') == True, 'same_bag должно быть True — порядок слов в мешке теряется.'", "hints": ["<p>Словарь — все разные слова всех отзывов по алфавиту; строка мешка — сколько раз каждое слово словаря встречается в отзыве.<\/p>\n", "<p><code>vocab = sorted({w for d in docs for w in tokenize(d)})<\/code>; строка мешка — <code>[tokens.count(w) for w in vocab]<\/code>.<\/p>\n", "<p><code>same_bag = bow[0] == bow[2]<\/code> — списки сравниваются поэлементно.<\/p>\n"], "solution": "import re\ndocs = [\"Кофе вкусный, но дорого.\",\n        \"Кофе горький, кофе холодный.\",\n        \"Дорого, но кофе вкусный!\"]\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\nvocab = sorted({w for d in docs for w in tokenize(d)})\nbow = []\nfor d in docs:\n    tokens = tokenize(d)\n    bow.append([tokens.count(w) for w in vocab])\nsame_bag = bow[0] == bow[2]", "explain": "<p>Отзывы 0 и 2 состоят из одних и тех же слов в разном порядке — и мешки у них одинаковые. Для тональности это обычно не страшно: «вкусно, но дорого» и «дорого, но вкусно» оба смешанные. А вот «не вкусно, а дёшево» и «вкусно, а не дёшево» мешок не различит — это и есть цена простоты. Частично помогают пары соседних слов (биграммы) — о них задача «Пары слов в плохих отзывах» ниже и урок «Мешок слов и TF-IDF».<\/p>\n", "parsons": ""}, {"id": "hapax", "title": "Редкие слова", "level": "base", "starter": "from collections import Counter\n\nwords = Counter()", "setup": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())", "check": "from collections import Counter as _C\nr0, tk = need('r'), need('tokenize')\nw = _C()\nfor t in r0['text']:\n    w.update(tk(t))\no = sorted(k for k, v in w.items() if v == 1)\nassert need('n_words') == len(w), f'n_words = {need(\"n_words\")}.'\nassert need('once', list) == o, f'В once должно быть {len(o)} слов, а сейчас {len(need(\"once\"))}.'\nassert close(need('share_once_vocab'), round(len(o) / len(w), 4), 0.00011), f'share_once_vocab = {need(\"share_once_vocab\")}: доля слов-однодневок среди разных слов.'\nassert close(need('share_once_tokens'), round(len(o) / sum(w.values()), 4), 0.00011), f'share_once_tokens = {need(\"share_once_tokens\")}: доля однодневок среди всех употреблений.'", "hints": ["<p>Счётчик пополняется в цикле по отзывам: <code>words.update(tokenize(text))<\/code>.<\/p>\n", "<p>Слова с частотой 1: <code>[w for w, n in words.items() if n == 1]<\/code> — и <code>sorted(...)<\/code>. Все употребления — <code>sum(words.values())<\/code>.<\/p>\n", "<p><code>share_once_vocab = round(len(once) / len(words), 4)<\/code>; <code>share_once_tokens = round(len(once) / sum(words.values()), 4)<\/code>.<\/p>\n"], "solution": "from collections import Counter\n\nwords = Counter()\nfor text in r[\"text\"]:\n    words.update(tokenize(text))\nn_words = len(words)\nonce = sorted(w for w, n in words.items() if n == 1)\nshare_once_vocab = round(len(once) / n_words, 4)\nshare_once_tokens = round(len(once) / sum(words.values()), 4)\nprint(n_words, len(once), share_once_vocab, share_once_tokens)", "explain": "<p>Почти половина словаря — слова-однодневки (227 из 491, 0.4623), но в тексте они занимают лишь около процента всех слов (0.0118). Это типичная картина для любых текстов (закон Ципфа): немного слов встречаются постоянно, а длинный хвост — очень редко. Для модели хвост — в основном шум и опечатки; его обрезают, оставляя слова, которые встречаются хотя бы в нескольких отзывах. В уроке «Мешок слов и TF-IDF» это делает один параметр <code>min_df<\/code>.<\/p>\n", "parsons": ""}, {"id": "bigrams", "title": "Пары слов в плохих отзывах", "level": "plus", "starter": "from collections import Counter\n\nbad = r[\"rating\"] <= 3", "setup": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())", "check": "from collections import Counter as _C\nr0, tk = need('r'), need('tokenize')\nb0 = r0['rating'] <= 3\ncb, cg = _C(), _C()\nfor t, isb in zip(r0['text'], b0):\n    tok = tk(t); bg = set(zip(tok, tok[1:]))\n    (cb if isb else cg).update(bg)\nnb, ng = int(b0.sum()), int((~b0).sum())\nd = {k: cb[k] / nb - cg[k] / ng for k in set(cb) | set(cg)}\nw = sorted(d, key=lambda k: (-d[k], k))[:5]\ngot = [tuple(x) for x in need('top_bad', list)]\nassert len(got) == 5, 'top_bad — 5 биграмм.'\nassert set(got) == set(w) or got[:3] == w[:3], f'top_bad = {got}, а нужно {w}.'\nassert close(need('diff_top'), round(d[w[0]], 3), 0.0011), f'diff_top = {need(\"diff_top\")}.'", "hints": ["<p>Множество биграмм отзыва: <code>set(zip(tokens, tokens[1:]))<\/code> — <code>set<\/code>, чтобы биграмма, встретившаяся в отзыве дважды, считалась один раз.<\/p>\n", "<p>Два счётчика: для плохих и для хороших отзывов. Доля в плохих — <code>count_bad[bg] / число_плохих<\/code>; для биграмм, которых нет в одном из счётчиков, <code>Counter<\/code> вернёт 0.<\/p>\n", "<div class=\"cell\"><pre class=\"cell-src\"><code>diff = {bg: cb[bg] / nb - cg[bg] / ng for bg in set(cb) | set(cg)}\ntop_bad = sorted(diff, key=lambda k: (-diff[k], k))[:5]<\/code><\/pre><\/div>\n"], "solution": "from collections import Counter\n\nbad = r[\"rating\"] <= 3\ncb, cg = Counter(), Counter()\nfor text, is_bad in zip(r[\"text\"], bad):\n    tokens = tokenize(text)\n    bgs = set(zip(tokens, tokens[1:]))\n    (cb if is_bad else cg).update(bgs)\nnb, ng = int(bad.sum()), int((~bad).sum())\ndiff = {bg: cb[bg] / nb - cg[bg] / ng for bg in set(cb) | set(cg)}\ntop_bad = sorted(diff, key=lambda k: (-diff[k], k))[:5]\ndiff_top = round(diff[top_bad[0]], 3)\nprint(top_bad, diff_top)", "explain": "<p>Наверху — «не приду», «больше не», «не советую», «вкуса нет»: почти все сильные биграммы содержат отрицание. Каждая из них встречается в плохих отзывах примерно на 5–9 процентных пунктов чаще, чем в хороших. Слово «не» само по себе тоже сильный сигнал (задача «Слова плохих отзывов»), но биграмма уточняет, <em>что именно<\/em> отрицается: «не советую» — однозначно плохо, а «не пожалела» было бы хорошо. Биграммы — первый шаг от мешка слов к учёту порядка; в уроке «Мешок слов и TF-IDF» их включает один параметр <code>ngram_range=(1, 2)<\/code>.<\/p>\n", "parsons": ""}, {"id": "rule", "title": "Правило «не»", "level": "star", "starter": "import re\nimport pandas as pd\nfrom sklearn.metrics import accuracy_score, f1_score\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())", "setup": "", "check": "import re as _re, pandas as _pd\nfrom sklearn.metrics import accuracy_score as _acc, f1_score as _f1\nr0 = _pd.read_csv('reviews_text.csv'); y0 = (r0['rating'] <= 3).astype(int)\ntk = r0['text'].map(lambda t: set(_re.findall(r'[а-яё]+', t.lower())))\np1 = tk.map(lambda s: int('не' in s or 'но' in s)); p2 = tk.map(lambda s: int('не' in s))\nfor k, v in [('acc_rule', _acc(y0, p1)), ('f1_rule', _f1(y0, p1)), ('acc_ne', _acc(y0, p2)), ('f1_ne', _f1(y0, p2))]:\n    assert close(need(k), round(v, 3), 0.002), f'{k} = {need(k)}, а нужно {round(v, 3)}.'", "hints": ["<p>Правило: «плохой отзыв», если среди токенов есть «не» или «но». Сравните прогноз с <code>(r[&quot;rating&quot;] &lt;= 3).astype(int)<\/code>.<\/p>\n", "<p>Прогноз — Series из 0/1: <code>r[&quot;text&quot;].map(lambda t: int(&quot;не&quot; in tokenize(t) or &quot;но&quot; in tokenize(t)))<\/code>.<\/p>\n"], "solution": "import re\nimport pandas as pd\nfrom sklearn.metrics import accuracy_score, f1_score\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\ntokens = r[\"text\"].map(lambda t: set(tokenize(t)))\nrule = tokens.map(lambda s: int(\"не\" in s or \"но\" in s))\nonly_ne = tokens.map(lambda s: int(\"не\" in s))\nacc_rule, f1_rule = round(accuracy_score(y, rule), 3), round(f1_score(y, rule), 3)\nacc_ne, f1_ne = round(accuracy_score(y, only_ne), 3), round(f1_score(y, only_ne), 3)", "explain": "<p>Правило из двух слов уже даёт около 80 % правильных ответов. Добавление «но» ловит смешанные отзывы («вкусно, но дорого»). Это ориентир, который модель в следующих уроках должна уверенно побить.<\/p>\n", "parsons": ""}], "files": ["reviews_text.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+
+
+</body>
+</html>

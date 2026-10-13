@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Спуск для многих признаков — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/katex/katex.min.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch10">Глава 10. Градиентный спуск и бустинг</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 10</div><div class="side-title">Градиентный спуск и бустинг</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02"><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03"><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05"><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10" open><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" aria-current="page" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11"><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 3 · <span class="deep-eb" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубление</span> · ≈ 80 мин · задач: 9</div>
+      <h1>Спуск для многих признаков</h1>
+      <p class="lead">Переносим градиентный спуск на настоящую таблицу: градиент для всех весов сразу одной матричной формулой, масштабирование, без которого спуск буксует или взрывается, и стохастический спуск по маленьким порциям данных — так учатся модели на миллионах строк. Как сделать сам шаг умнее — в следующем уроке.</p>
+      <div class="data-files"><span class="df-label">Данные урока</span><a class="data-file" href="../data/deliveries.csv" download title="Скачать deliveries.csv"><span class="df-name">deliveries.csv</span><span class="df-info">1877 строк · 131 КБ</span></a><span class="df-note">В примерах файлы уже подключены — скачивать нужно, только чтобы открыть их у себя.</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 8</span></div>
+    </div>
+    <article class="prose theory"><h2 id="градиент-одной-формулой">Градиент одной формулой</h2>
+<p>В уроке «Градиентный спуск: шаг за шагом к минимуму» производные по <span class="math inline">w</span> и <span class="math inline">b</span> мы писали отдельно. Если признаков много, удобнее матрицы (глава 9). Пусть <span class="math inline">X_1</span> — признаки со столбцом единиц, <span class="math inline">w</span> — все веса вместе со свободным членом. Тогда ошибки — вектор <span class="math inline">X_1 w - y</span>, а градиент MSE по всем весам сразу:</p>
+<div class="math block">
+g = \frac{2}{n} \cdot X_1^\top (X_1 w - y)
+</div>
+<p>Каждая координата <span class="math inline">g</span> — производная по своему весу. Разберём формулу на трёх доставках с одним признаком (км) и свободным членом, при весах <span class="math inline">w = (0, 5)</span>:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>1 (столбец единиц)</th>
+<th>км</th>
+<th>факт <span class="math inline">y</span></th>
+<th>прогноз <span class="math inline">X_1 w</span></th>
+<th>ошибка</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>доставка 1</td>
+<td>1</td>
+<td>1</td>
+<td>18</td>
+<td>5</td>
+<td>−13</td>
+</tr>
+<tr>
+<td>доставка 2</td>
+<td>1</td>
+<td>2</td>
+<td>25</td>
+<td>10</td>
+<td>−15</td>
+</tr>
+<tr>
+<td>доставка 3</td>
+<td>1</td>
+<td>4</td>
+<td>40</td>
+<td>20</td>
+<td>−20</td>
+</tr>
+</tbody>
+</table>
+<p><span class="math inline">X_1^\top \cdot</span> ошибки — это две суммы: по столбцу единиц (−13 − 15 − 20 = −48) и по столбцу км (−13·1 − 15·2 − 20·4 = −123). Умножаем на <span class="math inline">\frac{2}{n} = \frac{2}{3}</span>: градиент ≈ (−32, −82). Обе производные отрицательные — оба веса нужно увеличивать. Те же числа дали бы отдельные формулы для <span class="math inline">w</span> и <span class="math inline">b</span> из урока «Градиентный спуск: шаг за шагом к минимуму»; матричная запись просто считает все веса сразу.</p>
+<figure class="fig" data-fig="grad-matrix"><div class="fig-scroll"><svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-grad-matrix">
+  <title id="t-grad-matrix">Градиент одной формулой: X1ᵀ складывает «ошибка × признак» по каждому столбцу</title>
+  <defs><marker id="ah-grad-matrix" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="mut sm" x="193.0" y="32" text-anchor="middle">веса w = (b, w_км) = (0, 5)</text>
+  <rect class="box" x="20" y="40" width="346" height="28" rx="3"/>
+  <text class="ink2 sm b" x="55.0" y="58.5" text-anchor="middle"></text>
+  <text class="ink2 sm b" x="115.0" y="58.5" text-anchor="middle">1</text>
+  <text class="ink2 sm b" x="165.0" y="58.5" text-anchor="middle">км</text>
+  <text class="ink2 sm b" x="215.0" y="58.5" text-anchor="middle">y</text>
+  <text class="ink2 sm b" x="270.0" y="58.5" text-anchor="middle">X1·w</text>
+  <text class="ink2 sm b" x="333.0" y="58.5" text-anchor="middle">ошибка</text>
+  <rect class="box" x="20" y="70" width="346" height="28" rx="3"/>
+  <text class="ink sm" x="55.0" y="88.5" text-anchor="middle">дост. 1</text>
+  <text class="acc sm b" x="115.0" y="88.5" text-anchor="middle">1</text>
+  <text class="warn sm b" x="165.0" y="88.5" text-anchor="middle">1</text>
+  <text class="ink sm" x="215.0" y="88.5" text-anchor="middle">18</text>
+  <text class="ink sm" x="270.0" y="88.5" text-anchor="middle">5</text>
+  <text class="err sm b" x="333.0" y="88.5" text-anchor="middle">−13</text>
+  <rect class="box" x="20" y="100" width="346" height="28" rx="3"/>
+  <text class="ink sm" x="55.0" y="118.5" text-anchor="middle">дост. 2</text>
+  <text class="acc sm b" x="115.0" y="118.5" text-anchor="middle">1</text>
+  <text class="warn sm b" x="165.0" y="118.5" text-anchor="middle">2</text>
+  <text class="ink sm" x="215.0" y="118.5" text-anchor="middle">25</text>
+  <text class="ink sm" x="270.0" y="118.5" text-anchor="middle">10</text>
+  <text class="err sm b" x="333.0" y="118.5" text-anchor="middle">−15</text>
+  <rect class="box" x="20" y="130" width="346" height="28" rx="3"/>
+  <text class="ink sm" x="55.0" y="148.5" text-anchor="middle">дост. 3</text>
+  <text class="acc sm b" x="115.0" y="148.5" text-anchor="middle">1</text>
+  <text class="warn sm b" x="165.0" y="148.5" text-anchor="middle">4</text>
+  <text class="ink sm" x="215.0" y="148.5" text-anchor="middle">40</text>
+  <text class="ink sm" x="270.0" y="148.5" text-anchor="middle">20</text>
+  <text class="err sm b" x="333.0" y="148.5" text-anchor="middle">−20</text>
+  <text class="mut sm" x="20" y="176" text-anchor="start">ошибка = X1·w − y</text>
+  <text class="ink sm b" x="400" y="46" text-anchor="start">X1ᵀ · ошибки — по сумме на столбец:</text>
+  <text class="acc sm" x="400" y="74" text-anchor="start">столбец 1:  (−13) + (−15) + (−20) = −48</text>
+  <text class="warn sm" x="400" y="96" text-anchor="start">столбец км: 1·(−13) + 2·(−15) + 4·(−20)</text>
+  <text class="warn sm" x="482" y="114" text-anchor="start">= −123</text>
+  <text class="ink sm b" x="400" y="146" text-anchor="start">× 2 / n = × 2/3:</text>
+  <rect class="box-ok" x="400" y="156" width="230" height="40" rx="6"/>
+  <text class="ink b" x="515.0" y="180.5" text-anchor="middle">g = (−32, −82)</text>
+  <text class="ok sm b" x="400" y="218" text-anchor="start">обе производные &lt; 0 → оба веса растут</text>
+  <text class="ink2 sm" x="350" y="262" text-anchor="middle">g = 2/n · X1ᵀ(X1·w − y): одна строка numpy считает производную по каждому весу сразу,</text>
+  <text class="mut sm" x="350" y="282" text-anchor="middle">сколько бы ни было признаков — каждая координата g «своя» для своего столбца</text>
+</svg>
+</div><figcaption>
+<p>Разбор формулы на трёх доставках: каждая координата градиента — сумма «ошибка × признак» по своему столбцу, умноженная на 2/n.</p>
+</figcaption></figure>
+<p>Проверим на доставках, что спуск приходит к решению <code>LinearRegression</code>:</p>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;walk&quot;] = (ok[&quot;courier&quot;] == &quot;пеший&quot;).astype(int)
+X = ok[[&quot;distance_km&quot;, &quot;items&quot;, &quot;walk&quot;]].values
+y = ok[&quot;actual_min&quot;].values
+
+X1 = np.column_stack([np.ones(len(X)), X])
+w = np.zeros(X1.shape[1])
+for _ in range(500):
+    g = 2 / len(y) * X1.T @ (X1 @ w - y)
+    w = w - 0.05 * g
+
+lr = LinearRegression().fit(X, y)
+print(&quot;спуск:  &quot;, w.round(2))
+print(&quot;точно:  &quot;, np.r_[lr.intercept_, lr.coef_].round(2))</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>ok = d[d[&quot;actual_min&quot;].between(1, 299)]</code> — убираем выбросы времени доставки (глава 6).</li>
+<li><code>np.column_stack([np.ones(len(X)), X])</code> — добавляем столбец единиц: вес при нём — свободный член.</li>
+<li><code>X1.T @ (X1 @ w - y)</code> — для каждого признака сумма «ошибка × значение признака»; <code>2 / len(y)</code> превращает сумму в производную среднего квадрата.</li>
+<li><code>np.r_[lr.intercept_, lr.coef_]</code> — склеиваем свободный член и веса <code>LinearRegression</code> в один вектор для сравнения.</li>
+</ul>
+<p>Спуск пришёл к тем же весам: 16 минут базово, 3.9 на километр, 1.6 на позицию, 13.6 надбавка пешему.</p>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-grad-vec"><b>1</b> Градиент матрицей</a><a href="#task-one-step"><b>2</b> Один шаг руками</a><a href="#task-gd-fit"><b>4</b> Спуск на доставках</a></div>
+<div class="fb" data-sec="градиент-одной-формулой"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="когда-признаки-разного-масштаба">Когда признаки разного масштаба</h2>
+<p>Добавим сумму заказа <code>amount</code> — она в рублях, сотни и тысячи. Теперь яма потерь вытянута: по весу суммы она очень крутая (маленькое изменение веса × тысячи рублей = большая ошибка), по остальным — пологая. Шаг, подходящий для пологих направлений, на крутом сразу «выстреливает»:</p>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+import pandas as pd
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;walk&quot;] = (ok[&quot;courier&quot;] == &quot;пеший&quot;).astype(int)
+X = ok[[&quot;distance_km&quot;, &quot;items&quot;, &quot;walk&quot;, &quot;amount&quot;]].values.astype(float)
+y = ok[&quot;actual_min&quot;].values
+
+def gd(X, y, lr, steps):
+    X1 = np.column_stack([np.ones(len(X)), X])
+    w = np.zeros(X1.shape[1])
+    for _ in range(steps):
+        w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)
+    return np.mean((X1 @ w - y) ** 2)
+
+for lr in [1e-6, 2e-6, 1e-5]:
+    print(&quot;без масштаба, шаг&quot;, lr, &quot;→ MSE&quot;, round(float(gd(X, y, lr, 500)), 1))
+
+Xs = (X - X.mean(axis=0)) / X.std(axis=0)
+print(&quot;с масштабом, шаг 0.1, 100 шагов → MSE&quot;, round(float(gd(Xs, y, 0.1, 100)), 1))</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>gd(X, y, lr, steps)</code> — тот же спуск, обёрнутый в функцию; возвращает итоговую MSE.</li>
+<li><code>(X - X.mean(axis=0)) / X.std(axis=0)</code> — стандартизация каждого столбца: среднее 0, разброс 1 (глава 7).</li>
+<li>Сравниваем три шага без масштаба и один — с масштабом.</li>
+</ul>
+<p>Без масштаба выбор плохой в обе стороны: шаг 1e-5 уже взрывается (<code>nan</code> — «не число», результат переполнения), а безопасные шаги за 500 итераций почти никуда не сдвинулись (MSE около 360 против возможных 60). После масштабирования яма становится «круглой»: хватает 100 шагов с шагом 0.1, чтобы дойти до минимума.</p>
+<figure class="fig" data-fig="scale-pit"><div class="fig-scroll"><svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-scale-pit">
+  <title id="t-scale-pit">Вытянутая яма без масштаба и круглая после него (условная схема с двумя весами)</title>
+  <defs><marker id="ah-scale-pit" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink sm b" x="180" y="24" text-anchor="middle">без масштаба: яма — узкий жёлоб</text>
+  <ellipse class="ln-mut" cx="180" cy="135" rx="38.6" ry="7.9"/>
+  <ellipse class="ln-mut" cx="180" cy="135" rx="78.8" ry="16.1"/>
+  <ellipse class="ln-mut" cx="180" cy="135" rx="116.9" ry="23.9"/>
+  <ellipse class="ln-mut" cx="180" cy="135" rx="157.7" ry="32.2"/>
+  <path class="ln-err" d="M48.0,117.4 L57.9,149.1 L67.1,123.7 L75.5,144.0 L83.4,127.8 L90.6,140.8 L97.3,130.4 L103.5,138.7 L109.3,132.0 L114.6,137.4 L119.5,133.1 L124.0,136.5 L128.2,133.8 L132.1,136.0 L135.7,134.2"/>
+  <circle class="box-acc" cx="48.0" cy="117.4" r="3"/>
+  <circle class="box-acc" cx="57.900000000000006" cy="149.08" r="3"/>
+  <circle class="box-acc" cx="67.0575" cy="123.736" r="3"/>
+  <circle class="box-acc" cx="75.5281875" cy="144.0112" r="3"/>
+  <circle class="box-acc" cx="83.36357343750001" cy="127.79104" r="3"/>
+  <circle class="box-acc" cx="90.6113054296875" cy="140.767168" r="3"/>
+  <circle class="box-acc" cx="97.31545752246093" cy="130.3862656" r="3"/>
+  <circle class="box-acc" cx="103.51679820827637" cy="138.69098752" r="3"/>
+  <circle class="box-acc" cx="109.25303834265563" cy="132.047209984" r="3"/>
+  <circle class="box-acc" cx="114.55906046695647" cy="137.3622320128" r="3"/>
+  <circle class="box-acc" cx="119.46713093193473" cy="133.11021438976" r="3"/>
+  <circle class="box-acc" cx="124.00709611203962" cy="136.511828488192" r="3"/>
+  <circle class="box-acc" cx="128.20656390363666" cy="133.7905372094464" r="3"/>
+  <circle class="box-acc" cx="132.0910716108639" cy="135.96757023244288" r="3"/>
+  <circle class="box-acc" cx="135.68424124004912" cy="134.2259438140457" r="3"/>
+  <circle class="box-ok" cx="180" cy="135" r="4"/>
+  <text class="ink sm b" x="530" y="24" text-anchor="middle">с масштабом: яма почти круглая</text>
+  <ellipse class="ln-mut" cx="530" cy="135" rx="24.3" ry="20.6"/>
+  <ellipse class="ln-mut" cx="530" cy="135" rx="49.7" ry="42.0"/>
+  <ellipse class="ln-mut" cx="530" cy="135" rx="73.7" ry="62.3"/>
+  <ellipse class="ln-mut" cx="530" cy="135" rx="99.4" ry="84.0"/>
+  <path class="ln-acc" d="M439.0,101.2 L493.6,129.6 L515.4,134.1 L524.2,134.9 L527.7,135.0 L529.1,135.0 L529.6,135.0"/>
+  <circle class="box-acc" cx="439.0" cy="101.19999999999999" r="3"/>
+  <circle class="box-acc" cx="493.6" cy="129.59199999999998" r="3"/>
+  <circle class="box-acc" cx="515.44" cy="134.13472" r="3"/>
+  <circle class="box-acc" cx="524.176" cy="134.8615552" r="3"/>
+  <circle class="box-acc" cx="527.6704" cy="134.977848832" r="3"/>
+  <circle class="box-acc" cx="529.06816" cy="134.99645581312" r="3"/>
+  <circle class="box-acc" cx="529.627264" cy="134.9994329300992" r="3"/>
+  <circle class="box-ok" cx="530" cy="135" r="4"/>
+  <path class="ln-mut" d="M350,34 L350,250"/>
+  <text class="ink2 sm" x="180" y="248" text-anchor="middle">шаг ограничен крутым направлением: поперёк</text>
+  <text class="ink2 sm" x="180" y="264" text-anchor="middle">жёлоба — качание, вдоль — ползём к дну</text>
+  <text class="ink2 sm" x="530" y="248" text-anchor="middle">один шаг подходит обоим весам:</text>
+  <text class="ink2 sm" x="530" y="264" text-anchor="middle">путь почти прямой</text>
+  <text class="err sm b" x="180" y="290" text-anchor="middle">доставки: предельный шаг ≈ 2e-06,</text>
+  <text class="err sm b" x="180" y="308" text-anchor="middle">вытянутость ≈ 5.2 млн</text>
+  <text class="ok sm b" x="530" y="290" text-anchor="middle">предельный шаг ≈ 0.51,</text>
+  <text class="ok sm b" x="530" y="308" text-anchor="middle">вытянутость ≈ 41</text>
+</svg>
+</div><figcaption>
+<p>Условная схема с двумя весами вместо пяти: линии — уровни одинаковой ошибки, точки — шаги спуска. Внизу — настоящие числа для доставок из разбора «Почему шаг ограничен сверху» ниже: предельный шаг и во сколько раз самое крутое направление круче самого пологого.</p>
+</figcaption></figure>
+<aside class="callout callout-warn"><div class="callout-title">Частая ошибка</div>
+<p>Если веса стали <code>nan</code> или ошибка растёт — первым делом проверьте масштаб признаков и уменьшите шаг. Для моделей, которые учатся спуском (логистическая регрессия, SGD, нейросети), масштабирование — не косметика, а условие обучения. Вспомните предупреждение <code>ConvergenceWarning</code> из главы 6: это тот же эффект.</p>
+</aside>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>Один признак — расстояние в км (1–10), другой — сумма заказа в рублях (200–3000). Почему спуск без масштабирования не сходится при разумном шаге?</p>
+<ul>
+<li>[x] Градиент по «рублёвому» весу в сотни раз больше: шаг, безопасный для одного веса, разносит другой
+<blockquote>
+<p>Шаг один на все веса. Стандартизация выравнивает масштабы, и один шаг подходит всем.</p>
+</blockquote>
+</li>
+<li>[ ] Рубли нельзя использовать в регрессии
+<blockquote>
+<p>Можно, но перед спуском признаки приводят к одному масштабу.</p>
+</blockquote>
+</li>
+<li>[ ] Признаки коррелируют
+<blockquote>
+<p>Корреляция тут ни при чём — проблема в разнице масштабов.</p>
+</blockquote>
+</li>
+<li>[ ] Нужно больше эпох
+<blockquote>
+<p>Если спуск разошёлся, лишние эпохи не помогут.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="fb" data-sec="когда-признаки-разного-масштаба"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="разберём-вместе-почему-шаг-ограничен-сверху">Разберём вместе: почему шаг ограничен сверху</h2>
+<p>Почему без масштаба шаг 1e-5 взрывается, а 2e-6 — нет? Для MSE у линейной модели есть точный ответ. Сначала разберём его на игрушке с двумя весами.</p>
+<p>Пусть яма потерь устроена так, что вдоль первого веса её стенки крутые, а вдоль второго — пологие: крутизна 10 и 1. Отклонение весов от дна обозначим <span class="math inline">v = (v_1, v_2)</span>. Градиент такой ямы — <span class="math inline">(10 \cdot v_1,\ 1 \cdot v_2)</span>, и шаг спуска <span class="math inline">v \leftarrow v - \eta \cdot \text{градиент}</span> умножает каждое отклонение на своё число: <span class="math inline">v_1</span> на <span class="math inline">(1 - 10\eta)</span>, <span class="math inline">v_2</span> на <span class="math inline">(1 - \eta)</span>. Спуск сходится, если оба множителя по модулю меньше 1. Для крутого направления это значит <span class="math inline">\eta &lt; 2 / 10 = 0.2</span>. При <span class="math inline">\eta = 0.15</span> множитель <span class="math inline">1 - 1.5 = -0.5</span>: первый вес качается через дно, но отклонение каждый раз уменьшается вдвое. При <span class="math inline">\eta = 0.25</span> множитель <span class="math inline">-1.5</span>, и качание раскачивается. Пологое направление при этом сходится медленно: множитель 0.85 при <span class="math inline">\eta = 0.15</span>.</p>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+H = np.array([[10.0, 0.0], [0.0, 1.0]])   # крутизна ямы: 10 вдоль первого веса, 1 вдоль второго
+print(np.linalg.eigvalsh(H))               # собственные числа: [ 1. 10.]
+for lr in [0.15, 0.25]:
+    v = np.array([1.0, 1.0])               # отклонение весов от дна
+    for _ in range(5):
+        v = v - lr * H @ v                  # градиент этой ямы — H @ v
+    print(lr, v.round(3))</code></pre></div>
+<p>После пяти шагов при <span class="math inline">\eta = 0.15</span> отклонения (−0.031, 0.444): крутое направление почти у дна, пологое прошло лишь половину пути. При <span class="math inline">\eta = 0.25</span> — (−7.594, 0.237): крутое направление улетело.</p>
+<p>Числа «крутизна вдоль главных направлений ямы» называют <strong>собственными числами</strong> матрицы. У нашей игрушки матрица диагональная, и её собственные числа — просто числа на диагонали, 10 и 1. Когда признаки связаны между собой, яма повёрнута: её самые крутое и самое пологое направления — уже не отдельные веса, а их сочетания. Но крутизну вдоль них по-прежнему находит <code>np.linalg.eigvalsh</code>. Для MSE линейной модели роль <code>H</code> играет матрица <span class="math inline">\frac{2}{n} \cdot X_1^\top X_1</span>: её произведение на отклонение весов от дна — это и есть градиент. Правило то же, что в игрушке: спуск сходится, пока шаг меньше <span class="math inline">2 / \lambda_{\max}</span>, где <span class="math inline">\lambda_{\max}</span> — наибольшее собственное число. Посчитаем его на доставках до и после масштабирования:</p>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+import pandas as pd
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;walk&quot;] = (ok[&quot;courier&quot;] == &quot;пеший&quot;).astype(int)
+X = ok[[&quot;distance_km&quot;, &quot;items&quot;, &quot;walk&quot;, &quot;amount&quot;]].values.astype(float)
+Xs = (X - X.mean(axis=0)) / X.std(axis=0)
+
+for name, A in [(&quot;без масштаба&quot;, X), (&quot;с масштабом&quot;, Xs)]:
+    X1 = np.column_stack([np.ones(len(A)), A])
+    ev = np.linalg.eigvalsh(2 / len(A) * X1.T @ X1)      # собственные числа, по возрастанию
+    print(f&quot;{name}: самое крутое {ev[-1]:.3g}, самое пологое {ev[0]:.3g}, &quot;
+          f&quot;предельный шаг {2 / ev[-1]:.3g}, вытянутость {ev[-1] / ev[0]:.3g}&quot;)</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>np.linalg.eigvalsh</code> — собственные числа симметричной матрицы по возрастанию: крутизна ямы вдоль каждого главного направления. <code>ev[-1]</code> — самое крутое, <code>ev[0]</code> — самое пологое.</li>
+<li>Предельный шаг <code>2 / λ_max</code> — больше него спуск по самому крутому направлению перепрыгивает дно всё дальше и расходится.</li>
+<li>«Вытянутость» <span class="math inline">\lambda_{\max} / \lambda_{\min}</span> — во сколько раз самое крутое направление круче самого пологого.</li>
+</ul>
+<p><strong>Что получилось:</strong> без масштаба предельный шаг около <span class="math inline">2 \cdot 10^{-6}</span> — ровно поэтому 2e-6 ещё работает, а 1e-5 уже взрывается. А вытянутость — около пяти миллионов: при таком шаге вдоль пологих направлений спуск ползёт миллионы шагов. После масштабирования предельный шаг около 0.5, вытянутость около 40 — яма почти «круглая», и 100 шагов хватает. Масштабирование — это не косметика: оно меняет форму ямы.</p>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-max-lr"><b>5</b> Самый большой безопасный шаг</a><a href="#task-to-goal"><b>7</b> Сколько шагов до цели</a></div>
+<div class="fb" data-sec="разберём-вместе-почему-шаг-ограничен-сверху"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="стохастический-спуск">Стохастический спуск</h2>
+<p>Каждый шаг обычного спуска проходит по <strong>всем</strong> строкам. На миллионе строк это дорого. <strong>Стохастический градиентный спуск</strong> (SGD) считает градиент по маленькой случайной порции — <strong>мини-батчу</strong>, например 32 строки. Градиент получается шумным, но в среднем указывает в нужную сторону, а шагов за то же время можно сделать в тысячи раз больше.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Обычный спуск — как настраивать рецепт нового бленда, каждый раз опрашивая всех гостей сети: точно, но одна правка занимает неделю. Стохастический — как спрашивать по 32 случайных гостя и сразу подкручивать рецепт: каждый маленький опрос шумный и может увести чуть в сторону, но в среднем указывает верно, а правок за ту же неделю получается во много раз больше. Под конец мнения маленьких групп продолжают тянуть рецепт в разные стороны — поэтому шаг правок постепенно уменьшают.</p>
+</aside>
+<p>Один проход по всем данным порциями называется <strong>эпохой</strong>.</p>
+<figure class="fig" data-fig="sgd-epoch"><div class="fig-scroll"><svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-sgd-epoch">
+  <title id="t-sgd-epoch">Эпоха стохастического спуска: перемешать строки, нарезать порциями, шаг на каждую</title>
+  <defs><marker id="ah-sgd-epoch" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink sm b" x="40" y="30" text-anchor="start">1 841 строк обучения</text>
+  <rect class="box" x="40" y="38" width="620" height="24" rx="3"/>
+  <text class="mut sm" x="664" y="54" text-anchor="middle"></text>
+  <path class="ln" d="M350,66 L350,86" marker-end="url(#ah-sgd-epoch)"/>
+  <text class="mut sm" x="360" y="80" text-anchor="start">rng.permutation — новый порядок каждую эпоху</text>
+  <text class="ink sm b" x="40" y="104" text-anchor="start">батчи по 32 строки: 57 полных + последний из 17</text>
+  <rect class="box-acc" x="40.0" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="50.77675176534492" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="61.55350353068984" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="72.33025529603476" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="83.10700706137968" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="93.8837588267246" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="104.66051059206953" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="115.43726235741444" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="126.21401412275937" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="136.9907658881043" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="147.7675176534492" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="158.54426941879413" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="169.32102118413906" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="180.09777294948398" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="190.87452471482888" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="201.6512764801738" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="212.42802824551873" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="223.20478001086366" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="233.98153177620858" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="244.75828354155348" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="255.5350353068984" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="266.3117870722433" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="277.08853883758826" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="287.8652906029332" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="298.6420423682781" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="309.418794133623" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="320.19554589896796" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="330.97229766431286" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="341.74904942965776" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="352.5258011950027" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="363.3025529603476" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="374.07930472569257" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="384.85605649103746" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="395.63280825638236" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="406.4095600217273" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="417.1863117870722" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="427.96306355241717" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="438.73981531776207" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="449.51656708310696" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="460.2933188484519" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="471.0700706137968" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="481.84682237914177" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="492.62357414448667" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="503.40032590983157" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="514.1770776751765" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="524.9538294405214" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="535.7305812058664" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="546.5073329712113" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="557.2840847365562" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="568.0608365019011" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="578.837588267246" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="589.6143400325909" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="600.3910917979359" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="611.1678435632808" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="621.9445953286257" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="632.7213470939706" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-acc" x="643.4980988593155" y="112" width="9.576751765344921" height="26" rx="1"/>
+  <rect class="box-warn" x="654.2748506246605" y="112" width="4.525149375339489" height="26" rx="1"/>
+  <path class="ln" d="M45.38837588267246,140 L70,176" marker-end="url(#ah-sgd-epoch)"/>
+  <path class="ln" d="M56.16512764801738,140 L190,176" marker-end="url(#ah-sgd-epoch)"/>
+  <path class="ln" d="M66.9418794133623,140 L310,176" marker-end="url(#ah-sgd-epoch)"/>
+  <rect class="box" x="20" y="178" width="110" height="44" rx="6"/>
+  <text class="ink sm b" x="75.0" y="196.0" text-anchor="middle">шаг 1</text>
+  <text class="mut sm" x="75.0" y="213.0" text-anchor="middle">градиент по 32</text>
+  <rect class="box" x="140" y="178" width="110" height="44" rx="6"/>
+  <text class="ink sm b" x="195.0" y="196.0" text-anchor="middle">шаг 2</text>
+  <text class="mut sm" x="195.0" y="213.0" text-anchor="middle">градиент по 32</text>
+  <rect class="box" x="260" y="178" width="110" height="44" rx="6"/>
+  <text class="ink sm b" x="315.0" y="196.0" text-anchor="middle">шаг 3</text>
+  <text class="mut sm" x="315.0" y="213.0" text-anchor="middle">градиент по 32</text>
+  <text class="ink b" x="400" y="204" text-anchor="middle">…</text>
+  <rect class="box" x="430" y="178" width="230" height="44" rx="6"/>
+  <text class="ink sm b" x="545.0" y="196.0" text-anchor="middle">шаг 58: последний батч (17 строк)</text>
+  <text class="mut sm" x="545.0" y="213.0" text-anchor="middle">делим на len(b), а не на 32</text>
+  <text class="ink2 sm" x="350" y="254" text-anchor="middle">одна эпоха = 58 шагов SGD; обычный спуск за тот же проход по данным делает 1 шаг</text>
+  <text class="mut sm" x="350" y="274" text-anchor="middle">каждый шаг дешёвый и шумный, но в среднем указывает в нужную сторону</text>
+</svg>
+</div><figcaption>
+<p>Одна эпоха на доставках: 1841 строка в новом случайном порядке, 57 батчей по 32 строки и последний из 17. Каждый батч — отдельный шаг спуска.</p>
+</figcaption></figure>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+import pandas as pd
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;walk&quot;] = (ok[&quot;courier&quot;] == &quot;пеший&quot;).astype(int)
+X = ok[[&quot;distance_km&quot;, &quot;items&quot;, &quot;walk&quot;]].values
+y = ok[&quot;actual_min&quot;].values
+Xs = (X - X.mean(axis=0)) / X.std(axis=0)
+X1 = np.column_stack([np.ones(len(Xs)), Xs])
+
+rng = np.random.default_rng(0)
+w = np.zeros(X1.shape[1])
+for epoch in range(5):
+    order = rng.permutation(len(y))                 # перемешиваем строки каждую эпоху
+    for start in range(0, len(y), 32):
+        b = order[start:start + 32]                 # номера строк батча
+        g = 2 / len(b) * X1[b].T @ (X1[b] @ w - y[b])
+        w = w - 0.05 * g
+    print(f&quot;эпоха {epoch + 1}: MSE {np.mean((X1 @ w - y) ** 2):.1f}&quot;)</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>rng.permutation(len(y))</code> — новый случайный порядок строк в каждой эпохе.</li>
+<li><code>order[start:start + 32]</code> — номера строк очередного батча; <code>X1[b]</code>, <code>y[b]</code> — сам батч.</li>
+<li>Градиент считается только по батчу и делится на его размер <code>len(b)</code> (последний батч короче).</li>
+<li>MSE печатаем по всем данным после каждой эпохи.</li>
+</ul>
+<p>Уже после первой эпохи (около 58 маленьких шагов) ошибка почти минимальная — около 60. Дальше она «дрожит» вокруг минимума: каждый батч тянет веса немного в свою сторону. Поэтому шаг SGD обычно постепенно уменьшают.</p>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">n, batch = 1000, 50
+print(n // batch)</code></pre>
+<ul>
+<li><code>50</code></li>
+<li>[x] <code>20</code></li>
+<li><code>1000</code></li>
+</ul>
+<p>Почему: за эпоху каждая строка используется один раз, порциями по 50 — значит, 1000 / 50 = 20 шагов.</p>
+</div>
+<div class="quiz-c" data-q="c2"><div class="predict-title">Проверьте себя</div>
+<p>После первой эпохи стохастического спуска MSE почти минимальная, но дальше от эпохи к эпохе не убывает ровно, а «дрожит». Почему?</p>
+<ul>
+<li>[x] Каждый батч даёт свой, шумный градиент и тянет веса немного в свою сторону — у дна эти рывки уже сравнимы с оставшимся путём
+<blockquote>
+<p>Градиент по 32 строкам лишь в среднем совпадает с градиентом по всем данным. Поэтому шаг SGD к концу обучения обычно уменьшают.</p>
+</blockquote>
+</li>
+<li>[ ] Шаг слишком большой, и спуск начал расходиться
+<blockquote>
+<p>При расходимости ошибка росла бы всё сильнее и ушла бы в <code>nan</code>. Здесь она колеблется около минимума.</p>
+</blockquote>
+</li>
+<li>[ ] Модель переобучилась на последних батчах
+<blockquote>
+<p>MSE считается по всем данным, а у линейной модели с тремя признаками переобучаться почти нечему. Дрожь — от шума градиента.</p>
+</blockquote>
+</li>
+<li>[ ] Перемешивание строк в каждой эпохе сбрасывает накопленный прогресс
+<blockquote>
+<p>Веса между эпохами сохраняются, перемешивание меняет только порядок батчей. Оно как раз помогает не застревать в одном и том же порядке.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-p-batch"><b>3</b> Нарезка на батчи</a><a href="#task-minibatch"><b>6</b> Мини-батчи</a><a href="#task-decay"><b>8</b> Уменьшающийся шаг</a></div>
+<div class="fb" data-sec="стохастический-спуск"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="sgd-в-sklearn">SGD в sklearn</h2>
+<p>В sklearn стохастический спуск для линейной регрессии — <code>SGDRegressor</code> (для классификации — <code>SGDClassifier</code>). Масштабирование ставим в конвейер:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import SGDRegressor
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;walk&quot;] = (ok[&quot;courier&quot;] == &quot;пеший&quot;).astype(int)
+X = ok[[&quot;distance_km&quot;, &quot;items&quot;, &quot;walk&quot;]]
+y = ok[&quot;actual_min&quot;]
+
+model = make_pipeline(StandardScaler(), SGDRegressor(random_state=0)).fit(X, y)
+sgd = model[-1]
+print(&quot;веса (на масштабированных признаках):&quot;, sgd.coef_.round(2))
+print(&quot;эпох до остановки:&quot;, sgd.n_iter_)</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>make_pipeline(StandardScaler(), SGDRegressor(random_state=0))</code> — масштаб и SGD одним конвейером.</li>
+<li><code>model[-1].coef_</code> — веса на <strong>масштабированных</strong> признаках: их нельзя напрямую читать как «минут на км», в отличие от весов <code>LinearRegression</code> на исходных.</li>
+</ul>
+<p><code>SGDRegressor</code> сам останавливается, когда ошибка перестаёт заметно падать (<code>n_iter_</code> — сколько эпох понадобилось). Для двух тысяч строк он не нужен — <code>LinearRegression</code> быстрее и точнее. SGD нужен, когда данные не помещаются в память или приходят потоком: <code>partial_fit</code> дообучает модель на каждой новой порции.</p>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-sgd-sklearn"><b>9</b> SGDRegressor и порядок данных</a></div>
+<div class="fb" data-sec="sgd-в-sklearn"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-grad-vec" data-task="grad-vec" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Градиент матрицей</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#градиент-одной-формулой">↑ К теории: Градиент одной формулой</a>
+  <div class="task-text prose"><p>Для маленькой таблицы <code>X1</code> (уже со столбцом единиц) и весов <code>w</code> посчитайте градиент MSE формулой <code>2 / n * X1.T @ (X1 @ w - y)</code> и сохраните его в <code>g</code>. В <code>direction</code> сохраните список: для каждого веса <code>&quot;вверх&quot;</code>, если вес надо увеличивать (градиент отрицательный), иначе <code>&quot;вниз&quot;</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-one-step" data-task="one-step" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">Один шаг руками</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#градиент-одной-формулой">↑ К теории: Градиент одной формулой</a>
+  <div class="task-text prose"><p>Три доставки, один признак и столбец единиц: <code>X1 = [[1, 1], [1, 2], [1, 3]]</code>, ответы <code>y = [3, 5, 7]</code>, стартовые веса <code>w = [0, 0]</code>. Посчитайте градиент MSE <code>g = 2 / n * X1.T @ (X1 @ w - y)</code> и веса после одного шага <code>w_new = w - lr * g</code> при <code>lr = 0.1</code>. Сохраните также <code>mse_before</code> и <code>mse_after</code> — MSE до и после шага.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-p-batch" data-task="p-batch" data-level="warmup" data-kind="parsons">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">Нарезка на батчи</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#стохастический-спуск">↑ К теории: Стохастический спуск</a>
+  <div class="task-text prose"><p>Соберите код, который перемешивает номера 10 строк и печатает размеры батчей по 4.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-gd-fit" data-task="gd-fit" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">4</span>
+    <h3 class="task-title">Спуск на доставках</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#градиент-одной-формулой">↑ К теории: Градиент одной формулой</a>
+  <div class="task-text prose"><p>Напишите функцию <code>gd(X1, y, lr, steps)</code>, возвращающую веса после <code>steps</code> шагов спуска из нулей. Обучите линейную модель на масштабированных признаках <code>distance_km</code>, <code>items</code>, <code>walk</code> (<code>Xs</code> уже в заготовке) со столбцом единиц: <code>lr = 0.1</code>, 200 шагов. Сохраните веса <code>w</code> и <code>mse</code> — MSE на тех же данных (2 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-max-lr" data-task="max-lr" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">5</span>
+    <h3 class="task-title">Самый большой безопасный шаг</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#разберём-вместе-почему-шаг-ограничен-сверху">↑ К теории: Разберём вместе: почему шаг ограничен сверху</a>
+  <div class="task-text prose"><p>Для масштабированных признаков (как в прошлой задаче, со столбцом единиц) найдите среди шагов <code>[0.1, 0.3, 0.5, 0.7, 0.9, 1.1]</code> самый большой, при котором после 100 шагов MSE меньше 61. Сохраните словарь <code>res</code> <code>{шаг: MSE после 100 шагов}</code> (для взорвавшихся значений будет <code>inf</code> или <code>nan</code> — это нормально) и <code>best_lr</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-minibatch" data-task="minibatch" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">6</span>
+    <h3 class="task-title">Мини-батчи</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#стохастический-спуск">↑ К теории: Стохастический спуск</a>
+  <div class="task-text prose"><p>Обучите модель стохастическим спуском: батчи по 64 строки, шаг 0.05, 3 эпохи, генератор <code>np.random.default_rng(1)</code>, порядок строк перемешивается в начале каждой эпохи (<code>rng.permutation</code>). Сохраните список <code>epoch_mse</code> — MSE на всех данных после каждой эпохи (3 числа) и <code>steps</code> — сколько всего шагов (обновлений весов) было сделано.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-to-goal" data-task="to-goal" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">7</span>
+    <h3 class="task-title">Сколько шагов до цели</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#разберём-вместе-почему-шаг-ограничен-сверху">↑ К теории: Разберём вместе: почему шаг ограничен сверху</a>
+  <div class="task-text prose"><p>Посчитайте, за сколько шагов полного (не стохастического) спуска MSE на доставках с четырьмя признаками (<code>distance_km</code>, <code>items</code>, <code>walk</code>, <code>amount</code>; таблицы <code>X</code>, <code>Xs</code> и ответ <code>y</code> уже есть в заготовке) опустится ниже 61. Напишите <code>steps_to(A, lr, goal=61, max_steps=20000)</code> — номер первого шага, после которого MSE &lt; goal, или <code>None</code>, если не дошли. Сохраните <code>scaled</code> — словарь <code>{lr: шаги}</code> для масштабированных признаков и <code>lr</code> из <code>[0.1, 0.5]</code>, и <code>raw</code> — то же для исходных признаков и <code>lr</code> из <code>[1e-6, 2e-6]</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-decay" data-task="decay" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">8</span>
+    <h3 class="task-title">Уменьшающийся шаг</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#стохастический-спуск">↑ К теории: Стохастический спуск</a>
+  <div class="task-text prose"><p>SGD с постоянным шагом «дрожит» вокруг минимума. Сравните постоянный шаг 0.05 и уменьшающийся <code>lr_t = 0.05 / (1 + t / 200)</code>, где t — номер шага с начала обучения (с 0). Признаки — масштабированные <code>distance_km</code>, <code>items</code>, <code>walk</code> (заготовка: <code>X1</code> уже со столбцом единиц), батч 32, 20 эпох, порядок строк — <code>rng = np.random.default_rng(0)</code> (свой генератор для каждого варианта). После каждой эпохи запишите MSE на всех данных. Сохраните <code>last5_const</code>, <code>last5_decay</code> — MSE последних пяти эпох (списки, 3 знака) и <code>jitter</code> — словарь <code>{&quot;const&quot;: …, &quot;decay&quot;: …}</code> с размахом (max − min) этих пяти значений (3 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-sgd-sklearn" data-task="sgd-sklearn" data-level="star" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">9</span>
+    <h3 class="task-title">SGDRegressor и порядок данных</h3>
+    <span class="lvl lvl-star">Со звёздочкой</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#sgd-в-sklearn">↑ К теории: SGD в sklearn</a>
+  <div class="task-text prose"><p>Сравните <code>make_pipeline(StandardScaler(), SGDRegressor(random_state=r))</code> для <code>r</code> в <code>[0, 1, 2, 3, 4]</code> на доставках (признаки <code>distance_km</code>, <code>items</code>, <code>walk</code>; цель <code>actual_min</code>). Сохраните список <code>maes</code> — MAE на тех же данных для каждого <code>r</code> (3 знака), <code>spread</code> — разницу между наибольшей и наименьшей (3 знака) и <code>mae_exact</code> — MAE <code>LinearRegression</code> (3 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>Градиент MSE для линейной модели: 2/n · Xᵀ(Xw − y). Одна строка numpy считает производные по всем весам.</li><li>Признаки разного масштаба делают «яму» вытянутой: шаг, безопасный для одного веса, взрывает другой. Масштабирование (StandardScaler) выравнивает яму.</li><li><code>nan</code> в весах или растущая ошибка — почти всегда слишком большой шаг или немасштабированные признаки.</li><li>Стохастический спуск (SGD) считает градиент по случайной порции строк (mini-batch). Шаги шумные, зато дешёвые; один проход по всем данным — эпоха.</li><li>В sklearn: <code>make_pipeline(StandardScaler(), SGDRegressor())</code> — линейная регрессия, обученная стохастическим спуском.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="01b-numeric.html"><span class="pl">← Предыдущий</span><span class="pt">2. Численные методы: цена формулы и деление пополам</span></a><a class="next" href="02b-optimizers.html"><span class="pl">Следующий урок →</span><span class="pt">4. Оптимизаторы: инерция, Adam и затухание весов</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#градиент-одной-формулой">Градиент одной формулой</a></li><li><a href="#когда-признаки-разного-масштаба">Когда признаки разного масштаба</a></li><li><a href="#разберём-вместе-почему-шаг-ограничен-сверху">Разберём вместе: почему шаг ограничен сверху</a></li><li><a href="#стохастический-спуск">Стохастический спуск</a></li><li><a href="#sgd-в-sklearn">SGD в sklearn</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch10/02-gd-many", "title": "Спуск для многих признаков", "chapter": "Градиентный спуск и бустинг", "tasks": [{"id": "grad-vec", "title": "Градиент матрицей", "level": "warmup", "starter": "import numpy as np\nX1 = np.array([[1, 1.0], [1, 2.0], [1, 3.0]])\ny = np.array([5.0, 7.0, 9.0])\nw = np.array([0.0, 4.0])", "setup": "", "check": "import numpy as _np\nX0 = _np.array([[1, 1.0], [1, 2.0], [1, 3.0]]); y0 = _np.array([5.0, 7.0, 9.0]); w0 = _np.array([0.0, 4.0])\ngg = 2 / 3 * X0.T @ (X0 @ w0 - y0)\nassert _np.allclose(need('g'), gg), f'g = {need(\"g\")}, а нужно {gg.round(3)}.'\nassert list(need('direction')) == ['вверх' if v < 0 else 'вниз' for v in gg], f'direction = {need(\"direction\")}.'", "hints": ["<p>Ошибки — <code>X1 @ w - y<\/code> (вектор длины n); градиент — X1ᵀ, умноженное на ошибки, и множитель 2/n.<\/p>\n", "<p><code>g = 2 / len(y) * X1.T @ (X1 @ w - y)<\/code>.<\/p>\n"], "solution": "import numpy as np\nX1 = np.array([[1, 1.0], [1, 2.0], [1, 3.0]])\ny = np.array([5.0, 7.0, 9.0])\nw = np.array([0.0, 4.0])\ng = 2 / len(y) * X1.T @ (X1 @ w - y)\ndirection = [\"вверх\" if v < 0 else \"вниз\" for v in g]", "explain": "<p>Данные точно ложатся на y = 3 + 2x. При w = [0, 4] прогнозы 4, 8, 12, ошибки −1, 1, 3, и градиент g = (2, 6.67): обе координаты положительные, оба веса надо <strong>уменьшать<\/strong>. Наклон — понятно: 4 больше нужных 2. А свободный член? Истинный — 3, у нас 0, но градиент велит его тоже уменьшать. Из-за слишком большого наклона прогнозы в среднем выше фактов (средняя ошибка +1), и сдвиг всей прямой вниз сейчас уменьшает ошибку. Градиент показывает лучшее направление из текущей точки, а не путь к ответу. Спуск сначала опустит наклон, и только потом свободный член пойдёт вверх, к 3.<\/p>\n", "parsons": ""}, {"id": "one-step", "title": "Один шаг руками", "level": "warmup", "starter": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 3]], dtype=float)\ny = np.array([3, 5, 7], dtype=float)\nw = np.zeros(2)\nlr = 0.1", "setup": "", "check": "import numpy as _np\nX1 = _np.array([[1, 1], [1, 2], [1, 3]], dtype=float); y = _np.array([3, 5, 7], dtype=float)\ng = 2 / 3 * X1.T @ (X1 @ _np.zeros(2) - y); wn = -0.1 * g\nassert _np.allclose(need('g'), g), f'g = {need(\"g\")}, а нужно {g.round(3)}.'\nassert _np.allclose(need('w_new'), wn), f'w_new = {need(\"w_new\")}, а нужно {wn.round(3)}.'\nassert close(need('mse_before'), ((y) ** 2).mean()) and close(need('mse_after'), ((X1 @ wn - y) ** 2).mean(), 1e-6), 'mse_before / mse_after не совпадают.'", "hints": ["<p>Прогноз с нулевыми весами — нули, ошибки <code>X1 @ w - y<\/code> = <code>[-3, -5, -7]<\/code>. Градиент: <code>2 / 3 * X1.T @ ошибки<\/code>.<\/p>\n", "<p><code>w_new = w - lr * g<\/code>; MSE — <code>((X1 @ веса - y) ** 2).mean()<\/code>.<\/p>\n"], "solution": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 3]], dtype=float)\ny = np.array([3, 5, 7], dtype=float)\nw = np.zeros(2)\nlr = 0.1\nn = len(y)\ng = 2 / n * X1.T @ (X1 @ w - y)\nw_new = w - lr * g\nmse_before = ((X1 @ w - y) ** 2).mean()\nmse_after = ((X1 @ w_new - y) ** 2).mean()", "explain": "<p>Руками: ошибки −3, −5, −7. Первая координата градиента — 2/3 × (−3 − 5 − 7) = −10, вторая — 2/3 × (−3 − 10 − 21) ≈ −22.67. Оба отрицательные — оба веса надо увеличить. После шага w ≈ [1.0, 2.27], MSE падает с 27.67 до примерно 0.33: один шаг уже почти нашёл прямую y = 1 + 2x.<\/p>\n", "parsons": ""}, {"id": "p-batch", "title": "Нарезка на батчи", "level": "warmup", "starter": "", "setup": "", "check": "assert _lines == ['[4, 4, 2]'], f'Сейчас: {_lines}.'", "hints": ["<p>Последний батч короче — в нём остаток строк.<\/p>\n", "<p>Начала батчей — <code>range(0, n, size)<\/code>; батч — срез <code>[start:start + size]<\/code>.<\/p>\n"], "solution": "import numpy as np\nrng = np.random.default_rng(0)\norder = rng.permutation(10)\nsizes = []\nfor start in range(0, 10, 4):\n    batch = order[start:start + 4]\n    sizes.append(len(batch))\nprint(sizes)", "explain": "", "parsons": "import numpy as np\nrng = np.random.default_rng(0)\norder = rng.permutation(10)\nsizes = []\nfor start in range(0, 10, 4):\n    batch = order[start:start + 4]\n    sizes.append(len(batch))\nprint(sizes)"}, {"id": "gd-fit", "title": "Спуск на доставках", "level": "base", "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)", "setup": "", "check": "import numpy as _np, pandas as _pd\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nXs0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); X10 = _np.column_stack([_np.ones(len(Xs0)), Xs0])\nw0 = _np.zeros(4)\nfor _ in range(200): w0 = w0 - 0.1 * 2 / len(y0) * X10.T @ (X10 @ w0 - y0)\nassert _np.allclose(need('w'), w0, atol=1e-6), f'w = {_np.round(need(\"w\"), 3)}, а нужно {w0.round(3)}. Столбец единиц — первым.'\nassert close(need('mse'), round(_np.mean((X10 @ w0 - y0) ** 2), 2)), f'mse = {need(\"mse\")}.'\nassert len(need('gd')(X10, y0, 0.1, 1)) == 4, 'gd должна возвращать вектор весов.'", "hints": ["<p>Масштабируйте признаки до спуска: <code>Xs = (X - X.mean(axis=0)) / X.std(axis=0)<\/code>.<\/p>\n", "<p>Внутри функции: <code>w = np.zeros(X1.shape[1])<\/code>, цикл, <code>return w<\/code>. Столбец единиц: <code>np.column_stack([np.ones(len(Xs)), Xs])<\/code>.<\/p>\n"], "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\n\ndef gd(X1, y, lr, steps):\n    w = np.zeros(X1.shape[1])\n    for _ in range(steps):\n        w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)\n    return w\n\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\nw = gd(X1, y, 0.1, 200)\nmse = round(np.mean((X1 @ w - y) ** 2), 2)", "explain": "<p>Первый вес — свободный член, на масштабированных признаках он равен среднему времени доставки (около 34 минут): у «среднего» заказа все признаки после масштаба равны нулю.<\/p>\n", "parsons": ""}, {"id": "max-lr", "title": "Самый большой безопасный шаг", "level": "base", "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])", "setup": "", "check": "import numpy as _np, pandas as _pd\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nXs0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); X10 = _np.column_stack([_np.ones(len(Xs0)), Xs0])\nwant = {}\nwith _np.errstate(all='ignore'):\n    for lr in [0.1, 0.3, 0.5, 0.7, 0.9, 1.1]:\n        w = _np.zeros(4)\n        for _ in range(100): w = w - lr * 2 / len(y0) * X10.T @ (X10 @ w - y0)\n        want[lr] = _np.mean((X10 @ w - y0) ** 2)\nr = need('res', dict)\nfor lr, v in want.items():\n    got = r.get(lr)\n    assert got is not None, f'Нет шага {lr} в res.'\n    assert (not _np.isfinite(v) and not _np.isfinite(got)) or (_np.isfinite(v) and close(got, v, 0.01)) or (v > 1e6 and got > 1e6), f'res[{lr}] = {got}, а ожидалось {v:.4g}.'\nok_lrs = [lr for lr, v in want.items() if _np.isfinite(v) and v < 61]\nassert need('best_lr') == max(ok_lrs), f'best_lr = {need(\"best_lr\")}, а нужно {max(ok_lrs)}.'", "hints": ["<p>Перебор шагов в цикле; условие — <code>np.isfinite(mse) and mse &lt; 61<\/code>.<\/p>\n", "<p>Из разбора «Почему шаг ограничен сверху»: предельный шаг равен 2 / λ_max. У трёх признаков этой задачи он около 0.72 — посчитайте сами: <code>2 / np.linalg.eigvalsh(2 / len(y) * X1.T @ X1)[-1]<\/code>. Число 0.5 из разбора — для четырёх признаков, с суммой заказа.<\/p>\n"], "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\nres = {}\nwith np.errstate(all=\"ignore\"):              # не показывать предупреждения о переполнении\n    for lr in [0.1, 0.3, 0.5, 0.7, 0.9, 1.1]:\n        w = np.zeros(X1.shape[1])\n        for _ in range(100):\n            w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)\n        res[lr] = np.mean((X1 @ w - y) ** 2)\nbest_lr = max(lr for lr, v in res.items() if np.isfinite(v) and v < 61)", "explain": "<p>Граница резкая: предельный шаг для этих трёх признаков ≈ 0.72. При 0.7 спуск сходится (MSE 60.04), при 0.9 взрывается. Положение границы зависит от данных (от «крутизны» самой крутой стенки ямы), поэтому универсального хорошего шага нет — его подбирают.<\/p>\n", "parsons": ""}, {"id": "minibatch", "title": "Мини-батчи", "level": "plus", "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])", "setup": "", "check": "import numpy as _np, pandas as _pd\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nXs0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); X10 = _np.column_stack([_np.ones(len(Xs0)), Xs0])\nrng = _np.random.default_rng(1); w = _np.zeros(4); em = []; st = 0\nfor _ in range(3):\n    o = rng.permutation(len(y0))\n    for s in range(0, len(y0), 64):\n        b = o[s:s + 64]; w = w - 0.05 * 2 / len(b) * X10[b].T @ (X10[b] @ w - y0[b]); st += 1\n    em.append(_np.mean((X10 @ w - y0) ** 2))\nassert _np.allclose(need('epoch_mse'), em), f'epoch_mse = {need(\"epoch_mse\")}, а нужно {_np.round(em, 2)}.'\nassert need('steps') == st, f'steps = {need(\"steps\")}, а нужно {st}.'", "hints": ["<p>Перемешивание — в начале каждой эпохи: <code>order = rng.permutation(len(y))<\/code>.<\/p>\n", "<p>Градиент батча делите на размер батча <code>len(b)<\/code> — последний батч короче 64.<\/p>\n"], "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\nrng = np.random.default_rng(1)\nw = np.zeros(X1.shape[1])\nepoch_mse, steps = [], 0\nfor _ in range(3):\n    order = rng.permutation(len(y))\n    for start in range(0, len(y), 64):\n        b = order[start:start + 64]\n        w = w - 0.05 * 2 / len(b) * X1[b].T @ (X1[b] @ w - y[b])\n        steps += 1\n    epoch_mse.append(np.mean((X1 @ w - y) ** 2))", "explain": "<p>Одна эпоха — один проход по всем 1841 строкам батчами по 64: это 29 шагов (последний батч короче, 49 строк). За 3 эпохи — 87 обновлений весов, тогда как обычный спуск за те же 3 прохода сделал бы всего 3. Поэтому мини-батчи сходятся быстрее: MSE после эпох — 63.9, 60.4, 60.2. Перемешивание в начале каждой эпохи нужно, чтобы батчи не повторялись: если данные упорядочены (например, по дате), без перемешивания модель каждый раз видела бы одни и те же куски в одном порядке.<\/p>\n", "parsons": ""}, {"id": "to-goal", "title": "Сколько шагов до цели", "level": "base", "starter": "# уже есть: X — четыре признака (distance_km, items, walk, amount) без масштаба,\n# Xs — они же масштабированные, y — время доставки\nimport numpy as np\n\ndef steps_to(A, lr, goal=61, max_steps=20000):\n    X1 = np.column_stack([np.ones(len(A)), A])\n    w = np.zeros(X1.shape[1])\n    ...", "setup": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\", \"amount\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)", "check": "import numpy as _np\ny0, X0, Xs0 = need('y'), need('X'), need('Xs')\ndef _st(A, lr, goal=61, ms=20000):\n    X1 = _np.column_stack([_np.ones(len(A)), A]); w = _np.zeros(X1.shape[1])\n    for i in range(1, ms + 1):\n        w = w - lr * 2 / len(y0) * X1.T @ (X1 @ w - y0)\n        if _np.mean((X1 @ w - y0) ** 2) < goal: return i\n    return None\nws = {lr: _st(Xs0, lr) for lr in [0.1, 0.5]}\ng = {float(k): v for k, v in need('scaled', dict).items()}\nassert g == ws, f'scaled = {g}, а нужно {ws}.'\ngr = {float(k): v for k, v in need('raw', dict).items()}\nassert gr == {1e-6: None, 2e-6: None}, f'raw = {gr}: без масштаба за 20 000 шагов цель не достигается.'", "hints": ["<p>Цикл по шагам от 1 до <code>max_steps<\/code>: обновление весов, затем проверка <code>np.mean((X1 @ w - y) ** 2) &lt; goal<\/code> — если да, <code>return i<\/code>.<\/p>\n", "<p>Если цикл закончился, а цель не достигнута, верните <code>None<\/code> (просто <code>return None<\/code> после цикла).<\/p>\n"], "solution": "import numpy as np\n\ndef steps_to(A, lr, goal=61, max_steps=20000):\n    X1 = np.column_stack([np.ones(len(A)), A])\n    w = np.zeros(X1.shape[1])\n    for i in range(1, max_steps + 1):\n        w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)\n        if np.mean((X1 @ w - y) ** 2) < goal:\n            return i\n    return None\n\nscaled = {lr: steps_to(Xs, lr) for lr in [0.1, 0.5]}\nraw = {lr: steps_to(X, lr) for lr in [1e-6, 2e-6]}\nprint(scaled, raw)", "explain": "<p>С масштабом цель достигается примерно за 20 шагов. Шаг 0.5 в пять раз больше, а шагов почти столько же (20 против 19): 0.5 близок к предельному 0.51 для этих четырёх признаков. По самому крутому направлению спуск каждый раз перескакивает дно и качается, поэтому выигрыша нет; шаг 0.3 дошёл бы за 5. Без масштаба — не достигается и за 20 000: шаг нельзя сделать больше 2·10⁻⁶ (иначе расходится), а с таким шагом веса у «пологих» признаков почти не двигаются. Это та самая вытянутость ямы в пять миллионов раз из разбора. Вывод для практики: если модель на спуске учится подозрительно долго — сначала масштаб, потом всё остальное.<\/p>\n", "parsons": ""}, {"id": "decay", "title": "Уменьшающийся шаг", "level": "plus", "starter": "import numpy as np\n\ndef sgd(decay, epochs=20, lr0=0.05, size=32):\n    rng = np.random.default_rng(0)\n    w = np.zeros(X1.shape[1])\n    t = 0\n    history = []\n    ...\n    return history", "setup": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nX1 = np.column_stack([np.ones(len(y)), (X - X.mean(axis=0)) / X.std(axis=0)])", "check": "import numpy as _np\nA, y0 = need('X1'), need('y')\ndef _s(decay):\n    rng = _np.random.default_rng(0); w = _np.zeros(A.shape[1]); t = 0; h = []\n    for _ in range(20):\n        order = rng.permutation(len(y0))\n        for st in range(0, len(y0), 32):\n            b = order[st:st + 32]; g = 2 / len(b) * A[b].T @ (A[b] @ w - y0[b])\n            lr = 0.05 / (1 + t / 200) if decay else 0.05; w = w - lr * g; t += 1\n        h.append(_np.mean((A @ w - y0) ** 2))\n    return [round(float(v), 3) for v in h[-5:]]\nc, dd = _s(False), _s(True)\nassert all(close(a, b, 0.002) for a, b in zip(need('last5_const'), c)), f'last5_const = {need(\"last5_const\")}, а нужно {c}.'\nassert all(close(a, b, 0.002) for a, b in zip(need('last5_decay'), dd)), f'last5_decay = {need(\"last5_decay\")}, а нужно {dd}.'\nj = need('jitter', dict)\nassert close(j['const'], round(max(c) - min(c), 3), 0.003) and close(j['decay'], round(max(dd) - min(dd), 3), 0.003), f'jitter = {j}.'", "hints": ["<p>Два вложенных цикла: эпохи и батчи. Шаг на каждом батче: <code>lr = lr0 / (1 + t / 200) if decay else lr0<\/code>, затем <code>t += 1<\/code>.<\/p>\n", "<p>Перемешивание — <code>order = rng.permutation(len(y))<\/code> в начале каждой эпохи; MSE — после эпохи, по всем строкам: <code>np.mean((X1 @ w - y) ** 2)<\/code>.<\/p>\n", "<p>Последние пять — <code>history[-5:]<\/code>; размах — <code>max(...) - min(...)<\/code>.<\/p>\n"], "solution": "import numpy as np\n\ndef sgd(decay, epochs=20, lr0=0.05, size=32):\n    rng = np.random.default_rng(0)\n    w = np.zeros(X1.shape[1])\n    t = 0\n    history = []\n    for _ in range(epochs):\n        order = rng.permutation(len(y))\n        for start in range(0, len(y), size):\n            b = order[start:start + size]\n            g = 2 / len(b) * X1[b].T @ (X1[b] @ w - y[b])\n            lr = lr0 / (1 + t / 200) if decay else lr0\n            w = w - lr * g\n            t += 1\n        history.append(np.mean((X1 @ w - y) ** 2))\n    return history\n\nlast5_const = [round(float(v), 3) for v in sgd(False)[-5:]]\nlast5_decay = [round(float(v), 3) for v in sgd(True)[-5:]]\njitter = {\"const\": round(max(last5_const) - min(last5_const), 3), \"decay\": round(max(last5_decay) - min(last5_decay), 3)}\nprint(last5_const, last5_decay, jitter)", "explain": "<p>С постоянным шагом MSE в последних эпохах прыгает в пределах пары единиц (каждый батч тянет веса в свою сторону), а с уменьшающимся — почти не меняется и держится у минимума около 60.04. Это стандартная практика: в начале большие шаги, чтобы быстро дойти до дна, в конце — маленькие, чтобы не болтаться вокруг него. В PyTorch за это отвечают «планировщики шага» (<code>torch.optim.lr_scheduler<\/code>).<\/p>\n", "parsons": ""}, {"id": "sgd-sklearn", "title": "SGDRegressor и порядок данных", "level": "star", "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import SGDRegressor, LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]]\ny = ok[\"actual_min\"]", "setup": "", "check": "import pandas as _pd\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.linear_model import SGDRegressor as _SGD, LinearRegression as _LR\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']]; y0 = ok['actual_min']\nw = [round(_mae(y0, _mp(_SS(), _SGD(random_state=r)).fit(X0, y0).predict(X0)), 3) for r in range(5)]\ngot = [round(float(v), 3) for v in need('maes')]\nassert len(got) == 5 and all(close(a, b, 0.002) for a, b in zip(got, w)), f'maes = {got}, а нужно {w}.'\nassert close(need('spread'), round(max(w) - min(w), 3), 0.003), f'spread = {need(\"spread\")}.'\nassert close(need('mae_exact'), round(_mae(y0, _LR().fit(X0, y0).predict(X0)), 3)), f'mae_exact = {need(\"mae_exact\")}.'", "hints": ["<p>Цикл по <code>r<\/code> в <code>range(5)<\/code>; <code>random_state<\/code> у SGD отвечает за порядок перемешивания строк.<\/p>\n", "<p><code>spread = round(max(maes) - min(maes), 3)<\/code>; MAE — <code>mean_absolute_error(y, model.predict(X))<\/code>.<\/p>\n"], "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import SGDRegressor, LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]]\ny = ok[\"actual_min\"]\n\nmaes = []\nfor r in range(5):\n    m = make_pipeline(StandardScaler(), SGDRegressor(random_state=r)).fit(X, y)\n    maes.append(round(mean_absolute_error(y, m.predict(X)), 3))\nspread = round(max(maes) - min(maes), 3)\nmae_exact = round(mean_absolute_error(y, LinearRegression().fit(X, y).predict(X)), 3)", "explain": "<p>Результат SGD немного зависит от порядка строк — разброс — тысячные доли минуты, а точное решение лишь чуть лучше. Для таких данных это неважно, но в нейросетях (глава 11), где спуск — единственный способ обучения, <code>random_state<\/code> фиксируют всегда, иначе результат не повторить.<\/p>\n", "parsons": ""}], "files": ["deliveries.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/katex/katex.min.js?v=b555cf35b0"></script>
+<script>document.querySelectorAll(".math").forEach(function(e){try{katex.render(e.textContent.trim(),e,{displayMode:e.classList.contains("block"),throwOnError:false})}catch(x){}});</script>
+
+</body>
+</html>

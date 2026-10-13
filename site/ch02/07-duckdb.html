@@ -1,0 +1,1151 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL прямо по датафрейму — DuckDB — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch02">Глава 2. pandas — таблицы как в SQL</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 2</div><div class="side-title">pandas — таблицы как в SQL</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02" open><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" aria-current="page" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03"><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05"><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11"><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 11 · основной путь · ≈ 95 мин · задач: 11</div>
+      <h1>SQL прямо по датафрейму — DuckDB</h1>
+      <p class="lead">Вы знаете SQL — так пользуйтесь им и в Python. DuckDB выполняет обычные SQL-запросы прямо по таблицам pandas и CSV-файлам, без сервера и загрузки в базу: подзапросы, CTE, топ-1 в группе и порядок выполнения запроса. Запросы к настоящей базе из Python — в следующем уроке.</p>
+      <div class="data-files"><span class="df-label">Данные урока</span><a class="data-file" href="../data/orders_3m.csv" download title="Скачать orders_3m.csv"><span class="df-name">orders_3m.csv</span><span class="df-info">2089 строк · 141 КБ</span></a><a class="data-file" href="../data/shops.csv" download title="Скачать shops.csv"><span class="df-name">shops.csv</span><span class="df-info">7 строк · 1 КБ</span></a><a class="data-file" href="../data/menu.csv" download title="Скачать menu.csv"><span class="df-name">menu.csv</span><span class="df-info">11 строк · 1 КБ</span></a><span class="df-note">В примерах файлы уже подключены — скачивать нужно, только чтобы открыть их у себя.</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 10</span></div>
+    </div>
+    <article class="prose theory"><h2 id="sql-по-датафрейму">SQL по датафрейму</h2>
+<p>Зачем: вы годами пишете SQL, а pandas пока даётся медленнее. DuckDB позволяет считать на Python <strong>привычными запросами</strong> и переходить на методы pandas там, где это удобнее.</p>
+<p>DuckDB — встраиваемая аналитическая база данных: она работает прямо внутри Python, без сервера. Главное для нас — она умеет выполнять SQL <strong>по таблицам pandas</strong>, обращаясь к ним по имени переменной:</p>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+import pandas as pd
+
+df = pd.read_csv(&quot;orders_3m.csv&quot;)
+duckdb.sql(&quot;&quot;&quot;
+    SELECT shop_id, SUM(amount) AS revenue, COUNT(*) AS orders
+    FROM df
+    GROUP BY shop_id
+    ORDER BY revenue DESC
+&quot;&quot;&quot;).df()</code></pre></div>
+<p><code>duckdb.sql(...)</code> выполняет запрос, <code>.df()</code> превращает результат в DataFrame — дальше с ним можно работать как обычно. Текст запроса удобно писать в тройных кавычках: так он помещается на нескольких строках.</p>
+<p>Если результат — одно число, его достают через <code>fetchone()</code> — он возвращает первую строку кортежем:</p>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+import pandas as pd
+
+df = pd.read_csv(&quot;orders_3m.csv&quot;)
+revenue = duckdb.sql(&quot;SELECT SUM(amount) FROM df&quot;).fetchone()[0]
+print(revenue)</code></pre></div>
+<figure class="fig" data-fig="duckdb-flow"><div class="fig-scroll"><svg viewBox="0 0 700 292" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-duckdb-flow">
+  <title id="t-duckdb-flow">Как DuckDB читает датафрейм и файл и что возвращает</title>
+  <defs><marker id="ah-duckdb-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="mut sm b" x="90" y="22" text-anchor="middle">откуда</text>
+  <rect class="box" x="10" y="34" width="160" height="58" rx="6"/>
+  <text class="ink sm b" x="90.0" y="51.5" text-anchor="middle">df — переменная Python</text>
+  <text class="ink2 sm" x="90.0" y="67.5" text-anchor="middle">DataFrame</text>
+  <text class="mut sm" x="90.0" y="83.5" text-anchor="middle">2 089 строк × 9 столбцов</text>
+  <rect class="box" x="10" y="104" width="160" height="46" rx="6"/>
+  <text class="ink sm b" x="90.0" y="123.5" text-anchor="middle">'orders_3m.csv'</text>
+  <text class="ink2 sm" x="90.0" y="139.5" text-anchor="middle">файл: имя в кавычках</text>
+  <text class="ink2 sm" x="90" y="172" text-anchor="middle">FROM df — по имени</text>
+  <text class="ink2 sm" x="90" y="188" text-anchor="middle">переменной, без копии</text>
+  <path class="ln" d="M172,63 C196,63 196,100 216,100" marker-end="url(#ah-duckdb-flow)"/>
+  <path class="ln" d="M172,127 C196,127 196,104 216,104" marker-end="url(#ah-duckdb-flow)"/>
+  <rect class="box-acc" x="218" y="70" width="160" height="64" rx="6"/>
+  <text class="ink sm b" x="298.0" y="89.5" text-anchor="middle">duckdb.sql("""</text>
+  <text class="ink sm" x="298.0" y="106.5" text-anchor="middle">SELECT … FROM df</text>
+  <text class="ink sm b" x="298.0" y="123.5" text-anchor="middle">""")</text>
+  <text class="ink2 sm" x="298" y="152" text-anchor="middle">результат запроса —</text>
+  <text class="ink2 sm" x="298" y="168" text-anchor="middle">ещё не DataFrame</text>
+  <text class="mut sm b" x="555" y="22" text-anchor="middle">что получить</text>
+  <path class="ln-mut" d="M380,102 C400,102 400,62 418,62" marker-end="url(#ah-duckdb-flow)"/>
+  <rect class="box-ok" x="420" y="32" width="270" height="60" rx="5"/>
+  <text class="acc b" x="432" y="51" text-anchor="start">.df()</text>
+  <text class="ink2 sm" x="432" y="68" text-anchor="start">DataFrame — таблица целиком</text>
+  <text class="ink sm" x="432" y="84" text-anchor="start">GROUP BY shop_id → 6 строк × 3 столбца</text>
+  <path class="ln-mut" d="M380,102 C400,102 400,130 418,130" marker-end="url(#ah-duckdb-flow)"/>
+  <rect class="box" x="420" y="100" width="270" height="60" rx="5"/>
+  <text class="acc b" x="432" y="119" text-anchor="start">.fetchall()</text>
+  <text class="ink2 sm" x="432" y="136" text-anchor="start">список кортежей — все строки</text>
+  <text class="ink sm" x="432" y="152" text-anchor="start">[(…), (…), …] — для цикла for</text>
+  <path class="ln-mut" d="M380,102 C400,102 400,198 418,198" marker-end="url(#ah-duckdb-flow)"/>
+  <rect class="box" x="420" y="168" width="270" height="60" rx="5"/>
+  <text class="acc b" x="432" y="187" text-anchor="start">.fetchone()</text>
+  <text class="ink2 sm" x="432" y="204" text-anchor="start">кортеж — только первая строка</text>
+  <text class="ink sm" x="432" y="220" text-anchor="start">SELECT SUM(amount) → (710195,)</text>
+  <path class="ln" d="M555,230 L555,246" marker-end="url(#ah-duckdb-flow)"/>
+  <rect class="box-ok" x="420" y="248" width="270" height="32" rx="5"/>
+  <text class="ink sm b" x="555" y="269" text-anchor="middle">.fetchone()[0] → 710195 — число</text>
+  <text class="ink2 sm" x="406" y="258" text-anchor="end">одно число: кортеж,</text>
+  <text class="ink2 sm" x="406" y="274" text-anchor="end">затем его элемент [0]</text>
+</svg>
+</div><figcaption>
+<p>Слева — откуда DuckDB берёт данные: датафрейм по имени переменной или файл по имени в кавычках. В середине — сам запрос; его результат ещё не DataFrame, его нужно «достать» одним из трёх методов. <code>.df()</code> даёт таблицу, <code>.fetchall()</code> — список кортежей, <code>.fetchone()</code> — один кортеж <code>(710195,)</code>, а <code>[0]</code> вынимает из него число — выручку сети за три месяца.</p>
+</figcaption></figure>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-total"><b>1</b> Выручка запросом</a><a href="#task-group"><b>2</b> GROUP BY запросом</a><a href="#task-having"><b>5</b> HAVING</a></div>
+<div class="fb" data-sec="sql-по-датафрейму"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="прямо-из-csv">Прямо из CSV</h2>
+<p>Зачем: чтобы посчитать что-то по большому CSV, не обязательно загружать его в pandas. Файл можно читать прямо в запросе — достаточно написать его имя в кавычках во <code>FROM</code>. DuckDB сам определит столбцы и типы (дату и время — тоже):</p>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+duckdb.sql(&quot;&quot;&quot;
+    SELECT date_trunc(&#x27;month&#x27;, datetime) AS month, SUM(amount) AS revenue
+    FROM &#x27;orders_3m.csv&#x27;
+    GROUP BY month
+    ORDER BY month
+&quot;&quot;&quot;).df()</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>FROM 'orders_3m.csv'</code> — имя файла в одинарных кавычках вместо имени таблицы.</li>
+<li><code>date_trunc('month', datetime)</code> обрезает дату-время до начала месяца: <code>2026-09-14 10:31</code> → <code>2026-09-01 00:00:00</code>. У всех заказов сентября одно и то же значение, поэтому по нему удобно группировать. В SQL Server 2022 то же делает <code>DATETRUNC(month, datetime)</code>, в более старых версиях — <code>DATEFROMPARTS(YEAR(d), MONTH(d), 1)</code>; в PostgreSQL — тот же <code>date_trunc</code>.</li>
+</ul>
+<p>Как читать результат: три строки — сентябрь, октябрь и ноябрь 2026 года, выручка 220 241, 233 756 и 256 198 ₽.</p>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-p-sql"><b>3</b> Соберите запрос к файлу</a><a href="#task-from-file"><b>6</b> Прямо из файла</a></div>
+<div class="fb" data-sec="прямо-из-csv"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="join-как-вы-привыкли">JOIN — как вы привыкли</h2>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+duckdb.sql(&quot;&quot;&quot;
+    SELECT s.city, SUM(o.amount) AS revenue
+    FROM &#x27;orders_3m.csv&#x27; AS o
+    JOIN &#x27;shops.csv&#x27; AS s USING (shop_id)
+    GROUP BY s.city
+    ORDER BY revenue DESC
+&quot;&quot;&quot;).df()</code></pre></div>
+<aside class="callout callout-note"><div class="callout-title">Заметка</div>
+<p>Диалект DuckDB близок к PostgreSQL. Отличия от SQL Server, которые чаще всего мешают: <code>LIMIT 5</code> вместо <code>TOP 5</code>, строки — в одинарных кавычках, а <code>/</code> между целыми — обычное, а не целочисленное деление.</p>
+</aside>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">import duckdb
+print(duckdb.sql(&quot;SELECT 7 / 2&quot;).fetchone()[0])</code></pre>
+<ul>
+<li><code>3</code></li>
+<li>[x] <code>3.5</code></li>
+<li><code>Ошибка</code></li>
+</ul>
+<p>Почему: в DuckDB <code>/</code> — всегда обычное деление, как <code>/</code> в Python. Целочисленное — <code>//</code>. В SQL Server тот же запрос вернул бы 3.</p>
+</div>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-join"><b>4</b> Города запросом</a></div>
+<div class="fb" data-sec="join-как-вы-привыкли"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="подзапросы-и-cte">Подзапросы и CTE</h2>
+<p>Зачем: вопрос «сколько заказов дороже среднего чека?» требует двух шагов. Сначала посчитать средний чек, потом отобрать заказы дороже него. Можно выполнить два запроса и переписать число из первого во второй руками. Но тогда при новой выгрузке число устареет. <strong>Подзапрос</strong> — это запрос внутри запроса: база сама посчитает первый шаг и подставит результат во второй.</p>
+<aside class="callout callout-sql"><div class="callout-title">Как в SQL</div>
+<p>Всё это — обычный SQL, который вы, скорее всего, писали в SQL Server или PostgreSQL. В DuckDB он работает так же; разница только в том, что таблицы — это датафреймы и CSV-файлы.</p>
+</aside>
+<h3>Игрушечный пример руками</h3>
+<p>Пять заказов на 200, 300, 400, 500 и 600 ₽.</p>
+<ol>
+<li>Средний чек: (200 + 300 + 400 + 500 + 600) / 5 = 2000 / 5 = <strong>400 ₽</strong>.</li>
+<li>Дороже 400 ₽ — заказы на 500 и 600 ₽, то есть <strong>2 заказа</strong>. Заказ на 400 ₽ не проходит: <code>&gt;</code> строгое.</li>
+</ol>
+<p>То же одним запросом: внутренний <code>SELECT</code> в скобках считает 400, внешний сравнивает с ним каждую строку.</p>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+import pandas as pd
+
+toy = pd.DataFrame({&quot;amount&quot;: [200, 300, 400, 500, 600]})
+n = duckdb.sql(&quot;&quot;&quot;
+    SELECT COUNT(*)
+    FROM toy
+    WHERE amount &gt; (SELECT AVG(amount) FROM toy)   -- подзапрос вернёт одно число: 400
+&quot;&quot;&quot;).fetchone()[0]
+print(n)</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>(SELECT AVG(amount) FROM toy)</code> — <strong>скалярный подзапрос</strong>: он возвращает одну строку с одним столбцом, то есть одно число. Его можно поставить везде, где стоит число.</li>
+<li>Внешний запрос сравнивает <code>amount</code> каждой строки с этим числом и считает подходящие строки.</li>
+</ul>
+<h3>Три места, где живут подзапросы</h3>
+<table>
+<thead>
+<tr>
+<th>где</th>
+<th>что возвращает</th>
+<th>пример</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>в <code>WHERE … &gt; (…)</code></td>
+<td>одно значение</td>
+<td><code>amount &gt; (SELECT AVG(amount) FROM df)</code></td>
+</tr>
+<tr>
+<td>в <code>WHERE … IN (…)</code></td>
+<td>список значений — один столбец</td>
+<td><code>shop_id IN (SELECT shop_id FROM shops WHERE city = 'Казань')</code></td>
+</tr>
+<tr>
+<td>в <code>FROM (…) AS t</code></td>
+<td>целую таблицу</td>
+<td><code>FROM (SELECT shop_id, SUM(amount) AS revenue FROM df GROUP BY shop_id) AS t</code></td>
+</tr>
+</tbody>
+</table>
+<figure class="fig" data-fig="subquery-kinds"><div class="fig-scroll"><svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-subquery-kinds">
+  <title id="t-subquery-kinds">Подзапрос: одно значение, столбец или таблица</title>
+  <defs><marker id="ah-subquery-kinds" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="10" y="10" width="220" height="278" rx="8"/>
+  <text class="ink b" x="120.0" y="32" text-anchor="middle">скаляр: 1 × 1</text>
+  <text class="acc sm b" x="120.0" y="52" text-anchor="middle">WHERE amount &gt; ( … )</text>
+  <rect class="box" x="240" y="10" width="220" height="278" rx="8"/>
+  <text class="ink b" x="350.0" y="32" text-anchor="middle">столбец: n × 1</text>
+  <text class="acc sm b" x="350.0" y="52" text-anchor="middle">WHERE shop_id IN ( … )</text>
+  <rect class="box" x="470" y="10" width="220" height="278" rx="8"/>
+  <text class="ink b" x="580.0" y="32" text-anchor="middle">таблица: n × m</text>
+  <text class="acc sm b" x="580.0" y="52" text-anchor="middle">FROM ( … ) AS t</text>
+  <text class="ink2 sm" x="120.0" y="80" text-anchor="middle">SELECT AVG(amount) FROM df</text>
+  <rect class="box-acc" x="80" y="92" width="80" height="34" rx="4"/>
+  <text class="ink b" x="120" y="114" text-anchor="middle">339.97</text>
+  <text class="ink2 sm" x="120.0" y="146" text-anchor="middle">одна строка, один столбец —</text>
+  <text class="ink2 sm" x="120.0" y="162" text-anchor="middle">встаёт туда, где стоит число</text>
+  <rect class="box-err" x="22" y="182" width="196" height="92" rx="6"/>
+  <text class="err sm b" x="120.0" y="202" text-anchor="middle">вернул 2 строки и больше —</text>
+  <text class="err sm" x="120.0" y="218" text-anchor="middle">ошибка «More than one row</text>
+  <text class="err sm" x="120.0" y="234" text-anchor="middle">returned by a subquery»</text>
+  <text class="ink2 sm" x="120.0" y="256" text-anchor="middle">нужен агрегат или IN</text>
+  <text class="ink2 sm" x="350.0" y="80" text-anchor="middle">SELECT shop_id … 'Казань'</text>
+  <rect class="box" x="310" y="92" width="80" height="24" rx="3"/>
+  <text class="ink2 sm b" x="350.0" y="108.5" text-anchor="middle">shop_id</text>
+  <rect class="box-acc" x="310" y="118" width="80" height="24" rx="3"/>
+  <text class="ink sm" x="350.0" y="134.5" text-anchor="middle">KZN-1</text>
+  <rect class="box-acc" x="310" y="144" width="80" height="24" rx="3"/>
+  <text class="ink sm" x="350.0" y="160.5" text-anchor="middle">KZN-2</text>
+  <text class="ink2 sm" x="350.0" y="196" text-anchor="middle">список значений:</text>
+  <text class="ink2 sm" x="350.0" y="212" text-anchor="middle">строка проходит, если её</text>
+  <text class="ink2 sm" x="350.0" y="228" text-anchor="middle">shop_id есть в списке</text>
+  <text class="warn sm b" x="350.0" y="256" text-anchor="middle">NOT IN + NULL в списке → 0 строк</text>
+  <text class="ink2 sm" x="580.0" y="80" text-anchor="middle">SELECT shop_id, SUM(amount) …</text>
+  <rect class="box" x="510" y="92" width="140" height="22" rx="3"/>
+  <text class="ink2 sm b" x="545.0" y="107.5" text-anchor="middle">shop_id</text>
+  <text class="ink2 sm b" x="615.0" y="107.5" text-anchor="middle">revenue</text>
+  <rect class="box-acc" x="510" y="116" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="545.0" y="131.5" text-anchor="middle">PRM-1</text>
+  <text class="ink sm" x="615.0" y="131.5" text-anchor="middle">186 163</text>
+  <rect class="box-acc" x="510" y="140" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="545.0" y="155.5" text-anchor="middle">KZN-1</text>
+  <text class="ink sm" x="615.0" y="155.5" text-anchor="middle">181 365</text>
+  <rect class="box-acc" x="510" y="164" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="545.0" y="179.5" text-anchor="middle">KZN-2</text>
+  <text class="ink sm" x="615.0" y="179.5" text-anchor="middle">98 340</text>
+  <rect class="box-acc" x="510" y="188" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="545.0" y="203.5" text-anchor="middle">…</text>
+  <text class="ink sm" x="615.0" y="203.5" text-anchor="middle">…</text>
+  <text class="ink2 sm" x="580.0" y="226" text-anchor="middle">6 строк × 2 столбца — читается</text>
+  <text class="ink2 sm" x="580.0" y="242" text-anchor="middle">как обычная таблица</text>
+  <text class="ink2 sm b" x="580.0" y="266" text-anchor="middle">псевдоним AS t обязателен</text>
+</svg>
+</div><figcaption>
+<p>Форма результата подзапроса решает, где его можно поставить. Ячейка 1 × 1 — средний чек 339.97 ₽ — встаёт вместо числа в сравнении. Столбец — две казанские кофейни — служит списком для <code>IN</code>. Таблица из шести строк «кофейня — выручка» читается во <code>FROM</code>, как обычная таблица, и обязательно получает псевдоним.</p>
+</figcaption></figure>
+<p>На реальных данных: сколько заказов дороже среднего по сети и сколько заказов было в казанских кофейнях. Список кофеен Казани запрос берёт из справочника, а не из нашей памяти:</p>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+import pandas as pd
+
+df = pd.read_csv(&quot;orders_3m.csv&quot;)
+shops = pd.read_csv(&quot;shops.csv&quot;)
+
+above = duckdb.sql(&quot;&quot;&quot;
+    SELECT COUNT(*) FROM df
+    WHERE amount &gt; (SELECT AVG(amount) FROM df)
+&quot;&quot;&quot;).fetchone()[0]
+
+kazan = duckdb.sql(&quot;&quot;&quot;
+    SELECT COUNT(*) AS orders, SUM(amount) AS revenue
+    FROM df
+    WHERE shop_id IN (SELECT shop_id FROM shops WHERE city = &#x27;Казань&#x27;)
+&quot;&quot;&quot;).df()
+print(above)
+print(kazan)</code></pre></div>
+<p>Что получилось: средний чек сети — около 340 ₽, дороже него 702 заказа из 2089, то есть примерно треть. Казанские кофейни дали 833 заказа на 279 705 ₽ — ту же выручку, что и JOIN в прошлом разделе. Откроется в Казани третья кофейня — запрос подхватит её из справочника сам.</p>
+<div class="predict" data-q="q2"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">import duckdb
+import pandas as pd
+t = pd.DataFrame({&quot;x&quot;: [10, 20, 30, 40]})
+print(duckdb.sql(&quot;SELECT COUNT(*) FROM t WHERE x &gt;= (SELECT AVG(x) FROM t)&quot;).fetchone()[0])</code></pre>
+<ul>
+<li><code>3</code></li>
+<li>[x] <code>2</code></li>
+<li><code>4</code></li>
+</ul>
+<p>Почему: среднее — (10 + 20 + 30 + 40) / 4 = 25. Не меньше 25 только 30 и 40.</p>
+</div>
+<h3>CTE: подзапрос с именем</h3>
+<p>Когда шагов больше двух, подзапросы вкладываются друг в друга, и запрос приходится читать изнутри наружу. <strong>CTE</strong> (common table expression, «обобщённое табличное выражение») — то же самое, но шаги выносятся вперёд и получают имена: <code>WITH имя AS (запрос)</code>. Дальше по имени к ним обращаются как к обычным таблицам.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>CTE — как вспомогательные листы в Excel. На листе «по дням» вы считаете выручку каждого дня, на листе «средние» — среднее по листу «по дням», а итоговый лист ссылается на оба. Каждый лист можно открыть и проверить отдельно. Где аналогия хромает: «листы» CTE живут только во время одного запроса и нигде не сохраняются.</p>
+</aside>
+<p>Вопрос, который без промежуточного шага не решить: «Сколько дней каждая кофейня заработала больше своей обычной дневной выручки?» Нужны три шага: выручка по дням → средняя дневная выручка кофейни → сравнение каждого дня со своей средней.</p>
+<figure class="fig" data-fig="cte-chain"><div class="fig-scroll"><svg viewBox="0 0 700 318" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-cte-chain">
+  <title id="t-cte-chain">CTE шаг за шагом: заказы, дни, средние, итог</title>
+  <defs><marker id="ah-cte-chain" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="12" y="30" width="154" height="62" rx="6"/>
+  <text class="ink b" x="89.0" y="52" text-anchor="middle">df</text>
+  <text class="ink2 sm" x="89.0" y="69" text-anchor="middle">заказы</text>
+  <text class="mut sm" x="89.0" y="85" text-anchor="middle">2 089 строк</text>
+  <path class="ln" d="M168,61 L183,61" marker-end="url(#ah-cte-chain)"/>
+  <rect class="box" x="186" y="30" width="154" height="62" rx="6"/>
+  <text class="ink b" x="263.0" y="52" text-anchor="middle">daily</text>
+  <text class="ink2 sm" x="263.0" y="69" text-anchor="middle">кофейня × день</text>
+  <text class="mut sm" x="263.0" y="85" text-anchor="middle">530 строк</text>
+  <path class="ln" d="M342,61 L357,61" marker-end="url(#ah-cte-chain)"/>
+  <rect class="box" x="360" y="30" width="154" height="62" rx="6"/>
+  <text class="ink b" x="437.0" y="52" text-anchor="middle">avg_shop</text>
+  <text class="ink2 sm" x="437.0" y="69" text-anchor="middle">средняя кофейни</text>
+  <text class="mut sm" x="437.0" y="85" text-anchor="middle">6 строк</text>
+  <path class="ln" d="M516,61 L531,61" marker-end="url(#ah-cte-chain)"/>
+  <rect class="box-acc" x="534" y="30" width="154" height="62" rx="6"/>
+  <text class="ink b" x="611.0" y="52" text-anchor="middle">итог</text>
+  <text class="ink2 sm" x="611.0" y="69" text-anchor="middle">daily + avg_shop</text>
+  <text class="mut sm" x="611.0" y="85" text-anchor="middle">6 строк</text>
+  <text class="acc sm b" x="176" y="22" text-anchor="middle">шаг 1</text>
+  <text class="acc sm b" x="350" y="22" text-anchor="middle">шаг 2</text>
+  <text class="acc sm b" x="524" y="22" text-anchor="middle">шаг 3</text>
+  <path class="ln-acc dash" d="M263.0,94 V112 H564 V97" marker-end="url(#ah-cte-chain)"/>
+  <text class="acc sm" x="430" y="130" text-anchor="middle">daily ещё раз: каждый день — рядом со средней своей кофейни</text>
+  <text class="mut sm b" x="350" y="162" text-anchor="middle">пример — UFA-1</text>
+  <rect class="box" x="19" y="184" width="140" height="22" rx="3"/>
+  <text class="ink2 sm b" x="54.0" y="199.5" text-anchor="middle">время</text>
+  <text class="ink2 sm b" x="124.0" y="199.5" text-anchor="middle">amount</text>
+  <rect class="box" x="19" y="208" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="54.0" y="223.5" text-anchor="middle">08:06</text>
+  <text class="ink sm" x="124.0" y="223.5" text-anchor="middle">238</text>
+  <rect class="box" x="19" y="232" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="54.0" y="247.5" text-anchor="middle">13:40</text>
+  <text class="ink sm" x="124.0" y="247.5" text-anchor="middle">864</text>
+  <rect class="box" x="19" y="256" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="54.0" y="271.5" text-anchor="middle">12:43</text>
+  <text class="ink sm" x="124.0" y="271.5" text-anchor="middle">450</text>
+  <text class="ink2 sm" x="89.0" y="290" text-anchor="middle">01.09: сумма 1 552</text>
+  <rect class="box" x="193" y="184" width="140" height="22" rx="3"/>
+  <text class="ink2 sm b" x="228.0" y="199.5" text-anchor="middle">day</text>
+  <text class="ink2 sm b" x="298.0" y="199.5" text-anchor="middle">revenue</text>
+  <rect class="box" x="193" y="208" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="228.0" y="223.5" text-anchor="middle">01.09</text>
+  <text class="ink sm" x="298.0" y="223.5" text-anchor="middle">1 552</text>
+  <rect class="box" x="193" y="232" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="228.0" y="247.5" text-anchor="middle">02.09</text>
+  <text class="ink sm" x="298.0" y="247.5" text-anchor="middle">628</text>
+  <rect class="box" x="193" y="256" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="228.0" y="271.5" text-anchor="middle">03.09</text>
+  <text class="ink sm" x="298.0" y="271.5" text-anchor="middle">1 614</text>
+  <rect class="box" x="193" y="280" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="228.0" y="295.5" text-anchor="middle">…</text>
+  <text class="ink sm" x="298.0" y="295.5" text-anchor="middle">…</text>
+  <text class="ink2 sm" x="263.0" y="313" text-anchor="middle">87 дней</text>
+  <rect class="box" x="367" y="184" width="140" height="22" rx="3"/>
+  <text class="ink2 sm b" x="402.0" y="199.5" text-anchor="middle">shop_id</text>
+  <text class="ink2 sm b" x="472.0" y="199.5" text-anchor="middle">avg_rev</text>
+  <rect class="box" x="367" y="208" width="140" height="22" rx="3"/>
+  <text class="ink sm" x="402.0" y="223.5" text-anchor="middle">UFA-1</text>
+  <text class="ink sm" x="472.0" y="223.5" text-anchor="middle">833</text>
+  <text class="ink2 sm" x="437.0" y="244" text-anchor="middle">+ ещё 5 кофеен</text>
+  <rect class="box" x="536" y="184" width="150" height="22" rx="3"/>
+  <text class="ink2 sm b" x="561.0" y="199.5" text-anchor="middle">avg_rev</text>
+  <text class="ink2 sm b" x="611.0" y="199.5" text-anchor="middle">days</text>
+  <text class="ink2 sm b" x="661.0" y="199.5" text-anchor="middle">good</text>
+  <rect class="box-acc" x="536" y="208" width="150" height="22" rx="3"/>
+  <text class="ink sm" x="561.0" y="223.5" text-anchor="middle">833</text>
+  <text class="ink sm" x="611.0" y="223.5" text-anchor="middle">87</text>
+  <text class="ink sm" x="661.0" y="223.5" text-anchor="middle">35</text>
+  <text class="ink2 sm" x="611.0" y="244" text-anchor="middle">35 из 87 дней выше</text>
+  <text class="ink2 sm" x="611.0" y="260" text-anchor="middle">своей средней</text>
+</svg>
+</div><figcaption>
+<p>Три шага CTE: 2089 заказов сворачиваются в 530 строк «кофейня × день», те — в 6 средних. На последнем шаге <code>daily</code> читается ещё раз: каждый день встаёт рядом со средней своей кофейни. Внизу тот же путь для UFA-1: три заказа 1 сентября дают 1552 ₽ за день, средняя кофейни — 833 ₽, выше неё 35 дней из 87.</p>
+</figcaption></figure>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+import pandas as pd
+
+df = pd.read_csv(&quot;orders_3m.csv&quot;)
+duckdb.sql(&quot;&quot;&quot;
+    WITH daily AS (                       -- шаг 1: кофейня × день
+        SELECT shop_id, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue
+        FROM df
+        GROUP BY shop_id, day
+    ),
+    avg_shop AS (                         -- шаг 2: средняя дневная выручка кофейни
+        SELECT shop_id, AVG(revenue) AS avg_rev
+        FROM daily                        -- ссылаемся на шаг 1 по имени
+        GROUP BY shop_id
+    )
+    SELECT d.shop_id,
+           ROUND(a.avg_rev) AS avg_rev,
+           COUNT(*) AS days,
+           COUNT(*) FILTER (WHERE d.revenue &gt; a.avg_rev) AS good_days
+    FROM daily AS d
+    JOIN avg_shop AS a USING (shop_id)    -- шаг 3: каждый день рядом со своей средней
+    GROUP BY d.shop_id, a.avg_rev
+    ORDER BY d.shop_id
+&quot;&quot;&quot;).df()</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>WITH daily AS (…)</code> — первый шаг: одна строка на пару «кофейня × день».</li>
+<li><code>avg_shop AS (…)</code> — второй шаг идёт через запятую и читает <code>daily</code>, как обычную таблицу. Слово <code>WITH</code> пишется один раз.</li>
+<li>Основной <code>SELECT</code> соединяет дни со средними и считает два числа: всего дней и «хороших» дней. <code>COUNT(*) FILTER (WHERE …)</code> считает только строки, где условие верно, — это короче, чем <code>SUM(CASE WHEN … THEN 1 ELSE 0 END)</code>.</li>
+</ul>
+<p>Как читать результат: средняя дневная выручка у кофеен разная — от 833 ₽ в Уфе до 2046 ₽ на PRM-1, поэтому сравнивать дни с общей средней по сети было бы нечестно. Своё среднее каждая кофейня перекрывает в 40–49 % дней (у UFA-1 — 35 из 87, у TMN-1 — 44 из 89), то есть меньше чем в половине. Это нормально: несколько очень удачных дней поднимают среднее, и большинство дней оказывается ниже него.</p>
+<aside class="callout callout-note"><div class="callout-title">pandas делает то же переменными</div>
+<p>CTE в pandas — это просто промежуточные переменные: <code>daily = df.groupby(...)</code>, затем <code>avg_shop = daily.groupby(...)</code>, затем <code>merge</code>. Логика та же: шаг — имя — следующий шаг.</p>
+</aside>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Скалярный подзапрос вернул несколько строк.</strong> <code>WHERE amount &gt; (SELECT amount FROM df WHERE shop_id = 'PRM-1')</code> падает с ошибкой <code>More than one row returned by a subquery used as an expression</code>. Сравнивать с «несколькими числами сразу» нельзя: нужен агрегат (<code>AVG</code>, <code>MAX</code>) или <code>IN</code>.</li>
+<li><strong><code>NOT IN</code> и пустые значения.</strong> Вопрос: «сколько гостей с картой ни разу не заказывали доставку?» Запрос <code>client_id NOT IN (SELECT client_id FROM df WHERE channel = 'доставка')</code> вернёт <strong>0</strong> гостей. Причина — среди доставок есть заказы без карты, и в списке оказался <code>NULL</code>. Сравнение с <code>NULL</code> даёт «неизвестно», поэтому <code>NOT IN</code> не пропускает ни одной строки. Исправление: в подзапросе добавить <code>AND client_id IS NOT NULL</code> (получится 110 гостей) или писать <code>NOT EXISTS</code>.</li>
+<li><strong>Запятая и <code>WITH</code>.</strong> Второй CTE пишется через запятую, без второго <code>WITH</code>; после последнего CTE запятой нет.</li>
+</ul>
+</aside>
+<p>Почему <code>NOT IN</code> ломается из-за одного <code>NULL</code>: база раскрывает <code>x NOT IN (a, b, NULL)</code> в цепочку <code>x &lt;&gt; a AND x &lt;&gt; b AND x &lt;&gt; NULL</code>. Сравнение с <code>NULL</code> даёт не «ложь», а «неизвестно». Цепочка <code>AND</code>, в которой есть «неизвестно» и нет ни одной «лжи», тоже даёт «неизвестно», а <code>WHERE</code> пропускает только «истину».</p>
+<figure class="fig" data-fig="not-in-null"><div class="fig-scroll"><svg viewBox="0 0 700 312" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-not-in-null">
+  <title id="t-not-in-null">Почему NOT IN со значением NULL в списке не пропускает ни одной строки</title>
+  <defs><marker id="ah-not-in-null" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="mut sm b" x="20" y="26" text-anchor="start">подзапрос как есть</text>
+  <rect class="box" x="20" y="34" width="58" height="26" rx="4"/>
+  <text class="ink sm" x="49.0" y="51" text-anchor="middle">C1002</text>
+  <rect class="box" x="82" y="34" width="58" height="26" rx="4"/>
+  <text class="ink sm" x="111.0" y="51" text-anchor="middle">C1003</text>
+  <rect class="box" x="144" y="34" width="26" height="26" rx="4"/>
+  <text class="ink sm" x="157.0" y="51" text-anchor="middle">…</text>
+  <rect class="box-err" x="174" y="34" width="58" height="26" rx="4"/>
+  <text class="err sm b" x="203.0" y="51" text-anchor="middle">NULL</text>
+  <text class="ink2 sm" x="20" y="78" text-anchor="start">150 гостей с доставкой + NULL</text>
+  <text class="mut sm b" x="20" y="170" text-anchor="start">подзапрос + IS NOT NULL</text>
+  <rect class="box" x="20" y="178" width="58" height="26" rx="4"/>
+  <text class="ink sm" x="49.0" y="195" text-anchor="middle">C1002</text>
+  <rect class="box" x="82" y="178" width="58" height="26" rx="4"/>
+  <text class="ink sm" x="111.0" y="195" text-anchor="middle">C1003</text>
+  <rect class="box" x="144" y="178" width="26" height="26" rx="4"/>
+  <text class="ink sm" x="157.0" y="195" text-anchor="middle">…</text>
+  <text class="ink2 sm" x="20" y="222" text-anchor="start">150 гостей с доставкой</text>
+  <text class="ink2 sm" x="300" y="26" text-anchor="start">гость C1000 без доставок: NOT IN = цепочка AND</text>
+  <rect class="box" x="300" y="34" width="100" height="26" rx="4"/>
+  <text class="ink sm" x="350" y="51" text-anchor="middle">C1000 &lt;&gt; C1002</text>
+  <rect class="box-ok" x="300" y="68" width="100" height="24" rx="4"/>
+  <text class="ok sm b" x="350" y="84" text-anchor="middle">истина</text>
+  <rect class="box" x="436" y="34" width="100" height="26" rx="4"/>
+  <text class="ink sm" x="486" y="51" text-anchor="middle">C1000 &lt;&gt; C1003</text>
+  <rect class="box-ok" x="436" y="68" width="100" height="24" rx="4"/>
+  <text class="ok sm b" x="486" y="84" text-anchor="middle">истина</text>
+  <rect class="box" x="592" y="34" width="100" height="26" rx="4"/>
+  <text class="ink sm" x="642" y="51" text-anchor="middle">C1000 &lt;&gt; NULL</text>
+  <rect class="box-err" x="592" y="68" width="100" height="24" rx="4"/>
+  <text class="err sm b" x="642" y="84" text-anchor="middle">неизвестно</text>
+  <text class="mut sm b" x="418" y="51" text-anchor="middle">AND</text>
+  <text class="mut sm b" x="564" y="51" text-anchor="middle">AND …</text>
+  <path class="ln" d="M496,94 L496,106" marker-end="url(#ah-not-in-null)"/>
+  <rect class="box-err" x="374" y="108" width="244" height="26" rx="4"/>
+  <text class="err sm b" x="496" y="125" text-anchor="middle">итог: неизвестно → строка отброшена</text>
+  <text class="err sm b" x="496" y="152" text-anchor="middle">так у каждого гостя → результат 0</text>
+  <rect class="box" x="300" y="178" width="100" height="26" rx="4"/>
+  <text class="ink sm" x="350" y="195" text-anchor="middle">C1000 &lt;&gt; C1002</text>
+  <rect class="box-ok" x="300" y="212" width="100" height="24" rx="4"/>
+  <text class="ok sm b" x="350" y="228" text-anchor="middle">истина</text>
+  <rect class="box" x="436" y="178" width="100" height="26" rx="4"/>
+  <text class="ink sm" x="486" y="195" text-anchor="middle">C1000 &lt;&gt; C1003</text>
+  <rect class="box-ok" x="436" y="212" width="100" height="24" rx="4"/>
+  <text class="ok sm b" x="486" y="228" text-anchor="middle">истина</text>
+  <text class="mut sm b" x="418" y="195" text-anchor="middle">AND</text>
+  <text class="mut sm b" x="564" y="195" text-anchor="middle">AND …</text>
+  <rect class="box dash" x="592" y="178" width="100" height="26" rx="4"/>
+  <text class="mut sm" x="642" y="195" text-anchor="middle">NULL нет</text>
+  <path class="ln" d="M496,238 L496,250" marker-end="url(#ah-not-in-null)"/>
+  <rect class="box-ok" x="374" y="252" width="244" height="26" rx="4"/>
+  <text class="ok sm b" x="496" y="269" text-anchor="middle">итог: истина → гость в результате</text>
+  <text class="ok sm b" x="20" y="268" text-anchor="start">110 гостей из 260 (= 260 − 150)</text>
+  <text class="ink2 sm" x="350" y="304" text-anchor="middle">сравнение с NULL — не «ложь», а «неизвестно»; WHERE пропускает только «истину»</text>
+</svg>
+</div><figcaption>
+<p>Гость C1000 доставку не заказывал. Сравнения с C1002 и C1003 дают «истину», а сравнение с <code>NULL</code> — «неизвестно». Поэтому вся цепочка — «неизвестно», и строка отброшена. Так у каждого гостя, отсюда 0. Без <code>NULL</code> в списке цепочка — «истина»: 110 гостей из 260.</p>
+</figcaption></figure>
+<p>Убедитесь сами, как <code>NULL</code> ломает <code>NOT IN</code>:</p>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+import pandas as pd
+
+df = pd.read_csv(&quot;orders_3m.csv&quot;)
+wrong = duckdb.sql(&quot;&quot;&quot;
+    SELECT COUNT(DISTINCT client_id) FROM df
+    WHERE client_id NOT IN (SELECT client_id FROM df WHERE channel = &#x27;доставка&#x27;)
+&quot;&quot;&quot;).fetchone()[0]
+right = duckdb.sql(&quot;&quot;&quot;
+    SELECT COUNT(DISTINCT client_id) FROM df
+    WHERE client_id NOT IN (SELECT client_id FROM df
+                            WHERE channel = &#x27;доставка&#x27; AND client_id IS NOT NULL)
+&quot;&quot;&quot;).fetchone()[0]
+print(wrong, right)</code></pre></div>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-subquery"><b>7</b> Дорогие заказы Казани</a><a href="#task-cte"><b>8</b> Средняя дневная выручка городов</a></div>
+<div class="fb" data-sec="подзапросы-и-cte"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="оконные-функции-топ-1-в-каждой-группе">Оконные функции: топ-1 в каждой группе</h2>
+<p>Зачем: «самый популярный напиток в <strong>каждой</strong> кофейне» — частый вопрос. <code>GROUP BY shop_id, drink</code> посчитает заказы, но не выберет лучший напиток внутри каждой кофейни. Для этого есть оконная функция <code>ROW_NUMBER()</code>: она нумерует строки внутри каждой группы — 1 получает лучшая. Остаётся оставить строки с номером 1.</p>
+<p>Здесь — только этот приём: он нужен в задачах урока. Остальные оконные функции: ранги с ничьими и <code>LAG</code> — в уроке «Оконные функции SQL», накопительные итоги и скользящие средние — в уроке «Рамки окна SQL: накопительные итоги и скользящие средние».</p>
+<h3>Игрушечный пример руками</h3>
+<p>Две кофейни. В A: латте — 5 заказов, раф — 3. В B: чай — 4, латте — 2.</p>
+<ol>
+<li><code>ROW_NUMBER() OVER (PARTITION BY shop ORDER BY n DESC)</code> нумерует строки <strong>заново в каждой кофейне</strong>, по убыванию <code>n</code>: A-латте → 1, A-раф → 2; B-чай → 1, B-латте → 2.</li>
+<li>Оставляем строки с номером 1: A — латте, B — чай.</li>
+</ol>
+<figure class="fig" data-fig="top1-rn"><div class="fig-scroll"><svg viewBox="0 0 700 412" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-top1-rn">
+  <title id="t-top1-rn">ROW_NUMBER нумерует строки внутри каждой кофейни, фильтр rn = 1 оставляет лидера</title>
+  <defs><marker id="ah-top1-rn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="mut sm b" x="150" y="22" text-anchor="middle">counts: кофейня × напиток</text>
+  <text class="mut sm" x="150" y="38" text-anchor="middle">66 строк, по 11 на кофейню</text>
+  <text class="acc sm b" x="430" y="22" text-anchor="middle">ROW_NUMBER() OVER (PARTITION BY shop_id</text>
+  <text class="acc sm b" x="430" y="38" text-anchor="middle">ORDER BY n DESC, drink) AS rn</text>
+  <rect class="box" x="300" y="52" width="280" height="24" rx="3"/>
+  <text class="ink2 sm b" x="335.0" y="68.5" text-anchor="middle">shop_id</text>
+  <text class="ink2 sm b" x="425.0" y="68.5" text-anchor="middle">drink</text>
+  <text class="ink2 sm b" x="505.0" y="68.5" text-anchor="middle">n</text>
+  <text class="ink2 sm b" x="555.0" y="68.5" text-anchor="middle">rn</text>
+  <rect class="box-acc" x="300" y="78" width="280" height="24" rx="3"/>
+  <text class="ink sm" x="335.0" y="94.5" text-anchor="middle">PRM-1</text>
+  <text class="ink sm" x="425.0" y="94.5" text-anchor="middle">Капучино</text>
+  <text class="ink sm" x="505.0" y="94.5" text-anchor="middle">103</text>
+  <text class="acc sm b" x="555.0" y="94.5" text-anchor="middle">1</text>
+  <rect class="box-acc" x="300" y="104" width="280" height="24" rx="3"/>
+  <text class="ink sm" x="335.0" y="120.5" text-anchor="middle">PRM-1</text>
+  <text class="ink sm" x="425.0" y="120.5" text-anchor="middle">Латте</text>
+  <text class="ink sm" x="505.0" y="120.5" text-anchor="middle">79</text>
+  <text class="acc sm b" x="555.0" y="120.5" text-anchor="middle">2</text>
+  <rect class="box-acc" x="300" y="130" width="280" height="24" rx="3"/>
+  <text class="ink sm" x="335.0" y="146.5" text-anchor="middle">PRM-1</text>
+  <text class="ink sm" x="425.0" y="146.5" text-anchor="middle">Американо</text>
+  <text class="ink sm" x="505.0" y="146.5" text-anchor="middle">72</text>
+  <text class="acc sm b" x="555.0" y="146.5" text-anchor="middle">3</text>
+  <text class="mut sm" x="425.0" y="172.5" text-anchor="middle">… ещё 8</text>
+  <rect class="box-acc" x="40" y="78" width="230" height="24" rx="3"/>
+  <text class="ink sm" x="75.0" y="94.5" text-anchor="middle">PRM-1</text>
+  <text class="ink sm" x="165.0" y="94.5" text-anchor="middle">Капучино</text>
+  <text class="ink sm" x="245.0" y="94.5" text-anchor="middle">103</text>
+  <rect class="box-acc" x="40" y="104" width="230" height="24" rx="3"/>
+  <text class="ink sm" x="75.0" y="120.5" text-anchor="middle">PRM-1</text>
+  <text class="ink sm" x="165.0" y="120.5" text-anchor="middle">Латте</text>
+  <text class="ink sm" x="245.0" y="120.5" text-anchor="middle">79</text>
+  <rect class="box-acc" x="40" y="130" width="230" height="24" rx="3"/>
+  <text class="ink sm" x="75.0" y="146.5" text-anchor="middle">PRM-1</text>
+  <text class="ink sm" x="165.0" y="146.5" text-anchor="middle">Американо</text>
+  <text class="ink sm" x="245.0" y="146.5" text-anchor="middle">72</text>
+  <text class="mut sm" x="165.0" y="172.5" text-anchor="middle">… ещё 8</text>
+  <rect class="box" x="40" y="52" width="230" height="24" rx="3"/>
+  <text class="ink2 sm b" x="75.0" y="68.5" text-anchor="middle">shop_id</text>
+  <text class="ink2 sm b" x="165.0" y="68.5" text-anchor="middle">drink</text>
+  <text class="ink2 sm b" x="245.0" y="68.5" text-anchor="middle">n</text>
+  <text class="ink2 sm" x="600" y="95" text-anchor="start">окно PRM-1</text>
+  <text class="ink2 sm" x="600" y="111" text-anchor="start">нумерация</text>
+  <text class="ink2 sm" x="600" y="127" text-anchor="start">с 1 заново</text>
+  <path class="ln" d="M272,116 L296,116" marker-end="url(#ah-top1-rn)"/>
+  <rect class="box-ok" x="300" y="192" width="280" height="24" rx="3"/>
+  <text class="ink sm" x="335.0" y="208.5" text-anchor="middle">UFA-1</text>
+  <text class="ink sm" x="425.0" y="208.5" text-anchor="middle">Капучино</text>
+  <text class="ink sm" x="505.0" y="208.5" text-anchor="middle">44</text>
+  <text class="acc sm b" x="555.0" y="208.5" text-anchor="middle">1</text>
+  <rect class="box-ok" x="300" y="218" width="280" height="24" rx="3"/>
+  <text class="ink sm" x="335.0" y="234.5" text-anchor="middle">UFA-1</text>
+  <text class="ink sm" x="425.0" y="234.5" text-anchor="middle">Американо</text>
+  <text class="ink sm" x="505.0" y="234.5" text-anchor="middle">34</text>
+  <text class="acc sm b" x="555.0" y="234.5" text-anchor="middle">2</text>
+  <rect class="box-ok" x="300" y="244" width="280" height="24" rx="3"/>
+  <text class="ink sm" x="335.0" y="260.5" text-anchor="middle">UFA-1</text>
+  <text class="ink sm" x="425.0" y="260.5" text-anchor="middle">Латте</text>
+  <text class="ink sm" x="505.0" y="260.5" text-anchor="middle">34</text>
+  <text class="acc sm b" x="555.0" y="260.5" text-anchor="middle">3</text>
+  <text class="mut sm" x="425.0" y="286.5" text-anchor="middle">… ещё 8</text>
+  <rect class="box-ok" x="40" y="192" width="230" height="24" rx="3"/>
+  <text class="ink sm" x="75.0" y="208.5" text-anchor="middle">UFA-1</text>
+  <text class="ink sm" x="165.0" y="208.5" text-anchor="middle">Капучино</text>
+  <text class="ink sm" x="245.0" y="208.5" text-anchor="middle">44</text>
+  <rect class="box-ok" x="40" y="218" width="230" height="24" rx="3"/>
+  <text class="ink sm" x="75.0" y="234.5" text-anchor="middle">UFA-1</text>
+  <text class="ink sm" x="165.0" y="234.5" text-anchor="middle">Американо</text>
+  <text class="ink sm" x="245.0" y="234.5" text-anchor="middle">34</text>
+  <rect class="box-ok" x="40" y="244" width="230" height="24" rx="3"/>
+  <text class="ink sm" x="75.0" y="260.5" text-anchor="middle">UFA-1</text>
+  <text class="ink sm" x="165.0" y="260.5" text-anchor="middle">Латте</text>
+  <text class="ink sm" x="245.0" y="260.5" text-anchor="middle">34</text>
+  <text class="mut sm" x="165.0" y="286.5" text-anchor="middle">… ещё 8</text>
+  <text class="ink2 sm" x="600" y="209" text-anchor="start">окно UFA-1</text>
+  <text class="ink2 sm" x="600" y="225" text-anchor="start">нумерация</text>
+  <text class="ink2 sm" x="600" y="241" text-anchor="start">с 1 заново</text>
+  <path class="ln" d="M272,230 L296,230" marker-end="url(#ah-top1-rn)"/>
+  <text class="warn sm" x="445" y="310" text-anchor="middle">ничья Американо = Латте = 34: номера 2 и 3 раздал второй ключ drink</text>
+  <path class="ln" d="M445,320 V336" marker-end="url(#ah-top1-rn)"/>
+  <text class="ink2 sm b" x="435" y="332" text-anchor="end">внешний запрос: WHERE rn = 1</text>
+  <rect class="box-acc" x="300" y="340" width="230" height="24" rx="3"/>
+  <text class="ink sm" x="335.0" y="356.5" text-anchor="middle">PRM-1</text>
+  <text class="ink sm" x="425.0" y="356.5" text-anchor="middle">Капучино</text>
+  <text class="ink sm" x="505.0" y="356.5" text-anchor="middle">103</text>
+  <rect class="box-ok" x="300" y="366" width="230" height="24" rx="3"/>
+  <text class="ink sm" x="335.0" y="382.5" text-anchor="middle">UFA-1</text>
+  <text class="ink sm" x="425.0" y="382.5" text-anchor="middle">Капучино</text>
+  <text class="ink sm" x="505.0" y="382.5" text-anchor="middle">44</text>
+  <text class="ink2 sm" x="548" y="358" text-anchor="start">+ ещё 4 кофейни:</text>
+  <text class="ink2 sm" x="548" y="374" text-anchor="start">итог 6 строк — по лидеру</text>
+</svg>
+</div><figcaption>
+<p>Путь запроса ниже на двух кофейнях из шести. CTE <code>counts</code> — по строке на пару «кофейня × напиток», 66 строк. <code>ROW_NUMBER()</code> с <code>PARTITION BY shop_id</code> начинает нумерацию заново в каждой кофейне, по убыванию <code>n</code>. Внешний <code>WHERE rn = 1</code> оставляет первую строку каждой кофейни — 6 строк. В UFA-1 американо и латте набрали по 34 заказа: номера 2 и 3 им раздал второй ключ <code>drink</code>, без него — случай.</p>
+</figcaption></figure>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+import pandas as pd
+
+df = pd.read_csv(&quot;orders_3m.csv&quot;)
+duckdb.sql(&quot;&quot;&quot;
+    WITH counts AS (
+        SELECT shop_id, drink, COUNT(*) AS n
+        FROM df
+        GROUP BY shop_id, drink
+    )
+    SELECT shop_id, drink, n
+    FROM (
+        SELECT *, ROW_NUMBER() OVER (PARTITION BY shop_id ORDER BY n DESC, drink) AS rn
+        FROM counts
+    )
+    WHERE rn = 1
+    ORDER BY shop_id
+&quot;&quot;&quot;).df()</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li>CTE <code>counts</code> — обычный <code>GROUP BY</code>: сколько раз заказывали каждый напиток в каждой кофейне.</li>
+<li><code>OVER (PARTITION BY shop_id ORDER BY n DESC, drink)</code> — «окно»: нумеровать внутри каждой кофейни по убыванию <code>n</code>. Второй ключ <code>drink</code> решает ничьи: без него из двух напитков с равным <code>n</code> первым может оказаться любой.</li>
+<li><code>WHERE rn = 1</code> стоит во <strong>внешнем</strong> запросе. В том же запросе, где считается <code>rn</code>, так написать нельзя — почему, разберём в следующем разделе.</li>
+</ul>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-window"><b>9</b> Лучший день каждой кофейни</a></div>
+<div class="fb" data-sec="оконные-функции-топ-1-в-каждой-группе"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="в-каком-порядке-выполняется-запрос">В каком порядке выполняется запрос</h2>
+<p>Зачем: в прошлом разделе понадобился подзапрос, чтобы отфильтровать <code>rn = 1</code>. Почему нельзя было написать <code>WHERE rn = 1</code> прямо в том же запросе? И почему <code>HAVING</code> нельзя заменить на <code>WHERE</code>? Ответ один: запрос <strong>пишется</strong> в одном порядке, а <strong>выполняется</strong> в другом.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Запрос — как заказ в кофейне. Вы говорите: «Капучино, большой, на овсяном, с собой», но бариста делает всё в своём порядке: берёт стакан, варит эспрессо, взбивает молоко, надевает крышку. Крышку нельзя надеть до того, как налит кофе, как бы вы ни перечисляли пожелания. Где аналогия хромает: у SQL этот порядок строго один и тот же для всех запросов.</p>
+</aside>
+<p>Логический порядок выполнения:</p>
+<table>
+<thead>
+<tr>
+<th>шаг</th>
+<th>что делает</th>
+<th>что уже можно использовать</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. <code>FROM</code> и <code>JOIN</code></td>
+<td>берёт таблицы и соединяет их</td>
+<td>исходные столбцы</td>
+</tr>
+<tr>
+<td>2. <code>WHERE</code></td>
+<td>отбрасывает строки</td>
+<td>исходные столбцы</td>
+</tr>
+<tr>
+<td>3. <code>GROUP BY</code></td>
+<td>сворачивает строки в группы</td>
+<td>столбцы группировки</td>
+</tr>
+<tr>
+<td>4. <code>HAVING</code></td>
+<td>отбрасывает группы</td>
+<td>агрегаты: <code>SUM</code>, <code>COUNT</code></td>
+</tr>
+<tr>
+<td>5. <code>SELECT</code></td>
+<td>считает выражения, псевдонимы и <strong>оконные функции</strong></td>
+<td>всё выше</td>
+</tr>
+<tr>
+<td>6. <code>DISTINCT</code></td>
+<td>убирает повторы</td>
+<td>столбцы результата</td>
+</tr>
+<tr>
+<td>7. <code>ORDER BY</code></td>
+<td>сортирует</td>
+<td>псевдонимы из <code>SELECT</code></td>
+</tr>
+<tr>
+<td>8. <code>LIMIT</code></td>
+<td>оставляет первые строки</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<figure class="fig" data-fig="sql-order"><div class="fig-scroll"><svg viewBox="0 0 700 372" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-sql-order">
+  <title id="t-sql-order">Порядок записи и порядок выполнения запроса</title>
+  <defs><marker id="ah-sql-order" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="mut sm b" x="90" y="26" text-anchor="middle">как пишем</text>
+  <text class="mut sm b" x="355" y="26" text-anchor="middle">как выполняет база</text>
+  <rect class="box-acc" x="20" y="40" width="140" height="30" rx="5"/>
+  <text class="ink sm b" x="90" y="60" text-anchor="middle">SELECT DISTINCT</text>
+  <rect class="box" x="20" y="80" width="140" height="30" rx="5"/>
+  <text class="ink sm b" x="90" y="100" text-anchor="middle">FROM … JOIN</text>
+  <rect class="box" x="20" y="120" width="140" height="30" rx="5"/>
+  <text class="ink sm b" x="90" y="140" text-anchor="middle">WHERE</text>
+  <rect class="box" x="20" y="160" width="140" height="30" rx="5"/>
+  <text class="ink sm b" x="90" y="180" text-anchor="middle">GROUP BY</text>
+  <rect class="box" x="20" y="200" width="140" height="30" rx="5"/>
+  <text class="ink sm b" x="90" y="220" text-anchor="middle">HAVING</text>
+  <rect class="box" x="20" y="240" width="140" height="30" rx="5"/>
+  <text class="ink sm b" x="90" y="260" text-anchor="middle">ORDER BY</text>
+  <rect class="box" x="20" y="280" width="140" height="30" rx="5"/>
+  <text class="ink sm b" x="90" y="300" text-anchor="middle">LIMIT</text>
+  <rect class="box" x="270" y="40" width="170" height="30" rx="5"/>
+  <text class="mut sm b" x="286" y="60" text-anchor="start">1</text>
+  <text class="ink sm b" x="362" y="60" text-anchor="middle">FROM … JOIN</text>
+  <text class="ink2 sm" x="452" y="60" text-anchor="start">берёт и соединяет таблицы</text>
+  <rect class="box-warn" x="270" y="80" width="170" height="30" rx="5"/>
+  <text class="mut sm b" x="286" y="100" text-anchor="start">2</text>
+  <text class="ink sm b" x="362" y="100" text-anchor="middle">WHERE</text>
+  <text class="warn sm" x="452" y="100" text-anchor="start">отбирает строки: сумм и окон нет</text>
+  <rect class="box" x="270" y="120" width="170" height="30" rx="5"/>
+  <text class="mut sm b" x="286" y="140" text-anchor="start">3</text>
+  <text class="ink sm b" x="362" y="140" text-anchor="middle">GROUP BY</text>
+  <text class="ink2 sm" x="452" y="140" text-anchor="start">сворачивает строки в группы</text>
+  <rect class="box" x="270" y="160" width="170" height="30" rx="5"/>
+  <text class="mut sm b" x="286" y="180" text-anchor="start">4</text>
+  <text class="ink sm b" x="362" y="180" text-anchor="middle">HAVING</text>
+  <text class="ink2 sm" x="452" y="180" text-anchor="start">отбирает группы по агрегатам</text>
+  <rect class="box-acc" x="270" y="200" width="170" height="30" rx="5"/>
+  <text class="mut sm b" x="286" y="220" text-anchor="start">5</text>
+  <text class="ink sm b" x="362" y="220" text-anchor="middle">SELECT + окна</text>
+  <text class="acc sm" x="452" y="220" text-anchor="start">выражения, псевдонимы, окна (rn)</text>
+  <rect class="box-acc" x="270" y="240" width="170" height="30" rx="5"/>
+  <text class="mut sm b" x="286" y="260" text-anchor="start">6</text>
+  <text class="ink sm b" x="362" y="260" text-anchor="middle">DISTINCT</text>
+  <text class="ink2 sm" x="452" y="260" text-anchor="start">убирает повторы</text>
+  <rect class="box" x="270" y="280" width="170" height="30" rx="5"/>
+  <text class="mut sm b" x="286" y="300" text-anchor="start">7</text>
+  <text class="ink sm b" x="362" y="300" text-anchor="middle">ORDER BY</text>
+  <text class="ink2 sm" x="452" y="300" text-anchor="start">уже видит псевдонимы из SELECT</text>
+  <rect class="box" x="270" y="320" width="170" height="30" rx="5"/>
+  <text class="mut sm b" x="286" y="340" text-anchor="start">8</text>
+  <text class="ink sm b" x="362" y="340" text-anchor="middle">LIMIT</text>
+  <text class="ink2 sm" x="452" y="340" text-anchor="start">оставляет первые N строк</text>
+  <path class="ln-mut" d="M160,95.0 C215,95.0 215,55.0 266,55.0" marker-end="url(#ah-sql-order)"/>
+  <path class="ln-mut" d="M160,135.0 C215,135.0 215,95.0 266,95.0" marker-end="url(#ah-sql-order)"/>
+  <path class="ln-mut" d="M160,175.0 C215,175.0 215,135.0 266,135.0" marker-end="url(#ah-sql-order)"/>
+  <path class="ln-mut" d="M160,215.0 C215,215.0 215,175.0 266,175.0" marker-end="url(#ah-sql-order)"/>
+  <path class="ln-mut" d="M160,255.0 C215,255.0 215,295.0 266,295.0" marker-end="url(#ah-sql-order)"/>
+  <path class="ln-mut" d="M160,295.0 C215,295.0 215,335.0 266,335.0" marker-end="url(#ah-sql-order)"/>
+  <path class="ln-acc" d="M160,55.0 C235,55.0 205,215.0 266,215.0" marker-end="url(#ah-sql-order)"/>
+  <path class="ln-acc" d="M160,55.0 C235,55.0 205,255.0 266,255.0" marker-end="url(#ah-sql-order)"/>
+  <text class="ink2 sm" x="350" y="366" text-anchor="middle">SELECT пишут первым, а выполняется он пятым: WHERE не видит ни rn, ни SUM</text>
+</svg>
+</div><figcaption>
+<p>Слева — порядок, в котором запрос пишут, справа — в котором база его выполняет. Все стрелки идут почти горизонтально, кроме одной: <code>SELECT</code> пишут первым, а выполняется он пятым, вместе с оконными функциями. Поэтому <code>WHERE</code> (шаг 2) ещё не знает ни сумм, ни <code>rn</code>, а <code>ORDER BY</code> (шаг 7) уже видит псевдонимы.</p>
+</figcaption></figure>
+<p>Отсюда три правила, которые объясняют почти все ошибки «а почему так нельзя?»:</p>
+<ol>
+<li><strong>Агрегат в <code>WHERE</code> — ошибка.</strong> На шаге 2 групп ещё нет, считать <code>SUM</code> не по чему. Фильтр по сумме группы — в <code>HAVING</code> (шаг 4).</li>
+<li><strong>Оконная функция в <code>WHERE</code> — ошибка.</strong> Окна считаются на шаге 5, когда <code>WHERE</code> уже отработал. Чтобы отфильтровать по номеру строки, нужен ещё один уровень запроса: CTE или подзапрос (или <code>QUALIFY</code> — о нём в уроке «Оконные функции SQL»).</li>
+<li><strong>Псевдоним из <code>SELECT</code> можно использовать в <code>ORDER BY</code></strong> — сортировка идёт после <code>SELECT</code>.</li>
+</ol>
+<h3>Игрушечный пример руками</h3>
+<p>Таблица из четырёх чисел: 5, 1, 4, 2. Запрос нумерует строки по возрастанию и оставляет только числа больше 1.</p>
+<ol>
+<li><code>WHERE x &gt; 1</code> — остаются 5, 4, 2.</li>
+<li><code>ROW_NUMBER() OVER (ORDER BY x)</code> — нумерует <strong>оставшиеся</strong>: 2 → 1, 4 → 2, 5 → 3.</li>
+<li><code>ORDER BY x</code> — выводит по возрастанию.</li>
+</ol>
+<div class="predict" data-q="q3"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">import duckdb
+import pandas as pd
+t = pd.DataFrame({&quot;x&quot;: [5, 1, 4, 2]})
+r = duckdb.sql(&quot;&quot;&quot;
+    SELECT x, ROW_NUMBER() OVER (ORDER BY x) AS rn
+    FROM t
+    WHERE x &gt; 1
+    ORDER BY x
+&quot;&quot;&quot;).fetchall()
+for x, rn in r:
+    print(x, rn)</code></pre>
+<ul>
+<li><code>2 2 | 4 3 | 5 4</code></li>
+<li>[x] <code>2 1 | 4 2 | 5 3</code></li>
+<li><code>1 1 | 2 2 | 4 3 | 5 4</code></li>
+</ul>
+<p>Почему: <code>WHERE</code> (шаг 2) срабатывает раньше оконной функции (шаг 5). Строка с единицей выброшена до нумерации, поэтому нумерация начинается с двойки.</p>
+</div>
+<p>А вот что будет, если поставить оконную функцию в <code>WHERE</code>:</p>
+<div class="cell" data-expect-error="1"><pre class="cell-src"><code>import duckdb
+import pandas as pd
+
+df = pd.read_csv(&quot;orders_3m.csv&quot;)
+duckdb.sql(&quot;&quot;&quot;
+    SELECT order_id, shop_id, amount,
+           ROW_NUMBER() OVER (PARTITION BY shop_id ORDER BY amount DESC) AS rn
+    FROM df
+    WHERE rn = 1          -- на шаге WHERE столбца rn ещё нет
+&quot;&quot;&quot;).df()</code></pre></div>
+<p>DuckDB отвечает: <code>WHERE clause cannot contain window functions!</code> Исправление — вынести нумерацию на уровень ниже и фильтровать снаружи:</p>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+import pandas as pd
+
+df = pd.read_csv(&quot;orders_3m.csv&quot;)
+duckdb.sql(&quot;&quot;&quot;
+    WITH ranked AS (
+        SELECT order_id, shop_id, amount,
+               ROW_NUMBER() OVER (PARTITION BY shop_id ORDER BY amount DESC, order_id) AS rn
+        FROM df
+    )
+    SELECT shop_id, order_id, amount
+    FROM ranked
+    WHERE rn = 1          -- здесь rn — обычный столбец таблицы ranked
+    ORDER BY shop_id
+&quot;&quot;&quot;).df()</code></pre></div>
+<p>Что здесь происходит: внутри CTE <code>ranked</code> нумерация уже посчитана и стала обычным столбцом. Внешний запрос начинает свой порядок заново — с <code>FROM ranked</code>, и для его <code>WHERE</code> столбец <code>rn</code> существует. Получается самый дорогой заказ каждой кофейни. <code>order_id</code> в <code>ORDER BY</code> окна — на случай двух заказов с одинаковой суммой: так результат не зависит от случая.</p>
+<aside class="callout callout-note"><div class="callout-title">DuckDB добрее других баз</div>
+<p>DuckDB разрешает ссылаться на псевдоним из <code>SELECT</code> в <code>WHERE</code> и <code>GROUP BY</code>: <code>SELECT amount * 2 AS a FROM df WHERE a &gt; 1000</code> в нём работает. В PostgreSQL и SQL Server этот же запрос упадёт: там нужно повторить выражение (<code>WHERE amount * 2 &gt; 1000</code>) или вынести его в CTE. Если запрос потом переедет в рабочую базу, лучше сразу писать «по-строгому».</p>
+</aside>
+<h3>EXPLAIN: как база собирается выполнять запрос</h3>
+<aside class="callout callout-note"><div class="callout-title">Можно пропустить</div>
+<p>Этот подраздел — на будущее, для долгих запросов к большой базе. В задачах урока <code>EXPLAIN</code> не нужен.</p>
+</aside>
+<p>Логический порядок — это про смысл: какой результат получится. Как именно база будет считать, решает её <strong>оптимизатор</strong>. Например, он может отфильтровать строки прямо при чтении файла, если результат от этого не меняется. Посмотреть план выполнения можно, если написать перед запросом <code>EXPLAIN</code>:</p>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+import pandas as pd
+
+df = pd.read_csv(&quot;orders_3m.csv&quot;)
+plan = duckdb.sql(&quot;&quot;&quot;
+    EXPLAIN
+    SELECT shop_id, SUM(amount) AS revenue
+    FROM df
+    WHERE channel = &#x27;доставка&#x27;
+    GROUP BY shop_id
+    ORDER BY revenue DESC
+&quot;&quot;&quot;).fetchall()
+print(plan[0][1])   # первая строка результата, второй столбец — текст плана</code></pre></div>
+<p>Как читать план: <strong>снизу вверх</strong>. Внизу — чтение таблицы (<code>PANDAS_SCAN</code> для датафрейма, <code>READ_CSV</code> для файла) и список столбцов, которые реально читаются, — только три из девяти. Выше — <code>FILTER</code> по каналу, затем группировка <code>HASH_GROUP_BY</code> и сортировка <code>ORDER_BY</code>. Числа вида <code>~417 rows</code> — оценка, сколько строк дойдёт до шага.</p>
+<figure class="fig" data-fig="explain-plan"><div class="fig-scroll"><svg viewBox="0 0 700 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-explain-plan">
+  <title id="t-explain-plan">План EXPLAIN: читаем снизу вверх</title>
+  <defs><marker id="ah-explain-plan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box-acc" x="170" y="254" width="250" height="50" rx="5"/>
+  <text class="ink b" x="295.0" y="273" text-anchor="middle">PANDAS_SCAN</text>
+  <text class="ink2 sm" x="295.0" y="291" text-anchor="middle">читает df: 3 столбца из 9 · ~2 089 строк</text>
+  <text class="acc sm" x="460" y="284" text-anchor="start">FROM df</text>
+  <path class="ln-mut dash" d="M424,279 H454"/>
+  <path class="ln" d="M295.0,252 L295.0,232" marker-end="url(#ah-explain-plan)"/>
+  <rect class="box" x="170" y="178" width="250" height="50" rx="5"/>
+  <text class="ink b" x="295.0" y="197" text-anchor="middle">FILTER</text>
+  <text class="ink2 sm" x="295.0" y="215" text-anchor="middle">channel = 'доставка' · ~417 строк</text>
+  <text class="acc sm" x="460" y="208" text-anchor="start">WHERE channel = 'доставка'</text>
+  <path class="ln-mut dash" d="M424,203 H454"/>
+  <path class="ln" d="M295.0,176 L295.0,156" marker-end="url(#ah-explain-plan)"/>
+  <rect class="box" x="170" y="102" width="250" height="50" rx="5"/>
+  <text class="ink b" x="295.0" y="121" text-anchor="middle">HASH_GROUP_BY</text>
+  <text class="ink2 sm" x="295.0" y="139" text-anchor="middle">группы shop_id, sum(amount)</text>
+  <text class="acc sm" x="460" y="132" text-anchor="start">GROUP BY shop_id</text>
+  <path class="ln-mut dash" d="M424,127 H454"/>
+  <path class="ln" d="M295.0,100 L295.0,80" marker-end="url(#ah-explain-plan)"/>
+  <rect class="box" x="170" y="26" width="250" height="50" rx="5"/>
+  <text class="ink b" x="295.0" y="45" text-anchor="middle">ORDER_BY</text>
+  <text class="ink2 sm" x="295.0" y="63" text-anchor="middle">sum(amount) DESC</text>
+  <text class="acc sm" x="460" y="56" text-anchor="start">ORDER BY revenue DESC</text>
+  <path class="ln-mut dash" d="M424,51 H454"/>
+  <path class="ln-acc" d="M80,300 L80,34" marker-end="url(#ah-explain-plan)"/>
+  <text class="acc sm b" x="60" y="170" text-anchor="end">читать</text>
+  <text class="acc sm b" x="60" y="186" text-anchor="end">снизу</text>
+  <text class="acc sm b" x="60" y="202" text-anchor="end">вверх</text>
+  <text class="mut sm b" x="460" y="14" text-anchor="start">часть запроса</text>
+  <text class="mut sm b" x="295.0" y="14" text-anchor="middle">узел плана</text>
+  <text class="mut sm" x="295.0" y="322" text-anchor="middle">служебные узлы PROJECTION опущены; «~» — оценка, а не точное число</text>
+</svg>
+</div><figcaption>
+<p>План запроса «выручка доставки по кофейням» — дерево узлов. Данные текут снизу вверх: чтение трёх нужных столбцов, фильтр по каналу, группировка, сортировка. Справа — часть запроса, из которой вырос каждый узел. Оценки строк у вашей версии DuckDB могут немного отличаться.</p>
+</figcaption></figure>
+<p>Аналитику <code>EXPLAIN</code> нужен в двух случаях: запрос к большой базе идёт подозрительно долго (смотрят, не читается ли лишнее и не соединяются ли таблицы «каждая с каждой»), или результат странный и хочется понять, какие шаги вообще выполняются. <code>EXPLAIN ANALYZE</code> выполняет запрос и показывает время каждого шага. В PostgreSQL и SQL Server тоже есть <code>EXPLAIN</code> (в SQL Server — «план выполнения» в SSMS), вид плана у каждой базы свой.</p>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>Запрос <code>SELECT shop_id, SUM(amount) AS revenue FROM df WHERE revenue &gt; 50000 GROUP BY shop_id</code> должен оставить кофейни с выручкой больше 50 000 ₽, но падает с ошибкой. Как исправить и почему?</p>
+<ul>
+<li>[x] Перенести условие в <code>HAVING SUM(amount) &gt; 50000</code>: <code>WHERE</code> выполняется до группировки, когда сумм по кофейням ещё нет
+<blockquote>
+<p><code>WHERE</code> отбирает строки-заказы (шаг 2), а <code>HAVING</code> — готовые группы (шаг 4). Условие на сумму группы — это условие на группу.</p>
+</blockquote>
+</li>
+<li>[ ] Поставить <code>WHERE</code> после <code>GROUP BY</code> — порядок слов в запросе и есть порядок выполнения
+<blockquote>
+<p>Порядок слов в SQL фиксирован, и он не совпадает с порядком выполнения. <code>WHERE</code> после <code>GROUP BY</code> — синтаксическая ошибка.</p>
+</blockquote>
+</li>
+<li>[ ] Заменить <code>revenue</code> на <code>SUM(amount)</code> в <code>WHERE</code>
+<blockquote>
+<p>Агрегат в <code>WHERE</code> тоже запрещён: <code>WHERE clause cannot contain aggregates</code>. На шаге <code>WHERE</code> групп ещё нет.</p>
+</blockquote>
+</li>
+<li>[ ] Добавить <code>ORDER BY revenue</code> — тогда псевдоним станет доступен
+<blockquote>
+<p><code>ORDER BY</code> выполняется в самом конце и на <code>WHERE</code> никак не влияет.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-order-fix"><b>10</b> Почините запрос: первый заказ гостя</a></div>
+<div class="fb" data-sec="в-каком-порядке-выполняется-запрос"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="когда-что">Когда что</h2>
+<ul>
+<li><strong>pandas</strong> — когда нужно много шагов подряд: почистить, добавить столбцы, построить график; когда задача «естественно» ложится на методы.</li>
+<li><strong>SQL в DuckDB</strong> — когда запрос привычнее написать на SQL: сложные JOIN, оконные функции, CTE; когда нужно быстро проверить гипотезу на большом CSV.</li>
+<li><strong>Сверка</strong> — хорошая практика: посчитать ключевую цифру двумя способами. Расхождение сразу покажет ошибку в фильтре или соединении.</li>
+</ul>
+<div class="predict" data-q="q4"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">import duckdb
+import pandas as pd
+t = pd.DataFrame({&quot;x&quot;: [1, 2, 3]})
+print(duckdb.sql(&quot;SELECT COUNT(*) FROM t WHERE x &gt; 1&quot;).fetchone()[0])</code></pre>
+<ul>
+<li><code>3</code></li>
+<li>[x] <code>2</code></li>
+<li><code>(2,)</code></li>
+</ul>
+<p>Почему: условию <code>x &gt; 1</code> подходят 2 и 3. <code>fetchone()</code> вернул кортеж <code>(2,)</code>, а <code>[0]</code> достал из него число.</p>
+</div>
+<div class="quiz-c" data-q="c2"><div class="predict-title">Проверьте себя</div>
+<p>Отчёт уже собран в pandas, и нужно посчитать скользящую сумму по дням внутри каждой кофейни. Вы привыкли к оконным функциям SQL. Что разумно сделать?</p>
+<ul>
+<li>[x] Написать запрос с <code>SUM(...) OVER (PARTITION BY ... ORDER BY ...)</code> через duckdb прямо по датафрейму
+<blockquote>
+<p>duckdb читает датафрейм как таблицу без копирования. Что удобнее выразить на SQL, то и пишите на SQL.</p>
+</blockquote>
+</li>
+<li>[ ] Выгрузить таблицу в CSV, загрузить в базу и посчитать там
+<blockquote>
+<p>Лишние шаги: duckdb работает с датафреймом прямо в памяти.</p>
+</blockquote>
+</li>
+<li>[ ] Переписать всё на чистый Python с циклами
+<blockquote>
+<p>Это медленнее и длиннее. И в pandas, и в SQL для этого есть готовые средства.</p>
+</blockquote>
+</li>
+<li>[ ] Оконные функции доступны только в настоящей базе данных
+<blockquote>
+<p>duckdb — встроенная аналитическая база, оконные функции в ней есть.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="fb" data-sec="когда-что"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="разберём-вместе-один-вопрос-два-языка">Разберём вместе: один вопрос — два языка</h2>
+<p>Вопрос: «Выручка и число заказов по городам, только города с выручкой больше 90 тысяч, по убыванию». Переведём его по частям:</p>
+<table>
+<thead>
+<tr>
+<th>шаг</th>
+<th>SQL</th>
+<th>pandas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>соединить со справочником</td>
+<td><code>FROM df JOIN shops USING (shop_id)</code></td>
+<td><code>df.merge(shops, on=&quot;shop_id&quot;)</code></td>
+</tr>
+<tr>
+<td>сгруппировать</td>
+<td><code>GROUP BY city</code></td>
+<td><code>.groupby(&quot;city&quot;)</code></td>
+</tr>
+<tr>
+<td>посчитать</td>
+<td><code>SUM(amount) AS revenue, COUNT(*) AS orders</code></td>
+<td><code>.agg(revenue=(&quot;amount&quot;, &quot;sum&quot;), orders=(&quot;amount&quot;, &quot;size&quot;))</code></td>
+</tr>
+<tr>
+<td>отфильтровать итог</td>
+<td><code>HAVING SUM(amount) &gt; 90000</code></td>
+<td><code>t[t[&quot;revenue&quot;] &gt; 90_000]</code></td>
+</tr>
+<tr>
+<td>отсортировать</td>
+<td><code>ORDER BY revenue DESC</code></td>
+<td><code>.sort_values(&quot;revenue&quot;, ascending=False)</code></td>
+</tr>
+</tbody>
+</table>
+<p>По шагам выйдет: Казань — 279 705 ₽, Пермь — 261 540 ₽, Тюмень — 96 489 ₽; Уфа (72 461 ₽) не проходит фильтр.</p>
+<div class="cell"><pre class="cell-src"><code>import duckdb
+import pandas as pd
+df = pd.read_csv(&quot;orders_3m.csv&quot;)
+shops = pd.read_csv(&quot;shops.csv&quot;)
+a = duckdb.sql(&quot;&quot;&quot;
+    SELECT city, SUM(amount) AS revenue, COUNT(*) AS orders
+    FROM df JOIN shops USING (shop_id)
+    GROUP BY city HAVING SUM(amount) &gt; 90000
+    ORDER BY revenue DESC
+&quot;&quot;&quot;).df()
+t = df.merge(shops, on=&quot;shop_id&quot;).groupby(&quot;city&quot;).agg(revenue=(&quot;amount&quot;, &quot;sum&quot;), orders=(&quot;amount&quot;, &quot;size&quot;))
+b = t[t[&quot;revenue&quot;] &gt; 90_000].sort_values(&quot;revenue&quot;, ascending=False)
+print(a)
+print(b)</code></pre></div>
+<p>Что получилось: шаги одни и те же, меняется только запись. Если в pandas что-то не выходит, можно сформулировать запрос на SQL, а потом перевести строку за строкой — или оставить SQL: DuckDB работает с теми же таблицами.</p>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong><code>.fetchone()</code> для таблицы.</strong> Он вернёт только первую строку; таблица целиком — <code>.df()</code>.</li>
+<li><strong>Кавычки.</strong> Строки в SQL — в одинарных кавычках (<code>'доставка'</code>), а весь запрос — в тройных двойных <code>&quot;&quot;&quot;…&quot;&quot;&quot;</code>.</li>
+<li><strong>Имя таблицы ≠ имя переменной.</strong> DuckDB видит DataFrame по имени переменной Python; переименовали переменную — меняйте и запрос.</li>
+<li><strong>Сравнение после <code>ROUND</code>.</strong> <code>ROUND</code> в SQL и <code>round</code> в Python могут по-разному округлять половинки; сверяйте с допуском.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-reconcile"><b>11</b> Сверка двух способов</a></div>
+<div class="fb" data-sec="разберём-вместе-один-вопрос-два-языка"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-total" data-task="total" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Выручка запросом</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#sql-по-датафрейму">↑ К теории: SQL по датафрейму</a>
+  <div class="task-text prose"><p>Посчитайте <code>revenue</code> — сумму <code>amount</code> по таблице <code>df</code> SQL-запросом через DuckDB.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-group" data-task="group" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">GROUP BY запросом</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#sql-по-датафрейму">↑ К теории: SQL по датафрейму</a>
+  <div class="task-text prose"><p>Получите <code>by_channel</code> — DataFrame со столбцами <code>channel</code> и <code>orders</code> (число заказов), отсортированный по убыванию <code>orders</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-p-sql" data-task="p-sql" data-level="warmup" data-kind="parsons">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">Соберите запрос к файлу</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#прямо-из-csv">↑ К теории: Прямо из CSV</a>
+  <div class="task-text prose"><p>Соберите программу, которая выводит число заказов размера L прямо из CSV.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-join" data-task="join" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">4</span>
+    <h3 class="task-title">Города запросом</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#join-как-вы-привыкли">↑ К теории: JOIN — как вы привыкли</a>
+  <div class="task-text prose"><p>Соберите <code>by_city</code> — DataFrame <code>city</code>, <code>revenue</code> с выручкой по городам, отсортированный по убыванию. Соедините <code>df</code> и <code>shops</code> в SQL.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-having" data-task="having" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">5</span>
+    <h3 class="task-title">HAVING</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#sql-по-датафрейму">↑ К теории: SQL по датафрейму</a>
+  <div class="task-text prose"><p>Получите <code>rare</code> — <strong>список</strong> напитков (по алфавиту), которые заказывали меньше 100 раз, одним SQL-запросом с <code>HAVING</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-from-file" data-task="from-file" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">6</span>
+    <h3 class="task-title">Прямо из файла</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#прямо-из-csv">↑ К теории: Прямо из CSV</a>
+  <div class="task-text prose"><p>Не загружая данные в pandas, посчитайте <code>avg_check_delivery</code> — средний чек доставки, округлённый до двух знаков (<code>ROUND</code> в SQL).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-subquery" data-task="subquery" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">7</span>
+    <h3 class="task-title">Дорогие заказы Казани</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#подзапросы-и-cte">↑ К теории: Подзапросы и CTE</a>
+  <div class="task-text prose"><p>Посчитайте <code>big_kzn</code> — число заказов в кофейнях <strong>Казани</strong>, сумма которых больше среднего чека <strong>по всей сети</strong>. Список казанских кофеен возьмите из <code>shops</code> подзапросом с <code>IN</code>, средний чек — скалярным подзапросом. Номера кофеен руками не вписывайте.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-cte" data-task="cte" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">8</span>
+    <h3 class="task-title">Средняя дневная выручка городов</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#подзапросы-и-cte">↑ К теории: Подзапросы и CTE</a>
+  <div class="task-text prose"><p>Соберите <code>city_daily</code> — DataFrame со столбцами <code>city</code> и <code>avg_daily</code>: средняя <strong>дневная</strong> выручка города, округлённая до целого, по убыванию. Сначала в CTE посчитайте выручку «город × день» (соедините заказы со <code>shops</code>), потом усредните её по городам.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-window" data-task="window" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">9</span>
+    <h3 class="task-title">Лучший день каждой кофейни</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#оконные-функции-топ-1-в-каждой-группе">↑ К теории: Оконные функции: топ-1 в каждой группе</a>
+  <div class="task-text prose"><p>С помощью оконной функции найдите для каждой кофейни день с максимальной выручкой. Результат <code>best_days</code> — DataFrame со столбцами <code>shop_id</code>, <code>day</code>, <code>revenue</code>, по одной строке на кофейню, отсортированный по <code>shop_id</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-order-fix" data-task="order-fix" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">10</span>
+    <h3 class="task-title">Почините запрос: первый заказ гостя</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#в-каком-порядке-выполняется-запрос">↑ К теории: В каком порядке выполняется запрос</a>
+  <div class="task-text prose"><p>Аналитик хотел получить первый заказ каждого гостя с картой, но запрос в заготовке падает с ошибкой <code>WHERE clause cannot contain window functions!</code>. Почините его, чтобы <code>first_orders</code> стал DataFrame со столбцами <code>client_id</code>, <code>datetime</code>, <code>amount</code>: по одной строке на гостя (заказы без карты не нужны), по возрастанию <code>client_id</code>. Нумерацию оставьте оконной функцией.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-reconcile" data-task="reconcile" data-level="star" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">11</span>
+    <h3 class="task-title">Сверка двух способов</h3>
+    <span class="lvl lvl-star">Со звёздочкой</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#разберём-вместе-один-вопрос-два-языка">↑ К теории: Разберём вместе: один вопрос — два языка</a>
+  <div class="task-text prose"><p>Посчитайте средний чек по каналам двумя способами — pandas (<code>pd_avg</code>) и SQL (<code>sql_avg</code>), оба как словари «канал → средний чек, округлённый до 2 знаков». Сохраните <code>match = True</code>, если результаты совпадают.</p>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li><code>import duckdb</code>; <code>duckdb.sql(&quot;SELECT … FROM df&quot;).df()</code> — запрос к датафрейму <code>df</code> по его имени, результат — снова DataFrame.</li><li><code>.fetchone()[0]</code> — одно значение; <code>.df()</code> — таблица.</li><li>Прямо из файла: <code>FROM 'orders_3m.csv'</code> — DuckDB сам определит столбцы и типы.</li><li>В DuckDB <code>/</code> — обычное деление (<code>7/2 = 3.5</code>), целочисленное — <code>//</code>.</li><li><code>date_trunc('month', t)</code> обрезает дату до начала месяца (<code>2026-09-14 10:31</code> → <code>2026-09-01</code>); в SQL Server 2022 — <code>DATETRUNC</code>.</li><li>Топ-1 в каждой группе: <code>ROW_NUMBER() OVER (PARTITION BY группа ORDER BY … DESC, второй_ключ)</code> и <code>WHERE rn = 1</code> во внешнем запросе. Остальные оконные функции — в уроке «Оконные функции SQL».</li><li>SQL и pandas можно смешивать: что проще выразить запросом — запросом, остальное — методами pandas.</li><li>Подзапрос — запрос в скобках: одно число в <code>WHERE x &gt; (…)</code>, список в <code>IN (…)</code>, таблица в <code>FROM (…)</code>. CTE <code>WITH имя AS (…)</code> — тот же подзапрос с именем; шаги через запятую.</li><li><code>NOT IN</code> со списком, где есть <code>NULL</code>, не пропускает ни одной строки: добавьте в подзапрос <code>IS NOT NULL</code> или пишите <code>NOT EXISTS</code>.</li><li>Порядок выполнения: FROM/JOIN → WHERE → GROUP BY → HAVING → SELECT (и окна) → DISTINCT → ORDER BY → LIMIT. Поэтому агрегаты фильтруют в HAVING, а по оконной функции — уровнем выше (CTE).</li><li><code>EXPLAIN запрос</code> показывает план выполнения; читают снизу вверх, от чтения таблицы к результату.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="06b-timezones.html"><span class="pl">← Предыдущий</span><span class="pt">10. Часовые пояса и unix-время</span></a><a class="next" href="07a-sql-python.html"><span class="pl">Следующий урок →</span><span class="pt">12. SQL из Python к базе: параметры и подключения</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#sql-по-датафрейму">SQL по датафрейму</a></li><li><a href="#прямо-из-csv">Прямо из CSV</a></li><li><a href="#join-как-вы-привыкли">JOIN — как вы привыкли</a></li><li><a href="#подзапросы-и-cte">Подзапросы и CTE</a></li><li><a href="#оконные-функции-топ-1-в-каждой-группе">Оконные функции: топ-1 в каждой группе</a></li><li><a href="#в-каком-порядке-выполняется-запрос">В каком порядке выполняется запрос</a></li><li><a href="#когда-что">Когда что</a></li><li><a href="#разберём-вместе-один-вопрос-два-языка">Разберём вместе: один вопрос — два языка</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch02/07-duckdb", "title": "SQL прямо по датафрейму — DuckDB", "chapter": "pandas — таблицы как в SQL", "tasks": [{"id": "total", "title": "Выручка запросом", "level": "warmup", "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")", "setup": "", "check": "import pandas as _pd\nwant = _pd.read_csv('orders_3m.csv')['amount'].sum()\nassert close(need('revenue'), want), f'revenue = {need(\"revenue\")}, а нужно {want}.'\nassert 'duckdb.sql' in _code, 'Посчитайте через duckdb.sql.'", "hints": ["<p>В запросе таблица называется так же, как переменная Python, — <code>df<\/code>.<\/p>\n", "<p><code>duckdb.sql(&quot;SELECT SUM(amount) FROM df&quot;).fetchone()[0]<\/code> — <code>fetchone()<\/code> возвращает строку-кортеж, <code>[0]<\/code> — её первое значение.<\/p>\n"], "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nrevenue = duckdb.sql(\"SELECT SUM(amount) FROM df\").fetchone()[0]", "explain": "", "parsons": ""}, {"id": "group", "title": "GROUP BY запросом", "level": "warmup", "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")", "setup": "", "check": "import pandas as _pd\nb = need('by_channel', _pd.DataFrame)\nassert list(b.columns) == ['channel', 'orders'], f'Столбцы: {list(b.columns)}.'\nwant = _pd.read_csv('orders_3m.csv')['channel'].value_counts()\nassert b['channel'].tolist() == list(want.index) and [int(x) for x in b['orders']] == [int(x) for x in want.values], f'by_channel не совпадает: {b.values.tolist()}.'", "hints": ["<p>Результат запроса превращается в DataFrame методом <code>.df()<\/code>.<\/p>\n", "<p><code>SELECT channel, COUNT(*) AS orders FROM df GROUP BY channel ORDER BY orders DESC<\/code>, в конце — <code>.df()<\/code>.<\/p>\n"], "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nby_channel = duckdb.sql(\"\"\"\n    SELECT channel, COUNT(*) AS orders\n    FROM df\n    GROUP BY channel\n    ORDER BY orders DESC\n\"\"\").df()", "explain": "", "parsons": ""}, {"id": "p-sql", "title": "Соберите запрос к файлу", "level": "warmup", "starter": "", "setup": "", "check": "import pandas as _pd\nwant = (_pd.read_csv('orders_3m.csv')['size'] == 'L').sum()\nassert _lines == [str(want)], f'Должно вывестись {want}. Сейчас: {_lines}'", "hints": ["<p>Сначала импорт и текст запроса, потом выполнение и вывод.<\/p>\n", "<p>Имя файла в запросе — в одинарных кавычках: <code>FROM 'orders_3m.csv' WHERE size = 'L'<\/code>.<\/p>\n"], "solution": "import duckdb\nquery = \"SELECT COUNT(*) FROM 'orders_3m.csv' WHERE size = 'L'\"\nn = duckdb.sql(query).fetchone()[0]\nprint(n)", "explain": "", "parsons": "import duckdb\nquery = \"SELECT COUNT(*) FROM 'orders_3m.csv' WHERE size = 'L'\"\nn = duckdb.sql(query).fetchone()[0]\nprint(n)"}, {"id": "join", "title": "Города запросом", "level": "base", "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")", "setup": "", "check": "import pandas as _pd\nf = _pd.read_csv('orders_3m.csv').merge(_pd.read_csv('shops.csv'), on='shop_id')\nwant = f.groupby('city')['amount'].sum().sort_values(ascending=False)\nb = need('by_city', _pd.DataFrame)\nassert list(b.columns) == ['city', 'revenue'], f'Столбцы: {list(b.columns)}.'\nassert b['city'].tolist() == list(want.index), f'Порядок городов: {b[\"city\"].tolist()}.'\nassert all(abs(float(x) - float(y)) < 1e-6 for x, y in zip(b['revenue'], want.values)), 'Выручка не совпадает.'", "hints": ["<p><code>FROM df JOIN shops USING (shop_id)<\/code> — и обычный <code>GROUP BY city<\/code>.<\/p>\n", "<p>Выручку назовите <code>revenue<\/code> (<code>SUM(amount) AS revenue<\/code>) и отсортируйте <code>ORDER BY revenue DESC<\/code>.<\/p>\n"], "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\nby_city = duckdb.sql(\"\"\"\n    SELECT s.city, SUM(d.amount) AS revenue\n    FROM df AS d\n    JOIN shops AS s USING (shop_id)\n    GROUP BY s.city\n    ORDER BY revenue DESC\n\"\"\").df()", "explain": "<p>Казань лидирует (279 705 ₽), за ней Пермь (261 540 ₽). Запрос — привычный SQL, только таблицы — это DataFrame в памяти Python: никакой базы данных поднимать не нужно.<\/p>\n", "parsons": ""}, {"id": "having", "title": "HAVING", "level": "base", "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")", "setup": "", "check": "import pandas as _pd\nvc = _pd.read_csv('orders_3m.csv')['drink'].value_counts()\nwant = sorted(vc[vc < 100].index)\nassert need('rare') == want, f'rare = {need(\"rare\")}, а нужно {want}.'\nassert 'HAVING' in _code.upper(), 'Используйте HAVING.'", "hints": ["<p><code>HAVING<\/code> фильтрует уже посчитанные группы — как маска после <code>groupby<\/code> в pandas.<\/p>\n", "<p><code>SELECT drink FROM df GROUP BY drink HAVING COUNT(*) &lt; 100 ORDER BY drink<\/code>, затем <code>.df()[&quot;drink&quot;].tolist()<\/code>.<\/p>\n"], "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nrare = duckdb.sql(\"\"\"\n    SELECT drink FROM df\n    GROUP BY drink\n    HAVING COUNT(*) < 100\n    ORDER BY drink\n\"\"\").df()[\"drink\"].tolist()", "explain": "<p>Реже 100 раз заказывали матчу (81) и сезонный напиток (82). Тот же результат в pandas — <code>size()<\/code> по напиткам и маска; в SQL — <code>HAVING<\/code>, выбирайте то, что быстрее пишется вам.<\/p>\n", "parsons": ""}, {"id": "from-file", "title": "Прямо из файла", "level": "base", "starter": "import duckdb", "setup": "", "check": "import pandas as _pd\nd = _pd.read_csv('orders_3m.csv')\nwant = round(d[d['channel'] == 'доставка']['amount'].mean(), 2)\nassert close(need('avg_check_delivery'), want, 0.006), f'avg_check_delivery = {need(\"avg_check_delivery\")}, а нужно {want}.'\nassert 'read_csv' not in _code, 'Решите без pandas — запросом к файлу.'", "hints": ["<p>DuckDB читает CSV прямо по имени файла в <code>FROM<\/code>.<\/p>\n", "<p><code>SELECT ROUND(AVG(amount), 2) FROM 'orders_3m.csv' WHERE channel = 'доставка'<\/code>, затем <code>.fetchone()[0]<\/code>.<\/p>\n"], "solution": "import duckdb\navg_check_delivery = duckdb.sql(\"\"\"\n    SELECT ROUND(AVG(amount), 2) FROM 'orders_3m.csv' WHERE channel = 'доставка'\n\"\"\").fetchone()[0]", "explain": "<p>Средний чек доставки — 337.36 ₽, почти как в зале. Запрос к файлу удобен, когда файл большой: DuckDB читает только нужные столбцы и не загружает всё в память.<\/p>\n", "parsons": ""}, {"id": "subquery", "title": "Дорогие заказы Казани", "level": "base", "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")", "setup": "", "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv'); _s = _pd.read_csv('shops.csv')\n_k = _d[_d['shop_id'].isin(_s.loc[_s['city'] == 'Казань', 'shop_id'])]\nwant = int((_k['amount'] > _d['amount'].mean()).sum())\ngot = need('big_kzn')\nassert 'KZN-' not in _code, 'Номера кофеен вписаны руками — возьмите их из shops подзапросом: shop_id IN (SELECT shop_id FROM shops WHERE ...).'\nassert 'IN' in _code.upper() and _code.upper().count('SELECT') >= 3, 'Нужны два подзапроса: IN (SELECT …) для кофеен и (SELECT AVG …) для среднего чека.'\nassert int(got) == want, f'big_kzn = {got}, а нужно другое число. Средний чек — по всей сети (без фильтра по городу), сравнение строгое: amount > среднего.'", "hints": ["<p>Два условия в <code>WHERE<\/code> через <code>AND<\/code>: кофейня из Казани и сумма больше среднего. Каждое условие — со своим подзапросом.<\/p>\n", "<p><code>shop_id IN (SELECT shop_id FROM shops WHERE city = 'Казань')<\/code> и <code>amount &gt; (SELECT AVG(amount) FROM df)<\/code>.<\/p>\n", "<div class=\"cell\"><pre class=\"cell-src\"><code>big_kzn = duckdb.sql(&quot;&quot;&quot;\n    SELECT COUNT(*) FROM df\n    WHERE shop_id IN (SELECT ... FROM shops WHERE ...)\n      AND amount &gt; (SELECT ... FROM df)\n&quot;&quot;&quot;).fetchone()[0]<\/code><\/pre><\/div>\n"], "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\nbig_kzn = duckdb.sql(\"\"\"\n    SELECT COUNT(*) FROM df\n    WHERE shop_id IN (SELECT shop_id FROM shops WHERE city = 'Казань')\n      AND amount > (SELECT AVG(amount) FROM df)\n\"\"\").fetchone()[0]", "explain": "<p>Дороже среднего по сети (около 340 ₽) — 283 казанских заказа из 833, примерно 34 %. По всей сети таких заказов 702 из 2089, тоже около трети: Казань здесь не выделяется. Типичная ошибка — посчитать средний чек внутри подзапроса только по Казани (<code>SELECT AVG(amount) FROM df WHERE shop_id IN …<\/code>): тогда сравнение идёт с другим порогом, и число заказов получится другим. В pandas то же самое — две маски: <code>df[&quot;shop_id&quot;].isin(kzn_ids) &amp; (df[&quot;amount&quot;] &gt; df[&quot;amount&quot;].mean())<\/code>.<\/p>\n", "parsons": ""}, {"id": "cte", "title": "Средняя дневная выручка городов", "level": "base", "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")", "setup": "", "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime']).merge(_pd.read_csv('shops.csv'), on='shop_id')\n_w = _d.groupby(['city', _d['datetime'].dt.date])['amount'].sum().groupby(level=0).mean().round().sort_values(ascending=False)\nb = need('city_daily', _pd.DataFrame)\nassert list(b.columns) == ['city', 'avg_daily'], f'Столбцы: {list(b.columns)}, а нужны city и avg_daily.'\nassert 'WITH' in _code.upper(), 'Решите через CTE: WITH daily AS (...) SELECT ...'\nassert b['city'].tolist() == list(_w.index), f'Порядок городов: {b[\"city\"].tolist()}. Нужна сортировка по avg_daily по убыванию.'\n_a = [float(x) for x in b['avg_daily']]\nif any(abs(x - y) > 0.51 for x, y in zip(_a, _w.values)):\n    assert False, f'avg_daily = {_a}. Это не средняя дневная выручка. Похоже на среднее по заказам? Сначала сложите выручку внутри дня, потом усредняйте дни.'", "hints": ["<p>В одном <code>GROUP BY<\/code> это не посчитать: сначала нужна сумма за каждый день, а потом среднее этих сумм. Это два уровня — CTE и основной запрос.<\/p>\n", "<p>CTE: <code>SELECT city, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue FROM df JOIN shops USING (shop_id) GROUP BY city, day<\/code>. Основной запрос: <code>AVG(revenue)<\/code> по <code>city<\/code>.<\/p>\n", "<div class=\"cell\"><pre class=\"cell-src\"><code>city_daily = duckdb.sql(&quot;&quot;&quot;\n    WITH daily AS (\n        SELECT city, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df JOIN shops USING (shop_id)\n        GROUP BY ...\n    )\n    SELECT city, ROUND(AVG(...)) AS avg_daily\n    FROM daily\n    GROUP BY city\n    ORDER BY ...\n&quot;&quot;&quot;).df()<\/code><\/pre><\/div>\n"], "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\ncity_daily = duckdb.sql(\"\"\"\n    WITH daily AS (\n        SELECT city, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        JOIN shops USING (shop_id)\n        GROUP BY city, day\n    )\n    SELECT city, ROUND(AVG(revenue)) AS avg_daily\n    FROM daily\n    GROUP BY city\n    ORDER BY avg_daily DESC\n\"\"\").df()", "explain": "<p>Казань в среднем приносит 3074 ₽ в день, Пермь — 2874 ₽, Тюмень — 1084 ₽, Уфа — 833 ₽. Каждый город — две кофейни или одна, и дневная выручка города складывается из всех его кофеен. Если бы вы написали <code>AVG(amount)<\/code> без CTE, получился бы средний <strong>чек<\/strong> (около 340 ₽ во всех городах) — совсем другая метрика. В pandas этот запрос — две группировки подряд: <code>full.groupby([&quot;city&quot;, full[&quot;datetime&quot;].dt.date])[&quot;amount&quot;].sum().groupby(level=0).mean()<\/code>.<\/p>\n", "parsons": ""}, {"id": "window", "title": "Лучший день каждой кофейни", "level": "plus", "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])", "setup": "", "check": "import pandas as _pd\nd = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\ndaily = d.groupby(['shop_id', d['datetime'].dt.date])['amount'].sum()\nwant = daily.groupby(level=0).max()\nb = need('best_days', _pd.DataFrame)\nassert list(b.columns) == ['shop_id', 'day', 'revenue'], f'Столбцы: {list(b.columns)}.'\nassert b['shop_id'].tolist() == list(want.index), 'Должно быть по одной строке на кофейню, по порядку shop_id.'\nassert all(abs(float(x) - float(y)) < 1e-6 for x, y in zip(b['revenue'], want.values)), 'Выручка лучших дней не совпадает.'", "hints": ["<p>Два шага: сначала выручка «кофейня × день», потом нумерация дней внутри каждой кофейни по убыванию выручки.<\/p>\n", "<p>CTE с выручкой по <code>shop_id<\/code> и <code>CAST(datetime AS DATE) AS day<\/code>, затем <code>ROW_NUMBER() OVER (PARTITION BY shop_id ORDER BY revenue DESC)<\/code> и <code>WHERE rn = 1<\/code>.<\/p>\n"], "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\nbest_days = duckdb.sql(\"\"\"\n    WITH daily AS (\n        SELECT shop_id, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        GROUP BY shop_id, day\n    )\n    SELECT shop_id, day, revenue\n    FROM (\n        SELECT *, ROW_NUMBER() OVER (PARTITION BY shop_id ORDER BY revenue DESC) AS rn\n        FROM daily\n    )\n    WHERE rn = 1\n    ORDER BY shop_id\n\"\"\").df()", "explain": "<p>Для каждой кофейни — одна строка с её лучшим днём. <code>ROW_NUMBER<\/code> нумерует дни внутри кофейни по убыванию выручки, а <code>WHERE rn = 1<\/code> оставляет первый; в pandas это потребовало бы сортировки и <code>groupby(...).head(1)<\/code>.<\/p>\n", "parsons": ""}, {"id": "order-fix", "title": "Почините запрос: первый заказ гостя", "level": "base", "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nfirst_orders = duckdb.sql(\"\"\"\n    SELECT client_id, datetime, amount,\n           ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY datetime) AS rn\n    FROM df\n    WHERE client_id IS NOT NULL AND rn = 1\n    ORDER BY client_id\n\"\"\").df()", "setup": "", "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime']).dropna(subset=['client_id'])\n_w = _d.sort_values('datetime').groupby('client_id').head(1).sort_values('client_id')\nb = need('first_orders', _pd.DataFrame)\nassert list(b.columns) == ['client_id', 'datetime', 'amount'], f'Столбцы: {list(b.columns)}. Во внешнем SELECT перечислите только client_id, datetime, amount — без rn.'\nassert b['client_id'].notna().all(), 'В результате есть строка с пустым client_id — уберите заказы без карты.'\nassert len(b) == len(_w), f'Строк {len(b)}, а гостей с картой {len(_w)}: нужна ровно одна строка на гостя.'\nassert b['client_id'].tolist() == _w['client_id'].tolist(), 'Порядок строк: по возрастанию client_id.'\nassert [str(x)[:16] for x in b['datetime']] == [str(x)[:16] for x in _w['datetime']], 'Даты не совпадают с первыми заказами. Проверьте ORDER BY datetime внутри окна (по возрастанию).'\nassert 'ROW_NUMBER' in _code.upper(), 'Оставьте нумерацию ROW_NUMBER() — дело не в ней, а в месте, где по ней фильтруют.'", "hints": ["<p>По шагам выполнения: <code>WHERE<\/code> срабатывает раньше, чем <code>SELECT<\/code> посчитает <code>rn<\/code>. Значит, фильтр <code>rn = 1<\/code> должен стоять на уровень выше — во внешнем запросе.<\/p>\n", "<p>Перенесите текущий запрос (без <code>rn = 1<\/code>) в <code>WITH ranked AS (...)<\/code>, а снаружи напишите <code>SELECT client_id, datetime, amount FROM ranked WHERE rn = 1 ORDER BY client_id<\/code>.<\/p>\n", "<div class=\"cell\"><pre class=\"cell-src\"><code>first_orders = duckdb.sql(&quot;&quot;&quot;\n    WITH ranked AS (\n        SELECT client_id, datetime, amount,\n               ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY datetime) AS rn\n        FROM df\n        WHERE client_id IS NOT NULL\n    )\n    SELECT ...\n    FROM ranked\n    WHERE ...\n    ORDER BY client_id\n&quot;&quot;&quot;).df()<\/code><\/pre><\/div>\n"], "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nfirst_orders = duckdb.sql(\"\"\"\n    WITH ranked AS (\n        SELECT client_id, datetime, amount,\n               ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY datetime) AS rn\n        FROM df\n        WHERE client_id IS NOT NULL\n    )\n    SELECT client_id, datetime, amount\n    FROM ranked\n    WHERE rn = 1\n    ORDER BY client_id\n\"\"\").df()", "explain": "<p>У 260 гостей с картой — 260 первых заказов. Фильтр <code>client_id IS NOT NULL<\/code> остался внутри CTE: он относится к исходным строкам и честно работает на шаге <code>WHERE<\/code>. А <code>rn = 1<\/code> переехал наружу, где <code>rn<\/code> уже обычный столбец. Если оставить <code>WHERE client_id IS NOT NULL<\/code> снаружи, результат будет тем же, но окно зря пронумерует и заказы без карты (они соберутся в одну «пустую» группу). В pandas тот же результат даёт <code>df.dropna(subset=[&quot;client_id&quot;]).sort_values(&quot;datetime&quot;).groupby(&quot;client_id&quot;).head(1)<\/code>.<\/p>\n", "parsons": ""}, {"id": "reconcile", "title": "Сверка двух способов", "level": "star", "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")", "setup": "", "check": "import pandas as _pd\nwant = _pd.read_csv('orders_3m.csv').groupby('channel')['amount'].mean().round(2).to_dict()\np = {k: round(float(v), 2) for k, v in dict(need('pd_avg')).items()}\ns = {k: round(float(v), 2) for k, v in dict(need('sql_avg')).items()}\nassert p == want, f'pd_avg = {p}.'\nassert s == want, f'sql_avg = {s}.'\nassert need('match') == True, 'match должно быть True.'", "hints": ["<p>pandas: <code>df.groupby(&quot;channel&quot;)[&quot;amount&quot;].mean().round(2).to_dict()<\/code>.<\/p>\n", "<p>SQL: запрос с <code>ROUND(AVG(amount), 2)<\/code>, затем <code>dict(zip(t[&quot;channel&quot;], t[&quot;avg&quot;]))<\/code>.<\/p>\n"], "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\npd_avg = df.groupby(\"channel\")[\"amount\"].mean().round(2).to_dict()\nt = duckdb.sql(\"SELECT channel, ROUND(AVG(amount), 2) AS avg FROM df GROUP BY channel\").df()\nsql_avg = dict(zip(t[\"channel\"], t[\"avg\"]))\nmatch = pd_avg == sql_avg", "explain": "<p>Порядок ключей у словарей может отличаться — сравнение <code>==<\/code> его не учитывает. Сверка двумя способами — лучшая страховка от ошибок в фильтрах и соединениях перед тем, как отправлять цифры руководству.<\/p>\n", "parsons": ""}], "files": ["orders_3m.csv", "shops.csv", "menu.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+
+
+</body>
+</html>

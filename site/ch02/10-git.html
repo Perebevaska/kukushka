@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Git: коммиты, история, ветки и .gitignore — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch02">Глава 2. pandas — таблицы как в SQL</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 2</div><div class="side-title">pandas — таблицы как в SQL</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02" open><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" aria-current="page" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03"><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05"><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11"><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 20 · основной путь · ≈ 75 мин · задач: 6</div>
+      <h1>Git: коммиты, история, ветки и .gitignore</h1>
+      <p class="lead">«отчёт_финал_v3_точно_последний.ipynb» — знакомо? git хранит историю версий проекта: кто, когда и что поменял, и как вернуть вчерашний вариант. Разбираем основные команды — коммит, историю, diff и ветки — и учимся не пускать в репозиторий данные и пароли. Как выложить проект на GitHub — в следующем уроке.</p>
+      
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 5</span></div>
+    </div>
+    <article class="prose theory"><h2 id="первый-репозиторий-init-add-commit">Первый репозиторий: init, add, commit</h2>
+<p>Зачем: блокнот «Итоги осени» вы правите неделю. Во вторник выручка доставки была 128 198 ₽, в четверг — другая. Что поменялось? Без истории версий ответ — «не помню». <strong>git</strong> запоминает каждую сохранённую версию проекта, и любую из них можно открыть, сравнить или вернуть.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>git — как история версий в Google Docs, только версии вы сохраняете сами и каждую подписываете: «добавил выручку по месяцам». Где аналогия хромает: Google Docs сохраняет всё автоматически, а git — только то, что вы явно положили в версию. Зато каждая версия осмысленна.</p>
+</aside>
+<p>Словарик:</p>
+<table>
+<thead>
+<tr>
+<th>слово</th>
+<th>что значит</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>репозиторий</td>
+<td>папка проекта, за которой следит git; история лежит в скрытой папке <code>.git</code></td>
+</tr>
+<tr>
+<td>коммит</td>
+<td>сохранённая версия: снимок файлов + подпись + автор + время</td>
+</tr>
+<tr>
+<td>хэш</td>
+<td>номер коммита — 40 знаков, обычно показывают первые 7: <code>3efd677</code></td>
+</tr>
+<tr>
+<td>индекс (staging)</td>
+<td>«коробка» изменений, которые уйдут в следующий коммит</td>
+</tr>
+<tr>
+<td>ветка</td>
+<td>отдельная линия истории; основная называется <code>main</code></td>
+</tr>
+<tr>
+<td>удалённый репозиторий</td>
+<td>копия на сервере, например на GitHub</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Три места, где живут изменения.</strong> Это главное, что нужно понять про git.</p>
+<ol>
+<li><strong>Рабочая папка</strong> — файлы, как они лежат на диске прямо сейчас.</li>
+<li><strong>Индекс</strong> — то, что вы отобрали для следующего коммита командой <code>git add</code>.</li>
+<li><strong>История</strong> — коммиты, которые сделаны командой <code>git commit</code>.</li>
+</ol>
+<figure class="fig" data-fig="git-areas"><div class="fig-scroll"><svg viewBox="0 0 700 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-git-areas">
+  <title id="t-git-areas">Где живут изменения: рабочая папка, индекс, история, GitHub</title>
+  <defs><marker id="ah-git-areas" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="14" y="50" width="144" height="80" rx="8"/>
+  <text class="ink b" x="86" y="74" text-anchor="middle">рабочая папка</text>
+  <text class="ink2 sm" x="86" y="94" text-anchor="middle">файлы на диске</text>
+  <text class="mut sm" x="86" y="116" text-anchor="middle">«??» или « M»</text>
+  <rect class="box-acc" x="190" y="50" width="144" height="80" rx="8"/>
+  <text class="ink b" x="262" y="74" text-anchor="middle">индекс</text>
+  <text class="ink2 sm" x="262" y="94" text-anchor="middle">что уйдёт в коммит</text>
+  <text class="mut sm" x="262" y="116" text-anchor="middle">«A » или «M »</text>
+  <rect class="box-ok" x="366" y="50" width="144" height="80" rx="8"/>
+  <text class="ink b" x="438" y="74" text-anchor="middle">история</text>
+  <text class="ink2 sm" x="438" y="94" text-anchor="middle">коммиты в .git</text>
+  <text class="mut sm" x="438" y="116" text-anchor="middle">git log</text>
+  <rect class="box-warn" x="542" y="50" width="144" height="80" rx="8"/>
+  <text class="ink b" x="614" y="74" text-anchor="middle">GitHub</text>
+  <text class="ink2 sm" x="614" y="94" text-anchor="middle">origin, копия</text>
+  <text class="mut sm" x="614" y="116" text-anchor="middle">на сайте</text>
+  <path class="ln" d="M160,80 L186,80" marker-end="url(#ah-git-areas)"/>
+  <text class="acc sm b" x="173.0" y="38" text-anchor="middle">git add</text>
+  <path class="ln" d="M336,80 L362,80" marker-end="url(#ah-git-areas)"/>
+  <text class="acc sm b" x="349.0" y="38" text-anchor="middle">git commit</text>
+  <path class="ln" d="M512,80 L538,80" marker-end="url(#ah-git-areas)"/>
+  <text class="acc sm b" x="525.0" y="38" text-anchor="middle">git push</text>
+  <path class="ln dash" d="M262,132 L262,156 L110,156 L110,134" marker-end="url(#ah-git-areas)"/>
+  <text class="ink2 sm" x="186" y="172" text-anchor="middle">git restore --staged</text>
+  <path class="ln dash" d="M438,132 L438,196 L60,196 L60,134" marker-end="url(#ah-git-areas)"/>
+  <text class="ink2 sm" x="250" y="212" text-anchor="middle">git restore файл — вернуть, как в последнем коммите</text>
+  <path class="ln dash" d="M614,132 L614,156 L470,156 L470,134" marker-end="url(#ah-git-areas)"/>
+  <text class="ink2 sm" x="480" y="172" text-anchor="start">git pull — забрать новые коммиты</text>
+  <text class="mut sm" x="350" y="16" text-anchor="middle">вперёд — сплошные стрелки, назад — пунктир</text>
+  <text class="ink2 sm" x="350" y="252" text-anchor="middle">git status --short: первая буква — индекс, вторая — рабочая папка (пробел — «ничего»)</text>
+  <text class="mut sm" x="350" y="272" text-anchor="middle">коммит забирает только индекс: изменённый, но не добавленный файл в него не попадёт</text>
+</svg>
+</div><figcaption>
+<p>Три места на вашем компьютере и четвёртое — копия на GitHub (о ней — в уроке «Блокнот в git и портфолио на GitHub»). Сплошные стрелки двигают изменения вперёд, пунктирные возвращают назад. Буквы под блоками — то, что показывает <code>git status --short</code>, о нём ниже.</p>
+</figcaption></figure>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Коммит — как посылка. <code>git add</code> кладёт вещь в коробку, <code>git commit -m &quot;…&quot;</code> заклеивает коробку и подписывает, что внутри. В коробку можно положить не всё, что лежит на столе: черновик заметок остаётся на столе, а отчёт уходит в посылку.</p>
+</aside>
+<p>Установка: на Mac — <code>xcode-select --install</code> (или <code>brew install git</code>), на Windows — <strong>Git for Windows</strong> с сайта git-scm.com (с ним приходит Git Bash). Один раз представьтесь — имя и почта попадут в каждый коммит:</p>
+<pre class="static code"><code class="lang-sh">git config --global user.name &quot;Аня Петрова&quot;
+git config --global user.email &quot;anya@example.com&quot;
+git config --global init.defaultBranch main</code></pre>
+<p>Последняя строка называет основную ветку новых репозиториев <code>main</code>, как на GitHub. Без этой настройки git версий 2.x называет её <code>master</code>, и команды урока с <code>main</code> не сработают.</p>
+<p>Первый репозиторий в папке проекта. Пусть в ней для начала лежат два маленьких файла — заголовок будущего README и <code>.gitignore</code> (что это, разберём в разделе «.gitignore»). Создадим их прямо из терминала: <code>echo &quot;текст&quot; &gt; файл</code> записывает строку в новый файл.</p>
+<pre class="static code"><code class="lang-sh">$ cd ~/projects/zerno-analytics
+$ echo &quot;# Итоги осени&quot; &gt; README.md
+$ echo &quot;.venv/&quot; &gt; .gitignore
+$ git init
+Initialized empty Git repository in ~/projects/zerno-analytics/.git/
+
+$ git status
+On branch main
+
+No commits yet
+
+Untracked files:
+  (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)
+	.gitignore
+	README.md
+
+nothing added to commit but untracked files present (use &quot;git add&quot; to track)
+
+$ git add README.md .gitignore
+$ git commit -m &quot;Структура проекта: README и .gitignore&quot;
+[main (root-commit) 8c3c173] Структура проекта: README и .gitignore
+ 2 files changed, 2 insertions(+)
+ create mode 100644 .gitignore
+ create mode 100644 README.md</code></pre>
+<p>Что здесь происходит:</p>
+<ul>
+<li>два <code>echo</code> создали файлы по одной строке — отсюда в коммите <code>2 insertions(+)</code>;</li>
+<li><code>git init</code> создал скрытую папку <code>.git</code> — в ней будет вся история;</li>
+<li><code>git status</code> перечисляет новые файлы как <strong>Untracked</strong> — git их видит, но не следит за ними;</li>
+<li><code>git add</code> положил оба файла в индекс;</li>
+<li><code>git commit -m &quot;…&quot;</code> сохранил версию с подписью; <code>8c3c173</code> — начало её хэша, <code>root-commit</code> — первый коммит в истории. Этот же коммит будет самой нижней строкой истории в следующем разделе.</li>
+</ul>
+<aside class="callout callout-note"><div class="callout-title">Если папку создал `uv init`</div>
+<p>В уроке «Своё рабочее место — uv и Jupyter» папку проекта создавала команда <code>uv init</code>. Если git к тому моменту уже стоял, uv сам сделал в ней <code>README.md</code>, <code>.gitignore</code> (в нём уже есть <code>.venv</code>) и репозиторий <code>.git</code>. Тогда пропустите оба <code>echo</code>, чтобы не затереть эти файлы, и <code>git init</code>: репозиторий уже есть. Начните с <code>git status</code> — в списке будут и <code>pyproject.toml</code>, <code>main.py</code>, ваш блокнот. Это нормально: добавьте их <code>git add</code> и сделайте первый коммит.</p>
+</aside>
+<p>Короткая форма статуса — <code>git status --short</code>. Две буквы слева: первая — что лежит в индексе, вторая — что изменено в рабочей папке, но не добавлено:</p>
+<pre class="static output"><code class="lang-text"> M report.py      изменён, но не добавлен в коммит
+M  report.py      изменён и добавлен (git add)
+A  README.md      новый файл, добавлен
+?? notes.md       git за этим файлом не следит</code></pre>
+<p>Такой вывод удобно разбирать кодом — например, чтобы проверить, что в коммит не уходит ничего лишнего:</p>
+<div class="cell"><pre class="cell-src"><code>status = &quot;&quot;&quot; M report.py
+?? notes.md
+A  README.md&quot;&quot;&quot;
+
+for line in status.splitlines():
+    staged, changed, path = line[0], line[1], line[3:]
+    print(f&quot;{path:10} в индексе: {staged!r}, в папке: {changed!r}&quot;)</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li>в каждой строке <code>--short</code> первые два символа — коды состояния, третий — пробел, дальше путь;</li>
+<li><code>line[0]</code> — индекс, <code>line[1]</code> — рабочая папка, <code>line[3:]</code> — путь;</li>
+<li>пробел в коде значит «ничего»: у <code> M report.py</code> индекс пуст, а файл изменён в папке.</li>
+</ul>
+<p>Как читать результат: в коммит сейчас уйдёт только <code>README.md</code> — у него буква в первой колонке. <code>report.py</code> изменён, но не добавлен, а <code>notes.md</code> git вообще не отслеживает.</p>
+<p><strong>Подпись коммита</strong> читают через полгода, когда ищут, где сломалось. Плохо: <code>fix</code>, <code>1</code>, <code>правки</code>. Хорошо: «Фильтр доставки в отдельной переменной», «Выручка по месяцам». Одно изменение — один коммит.</p>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>Вы изменили <code>report.ipynb</code> и сразу выполнили <code>git commit -m &quot;Выручка по месяцам&quot;</code>. git ответил <code>no changes added to commit</code>. Почему?</p>
+<ul>
+<li>[x] Изменения не добавлены в индекс: перед коммитом нужен <code>git add report.ipynb</code>
+<blockquote>
+<p>Коммит забирает только то, что лежит в индексе. Изменённый файл в рабочей папке сам туда не попадает.</p>
+</blockquote>
+</li>
+<li>[ ] Блокнот не сохранён в Jupyter
+<blockquote>
+<p>Тогда git просто не увидел бы изменений, но сообщение было бы другим — «nothing to commit, working tree clean».</p>
+</blockquote>
+</li>
+<li>[ ] git не умеет работать с <code>.ipynb</code>
+<blockquote>
+<p>Умеет: для git это обычный текстовый файл в формате JSON.</p>
+</blockquote>
+</li>
+<li>[ ] Подпись коммита должна быть на английском
+<blockquote>
+<p>Язык подписи не важен — главное, чтобы она была понятной.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong><code>git add .</code> не глядя.</strong> Точка добавляет всё, в том числе данные, <code>.env</code> с паролями и <code>.ipynb_checkpoints</code>. Сначала <code>.gitignore</code> и <code>git status</code>, потом <code>add</code>.</li>
+<li><strong>Коммит раз в неделю «всё сразу».</strong> Его невозможно откатить по частям. Коммитьте каждый законченный шаг анализа.</li>
+<li><strong><code>fatal: not a git repository</code>.</strong> Вы не в папке проекта: проверьте <code>pwd</code>.</li>
+<li><strong>Коммиты от «root» или чужого имени.</strong> Не выполнили <code>git config --global user.name/user.email</code>.</li>
+</ul>
+</aside>
+<aside class="callout callout-note"><div class="callout-title">Сделайте в своём терминале</div>
+<ol>
+<li>Представьтесь git и задайте ветку <code>main</code> по умолчанию — три команды <code>git config --global …</code> выше.</li>
+<li>В папке проекта из урока про uv выполните <code>git init</code> и <code>git status</code>.</li>
+<li>Создайте <code>README.md</code> с одной строкой <code># Итоги осени</code>, выполните <code>git add README.md</code> и <code>git commit -m &quot;README&quot;</code>.</li>
+<li>Посмотрите <code>git status --short</code> до и после <code>add</code>.</li>
+</ol>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-status-sim"><b>6</b> Свой git status</a></div>
+<div class="fb" data-sec="первый-репозиторий-init-add-commit"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="история-и-ветки-log-diff-switch">История и ветки: log, diff, switch</h2>
+<p>Зачем: «вчера выручка доставки была другой — что я поменял?». История коммитов и построчное сравнение отвечают на это за секунду.</p>
+<p><code>git log --oneline</code> — короткая история, сверху самый новый коммит:</p>
+<pre class="static output"><code class="lang-text">f0dd728 Выводы в README
+a74c250 Слияние ветки loyalty
+3e746ee Гипотеза: гости с картой тратят больше
+5ae82cb Выручка по месяцам
+3efd677 Фильтр доставки в отдельной переменной
+375c1e4 Загрузка заказов и выручка
+8c3c173 Структура проекта: README и .gitignore</code></pre>
+<p>Формат можно задать самому — например, хэш, дату, автора и подпись через <code>|</code>, чтобы потом прочитать в pandas:</p>
+<pre class="static code"><code class="lang-sh">git log --format=&quot;%h|%ad|%an|%s&quot; --date=short</code></pre>
+<p><code>git diff</code> показывает, что именно поменялось. Без аргументов — несохранённые изменения; <code>git diff 375c1e4 3efd677</code> — между двумя коммитами. Вот исправление фильтра доставки:</p>
+<pre class="static output"><code class="lang-text">diff --git a/report.py b/report.py
+index fbaa5fc..40c6ec4 100644
+--- a/report.py
++++ b/report.py
+@@ -1,6 +1,7 @@
+ import pandas as pd
+ 
+ df = pd.read_csv(&quot;data/orders_3m.csv&quot;, parse_dates=[&quot;datetime&quot;])
+-df = df[df[&quot;channel&quot;] == &quot;доставка&quot;]
+-revenue = df[&quot;amount&quot;].sum()
+-print(revenue)
++delivery = df[df[&quot;channel&quot;] == &quot;доставка&quot;]
++revenue_all = df[&quot;amount&quot;].sum()
++revenue_delivery = delivery[&quot;amount&quot;].sum()
++print(revenue_all, revenue_delivery)</code></pre>
+<p>Как читать diff:</p>
+<ol>
+<li><code>diff --git a/report.py b/report.py</code> — какой файл; <code>---</code> и <code>+++</code> — его версии «до» и «после»;</li>
+<li><code>@@ -1,6 +1,7 @@</code> — кусок файла: в старой версии 6 строк начиная с первой, в новой — 7;</li>
+<li>строка с <code>-</code> — удалена, с <code>+</code> — добавлена, с пробелом — не менялась (это контекст).</li>
+</ol>
+<p>Итого здесь 3 строки удалены и 4 добавлены. Именно так и видно, что «вчерашнее» число считалось по перезаписанной <code>df</code>.</p>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">diff = &quot;&quot;&quot;--- a/report.py
++++ b/report.py
+@@ -1,2 +1,2 @@
+-revenue = df[&quot;amount&quot;].sum()
++revenue_all = df[&quot;amount&quot;].sum()&quot;&quot;&quot;
+print(sum(l.startswith(&quot;+&quot;) for l in diff.splitlines()))</code></pre>
+<ul>
+<li><code>1</code></li>
+<li>[x] <code>2</code></li>
+<li><code>3</code></li>
+</ul>
+<p>Почему: с <code>+</code> начинается не только добавленная строка, но и заголовок <code>+++ b/report.py</code>. Считая изменения, заголовки <code>+++</code> и <code>---</code> нужно пропускать.</p>
+</div>
+<p>Вернуть старое:</p>
+<table>
+<thead>
+<tr>
+<th>команда</th>
+<th>что делает</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>git restore report.ipynb</code></td>
+<td>выбросить несохранённые изменения файла — вернуть, как в последнем коммите</td>
+</tr>
+<tr>
+<td><code>git restore --staged report.ipynb</code></td>
+<td>вынуть файл из индекса, сами правки остаются</td>
+</tr>
+<tr>
+<td><code>git show 3efd677</code></td>
+<td>показать коммит целиком</td>
+</tr>
+<tr>
+<td><code>git restore --source 375c1e4 report.py</code></td>
+<td>достать файл из старого коммита</td>
+</tr>
+</tbody>
+</table>
+<h3>Ветки</h3>
+<p>Хочется проверить гипотезу «гости с картой тратят больше», но не ломать рабочий отчёт. Для этого делают <strong>ветку</strong> — отдельную линию истории.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Ветка — как копия презентации «на попробовать»: вы правите копию, а основной файл, который видит руководитель, остаётся нетронутым. Удачные правки потом переносят в основной файл, неудачную копию просто бросают. Где аналогия хромает: git не копирует весь проект — ветка лишь отмечает, с какого коммита пошла отдельная линия, поэтому создаётся мгновенно.</p>
+</aside>
+<p>Команды:</p>
+<pre class="static code"><code class="lang-sh">git switch -c loyalty        # создать ветку loyalty и перейти в неё
+# ... правки, git add, git commit ...
+git switch main              # вернуться в main — файлы снова как были
+git merge loyalty            # забрать коммиты ветки в main</code></pre>
+<p><code>git log --oneline --graph</code> рисует это так:</p>
+<pre class="static output"><code class="lang-text">* f0dd728 Выводы в README
+*   a74c250 Слияние ветки loyalty
+|\  
+| * 3e746ee Гипотеза: гости с картой тратят больше
+|/  
+* 5ae82cb Выручка по месяцам
+* 3efd677 Фильтр доставки в отдельной переменной
+* 375c1e4 Загрузка заказов и выручка
+* 8c3c173 Структура проекта: README и .gitignore</code></pre>
+<figure class="fig" data-fig="git-branch"><div class="fig-scroll"><svg viewBox="0 0 700 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-git-branch">
+  <title id="t-git-branch">Ветка loyalty и её слияние в main</title>
+  <defs><marker id="ah-git-branch" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <circle class="box-acc" cx="40" cy="80" r="10"/>
+  <text class="ink2 sm" x="40" y="44" text-anchor="middle">структура</text>
+  <text class="ink sm b" x="40" y="62" text-anchor="middle">8c3c173</text>
+  <path class="ln-acc" d="M51,80 L129,80" marker-end="url(#ah-git-branch)"/>
+  <circle class="box-acc" cx="140" cy="80" r="10"/>
+  <text class="ink2 sm" x="140" y="44" text-anchor="middle">загрузка</text>
+  <text class="ink sm b" x="140" y="62" text-anchor="middle">375c1e4</text>
+  <path class="ln-acc" d="M151,80 L229,80" marker-end="url(#ah-git-branch)"/>
+  <circle class="box-acc" cx="240" cy="80" r="10"/>
+  <text class="ink2 sm" x="240" y="44" text-anchor="middle">фильтр</text>
+  <text class="ink sm b" x="240" y="62" text-anchor="middle">3efd677</text>
+  <path class="ln-acc" d="M251,80 L329,80" marker-end="url(#ah-git-branch)"/>
+  <circle class="box-acc" cx="340" cy="80" r="10"/>
+  <text class="ink2 sm" x="340" y="44" text-anchor="middle">по месяцам</text>
+  <text class="ink sm b" x="340" y="62" text-anchor="middle">5ae82cb</text>
+  <path class="ln-acc" d="M351,80 L509,80" marker-end="url(#ah-git-branch)"/>
+  <circle class="box-acc" cx="520" cy="80" r="10"/>
+  <text class="ink2 sm" x="520" y="44" text-anchor="middle">слияние</text>
+  <text class="ink sm b" x="520" y="62" text-anchor="middle">a74c250</text>
+  <path class="ln-acc" d="M531,80 L609,80" marker-end="url(#ah-git-branch)"/>
+  <circle class="box-acc" cx="620" cy="80" r="10"/>
+  <text class="ink2 sm" x="620" y="44" text-anchor="middle">README</text>
+  <text class="ink sm b" x="620" y="62" text-anchor="middle">f0dd728</text>
+  <path class="ln" d="M348,88 L421,151" marker-end="url(#ah-git-branch)"/>
+  <circle class="box-ok" cx="430" cy="160" r="10"/>
+  <text class="ink2 sm" x="430" y="188" text-anchor="middle">3e746ee гипотеза о картах</text>
+  <path class="ln" d="M438,152 L511,89" marker-end="url(#ah-git-branch)"/>
+  <text class="acc b" x="642" y="85" text-anchor="start">main</text>
+  <text class="ok b" x="410" y="165" text-anchor="end">loyalty</text>
+  <text class="mut sm" x="368" y="130" text-anchor="end">git switch -c loyalty</text>
+  <text class="mut sm" x="492" y="130" text-anchor="start">git merge loyalty</text>
+  <text class="mut sm" x="350" y="222" text-anchor="middle">пока ветка не слита, main не меняется; не подтвердилась гипотеза — ветку просто не сливают</text>
+</svg>
+</div><figcaption>
+<p>Тот же граф, развёрнутый слева направо: от коммита «по месяцам» отходит ветка <code>loyalty</code> с одним коммитом, а коммит слияния <code>a74c250</code> собирает обе линии обратно в <code>main</code>.</p>
+</figcaption></figure>
+<p>Гипотеза не подтвердилась? Тогда ветку просто не сливают, и в <code>main</code> ничего не меняется.</p>
+<p>Историю тоже можно разбирать кодом. Например, сколько коммитов и какой из них последний:</p>
+<div class="cell"><pre class="cell-src"><code>log = &quot;&quot;&quot;f0dd728 Выводы в README
+a74c250 Слияние ветки loyalty
+3e746ee Гипотеза: гости с картой тратят больше
+5ae82cb Выручка по месяцам
+3efd677 Фильтр доставки в отдельной переменной
+375c1e4 Загрузка заказов и выручка
+8c3c173 Структура проекта: README и .gitignore&quot;&quot;&quot;
+
+commits = [line.split(&quot; &quot;, 1) for line in log.splitlines()]   # [хэш, подпись]
+print(len(commits), commits[0])
+print([h for h, msg in commits if &quot;Гипотеза&quot; in msg])</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>split(&quot; &quot;, 1)</code> режет строку по <strong>первому</strong> пробелу: слева хэш, справа вся подпись, даже если в ней много слов;</li>
+<li><code>commits[0]</code> — первая строка лога, то есть самый новый коммит;</li>
+<li>генератор с условием находит хэши коммитов, в подписи которых есть слово «Гипотеза».</li>
+</ul>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Считать <code>+++</code> добавленной строкой.</strong> Заголовки файла в diff начинаются с тех же знаков.</li>
+<li><strong><code>git switch</code> с несохранёнными правками.</strong> git откажется переключать ветку или перенесёт правки с собой. Сначала коммит.</li>
+<li><strong><code>git restore</code> «на пробу».</strong> Несохранённые изменения пропадут навсегда — их не было ни в одном коммите.</li>
+<li><strong>Первая строка <code>git log</code> — самый старый коммит.</strong> Наоборот: самый новый.</li>
+</ul>
+</aside>
+<div class="quiz-c" data-q="c2"><div class="predict-title">Проверьте себя</div>
+<p>Вы поправили <code>report.ipynb</code>, выполнили <code>git add report.ipynb</code> и хотите перед коммитом посмотреть правку. <code>git diff</code> ничего не выводит. Что происходит?</p>
+<ul>
+<li>[x] Правки уже в индексе, а <code>git diff</code> без аргументов сравнивает рабочую папку с индексом. Изменения в индексе показывает <code>git diff --staged</code>
+<blockquote>
+<p>Три места изменений: <code>git add</code> перенёс правку из рабочей папки в индекс, и между ними разницы больше нет. <code>--staged</code> сравнивает индекс с последним коммитом.</p>
+</blockquote>
+</li>
+<li>[ ] <code>git add</code> сохранил правку в историю, коммит больше не нужен
+<blockquote>
+<p><code>git add</code> только кладёт изменения в «коробку». В историю они попадут после <code>git commit</code>.</p>
+</blockquote>
+</li>
+<li>[ ] Файл не изменился: git сравнивает только код, а не выводы
+<blockquote>
+<p>git сравнивает весь текст файла, выводы тоже. Дело в том, с чем сравнивает <code>git diff</code>.</p>
+</blockquote>
+</li>
+<li>[ ] Правка пропала, её надо вернуть <code>git restore report.ipynb</code>
+<blockquote>
+<p>Правка цела, она в индексе. <code>git restore report.ipynb</code> берёт файл из индекса, так что здесь ничего не изменит. Но в общем случае он выбрасывает несохранённые правки рабочей папки — с ним осторожно.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<aside class="callout callout-note"><div class="callout-title">Сделайте в своём терминале</div>
+<ol>
+<li>Сделайте ещё два коммита в своём проекте и посмотрите <code>git log --oneline</code>.</li>
+<li>Поменяйте строку в README и посмотрите <code>git diff</code> до коммита.</li>
+<li>Создайте ветку <code>git switch -c experiment</code>, сделайте в ней коммит, вернитесь в <code>main</code> и посмотрите <code>git log --oneline --graph --all</code>.</li>
+</ol>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-log-count"><b>1</b> Читаем git log</a><a href="#task-my-log"><b>2</b> Ваша история из терминала</a><a href="#task-log-pandas"><b>3</b> История проекта в pandas</a><a href="#task-diff-stat"><b>4</b> Сколько строк поменялось</a></div>
+<div class="fb" data-sec="история-и-ветки-log-diff-switch"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="gitignore-что-не-кладут-в-репозиторий">.gitignore: что не кладут в репозиторий</h2>
+<p>Зачем: в папке проекта лежат файлы, которым не место в истории. Тяжёлые данные раздувают репозиторий навсегда. Персональные данные гостей нельзя публиковать. А пароль от базы данных в публичном репозитории найдут боты за минуты.</p>
+<p>Файл <code>.gitignore</code> в корне проекта перечисляет шаблоны того, что git не должен замечать:</p>
+<pre class="static output"><code class="lang-text"># окружение и служебное
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
+
+# данные — по ссылке в README, не в репозитории
+data/
+*.csv
+
+# секреты: пароли, токены
+.env</code></pre>
+<p>Правила шаблонов:</p>
+<table>
+<thead>
+<tr>
+<th>шаблон</th>
+<th>что игнорирует</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>data/</code></td>
+<td>папку <code>data</code> целиком, где бы она ни лежала</td>
+</tr>
+<tr>
+<td><code>*.csv</code></td>
+<td>любой файл с окончанием <code>.csv</code> в любой папке</td>
+</tr>
+<tr>
+<td><code>.env</code></td>
+<td>файл с таким именем</td>
+</tr>
+<tr>
+<td><code>!sample.csv</code></td>
+<td>исключение из правил выше: этот файл всё-таки отслеживать</td>
+</tr>
+<tr>
+<td><code># текст</code></td>
+<td>комментарий</td>
+</tr>
+</tbody>
+</table>
+<p>Похожие шаблоны с <code>*</code> и <code>?</code> понимает функция <code>fnmatch</code> из стандартной библиотеки Python:</p>
+<div class="cell"><pre class="cell-src"><code>from fnmatch import fnmatch
+
+for name in [&quot;orders_3m.csv&quot;, &quot;report.ipynb&quot;, &quot;.env&quot;, &quot;README.md&quot;]:
+    ignored = fnmatch(name, &quot;*.csv&quot;) or fnmatch(name, &quot;.env&quot;)
+    print(f&quot;{name:15} {&#x27;игнорируется&#x27; if ignored else &#x27;в репозиторий&#x27;}&quot;)</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>fnmatch(имя, шаблон)</code> проверяет, подходит ли имя под шаблон: <code>*</code> — любые символы, <code>?</code> — один символ;</li>
+<li>имя игнорируется, если подошло хотя бы под один шаблон — отсюда <code>or</code>.</li>
+</ul>
+<div class="predict" data-q="q2"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">from fnmatch import fnmatch
+print(fnmatch(&quot;data/orders_3m.csv&quot;, &quot;*.csv&quot;))</code></pre>
+<ul>
+<li>[x] <code>True</code></li>
+<li><code>False</code></li>
+<li><code>Ошибка ValueError</code></li>
+</ul>
+<p>Почему: в <code>fnmatch</code> звёздочка подходит под любые символы, включая <code>/</code>. Строка заканчивается на <code>.csv</code> — значит, подходит. В <code>.gitignore</code> шаблон <code>*.csv</code> тоже ловит csv-файлы в любой папке.</p>
+</div>
+<p><strong>А где тогда данные?</strong> Варианты: ссылка в README («скачайте <a class="data-link" href="../data/orders_3m.csv" download title="Скачать orders_3m.csv"><code>orders_3m.csv</code></a> отсюда и положите в <code>data/</code>»), маленький обезличенный образец (<code>!data/sample.csv</code>) или скрипт, который скачивает данные.</p>
+<p><strong>Секреты</strong> — пароли, токены, ключи — хранят в файле <code>.env</code>, который сразу вписан в <code>.gitignore</code>. В коде их читают из переменных окружения (<code>os.environ[&quot;DB_PASSWORD&quot;]</code>), а не пишут строкой. Рядом кладут <code>.env.example</code> — тот же список имён, но без значений, чтобы коллега знал, что заполнить.</p>
+<div class="quiz-c" data-q="c3"><div class="predict-title">Проверьте себя</div>
+<p>Аналитик закоммитил <code>.env</code> с паролем от базы и выложил на GitHub. Через час заметил, удалил файл и сделал новый коммит. Что теперь?</p>
+<ul>
+<li>[x] Пароль всё ещё в истории — его нужно срочно сменить, а <code>.env</code> добавить в <code>.gitignore</code>
+<blockquote>
+<p>Старый коммит с файлом никуда не делся: любой может открыть его по хэшу. Удаление из следующей версии не стирает прошлые, поэтому единственная надёжная мера — новый пароль.</p>
+</blockquote>
+</li>
+<li>[ ] Всё в порядке: файла больше нет
+<blockquote>
+<p>Его нет в последней версии, но он есть в истории. Боты сканируют GitHub как раз в поисках таких коммитов.</p>
+</blockquote>
+</li>
+<li>[ ] Достаточно сделать репозиторий приватным
+<blockquote>
+<p>Час он был публичным — пароль мог уже утечь. И доступ к приватному репозиторию тоже бывает у многих.</p>
+</blockquote>
+</li>
+<li>[ ] Нужно удалить репозиторий и создать заново — тогда пароль менять не надо
+<blockquote>
+<p>Копии могли уже сделать. Скомпрометированный пароль меняют в любом случае.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong><code>.gitignore</code> после первого коммита.</strong> Файлы, которые git уже отслеживает, <code>.gitignore</code> не скрывает. Уберите их из индекса: <code>git rm --cached -r data/</code>, затем коммит.</li>
+<li><strong>Данные в репозитории «пока маленькие».</strong> Через месяц там 300 МБ, а из истории их не выкинуть простым удалением.</li>
+<li><strong>Опечатка в шаблоне.</strong> <code>.venv</code> без точки (<code>venv/</code>) не сработает. Проверяйте <code>git status</code> после правки <code>.gitignore</code> — лишнего там быть не должно.</li>
+</ul>
+</aside>
+<aside class="callout callout-note"><div class="callout-title">Сделайте в своём терминале</div>
+<ol>
+<li>Создайте <code>.gitignore</code> с шаблонами из примера.</li>
+<li>Положите в <code>data/</code> файл <a class="data-link" href="../data/orders_3m.csv" download title="Скачать orders_3m.csv"><code>orders_3m.csv</code></a> и выполните <code>git status</code> — его там быть не должно.</li>
+<li>Если данные уже попали в коммит: <code>git rm --cached -r data/</code> и новый коммит.</li>
+</ol>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-ignore"><b>5</b> Мини-.gitignore</a></div>
+<div class="fb" data-sec="gitignore-что-не-кладут-в-репозиторий"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-log-count" data-task="log-count" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Читаем git log</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#история-и-ветки-log-diff-switch">↑ К теории: История и ветки: log, diff, switch</a>
+  <div class="task-text prose"><p>Разберите вывод <code>git log --oneline</code> и сохраните: <code>n_commits</code> — сколько коммитов, <code>last_hash</code> — хэш самого нового коммита, <code>first_message</code> — подпись самого первого (старого) коммита.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-my-log" data-task="my-log" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">Ваша история из терминала</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#история-и-ветки-log-diff-switch">↑ К теории: История и ветки: log, diff, switch</a>
+  <div class="task-text prose"><p>Задачи в браузере проверяют, как вы читаете вывод git. Эта — что вы сами сделали коммиты. В своём проекте <code>zerno-analytics</code> сделайте <strong>минимум два коммита</strong> (раздел «Первый репозиторий»), затем выполните в терминале:</p>
+<pre class="static code"><code class="lang-sh">git log --oneline --no-decorate</code></pre>
+<p>Вставьте весь вывод в <code>my_log</code> между тройными кавычками. Сохраните <code>n_mine</code> — число ваших коммитов и <code>messages</code> — список их подписей сверху вниз (без хэшей).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-log-pandas" data-task="log-pandas" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">История проекта в pandas</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#история-и-ветки-log-diff-switch">↑ К теории: История и ветки: log, diff, switch</a>
+  <div class="task-text prose"><p>Вывод <code>git log --format=&quot;%h|%ad|%an|%s&quot; --date=short</code> — это почти CSV с разделителем <code>|</code>. Прочитайте его в таблицу <code>commits</code> со столбцами <code>hash</code>, <code>date</code>, <code>author</code>, <code>message</code> (дата — <code>datetime</code>), посчитайте <code>per_day</code> — число коммитов по дням (Series, индекс — дата, по возрастанию) и <code>busiest</code> — день с наибольшим числом коммитов (если таких несколько — самый ранний).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-diff-stat" data-task="diff-stat" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">4</span>
+    <h3 class="task-title">Сколько строк поменялось</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#история-и-ветки-log-diff-switch">↑ К теории: История и ветки: log, diff, switch</a>
+  <div class="task-text prose"><p>Ниже настоящий вывод <code>git diff</code> между двумя коммитами. Посчитайте, как <code>git diff --stat</code>: <code>files</code> — список изменённых файлов (из строк <code>diff --git a/… b/…</code>, путь после <code>b/</code>), <code>added</code> и <code>removed</code> — сколько строк добавлено и удалено во всех файлах. Заголовки <code>+++</code> и <code>---</code> — не изменения.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-ignore" data-task="ignore" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">5</span>
+    <h3 class="task-title">Мини-.gitignore</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#gitignore-что-не-кладут-в-репозиторий">↑ К теории: .gitignore: что не кладут в репозиторий</a>
+  <div class="task-text prose"><p>Напишите <code>is_ignored(path, patterns)</code> — упрощённую проверку <code>.gitignore</code>. Путь игнорируется, если хотя бы один шаблон подходит:</p>
+<ul>
+<li>шаблон, который оканчивается на <code>/</code>, — это папка: подходит, если одна из папок в пути (всё, кроме последней части) называется так же;</li>
+<li>иначе шаблон сравнивается через <code>fnmatch</code> с <strong>именем файла</strong> — последней частью пути.</li>
+</ul>
+<p>Части пути разделены <code>/</code>. Посчитайте <code>tracked</code> — список файлов из <code>files</code>, которые git будет отслеживать, в том же порядке.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-status-sim" data-task="status-sim" data-level="star" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">6</span>
+    <h3 class="task-title">Свой git status</h3>
+    <span class="lvl lvl-star">Со звёздочкой</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#первый-репозиторий-init-add-commit">↑ К теории: Первый репозиторий: init, add, commit</a>
+  <div class="task-text prose"><p>Напишите <code>status(committed, working, ignore)</code> — упрощённый <code>git status</code>. <code>committed</code> — словарь «путь → содержимое» в последнем коммите, <code>working</code> — то же для рабочей папки сейчас, <code>ignore</code> — список шаблонов для <code>fnmatch</code> по <strong>имени файла</strong> (последней части пути). Верните словарь с ключами <code>&quot;new&quot;</code>, <code>&quot;modified&quot;</code>, <code>&quot;deleted&quot;</code> — отсортированные списки путей:</p>
+<ul>
+<li><code>new</code> — есть в папке, нет в коммите, и имя файла не подходит ни под один шаблон;</li>
+<li><code>modified</code> — есть и там, и там, но содержимое разное;</li>
+<li><code>deleted</code> — был в коммите, а в папке его нет.</li>
+</ul>
+<p>Шаблоны действуют только на новые файлы: то, что уже в коммите, git продолжает отслеживать.</p>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li><code>git init</code> — новый репозиторий; <code>git add файл</code> — положить изменения в следующий коммит; <code>git commit -m &quot;что сделано&quot;</code> — сохранить версию.</li><li><code>git status</code> — что изменилось; <code>git log --oneline</code> — история; <code>git diff</code> — построчные изменения (<code>-</code> — было, <code>+</code> — стало).</li><li><code>git switch -c ветка</code> — попробовать идею отдельно, <code>git merge ветка</code> — забрать результат в <code>main</code>.</li><li><code>.gitignore</code> — что git не трогает: <code>.venv/</code>, <code>data/</code>, <code>.ipynb_checkpoints/</code>, <code>.env</code> с паролями. Секрет, попавший в коммит, остаётся в истории — его меняют, а не просто удаляют.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="09-project.html"><span class="pl">← Предыдущий</span><span class="pt">19. Проект: три месяца продаж</span></a><a class="next" href="10b-git-github.html"><span class="pl">Следующий урок →</span><span class="pt">21. Блокнот в git и портфолио на GitHub</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#первый-репозиторий-init-add-commit">Первый репозиторий: init, add, commit</a></li><li><a href="#история-и-ветки-log-diff-switch">История и ветки: log, diff, switch</a></li><li><a href="#gitignore-что-не-кладут-в-репозиторий">.gitignore: что не кладут в репозиторий</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch02/10-git", "title": "Git: коммиты, история, ветки и .gitignore", "chapter": "pandas — таблицы как в SQL", "tasks": [{"id": "log-count", "title": "Читаем git log", "level": "warmup", "starter": "log = \"\"\"f0dd728 Выводы в README\na74c250 Слияние ветки loyalty\n3e746ee Гипотеза: гости с картой тратят больше\n5ae82cb Выручка по месяцам\n3efd677 Фильтр доставки в отдельной переменной\n375c1e4 Загрузка заказов и выручка\n8c3c173 Структура проекта: README и .gitignore\"\"\"", "setup": "", "check": "rows = [l.split(' ', 1) for l in need('log').splitlines()]\nassert need('n_commits') == len(rows), f'n_commits = {need(\"n_commits\")}. Одна строка лога — один коммит.'\nassert need('last_hash') == rows[0][0], f'last_hash = {need(\"last_hash\")!r}. Самый новый коммит в git log — сверху.'\nassert need('first_message') == rows[-1][1], f'first_message = {need(\"first_message\")!r}. Нужна подпись нижней строки целиком — без хэша.'", "hints": ["<p><code>log.splitlines()<\/code> — список строк; каждую режьте по первому пробелу: <code>line.split(&quot; &quot;, 1)<\/code>.<\/p>\n", "<p>Самый новый — <code>lines[0]<\/code>, самый старый — <code>lines[-1]<\/code>.<\/p>\n"], "solution": "log = \"\"\"f0dd728 Выводы в README\na74c250 Слияние ветки loyalty\n3e746ee Гипотеза: гости с картой тратят больше\n5ae82cb Выручка по месяцам\n3efd677 Фильтр доставки в отдельной переменной\n375c1e4 Загрузка заказов и выручка\n8c3c173 Структура проекта: README и .gitignore\"\"\"\n\nrows = [line.split(\" \", 1) for line in log.splitlines()]\nn_commits = len(rows)\nlast_hash = rows[0][0]\nfirst_message = rows[-1][1]\nprint(n_commits, last_hash, first_message)", "explain": "", "parsons": ""}, {"id": "my-log", "title": "Ваша история из терминала", "level": "base", "starter": "my_log = \"\"\"\n\"\"\"", "setup": "", "check": "import re as _re\n_ls = [l.strip() for l in need('my_log', str).splitlines() if l.strip()]\nassert len(_ls) >= 2, f'В my_log строк с коммитами: {len(_ls)}. Сделайте в своём проекте минимум два коммита и вставьте весь вывод git log --oneline --no-decorate.'\n_bad = [l for l in _ls if not _re.match(r'^[0-9a-f]{7,40} \\S', l)]\nassert not _bad, f'Строка не похожа на вывод git log --oneline: {_bad[0]!r}. Каждая строка — хэш (7 и больше знаков 0–9, a–f), пробел и подпись. Если видите (HEAD -> main), добавьте --no-decorate.'\n_lesson = {'f0dd728', 'a74c250', '3e746ee', '5ae82cb', '3efd677', '375c1e4', '8c3c173'}\nassert not ({l.split()[0][:7] for l in _ls} & _lesson), 'Это хэши из примера урока. Вставьте вывод своего git log — у ваших коммитов свои хэши.'\nassert need('n_mine') == len(_ls), f'n_mine = {need(\"n_mine\")}, а строк с коммитами в my_log {len(_ls)}. Пустые строки не считайте.'\nassert [str(m).strip() for m in need('messages', list)] == [l.split(' ', 1)[1].strip() for l in _ls], 'messages не совпадает: нужны подписи всех коммитов сверху вниз, без хэша — всё, что после первого пробела.'", "hints": ["<p>Коммиты делаются в терминале, не здесь: <code>git add файл<\/code>, затем <code>git commit -m &quot;подпись&quot;<\/code> — дважды, с разными правками. Потом <code>git log --oneline --no-decorate<\/code> и скопируйте вывод.<\/p>\n", "<p>Разбор — как в задаче «Читаем git log»: <code>my_log.strip().splitlines()<\/code>, каждую строку — <code>split(&quot; &quot;, 1)<\/code>. <code>strip()<\/code> уберёт пустые строки по краям, которые появляются из-за переносов после <code>&quot;&quot;&quot;<\/code>.<\/p>\n", "<div class=\"cell\"><pre class=\"cell-src\"><code>rows = [line.split(&quot; &quot;, 1) for line in my_log.strip().splitlines()]\nn_mine = ...\nmessages = [msg for h, msg in ...]<\/code><\/pre><\/div>\n"], "solution": "my_log = \"\"\"\n4b1e9a2 Вывод по выручке доставки\nc07d5f1 Структура проекта: README и .gitignore\n\"\"\"\n\nrows = [line.split(\" \", 1) for line in my_log.strip().splitlines()]\nn_mine = len(rows)\nmessages = [msg for h, msg in rows]\nprint(n_mine, messages)", "explain": "<p>Хэши в эталоне — для примера, у вас они свои: хэш считается из содержимого коммита, автора и времени, поэтому совпасть не может. Если задача прошла, значит, на вашем компьютере есть репозиторий как минимум с двумя версиями — это первый шаг к портфолио. Без <code>--no-decorate<\/code> в терминале у верхней строки появится пометка <code>(HEAD -&gt; main)<\/code> — она показывает, где сейчас ветка, и в подпись коммита не входит. Типичная ошибка — вставить вывод <code>git log<\/code> без <code>--oneline<\/code>: там у каждого коммита по 5–6 строк (автор, дата, пустые строки), и проверка скажет, какая строка не похожа на формат.<\/p>\n", "parsons": ""}, {"id": "log-pandas", "title": "История проекта в pandas", "level": "base", "starter": "import io\nimport pandas as pd\n\nlog = \"\"\"f0dd728|2026-11-26|Аня Петрова|Выводы в README\na74c250|2026-11-25|Аня Петрова|Слияние ветки loyalty\n3e746ee|2026-11-25|Аня Петрова|Гипотеза: гости с картой тратят больше\n5ae82cb|2026-11-25|Аня Петрова|Выручка по месяцам\n3efd677|2026-11-24|Аня Петрова|Фильтр доставки в отдельной переменной\n375c1e4|2026-11-24|Аня Петрова|Загрузка заказов и выручка\n8c3c173|2026-11-24|Аня Петрова|Структура проекта: README и .gitignore\"\"\"", "setup": "", "check": "import io as _io, pandas as _pd\nw = _pd.read_csv(_io.StringIO(need('log')), sep='|', names=['hash', 'date', 'author', 'message'], parse_dates=['date'])\nc = need('commits', _pd.DataFrame)\nassert list(c.columns) == ['hash', 'date', 'author', 'message'], f'Столбцы commits: {list(c.columns)}. У лога нет строки заголовка — имена задайте через names=.'\nassert len(c) == len(w), f'В commits {len(c)} строк, а коммитов {len(w)}. Первая строка лога — это коммит, а не заголовок.'\nassert _pd.api.types.is_datetime64_any_dtype(c['date']), 'date должен быть датой: parse_dates=[\"date\"].'\np = need('per_day', _pd.Series)\nwp = w.groupby('date').size()\nassert [int(x) for x in p.values] == [int(x) for x in wp.values] and list(_pd.to_datetime(p.index)) == list(wp.index), f'per_day не совпадает: нужно число коммитов по дням, индекс — дата по возрастанию.'\nassert _pd.Timestamp(need('busiest')) == wp.idxmax(), f'busiest = {need(\"busiest\")}, а нужно {wp.idxmax().date()}.'", "hints": ["<p>Текст в переменной читается как файл через <code>io.StringIO(log)<\/code>. В <code>pd.read_csv<\/code> укажите <code>sep=&quot;|&quot;<\/code>, <code>names=[...]<\/code> и <code>parse_dates=[&quot;date&quot;]<\/code>.<\/p>\n", "<p>По дням — <code>commits.groupby(&quot;date&quot;).size()<\/code>: индекс сразу отсортирован по возрастанию.<\/p>\n", "<p><code>idxmax()<\/code> возвращает первую из максимальных меток — при сортировке по возрастанию это самый ранний день.<\/p>\n"], "solution": "import io\nimport pandas as pd\n\nlog = \"\"\"f0dd728|2026-11-26|Аня Петрова|Выводы в README\na74c250|2026-11-25|Аня Петрова|Слияние ветки loyalty\n3e746ee|2026-11-25|Аня Петрова|Гипотеза: гости с картой тратят больше\n5ae82cb|2026-11-25|Аня Петрова|Выручка по месяцам\n3efd677|2026-11-24|Аня Петрова|Фильтр доставки в отдельной переменной\n375c1e4|2026-11-24|Аня Петрова|Загрузка заказов и выручка\n8c3c173|2026-11-24|Аня Петрова|Структура проекта: README и .gitignore\"\"\"\n\ncommits = pd.read_csv(io.StringIO(log), sep=\"|\", names=[\"hash\", \"date\", \"author\", \"message\"],\n                      parse_dates=[\"date\"])\nper_day = commits.groupby(\"date\").size()\nbusiest = per_day.idxmax()\nper_day", "explain": "<p>24 и 25 ноября — по три коммита, 26-го — один; <code>idxmax<\/code> вернул 24 ноября, потому что среди равных берётся первый. Без <code>names=<\/code> pandas сделал бы заголовком первый коммит — и в таблице осталось бы шесть строк вместо семи. Разделитель <code>|<\/code> выбран не случайно: в подписях коммитов бывают запятые, и с <code>sep=&quot;,&quot;<\/code> подпись «Структура проекта: README и .gitignore» не пострадала бы, а «Фильтр, выручка» — развалилась бы на столбцы. Такая таблица — основа отчётов «кто и когда работал над проектом».<\/p>\n", "parsons": ""}, {"id": "diff-stat", "title": "Сколько строк поменялось", "level": "base", "starter": "diff = \"\"\"diff --git a/README.md b/README.md\nindex 9ea5733..8a2292f 100644\n--- a/README.md\n+++ b/README.md\n@@ -1,3 +1,7 @@\n # Итоги осени\n \n Анализ продаж сети «Зерно» за сентябрь–ноябрь.\n+\n+## Выводы\n+\n+- Рост ноября: +9.6 % к октябрю.\ndiff --git a/report.py b/report.py\nindex fbaa5fc..e7ddf43 100644\n--- a/report.py\n+++ b/report.py\n@@ -1,6 +1,13 @@\n import pandas as pd\n \n df = pd.read_csv(\"data/orders_3m.csv\", parse_dates=[\"datetime\"])\n-df = df[df[\"channel\"] == \"доставка\"]\n-revenue = df[\"amount\"].sum()\n-print(revenue)\n+delivery = df[df[\"channel\"] == \"доставка\"]\n+revenue_all = df[\"amount\"].sum()\n+revenue_delivery = delivery[\"amount\"].sum()\n+print(revenue_all, revenue_delivery)\n+\n+monthly = df.groupby(df[\"datetime\"].dt.to_period(\"M\"))[\"amount\"].sum()\n+print(monthly)\n+\n+card = df[\"client_id\"].notna()\n+print(df.loc[card, \"amount\"].mean(), df.loc[~card, \"amount\"].mean())\"\"\"", "setup": "", "check": "L = need('diff').splitlines()\nwf = [l.split(' b/', 1)[1] for l in L if l.startswith('diff --git ')]\nwa = sum(1 for l in L if l.startswith('+') and not l.startswith('+++'))\nwr = sum(1 for l in L if l.startswith('-') and not l.startswith('---'))\nassert need('files', list) == wf, f'files = {need(\"files\")}, а нужно {wf}.'\nassert need('added') == wa, f'added = {need(\"added\")}. Пропустите заголовки +++; пустая добавленная строка — это просто «+», её считать нужно.'\nassert need('removed') == wr, f'removed = {need(\"removed\")}. Пропустите заголовки ---.'", "hints": ["<p>Идите по <code>diff.splitlines()<\/code>. Добавленная строка начинается с <code>+<\/code>, но не с <code>+++<\/code>; удалённая — с <code>-<\/code>, но не с <code>---<\/code>.<\/p>\n", "<p><code>startswith<\/code> принимает и кортеж: <code>l.startswith(&quot;+&quot;) and not l.startswith(&quot;+++&quot;)<\/code>. Файл — <code>l.split(&quot; b/&quot;, 1)[1]<\/code> у строк, которые начинаются с <code>&quot;diff --git &quot;<\/code>.<\/p>\n"], "solution": "diff = \"\"\"diff --git a/README.md b/README.md\nindex 9ea5733..8a2292f 100644\n--- a/README.md\n+++ b/README.md\n@@ -1,3 +1,7 @@\n # Итоги осени\n \n Анализ продаж сети «Зерно» за сентябрь–ноябрь.\n+\n+## Выводы\n+\n+- Рост ноября: +9.6 % к октябрю.\ndiff --git a/report.py b/report.py\nindex fbaa5fc..e7ddf43 100644\n--- a/report.py\n+++ b/report.py\n@@ -1,6 +1,13 @@\n import pandas as pd\n \n df = pd.read_csv(\"data/orders_3m.csv\", parse_dates=[\"datetime\"])\n-df = df[df[\"channel\"] == \"доставка\"]\n-revenue = df[\"amount\"].sum()\n-print(revenue)\n+delivery = df[df[\"channel\"] == \"доставка\"]\n+revenue_all = df[\"amount\"].sum()\n+revenue_delivery = delivery[\"amount\"].sum()\n+print(revenue_all, revenue_delivery)\n+\n+monthly = df.groupby(df[\"datetime\"].dt.to_period(\"M\"))[\"amount\"].sum()\n+print(monthly)\n+\n+card = df[\"client_id\"].notna()\n+print(df.loc[card, \"amount\"].mean(), df.loc[~card, \"amount\"].mean())\"\"\"\n\nlines = diff.splitlines()\nfiles = [l.split(\" b/\", 1)[1] for l in lines if l.startswith(\"diff --git \")]\nadded = sum(1 for l in lines if l.startswith(\"+\") and not l.startswith(\"+++\"))\nremoved = sum(1 for l in lines if l.startswith(\"-\") and not l.startswith(\"---\"))\nprint(files, added, removed)", "explain": "<p>Два файла, 14 строк добавлено и 3 удалены — ровно столько же печатает <code>git diff --stat<\/code>: <code>2 files changed, 14 insertions(+), 3 deletions(-)<\/code>. Если забыть про заголовки, выйдет 16 и 5: по одному <code>+++<\/code> и <code>---<\/code> на каждый файл. Ещё одна ловушка — строка <code>- Рост ноября…<\/code> внутри README: она начинается с <code>+<\/code>, потому что добавлена целиком, а дефис — уже часть текста. Знак изменения — только первый символ строки.<\/p>\n", "parsons": ""}, {"id": "ignore", "title": "Мини-.gitignore", "level": "base", "starter": "from fnmatch import fnmatch\n\npatterns = [\".venv/\", \"data/\", \".ipynb_checkpoints/\", \"*.csv\", \".env\"]\nfiles = [\"README.md\", \"report.ipynb\", \"data/orders_3m.csv\", \".env\", \"pyproject.toml\",\n         \".ipynb_checkpoints/report-checkpoint.ipynb\", \"export/kpi.csv\", \"notes/.env.example\",\n         \".venv/lib/pandas/__init__.py\", \"src/zerno_utils.py\"]\n\ndef is_ignored(path, patterns):\n    ...\n\ntracked = ...\ntracked", "setup": "", "check": "from fnmatch import fnmatch as _fm\ndef _ig(path, patterns):\n    parts = path.split('/')\n    for p in patterns:\n        if p.endswith('/'):\n            if p[:-1] in parts[:-1]:\n                return True\n        elif _fm(parts[-1], p):\n            return True\n    return False\nf = need('is_ignored')\npats, fs = need('patterns'), need('files')\nassert need('tracked', list) == [x for x in fs if not _ig(x, pats)], f'tracked = {need(\"tracked\")}, а нужно {[x for x in fs if not _ig(x, pats)]}.'\nfor path, pp in (('data', ['data/']), ('a/data/b.txt', ['data/']), ('report.ipynb', ['*.ipynb']), ('x/y.CSV', ['*.csv']),\n                 ('.env.example', ['.env']), ('deep/.venv/x.py', ['.venv/'])):\n    assert bool(f(path, pp)) == _ig(path, pp), f'is_ignored({path!r}, {pp}) = {f(path, pp)}, а нужно {_ig(path, pp)}. Папочный шаблон проверяют только по папкам пути, не по имени файла.'", "hints": ["<p>Разбейте путь: <code>parts = path.split(&quot;/&quot;)<\/code>. Папки — <code>parts[:-1]<\/code>, имя файла — <code>parts[-1]<\/code>.<\/p>\n", "<p>Для шаблона-папки: <code>p[:-1] in parts[:-1]<\/code> (срез убирает <code>/<\/code> в конце). Для остальных: <code>fnmatch(parts[-1], p)<\/code>.<\/p>\n", "<p><code>tracked = [f for f in files if not is_ignored(f, patterns)]<\/code>.<\/p>\n"], "solution": "from fnmatch import fnmatch\n\npatterns = [\".venv/\", \"data/\", \".ipynb_checkpoints/\", \"*.csv\", \".env\"]\nfiles = [\"README.md\", \"report.ipynb\", \"data/orders_3m.csv\", \".env\", \"pyproject.toml\",\n         \".ipynb_checkpoints/report-checkpoint.ipynb\", \"export/kpi.csv\", \"notes/.env.example\",\n         \".venv/lib/pandas/__init__.py\", \"src/zerno_utils.py\"]\n\ndef is_ignored(path, patterns):\n    parts = path.split(\"/\")\n    for p in patterns:\n        if p.endswith(\"/\"):\n            if p[:-1] in parts[:-1]:\n                return True\n        elif fnmatch(parts[-1], p):\n            return True\n    return False\n\ntracked = [f for f in files if not is_ignored(f, patterns)]\ntracked", "explain": "<p>В репозиторий попадут README, блокнот, <code>pyproject.toml<\/code>, <code>notes/.env.example<\/code> и модуль <code>src/zerno_utils.py<\/code>. <code>export/kpi.csv<\/code> отсеян шаблоном <code>*.csv<\/code>, хотя папки <code>export<\/code> в списке нет. А <code>.env.example<\/code> проходит: шаблон <code>.env<\/code> требует точного имени — так обычно и делают, чтобы выложить пример настроек без паролей. Настоящий git сложнее (шаблоны с <code>/<\/code> в середине, исключения <code>!<\/code>, <code>**<\/code>), но суть та же. Если сравнивать папочный шаблон и с именем файла, файл с именем <code>data<\/code> без расширения ошибочно пропадёт из репозитория.<\/p>\n", "parsons": ""}, {"id": "status-sim", "title": "Свой git status", "level": "star", "starter": "from fnmatch import fnmatch\n\ncommitted = {\"README.md\": \"# Итоги осени\", \"report.py\": \"print(1)\", \"old.ipynb\": \"{}\"}\nworking = {\"README.md\": \"# Итоги осени\", \"report.py\": \"print(2)\", \"notes.md\": \"черновик\",\n           \"data/orders_3m.csv\": \"...\", \".env\": \"PASSWORD=...\"}\nignore = [\"*.csv\", \".env\"]\n\ndef status(committed, working, ignore):\n    ...\n\nstatus(committed, working, ignore)", "setup": "", "check": "from fnmatch import fnmatch as _fm\ndef _st(c, w, ig):\n    ign = lambda p: any(_fm(p.split('/')[-1], x) for x in ig)\n    return {'new': sorted(p for p in w if p not in c and not ign(p)),\n            'modified': sorted(p for p in w if p in c and w[p] != c[p]),\n            'deleted': sorted(p for p in c if p not in w)}\nf = need('status')\ncases = [(need('committed'), need('working'), need('ignore')),\n         ({'a.csv': '1'}, {'a.csv': '2', 'b.csv': '3'}, ['*.csv']),\n         ({}, {'x/y/report.ipynb': '{}', 'z.py': ''}, []),\n         ({'b.md': 'x', 'a.md': 'y'}, {}, ['*.md'])]\nfor c, w, ig in cases:\n    got = f(c, w, ig)\n    assert got is not None and {k: list(v) for k, v in got.items()} == _st(c, w, ig), f'status({c}, {w}, {ig}) = {got}, а нужно {_st(c, w, ig)}.'", "hints": ["<p>Три множества путей: в папке и не в коммите, в обоих, в коммите и не в папке. Каждое — генератор по одному из словарей.<\/p>\n", "<p>Игнор — функция от пути: <code>any(fnmatch(path.split(&quot;/&quot;)[-1], p) for p in ignore)<\/code>. Применяйте её только к новым файлам.<\/p>\n", "<p><code>&quot;modified&quot;: sorted(p for p in working if p in committed and working[p] != committed[p])<\/code>; удалённые — <code>sorted(p for p in committed if p not in working)<\/code>.<\/p>\n"], "solution": "from fnmatch import fnmatch\n\ncommitted = {\"README.md\": \"# Итоги осени\", \"report.py\": \"print(1)\", \"old.ipynb\": \"{}\"}\nworking = {\"README.md\": \"# Итоги осени\", \"report.py\": \"print(2)\", \"notes.md\": \"черновик\",\n           \"data/orders_3m.csv\": \"...\", \".env\": \"PASSWORD=...\"}\nignore = [\"*.csv\", \".env\"]\n\ndef status(committed, working, ignore):\n    def ignored(path):\n        return any(fnmatch(path.split(\"/\")[-1], p) for p in ignore)\n    return {\n        \"new\": sorted(p for p in working if p not in committed and not ignored(p)),\n        \"modified\": sorted(p for p in working if p in committed and working[p] != committed[p]),\n        \"deleted\": sorted(p for p in committed if p not in working),\n    }\n\nstatus(committed, working, ignore)", "explain": "<p>Результат: новый <code>notes.md<\/code>, изменённый <code>report.py<\/code>, удалённый <code>old.ipynb<\/code>; данные и <code>.env<\/code> git не видит благодаря шаблонам. Второй тестовый случай показывает тонкость, о которой говорилось в разделе про <code>.gitignore<\/code>: <code>a.csv<\/code> уже в коммите, поэтому его изменение видно, несмотря на шаблон <code>*.csv<\/code>, — <code>.gitignore<\/code> не скрывает отслеживаемые файлы. Настоящий git сравнивает не содержимое целиком, а хэши файлов, но логика трёх списков та же.<\/p>\n", "parsons": ""}], "files": [], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+
+
+</body>
+</html>

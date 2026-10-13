@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Распределения: мат. ожидание, биномиальное, Пуассона — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/katex/katex.min.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch05">Глава 5. Статистика и проверка гипотез</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 5</div><div class="side-title">Статистика и проверка гипотез</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02"><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03"><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05" open><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" aria-current="page" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11"><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 2 · основной путь · ≈ 55 мин · задач: 7</div>
+      <h1>Распределения: мат. ожидание, биномиальное, Пуассона</h1>
+      <p class="lead">У случайности есть форма. Считаем мат. ожидание — средний результат «в долгую» — и знакомимся с двумя распределениями для счёта: биномиальным (опоздания за смену) и пуассоновским (гости за 5 минут). Всё — одной строкой scipy.stats вместо симуляции. Нормальное распределение — в следующем уроке.</p>
+      <div class="data-files"><span class="df-label">Данные урока</span><a class="data-file" href="../data/deliveries.csv" download title="Скачать deliveries.csv"><span class="df-name">deliveries.csv</span><span class="df-info">1877 строк · 131 КБ</span></a><a class="data-file" href="../data/arrivals.csv" download title="Скачать arrivals.csv"><span class="df-name">arrivals.csv</span><span class="df-info">1056 строк · 27 КБ</span></a><span class="df-note">В примерах файлы уже подключены — скачивать нужно, только чтобы открыть их у себя.</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 7</span></div>
+    </div>
+    <article class="prose theory"><h2 id="распределение-случайной-величины">Распределение случайной величины</h2>
+<p>В конце урока «Вероятность: частота и симуляция» мы смоделировали 200 000 смен по 20 доставок и посчитали, как часто опаздывает 0, 1, 2, … доставок. Таблица «значение → вероятность» называется <strong>распределением</strong> случайной величины. Для типовых ситуаций распределения давно посчитаны, и симулировать каждый раз не нужно — есть формулы в библиотеке <strong>scipy</strong>:</p>
+<div class="cell"><pre class="cell-src"><code>from scipy import stats
+print(round(stats.binom.pmf(5, 20, 0.24), 4))</code></pre></div>
+<p>Это вероятность, что из 20 доставок опоздает ровно 5, если каждая опаздывает с вероятностью 0.24.</p>
+<div class="fb" data-sec="распределение-случайной-величины"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="случайная-величина-и-математическое-ожидание">Случайная величина и математическое ожидание</h2>
+<p><strong>Зачем.</strong> Отдел доставки предлагает правило: опоздали — гость получает купон. Купон — расход, и до запуска нужно ответить, сколько правило будет стоить сети в среднем на одну доставку и за неделю. Заранее мы не знаем, какая доставка опоздает, но знаем вероятности, и этого достаточно.</p>
+<p><strong>Случайная величина</strong> — число, которое станет известно только после события: сколько гостей подойдёт к стойке за 5 минут, сколько опозданий будет за смену, сколько рублей компенсации получит гость. До события мы знаем только её распределение — какие значения она принимает и с какими вероятностями.</p>
+<p><strong>Математическое ожидание</strong> (мат. ожидание, <span class="math inline">E[X]</span>, от англ. <em>expectation</em>) — среднее значение случайной величины «в долгую»: если повторить событие очень много раз, среднее результатов приблизится к нему (это закон больших чисел из урока «Вероятность: частота и симуляция»).</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Страховая компания не знает, кто из клиентов в этом году попадёт в аварию, но точно знает, сколько в среднем заплатит на одного клиента. По этому числу она и назначает цену полиса. Мат. ожидание — тот же расчёт: отдельный исход непредсказуем, а среднее по многим исходам — нет.</p>
+</aside>
+<h3>Игрушечный пример: купон за опоздание</h3>
+<p>Пусть правило такое: вовремя — 0 ₽, опоздание до 10 минут — купон 100 ₽, больше 10 минут — 300 ₽. Допустим, вероятности этих исходов 0.76, 0.14 и 0.10. Посчитаем ожидание руками:</p>
+<ol>
+<li>Каждое значение умножаем на его вероятность: 0 × 0.76 = <strong>0</strong>; 100 × 0.14 = <strong>14</strong>; 300 × 0.10 = <strong>30</strong>.</li>
+<li>Складываем: 0 + 14 + 30 = <strong>44 ₽</strong>.</li>
+</ol>
+<p>На тысячу доставок правило обойдётся примерно в 44 000 ₽. При этом ни один гость не получит ровно 44 ₽ — это не «типичный купон», а средний расход на доставку.</p>
+<figure class="fig" data-fig="ev-areas"><div class="fig-scroll"><svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-ev-areas">
+  <title id="t-ev-areas">Математическое ожидание как площадь: значение × вероятность</title>
+  <defs><marker id="ah-ev-areas" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="70.0" y="208.0" width="448.4" height="2.0" rx="2"/>
+  <rect class="box-warn" x="518.4" y="160.0" width="82.6" height="50.0" rx="2"/>
+  <rect class="box-err" x="601.0" y="60.0" width="59.0" height="150.0" rx="2"/>
+  <text class="ink2 sm" x="294.2" y="229" text-anchor="middle">вовремя: 0 ₽ × 0.76 = 0</text>
+  <text class="ink sm" x="559.7" y="136.0" text-anchor="middle">100 × 0.14</text>
+  <text class="ink sm b" x="559.7" y="152.0" text-anchor="middle">= 14</text>
+  <text class="ink sm" x="630.5" y="36.0" text-anchor="middle">300 × 0.10</text>
+  <text class="ink sm b" x="630.5" y="52.0" text-anchor="middle">= 30</text>
+  <path class="ln-acc dash" d="M70,188.0 L660,188.0"/>
+  <text class="acc sm b" x="76" y="178.0" text-anchor="start">E[X] = 0 + 14 + 30 = 44 ₽: та же площадь, разложенная ровно по всей ширине</text>
+  <path class="ln" d="M70,210 L660,210"/>
+  <path class="ln" d="M70.0,210 L70.0,215"/>
+  <text class="mut sm" x="70.0" y="229" text-anchor="middle">0</text>
+  <path class="ln" d="M518.4,210 L518.4,215"/>
+  <text class="mut sm" x="518.4" y="229" text-anchor="middle">0.76</text>
+  <path class="ln" d="M601.0,210 L601.0,215"/>
+  <text class="mut sm" x="601.0" y="229" text-anchor="middle">0.9</text>
+  <path class="ln" d="M660.0,210 L660.0,215"/>
+  <text class="mut sm" x="660.0" y="229" text-anchor="middle">1</text>
+  <text class="ink2 sm" x="365.0" y="250" text-anchor="middle">ширина — вероятность исхода, высота — сумма купона, площадь — вклад в ожидание</text>
+  <path class="ln-mut" d="M70,210 L70,60.0"/>
+  <text class="mut sm" x="64" y="164.0" text-anchor="end">100 ₽</text>
+  <text class="mut sm" x="64" y="64.0" text-anchor="end">300 ₽</text>
+</svg>
+</div><figcaption>
+<p>Ожидание как площадь: ширина столбика — вероятность исхода, высота — сумма купона. Площади 0, 14 и 30 складываются в 44 ₽; синий пунктир — та же площадь, распределённая ровно по всем доставкам.</p>
+</figcaption></figure>
+<p>Формула — та же арифметика в общем виде:</p>
+<div class="math block">
+E[X] = \sum_{i} x_i \cdot p_i
+</div>
+<p>где <span class="math inline">x_i</span> — возможные значения величины (0, 100, 300), <span class="math inline">p_i</span> — их вероятности (0.76, 0.14, 0.10), <span class="math inline">\sum</span> — сумма по всем значениям. Вероятности должны давать в сумме 1: других исходов нет.</p>
+<aside class="callout callout-sql"><div class="callout-title">Как в SQL</div>
+<p>В Excel это <code>СУММПРОИЗВ(значения; вероятности)</code>, в SQL — <code>SUM(value * prob)</code> по таблице распределения.</p>
+</aside>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+values = np.array([0, 100, 300])     # возможные суммы купона
+probs = np.array([0.76, 0.14, 0.10])  # их вероятности
+print(&quot;сумма вероятностей:&quot;, probs.sum())
+print(&quot;ожидание, ₽:&quot;, (values * probs).sum())</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>values * probs</code> — поэлементное умножение массивов: <code>[0, 14, 30]</code>;</li>
+<li><code>.sum()</code> складывает произведения — это и есть <span class="math inline">E[X]</span>;</li>
+<li>первая строка вывода — проверка, что распределение задано целиком (сумма вероятностей 1).</li>
+</ul>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">values = [0, 50, 200]
+probs = [0.5, 0.3, 0.2]
+print(sum(v * p for v, p in zip(values, probs)))</code></pre>
+<ul>
+<li><code>83.33</code></li>
+<li>[x] <code>55.0</code></li>
+<li><code>200</code></li>
+</ul>
+<p>Почему: 0 × 0.5 + 50 × 0.3 + 200 × 0.2 = 0 + 15 + 40 = 55. Простое среднее трёх значений (83.33) не учитывает, что дорогой исход самый редкий.</p>
+</div>
+<h3>На реальных данных</h3>
+<p>Вероятности не нужно выдумывать — их дают доли в истории доставок. Посчитаем опоздание в минутах, разложим доставки по трём исходам и найдём ожидание двумя способами.</p>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+import pandas as pd
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)]
+late_min = ok[&quot;actual_min&quot;] - ok[&quot;promised_min&quot;]
+# купон по правилу: вовремя — 0, до 10 мин — 100, дольше — 300
+coupon = np.select([late_min &lt;= 0, late_min &lt;= 10], [0, 100], default=300)
+
+dist = pd.Series(coupon).value_counts(normalize=True).sort_index()
+print(dist.round(4))
+print(&quot;ожидание по распределению:&quot;, round((dist.index * dist).sum(), 2))
+print(&quot;среднее купона по доставкам:&quot;, round(coupon.mean(), 2))
+print(&quot;доля от среднего чека:&quot;, round(coupon.mean() / ok[&quot;amount&quot;].mean(), 3))</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>late_min</code> — на сколько минут доставка опоздала (отрицательное число — приехали раньше обещанного);</li>
+<li><code>np.select(условия, значения, default=...)</code> проверяет условия по порядку и берёт значение первого выполненного: «не опоздали» → 0, иначе «опоздали не больше чем на 10» → 100, иначе — 300;</li>
+<li><code>value_counts(normalize=True)</code> — доли каждого значения, то есть распределение случайной величины «купон»; <code>sort_index()</code> упорядочивает по сумме;</li>
+<li><code>dist.index * dist</code> — значение × вероятность для каждой строки, сумма — ожидание.</li>
+</ul>
+<p>Как читать результат: 76 % доставок обходятся без купона, 16.9 % дают купон 100 ₽ и 7.1 % — 300 ₽. Ожидание — <strong>38.08 ₽</strong> на доставку, и оно в точности совпало со средним купона по всем доставкам: ожидание, посчитанное по долям из данных, и есть среднее по этим данным. Это 6.3 % среднего чека — цифра, с которой можно идти к финансовому директору. За неделю из 200 доставок правило обойдётся примерно в 200 × 38.08 ≈ 7 600 ₽.</p>
+<p>Последний шаг — свойство <strong>линейности</strong>: ожидание суммы равно сумме ожиданий. Ожидание купонов за 200 доставок — 200 × E[купон за одну]. Оно же объясняет формулу среднего биномиального распределения из следующего раздела: одна доставка «опоздала» (1) или нет (0), её ожидание 1 × p + 0 × (1 − p) = p, а у n доставок — n · p.</p>
+<aside class="callout callout-deep"><div class="callout-title">Дисперсия случайной величины</div>
+<p>Разброс вокруг ожидания считается так же «по распределению»: <span class="math inline">Var[X] = \sum_i p_i \cdot (x_i - E[X])^2</span>, а стандартное отклонение — корень из неё. Для купона из игрушечного примера: 0.76 × 44² + 0.14 × 56² + 0.10 × 256² ≈ 8 464, σ ≈ 92 ₽. Для одной доставки «0 или 1» дисперсия равна p · (1 − p) — отсюда корень <span class="math inline">\sqrt{n \cdot p \cdot (1-p)}</span> у биномиального распределения.</p>
+</aside>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>Ожидание купона по правилу — 38 ₽ на доставку. Что из этого верно?</p>
+<ul>
+<li>[x] На 1 000 доставок сеть потратит на купоны около 38 000 ₽, хотя ни один гость не получит ровно 38 ₽
+<blockquote>
+<p>Ожидание — средний расход на одну доставку в длинной серии. Отдельный исход — 0, 100 или 300 ₽.</p>
+</blockquote>
+</li>
+<li>[ ] Типичный гость получит купон на 38 ₽
+<blockquote>
+<p>Такого купона вообще нет: три четверти гостей не получат ничего, остальные — 100 или 300 ₽.</p>
+</blockquote>
+</li>
+<li>[ ] Половина доставок обойдётся дороже 38 ₽, половина — дешевле
+<blockquote>
+<p>Это свойство медианы, а не ожидания. Здесь 76 % доставок стоят 0 ₽ — медиана равна нулю.</p>
+</blockquote>
+</li>
+<li>[ ] Ожидание можно посчитать как (0 + 100 + 300) / 3 ≈ 133 ₽
+<blockquote>
+<p>Простое среднее значений забывает про вероятности: дорогой исход редкий, и его вклад должен быть маленьким.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Среднее значений вместо взвешенного.</strong> <code>np.mean([0, 100, 300])</code> = 133 — не ожидание. Каждое значение умножается на свою вероятность.</li>
+<li><strong>Вероятности не дают в сумме 1.</strong> Забыли исход (например, «приехали раньше») — ожидание выйдет заниженным. Проверяйте <code>probs.sum()</code>.</li>
+<li><strong>Ожидание как «типичный» исход.</strong> 38 ₽ — средний расход на доставку, а не сумма, которую получит гость; для «типичного» смотрят медиану и моду.</li>
+<li><strong>Порядок условий в <code>np.select</code>.</strong> Если поставить <code>late_min &lt;= 10</code> первым, все вовремя приехавшие (их опоздание ≤ 0, а значит и ≤ 10) получат купон 100 ₽ — ожидание вырастет в разы.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-ev-toy"><b>3</b> Десерты к заказу</a><a href="#task-ev-comp"><b>6</b> Сколько стоит купон с льготой</a></div>
+<div class="fb" data-sec="случайная-величина-и-математическое-ожидание"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="биномиальное-распределение">Биномиальное распределение</h2>
+<p><strong>Биномиальное распределение</strong> описывает число «успехов» в <code>n</code> независимых попытках, где у каждой попытки вероятность успеха <code>p</code>. «Успех» — просто название: опоздание, покупка, клик.</p>
+<p>Три главные функции:</p>
+<table>
+<thead>
+<tr>
+<th>Функция</th>
+<th>Что считает</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stats.binom.pmf(k, n, p)</code></td>
+<td><span class="math inline">P(X = k)</span> — ровно k</td>
+</tr>
+<tr>
+<td><code>stats.binom.cdf(k, n, p)</code></td>
+<td><span class="math inline">P(X \le k)</span> — не больше k</td>
+</tr>
+<tr>
+<td><code>stats.binom.sf(k, n, p)</code></td>
+<td><span class="math inline">P(X &gt; k)</span> — больше k (sf — survival function, «хвост»)</td>
+</tr>
+</tbody>
+</table>
+<div class="cell"><pre class="cell-src"><code>from scipy import stats
+n, p = 20, 0.24
+print(&quot;ровно 5:     &quot;, round(stats.binom.pmf(5, n, p), 4))
+print(&quot;не больше 3: &quot;, round(stats.binom.cdf(3, n, p), 4))
+print(&quot;8 и больше:  &quot;, round(stats.binom.sf(7, n, p), 4))</code></pre></div>
+<p>Обратите внимание на последнюю строку: «8 и больше» — это «больше 7», поэтому <code>sf(7, …)</code>. Сравните с симуляцией из урока «Вероятность: частота и симуляция» — числа совпадают с точностью до шума.</p>
+<figure class="fig" data-fig="binom-cdf-sf"><div class="fig-scroll"><svg viewBox="0 0 700 270" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-binom-cdf-sf">
+  <title id="t-binom-cdf-sf">pmf, cdf и sf — какие столбики складываются</title>
+  <defs><marker id="ah-binom-cdf-sf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box-ok" x="36" y="207.1" width="32" height="2.9" rx="2"/>
+  <text class="mut sm" x="52" y="226" text-anchor="middle">0</text>
+  <rect class="box-ok" x="77" y="191.8" width="32" height="18.2" rx="2"/>
+  <text class="mut sm" x="93" y="226" text-anchor="middle">1</text>
+  <rect class="box-ok" x="118" y="155.5" width="32" height="54.5" rx="2"/>
+  <text class="mut sm" x="134" y="226" text-anchor="middle">2</text>
+  <rect class="box-ok" x="159" y="106.8" width="32" height="103.2" rx="2"/>
+  <text class="mut sm" x="175" y="226" text-anchor="middle">3</text>
+  <rect class="box" x="200" y="71.5" width="32" height="138.5" rx="2"/>
+  <text class="mut sm" x="216" y="226" text-anchor="middle">4</text>
+  <rect class="box-acc" x="241" y="70.0" width="32" height="140.0" rx="2"/>
+  <text class="mut sm" x="257" y="226" text-anchor="middle">5</text>
+  <rect class="box" x="282" y="99.5" width="32" height="110.5" rx="2"/>
+  <text class="mut sm" x="298" y="226" text-anchor="middle">6</text>
+  <rect class="box" x="323" y="140.2" width="32" height="69.8" rx="2"/>
+  <text class="mut sm" x="339" y="226" text-anchor="middle">7</text>
+  <rect class="box-err" x="364" y="174.2" width="32" height="35.8" rx="2"/>
+  <text class="mut sm" x="380" y="226" text-anchor="middle">8</text>
+  <rect class="box-err" x="405" y="194.9" width="32" height="15.1" rx="2"/>
+  <text class="mut sm" x="421" y="226" text-anchor="middle">9</text>
+  <rect class="box-err" x="446" y="204.8" width="32" height="5.2" rx="2"/>
+  <text class="mut sm" x="462" y="226" text-anchor="middle">10</text>
+  <rect class="box-err" x="487" y="208.5" width="32" height="1.5" rx="2"/>
+  <text class="mut sm" x="503" y="226" text-anchor="middle">11</text>
+  <rect class="box-err" x="528" y="208.5" width="32" height="1.5" rx="2"/>
+  <text class="mut sm" x="544" y="226" text-anchor="middle">12</text>
+  <rect class="box-err" x="569" y="208.5" width="32" height="1.5" rx="2"/>
+  <text class="mut sm" x="585" y="226" text-anchor="middle">13</text>
+  <rect class="box-err" x="610" y="208.5" width="32" height="1.5" rx="2"/>
+  <text class="mut sm" x="626" y="226" text-anchor="middle">14</text>
+  <path class="ln" d="M20,210 L680,210"/>
+  <text class="ok sm b" x="113.5" y="72.77287581699339" text-anchor="middle">cdf(3) = P(X ≤ 3)</text>
+  <text class="ok sm b" x="113.5" y="88.77287581699339" text-anchor="middle">= 0.2569</text>
+  <text class="acc sm b" x="257" y="48.0" text-anchor="middle">pmf(5) = 0.2012</text>
+  <text class="err sm b" x="482.5" y="140.17845166933958" text-anchor="middle">sf(7) = P(X &gt; 7) = P(X ≥ 8)</text>
+  <text class="err sm b" x="482.5" y="156.17845166933958" text-anchor="middle">= 0.0835</text>
+  <text class="mut sm" x="350" y="246" text-anchor="middle">опозданий из 20 доставок смены, p = 0.24</text>
+  <text class="ink2 sm" x="350" y="264" text-anchor="middle">sf(k) — строго больше k: «8 и больше» — это sf(7), а не sf(8)</text>
+</svg>
+</div><figcaption>
+<p>Какие столбики складывает каждая функция для n = 20, p = 0.24: <code>cdf(3)</code> — всё до 3 включительно, <code>pmf(5)</code> — один столбик, <code>sf(7)</code> — всё строго больше 7.</p>
+</figcaption></figure>
+<h3>Разберём вместе: биномиальное распределение для трёх доставок</h3>
+<p>Откуда берутся числа <code>pmf</code>? Посчитаем руками для n = 3, p = 0.24. Каждая доставка — «О» (опоздала, 0.24) или «В» (вовремя, 0.76).</p>
+<ul>
+<li><strong>0 опозданий</strong> — только «ВВВ»: 0.76³ = <strong>0.439</strong>.</li>
+<li><strong>1 опоздание</strong> — «ОВВ», «ВОВ», «ВВО»: три варианта по 0.24 × 0.76² = 0.139, вместе <strong>0.416</strong>.</li>
+<li><strong>2 опоздания</strong> — «ООВ», «ОВО», «ВОО»: три варианта по 0.24² × 0.76 = 0.044, вместе <strong>0.131</strong>.</li>
+<li><strong>3 опоздания</strong> — «ООО»: 0.24³ = <strong>0.014</strong>.</li>
+</ul>
+<p>Сумма — 1: других исходов нет. Множитель 3 — число способов расставить опоздания по трём доставкам; для 20 доставок и 5 опозданий таких способов 15 504, поэтому руками уже не считают.</p>
+<figure class="fig" data-fig="binom-ways"><div class="fig-scroll"><svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-binom-ways">
+  <title id="t-binom-ways">Биномиальное распределение для трёх доставок по вариантам</title>
+  <defs><marker id="ah-binom-ways" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink b" x="92" y="22" text-anchor="middle">0 опозданий</text>
+  <rect class="box-ok" x="53" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="66.0" y="52.0" text-anchor="middle">В</text>
+  <rect class="box-ok" x="79" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="92.0" y="52.0" text-anchor="middle">В</text>
+  <rect class="box-ok" x="105" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="118.0" y="52.0" text-anchor="middle">В</text>
+  <text class="ink2 sm" x="92" y="146" text-anchor="middle">0.76³ = 0.439</text>
+  <text class="ink2 sm" x="92" y="164" text-anchor="middle">× 1 вариант</text>
+  <rect class="box-acc" x="62" y="201.3" width="60" height="52.7" rx="2"/>
+  <text class="ink b" x="92" y="195.3" text-anchor="middle">0.439</text>
+  <text class="ink b" x="264" y="22" text-anchor="middle">1 опоздание</text>
+  <rect class="box-err" x="225" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="238.0" y="52.0" text-anchor="middle">О</text>
+  <rect class="box-ok" x="251" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="264.0" y="52.0" text-anchor="middle">В</text>
+  <rect class="box-ok" x="277" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="290.0" y="52.0" text-anchor="middle">В</text>
+  <rect class="box-ok" x="225" y="64" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="238.0" y="82.0" text-anchor="middle">В</text>
+  <rect class="box-err" x="251" y="64" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="264.0" y="82.0" text-anchor="middle">О</text>
+  <rect class="box-ok" x="277" y="64" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="290.0" y="82.0" text-anchor="middle">В</text>
+  <rect class="box-ok" x="225" y="94" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="238.0" y="112.0" text-anchor="middle">В</text>
+  <rect class="box-ok" x="251" y="94" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="264.0" y="112.0" text-anchor="middle">В</text>
+  <rect class="box-err" x="277" y="94" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="290.0" y="112.0" text-anchor="middle">О</text>
+  <text class="ink2 sm" x="264" y="146" text-anchor="middle">0.24 · 0.76² = 0.139</text>
+  <text class="ink2 sm" x="264" y="164" text-anchor="middle">× 3 варианта</text>
+  <rect class="box-acc" x="234" y="204.1" width="60" height="49.9" rx="2"/>
+  <text class="ink b" x="264" y="198.1" text-anchor="middle">0.416</text>
+  <text class="ink b" x="436" y="22" text-anchor="middle">2 опоздания</text>
+  <rect class="box-err" x="397" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="410.0" y="52.0" text-anchor="middle">О</text>
+  <rect class="box-err" x="423" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="436.0" y="52.0" text-anchor="middle">О</text>
+  <rect class="box-ok" x="449" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="462.0" y="52.0" text-anchor="middle">В</text>
+  <rect class="box-err" x="397" y="64" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="410.0" y="82.0" text-anchor="middle">О</text>
+  <rect class="box-ok" x="423" y="64" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="436.0" y="82.0" text-anchor="middle">В</text>
+  <rect class="box-err" x="449" y="64" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="462.0" y="82.0" text-anchor="middle">О</text>
+  <rect class="box-ok" x="397" y="94" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="410.0" y="112.0" text-anchor="middle">В</text>
+  <rect class="box-err" x="423" y="94" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="436.0" y="112.0" text-anchor="middle">О</text>
+  <rect class="box-err" x="449" y="94" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="462.0" y="112.0" text-anchor="middle">О</text>
+  <text class="ink2 sm" x="436" y="146" text-anchor="middle">0.24² · 0.76 = 0.044</text>
+  <text class="ink2 sm" x="436" y="164" text-anchor="middle">× 3 варианта</text>
+  <rect class="box-acc" x="406" y="238.2" width="60" height="15.8" rx="2"/>
+  <text class="ink b" x="436" y="232.2" text-anchor="middle">0.131</text>
+  <text class="ink b" x="608" y="22" text-anchor="middle">3 опоздания</text>
+  <rect class="box-err" x="569" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="582.0" y="52.0" text-anchor="middle">О</text>
+  <rect class="box-err" x="595" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="608.0" y="52.0" text-anchor="middle">О</text>
+  <rect class="box-err" x="621" y="34" width="26" height="26" rx="3"/>
+  <text class="ink sm b" x="634.0" y="52.0" text-anchor="middle">О</text>
+  <text class="ink2 sm" x="608" y="146" text-anchor="middle">0.24³ = 0.014</text>
+  <text class="ink2 sm" x="608" y="164" text-anchor="middle">× 1 вариант</text>
+  <rect class="box-acc" x="578" y="252.3" width="60" height="1.7" rx="2"/>
+  <text class="ink b" x="608" y="246.3" text-anchor="middle">0.014</text>
+  <path class="ln" d="M20,254 L680,254"/>
+  <text class="ink2 sm" x="350" y="274" text-anchor="middle">О — опоздала (0.24), В — вовремя (0.76); столбики — stats.binom.pmf([0, 1, 2, 3], 3, 0.24)</text>
+  <text class="mut sm" x="350" y="292" text-anchor="middle">сумма 1: других исходов нет</text>
+</svg>
+</div><figcaption>
+<p>Все восемь вариантов для трёх доставок, сгруппированные по числу опозданий. Вероятность одного варианта умножается на число вариантов — так и получается <code>pmf</code>.</p>
+</figcaption></figure>
+<div class="cell"><pre class="cell-src"><code>from scipy import stats
+print(stats.binom.pmf([0, 1, 2, 3], 3, 0.24).round(3))</code></pre></div>
+<p>Что получилось: <code>pmf</code> — это та же арифметика «вероятность одного варианта × число вариантов», просто для любого n.</p>
+<p>Нарисуем всё распределение:</p>
+<div class="cell"><pre class="cell-src"><code>from scipy import stats
+import matplotlib.pyplot as plt
+
+n, p = 20, 0.24
+k = range(0, n + 1)
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.bar(k, stats.binom.pmf(k, n, p))
+ax.set_xlabel(&quot;опозданий за смену из 20&quot;)
+ax.set_ylabel(&quot;вероятность&quot;)
+ax.set_title(&quot;Биномиальное распределение, n = 20, p = 0.24&quot;)</code></pre></div>
+<p>У биномиального распределения есть простые формулы для центра и разброса:</p>
+<ul>
+<li>среднее: <span class="math inline">n \cdot p</span> — в среднем 20 × 0.24 = 4.8 опоздания за смену;</li>
+<li>стандартное отклонение: <span class="math inline">\sqrt{n \cdot p \cdot (1 - p)}</span>.</li>
+</ul>
+<div class="predict" data-q="q2"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">from scipy import stats
+print(stats.binom.mean(200, 0.24))</code></pre>
+<ul>
+<li><code>24.0</code></li>
+<li>[x] <code>48.0</code></li>
+<li><code>0.24</code></li>
+</ul>
+<p>Почему: среднее биномиального распределения — n · p = 200 × 0.24 = 48. Функции <code>mean</code> и <code>std</code> есть у каждого распределения в scipy.stats.</p>
+</div>
+<div class="quiz-c" data-q="c2"><div class="predict-title">Проверьте себя</div>
+<p>Какая величина описывается биномиальным распределением?</p>
+<ul>
+<li>[x] Число опозданий из 20 доставок смены, если каждая опаздывает с вероятностью 0.25 независимо от других
+<blockquote>
+<p>Фиксированное число попыток, у каждой два исхода и одинаковая вероятность — классический биномиальный случай.</p>
+</blockquote>
+</li>
+<li>[ ] Время одной доставки в минутах
+<blockquote>
+<p>Это непрерывная величина, а биномиальное считает число успехов.</p>
+</blockquote>
+</li>
+<li>[ ] Число доставок до первого опоздания
+<blockquote>
+<p>Здесь число попыток не фиксировано — это другое распределение (геометрическое).</p>
+</blockquote>
+</li>
+<li>[ ] Оценка гостя от 1 до 5
+<blockquote>
+<p>Пять категорий, а не «успех или нет» в серии попыток.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>«8 и больше» через <code>sf(8)</code>.</strong> <code>sf(k)</code> — строго больше k; «8 и больше» — это <code>sf(7)</code>.</li>
+<li><strong>Биномиальное для зависимых событий.</strong> Если опоздания идут пачками (снег), распределение будет шире биномиального.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-pmf"><b>1</b> Ровно пять</a><a href="#task-tail"><b>2</b> Плохая смена</a><a href="#task-binom-moments"><b>4</b> Среднее и разброс</a><a href="#task-pmf-plot"><b>5</b> Нарисовать распределение</a></div>
+<div class="fb" data-sec="биномиальное-распределение"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="распределение-пуассона-сколько-событий-за-интерв">Распределение Пуассона: сколько событий за интервал</h2>
+<p><strong>Зачем.</strong> В тихие часы с 14 до 16 в кофейне на Баумана работает один бариста. Он справляется, если за 5 минут к стойке подходит не больше пяти гостей. Как часто будет собираться очередь — и стоит ли ставить второго человека? Здесь нет «n попыток»: гостей никто не считает заранее, они просто приходят. Для такого вопроса есть своё распределение.</p>
+<p><strong>Распределение Пуассона</strong> описывает <strong>число событий за фиксированный интервал</strong> (гостей за 5 минут, жалоб за день, сбоев кассы за месяц), если события происходят независимо друг от друга и с постоянной средней частотой. У него один параметр — <span class="math inline">\lambda</span> («лямбда»): среднее число событий за интервал.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Капли дождя на одну плитку тротуара: за минуту на неё может упасть 0, 1, 3 капли — капли не договариваются между собой, а сила дождя постоянна. Знаем среднее число капель на плитку — знаем и вероятность каждого числа. Аналогия хромает в одном: гости иногда приходят компанией, а капли — нет.</p>
+</aside>
+<p>Откуда оно берётся: в городе тысячи людей, и каждый с крошечной вероятностью зайдёт в кофейню именно в эти 5 минут. Это биномиальное распределение с огромным n и маленьким p, и при n · p = <span class="math inline">\lambda</span> оно почти не отличается от пуассоновского. Например, <code>stats.binom.pmf(3, 1000, 0.0024)</code> = 0.2093, а <code>stats.poisson.pmf(3, 2.4)</code> = 0.2090.</p>
+<h3>Игрушечный пример: λ = 2</h3>
+<p>Пусть за 5 минут в среднем подходят 2 гостя. Вероятность ровно k гостей:</p>
+<div class="math block">
+P(X = k) = \frac{\lambda^k \cdot e^{-\lambda}}{k!}
+</div>
+<p>где <span class="math inline">\lambda</span> — среднее число событий (2), <span class="math inline">e \approx 2.718</span> — основание натурального логарифма, <span class="math inline">k!</span> — факториал (1 × 2 × … × k, а 0! = 1). Подставим, учитывая, что <span class="math inline">e^{-2} \approx 0.135</span>:</p>
+<ul>
+<li><strong>0 гостей:</strong> 2⁰ × 0.135 / 1 = <strong>0.135</strong>;</li>
+<li><strong>1 гость:</strong> 2¹ × 0.135 / 1 = <strong>0.271</strong>;</li>
+<li><strong>2 гостя:</strong> 2² × 0.135 / 2 = <strong>0.271</strong>;</li>
+<li><strong>3 гостя:</strong> 2³ × 0.135 / 6 = <strong>0.180</strong>.</li>
+</ul>
+<p>Уже четыре значения дают 0.857; остальные 14 % приходятся на 4 и больше. Руками формулу не считают — в scipy есть <code>stats.poisson</code> с теми же функциями, что у биномиального, только параметр один — <code>mu</code> (это и есть <span class="math inline">\lambda</span>):</p>
+<div class="cell"><pre class="cell-src"><code>from scipy import stats
+print(stats.poisson.pmf([0, 1, 2, 3], 2).round(3))   # ровно k
+print(round(stats.poisson.sf(3, 2), 3))               # больше 3, то есть 4 и больше</code></pre></div>
+<div class="predict" data-q="q3"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">from scipy import stats
+print(stats.poisson.mean(3), stats.poisson.var(3))</code></pre>
+<ul>
+<li><code>3.0 1.73</code></li>
+<li>[x] <code>3.0 3.0</code></li>
+<li><code>3.0 9.0</code></li>
+</ul>
+<p>Почему: у пуассоновского распределения и среднее, и дисперсия равны <span class="math inline">\lambda</span>. Стандартное отклонение — <span class="math inline">\sqrt{\lambda}</span> ≈ 1.73.</p>
+</div>
+<p>Равенство «дисперсия = среднее» — главный способ проверить, похожи ли данные на Пуассона.</p>
+<h3>На реальных данных: гости у стойки</h3>
+<p>В файле <a class="data-link" href="../data/arrivals.csv" download title="Скачать arrivals.csv"><code>arrivals.csv</code></a> — сколько гостей подошло к стойке за каждые 5 минут с 14:00 до 16:00 в будни сентября в двух кофейнях. Возьмём Баумана (KZN-1), оценим <span class="math inline">\lambda</span> средним и сравним доли из данных с пуассоновскими.</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from scipy import stats
+
+a = pd.read_csv(&quot;arrivals.csv&quot;)
+k = a.loc[a[&quot;shop_id&quot;] == &quot;KZN-1&quot;, &quot;guests&quot;]
+lam = k.mean()
+print(f&quot;пятиминуток: {len(k)}, среднее {lam:.3f}, дисперсия {k.var():.3f}&quot;)
+
+table = pd.DataFrame({&quot;данные&quot;: k.value_counts(normalize=True).sort_index()})
+table[&quot;Пуассон&quot;] = stats.poisson.pmf(table.index, lam)
+print(table.round(3))
+print(&quot;6 и больше: данные&quot;, round((k &gt;= 6).mean(), 3), &quot;| модель&quot;, round(stats.poisson.sf(5, lam), 3))</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>k</code> — 528 чисел: по одному на каждую пятиминутку;</li>
+<li><code>lam = k.mean()</code> — оценка <span class="math inline">\lambda</span>: в среднем 2.445 гостя за 5 минут;</li>
+<li><code>k.var()</code> — дисперсия, 2.483: почти равна среднему — первый признак Пуассона;</li>
+<li><code>value_counts(normalize=True)</code> — доли из данных, рядом <code>stats.poisson.pmf(table.index, lam)</code> — те же доли по модели;</li>
+<li>«6 и больше» — это «больше 5», поэтому <code>sf(5, lam)</code>.</li>
+</ul>
+<p>Как читать результат: доли из данных и модели расходятся не больше чем на 3.5 п.п. — для 528 пятиминуток это похоже на обычный шум (строго «данные согласуются с моделью» проверяют критерием хи-квадрат — <code>stats.chisquare</code>; он появится в уроке «A/B-тест: от дизайна до решения» для другой задачи). Шесть и больше гостей подходит в 4.5 % пятиминуток по данным и в 3.8 % по модели. В двухчасовом окне 24 пятиминутки, значит, ожидаемо около одной «очереди» в день (24 × 0.038 ≈ 0.9). Решение за управляющим, но теперь оно опирается на число, а не на ощущение «иногда бывает завал».</p>
+<aside class="callout callout-warn"><div class="callout-title">Когда Пуассон не подходит</div>
+<ul>
+<li><strong>Частота меняется внутри интервала.</strong> Если смешать тихие часы с обеденным пиком, дисперсия станет заметно больше среднего, и модель занизит вероятность очередей. Сравнивайте <code>k.var()</code> и <code>k.mean()</code>: при Пуассоне они близки.</li>
+<li><strong>События зависят друг от друга.</strong> Гости, пришедшие компанией, или повторные жалобы на один сбой делают хвост тяжелее, чем у Пуассона.</li>
+<li><strong>Перепутали параметр.</strong> У <code>stats.poisson</code> один параметр — среднее за <strong>тот же</strong> интервал. Если <span class="math inline">\lambda</span> = 2.4 гостя за 5 минут, то для 10 минут — 4.8, а не 2.4.</li>
+<li><strong>«Не меньше 6» через <code>sf(6)</code>.</strong> Как и у биномиального, <code>sf(k)</code> — строго больше k.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-poisson-queue"><b>7</b> Очередь в Уфе</a></div>
+<div class="fb" data-sec="распределение-пуассона-сколько-событий-за-интерв"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-pmf" data-task="pmf" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Ровно пять</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#биномиальное-распределение">↑ К теории: Биномиальное распределение</a>
+  <div class="task-text prose"><p>Сохраните в <code>p5</code> вероятность, что из 20 доставок опоздает ровно 5 (p = 0.24), а в <code>p_le3</code> — что опоздает не больше 3. Обе — 4 знака.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-tail" data-task="tail" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">Плохая смена</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#биномиальное-распределение">↑ К теории: Биномиальное распределение</a>
+  <div class="task-text prose"><p>Сохраните в <code>p_bad</code> вероятность, что за смену из 20 доставок опоздает <strong>8 и больше</strong> (p = 0.24), 4 знака.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-ev-toy" data-task="ev-toy" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">Десерты к заказу</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#случайная-величина-и-математическое-ожидание">↑ К теории: Случайная величина и математическое ожидание</a>
+  <div class="task-text prose"><p>По истории заказов число десертов в одном заказе распределено так: 0 десертов — 0.55, 1 — 0.35, 2 — 0.08, 3 — 0.02. Сохраните в <code>ev</code> мат. ожидание числа десертов на заказ (2 знака), а в <code>per_500</code> — сколько десертов в среднем уйдёт на 500 заказов (целое число, <code>round</code>).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-binom-moments" data-task="binom-moments" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">4</span>
+    <h3 class="task-title">Среднее и разброс</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#биномиальное-распределение">↑ К теории: Биномиальное распределение</a>
+  <div class="task-text prose"><p>За неделю курьерская служба делает 200 доставок, p = 0.24. Сохраните <code>mu</code> и <code>sigma</code> — среднее и стандартное отклонение числа опозданий за неделю (по формулам n·p и √(n·p·(1−p)), 2 знака), и <code>p60</code> — вероятность 60 и более опозданий за неделю (4 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-pmf-plot" data-task="pmf-plot" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">5</span>
+    <h3 class="task-title">Нарисовать распределение</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#биномиальное-распределение">↑ К теории: Биномиальное распределение</a>
+  <div class="task-text prose"><p>Нарисуйте столбцами биномиальное распределение для n = 30, p = 0.24: по X — число опозданий от 0 до 30, по Y — вероятность. Отметьте среднее вертикальной линией.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-ev-comp" data-task="ev-comp" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">6</span>
+    <h3 class="task-title">Сколько стоит купон с льготой</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#случайная-величина-и-математическое-ожидание">↑ К теории: Случайная величина и математическое ожидание</a>
+  <div class="task-text prose"><p>Отдел доставки смягчил правило: опоздание до 5 минут включительно — без купона, от 6 до 20 минут — купон 150 ₽, больше 20 минут — 400 ₽. Для доставок с временем 1–299 минут постройте столбец <code>coupon</code> по этому правилу. Сохраните <code>p_150</code> и <code>p_400</code> — доли доставок с купоном 150 и 400 ₽ (4 знака), <code>ev</code> — ожидание купона на доставку (2 знака) и <code>week</code> — ожидаемый расход за неделю из 200 доставок (целое число рублей).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-poisson-queue" data-task="poisson-queue" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">7</span>
+    <h3 class="task-title">Очередь в Уфе</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#распределение-пуассона-сколько-событий-за-интерв">↑ К теории: Распределение Пуассона: сколько событий за интервал</a>
+  <div class="task-text prose"><p>В кофейне UFA-1 в тихие часы один бариста справляется, если за 5 минут подходит не больше трёх гостей. По <a class="data-link" href="../data/arrivals.csv" download title="Скачать arrivals.csv"><code>arrivals.csv</code></a> для UFA-1 сохраните: <code>lam</code> — среднее число гостей за пятиминутку (3 знака), <code>ratio</code> — отношение дисперсии к среднему (2 знака), <code>p_queue</code> — вероятность 4 и больше гостей по распределению Пуассона с этим <span class="math inline">\lambda</span> (4 знака; можно от <code>lam</code> или от неокруглённого среднего — проверка примет оба), <code>share_queue</code> — та же доля по данным (4 знака) и <code>per_day</code> — сколько «очередных» пятиминуток ожидается за двухчасовое окно из 24 пятиминуток (по модели, 2 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>Случайная величина — число, которое станет известно после события. Мат. ожидание E[X] = Σ значение × вероятность — средний результат «в долгую»; ожидание суммы равно сумме ожиданий.</li><li>Биномиальное распределение — число успехов в n независимых попытках с вероятностью p. Среднее n·p, стандартное отклонение √(n·p·(1−p)).</li><li><code>from scipy import stats</code>; <code>stats.binom.pmf(k, n, p)</code> — P(X = k), <code>cdf(k, n, p)</code> — P(X ≤ k), <code>sf(k, n, p)</code> — P(X &gt; k).</li><li>Распределение Пуассона — число независимых событий за интервал (гостей за 5 минут) при постоянной частоте: <code>stats.poisson.pmf(k, mu)</code>, <code>sf(k, mu)</code>. Среднее и дисперсия равны λ — так и проверяют, подходит ли модель.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="01-probability.html"><span class="pl">← Предыдущий</span><span class="pt">1. Вероятность: частота и симуляция</span></a><a class="next" href="02b-normal.html"><span class="pl">Следующий урок →</span><span class="pt">3. Нормальное распределение, приближение и z-оценка</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#распределение-случайной-величины">Распределение случайной величины</a></li><li><a href="#случайная-величина-и-математическое-ожидание">Случайная величина и математическое ожидание</a></li><li><a href="#биномиальное-распределение">Биномиальное распределение</a></li><li><a href="#распределение-пуассона-сколько-событий-за-интерв">Распределение Пуассона: сколько событий за интервал</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch05/02-distributions", "title": "Распределения: мат. ожидание, биномиальное, Пуассона", "chapter": "Статистика и проверка гипотез", "tasks": [{"id": "pmf", "title": "Ровно пять", "level": "warmup", "starter": "from scipy import stats\nn, p = 20, 0.24", "setup": "", "check": "from scipy import stats as _st\nassert close(need('p5'), round(_st.binom.pmf(5, 20, 0.24), 4)), f'p5 = {need(\"p5\")}.'\ngot = need('p_le3')\nif close(got, round(_st.binom.cdf(2, 20, 0.24), 4)):\n    raise AssertionError('«Не больше 3» включает 3: cdf(3, n, p).')\nassert close(got, round(_st.binom.cdf(3, 20, 0.24), 4)), f'p_le3 = {got}.'", "hints": ["<p><code>pmf<\/code> — «ровно k», <code>cdf<\/code> — «не больше k».<\/p>\n", "<p><code>stats.binom.pmf(5, n, p)<\/code> и <code>stats.binom.cdf(3, n, p)<\/code>.<\/p>\n"], "solution": "from scipy import stats\nn, p = 20, 0.24\np5 = round(stats.binom.pmf(5, n, p), 4)\np_le3 = round(stats.binom.cdf(3, n, p), 4)", "explain": "", "parsons": ""}, {"id": "tail", "title": "Плохая смена", "level": "warmup", "starter": "from scipy import stats", "setup": "", "check": "from scipy import stats as _st\ngot = need('p_bad')\nif close(got, round(_st.binom.sf(8, 20, 0.24), 4)):\n    raise AssertionError('sf(8, …) — это «больше 8», то есть 9 и больше. «8 и больше» = sf(7, …).')\nassert close(got, round(_st.binom.sf(7, 20, 0.24), 4)), f'p_bad = {got}.'", "hints": ["<p>«8 и больше» = «больше 7»: <code>stats.binom.sf(7, 20, 0.24)<\/code>.<\/p>\n", "<p>Проверка: то же самое — <code>1 - stats.binom.cdf(7, 20, 0.24)<\/code>.<\/p>\n"], "solution": "from scipy import stats\np_bad = round(stats.binom.sf(7, 20, 0.24), 4)", "explain": "", "parsons": ""}, {"id": "ev-toy", "title": "Десерты к заказу", "level": "warmup", "starter": "import numpy as np\nvalues = np.array([0, 1, 2, 3])\nprobs = np.array([0.55, 0.35, 0.08, 0.02])", "setup": "", "check": "ev = need('ev')\nif close(ev, 1.5):\n    raise AssertionError('ev = 1.5 — это простое среднее значений 0, 1, 2, 3. Ожидание учитывает вероятности: каждое значение умножьте на свою вероятность.')\nassert close(ev, 0.57), f'ev = {ev}. Сложите произведения «значение × вероятность».'\nassert not has_literal(0.57), 'Посчитайте ожидание кодом из values и probs, а не впишите число.'\nassert need('per_500') == 285, f'per_500 = {need(\"per_500\")}. Ожидание суммы — сумма ожиданий: 500 × ev.'", "hints": ["<p>Ожидание — сумма «значение × вероятность» по всем значениям.<\/p>\n", "<p><code>(values * probs).sum()<\/code>; на 500 заказов — то же, умноженное на 500.<\/p>\n", "<p><code>ev = round((values * probs).sum(), 2)<\/code>, <code>per_500 = round(500 * ...)<\/code>.<\/p>\n"], "solution": "import numpy as np\nvalues = np.array([0, 1, 2, 3])\nprobs = np.array([0.55, 0.35, 0.08, 0.02])\nev = round((values * probs).sum(), 2)\nper_500 = round(500 * (values * probs).sum())", "explain": "", "parsons": ""}, {"id": "binom-moments", "title": "Среднее и разброс", "level": "base", "starter": "from scipy import stats\nn, p = 200, 0.24", "setup": "", "check": "from scipy import stats as _st\nassert close(need('mu'), 48.0), f'mu = {need(\"mu\")}.'\nassert close(need('sigma'), round((200 * 0.24 * 0.76) ** 0.5, 2)), f'sigma = {need(\"sigma\")}.'\nassert close(need('p60'), round(_st.binom.sf(59, 200, 0.24), 4)), f'p60 = {need(\"p60\")}: «60 и более» — sf(59, …).'", "hints": ["<p>Корень — <code>** 0.5<\/code>. Проверить себя можно через <code>stats.binom.mean(n, p)<\/code> и <code>stats.binom.std(n, p)<\/code>.<\/p>\n", "<p>«60 и более» — <code>stats.binom.sf(59, n, p)<\/code>.<\/p>\n"], "solution": "from scipy import stats\nn, p = 200, 0.24\nmu = round(n * p, 2)\nsigma = round((n * p * (1 - p)) ** 0.5, 2)\np60 = round(stats.binom.sf(59, n, p), 4)", "explain": "<p>60 опозданий — всего на 12 больше среднего, но это уже около 2σ, и такая неделя случается лишь в нескольких процентах случаев. Если она случилась — стоит искать причину, а не списывать на невезение.<\/p>\n", "parsons": ""}, {"id": "pmf-plot", "title": "Нарисовать распределение", "level": "base", "starter": "from scipy import stats\nimport matplotlib.pyplot as plt\nn, p = 30, 0.24", "setup": "", "check": "from scipy import stats as _st\nax = ax_of()\nh = [p.get_height() for p in ax.patches]\nassert len(h) == 31, f'Столбцов {len(h)}, а нужно 31 (от 0 до 30).'\nassert all(close(a, b, 1e-9) for a, b in zip(h, _st.binom.pmf(range(31), 30, 0.24))), 'Высоты — binom.pmf(k, 30, 0.24).'\nv = [l for l in ax.lines if len(set(l.get_xdata())) == 1]\nassert v and close(float(v[0].get_xdata()[0]), 7.2), 'Отметьте среднее 30 × 0.24 = 7.2: ax.axvline(...).'", "hints": ["<p><code>k = range(0, n + 1)<\/code>; <code>ax.bar(k, stats.binom.pmf(k, n, p))<\/code>; <code>ax.axvline(n * p)<\/code>.<\/p>\n", "<p><code>range<\/code> до <code>n + 1<\/code>, чтобы включить 30 опозданий. Линия среднего — на 30 × 0.24 = 7.2.<\/p>\n"], "solution": "from scipy import stats\nimport matplotlib.pyplot as plt\nn, p = 30, 0.24\nk = range(0, n + 1)\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.bar(k, stats.binom.pmf(k, n, p))\nax.axvline(n * p, color=\"tab:red\", linestyle=\"--\")\nax.set_title(\"n = 30, p = 0.24\")", "explain": "<p>Пик — около 7, линия среднего — на 7.2. Распределение чуть скошено вправо: слева оно упирается в ноль, а справа ещё встречаются 12–15 опозданий. При большом n и p не слишком близко к 0 или 1 биномиальное распределение становится похожим на нормальное — это пригодится в следующем уроке.<\/p>\n", "parsons": ""}, {"id": "ev-comp", "title": "Сколько стоит купон с льготой", "level": "base", "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate_min = ok[\"actual_min\"] - ok[\"promised_min\"]", "setup": "", "check": "import numpy as _np\nimport pandas as _pd\n_d = _pd.read_csv('deliveries.csv')\n_ok = _d[_d['actual_min'].between(1, 299)]\n_lm = _ok['actual_min'] - _ok['promised_min']\n_c = _np.select([_lm <= 5, _lm <= 20], [0, 150], default=400)\nev = need('ev')\nif ev > 100:\n    raise AssertionError(f'ev = {ev} — слишком много. Проверьте порядок условий в np.select: первым должно идти «опоздание ≤ 5», иначе вовремя приехавшие тоже получат купон.')\nassert close(need('p_150'), round((_c == 150).mean(), 4)), f'p_150 = {need(\"p_150\")}. Купон 150 ₽ — опоздание больше 5, но не больше 20 минут.'\nassert close(need('p_400'), round((_c == 400).mean(), 4)), f'p_400 = {need(\"p_400\")}. Купон 400 ₽ — опоздание больше 20 минут.'\nassert close(ev, round(_c.mean(), 2)), f'ev = {ev}. Ожидание — 150 × p_150 + 400 × p_400 (или среднее столбца coupon).'\nassert need('week') == round(200 * _c.mean()), f'week = {need(\"week\")}. Неделя — 200 доставок: 200 × ожидание на одну.'", "hints": ["<p>Сначала столбец купонов через <code>np.select<\/code> с условиями по порядку: «≤ 5» → 0, «≤ 20» → 150, остальное → 400. Потом доли и ожидание.<\/p>\n", "<p><code>coupon = np.select([late_min &lt;= 5, late_min &lt;= 20], [0, 150], default=400)<\/code>; доля купонов 150 ₽ — <code>(coupon == 150).mean()<\/code>.<\/p>\n", "<p><code>ev = round(coupon.mean(), 2)<\/code> — это то же, что <code>150 * p_150 + 400 * p_400<\/code> без округлений; <code>week = round(200 * coupon.mean())<\/code>.<\/p>\n"], "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate_min = ok[\"actual_min\"] - ok[\"promised_min\"]\ncoupon = np.select([late_min <= 5, late_min <= 20], [0, 150], default=400)\np_150 = round((coupon == 150).mean(), 4)\np_400 = round((coupon == 400).mean(), 4)\nev = round(coupon.mean(), 2)\nweek = round(200 * coupon.mean())", "explain": "<p>Льгота в 5 минут сильно меняет картину: без купона остаются 86 % доставок, купон 150 ₽ получают 11.7 %, а 400 ₽ — только 2.2 %. Ожидание — 26.29 ₽ на доставку, около 5 260 ₽ за неделю: дешевле правила из теории (38 ₽), хотя сами купоны крупнее. Ожидание складывается из «сумма × вероятность», и маленькая вероятность крупного купона весит немного. Типичная ошибка — переставить условия в <code>np.select<\/code>: если первым стоит «≤ 20», под него попадут и вовремя приехавшие, ожидание вырастет почти до 155 ₽, и правило «не пройдёт» по бюджету без всякой причины.<\/p>\n", "parsons": ""}, {"id": "poisson-queue", "title": "Очередь в Уфе", "level": "base", "starter": "import pandas as pd\nfrom scipy import stats\na = pd.read_csv(\"arrivals.csv\")", "setup": "", "check": "import pandas as _pd\nfrom scipy import stats as _st\n_a = _pd.read_csv('arrivals.csv')\n_k = _a.loc[_a['shop_id'] == 'UFA-1', 'guests']\n_lam = _k.mean()\nassert close(need('lam'), round(_lam, 3)), f'lam = {need(\"lam\")}. Возьмите только строки UFA-1 и среднее столбца guests.'\nassert close(need('ratio'), round(_k.var() / _lam, 2)), f'ratio = {need(\"ratio\")}. Дисперсия — .var(), делим на среднее.'\npq = need('p_queue')\nif close(pq, round(_st.poisson.sf(4, _lam), 4)):\n    raise AssertionError('sf(4, …) — это «больше 4», то есть 5 и больше. «4 и больше» = sf(3, …).')\n_ok = [round(_st.poisson.sf(3, x), 4) for x in (_lam, round(_lam, 3))]\nassert any(close(pq, w, 0.00006) for w in _ok), f'p_queue = {pq}. Пуассон с mu = lam, хвост «4 и больше»: sf(3, lam).'\nassert close(need('share_queue'), round((_k >= 4).mean(), 4)), f'share_queue = {need(\"share_queue\")}. Доля пятиминуток, где guests >= 4.'\nassert close(need('per_day'), round(24 * _st.poisson.sf(3, _lam), 2), 0.016), f'per_day = {need(\"per_day\")}. Ожидание числа таких пятиминуток — 24 × вероятность.'", "hints": ["<p>Отфильтруйте <code>a[&quot;shop_id&quot;] == &quot;UFA-1&quot;<\/code> и возьмите столбец <code>guests<\/code>. <span class=\"math inline\">\\lambda<\/span> — его среднее, проверка Пуассона — <code>var() / mean()<\/code> около 1.<\/p>\n", "<p>«4 и больше» = «больше 3»: <code>stats.poisson.sf(3, lam)<\/code>. Доля по данным — <code>(k &gt;= 4).mean()<\/code>.<\/p>\n", "<p><code>per_day = round(24 * stats.poisson.sf(3, k.mean()), 2)<\/code> — ожидание суммы 24 одинаковых событий «0 или 1».<\/p>\n"], "solution": "import pandas as pd\nfrom scipy import stats\na = pd.read_csv(\"arrivals.csv\")\nk = a.loc[a[\"shop_id\"] == \"UFA-1\", \"guests\"]\nlam = round(k.mean(), 3)\nratio = round(k.var() / k.mean(), 2)\np_queue = round(stats.poisson.sf(3, k.mean()), 4)\nshare_queue = round((k >= 4).mean(), 4)\nper_day = round(24 * stats.poisson.sf(3, k.mean()), 2)", "explain": "<p>В Уфе в среднем 1.456 гостя за пятиминутку, дисперсия почти такая же (отношение 0.97) — данные похожи на пуассоновские. Модель даёт 6.0 % пятиминуток с очередью, данные — 5.9 %: совпадение отличное. За двухчасовое окно ожидается около 1.45 таких пятиминуток — то есть почти каждый день бариста раз-другой будет работать с очередью. Если бы отношение дисперсии к среднему вышло 2–3, модель Пуассона занизила бы очереди, и считать пришлось бы по данным. Заметьте и последнюю строку: «24 пятиминутки × вероятность» — это линейность ожидания из первого раздела.<\/p>\n", "parsons": ""}], "files": ["deliveries.csv", "arrivals.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/katex/katex.min.js?v=b555cf35b0"></script>
+<script>document.querySelectorAll(".math").forEach(function(e){try{katex.render(e.textContent.trim(),e,{displayMode:e.classList.contains("block"),throwOnError:false})}catch(x){}});</script>
+
+</body>
+</html>

@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Аномалии и проверка на здравый смысл — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch03">Глава 3. Предобработка данных</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 3</div><div class="side-title">Предобработка данных</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02"><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03" open><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" aria-current="page" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05"><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11"><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 8 · основной путь · ≈ 60 мин · задач: 10</div>
+      <h1>Аномалии и проверка на здравый смысл</h1>
+      <p class="lead">Данные могут быть правильного типа, без пропусков и дублей — и всё равно неверными: отрицательный баланс, гость 1900 года рождения, заказ из нуля чашек. Учимся находить такие значения правилами здравого смысла и статистикой и решать, что с ними делать.</p>
+      <div class="data-files"><span class="df-label">Данные урока</span><a class="data-file" href="../data/clients_raw.csv" download title="Скачать clients_raw.csv"><span class="df-name">clients_raw.csv</span><span class="df-info">307 строк · 27 КБ</span></a><a class="data-file" href="../data/pos_december.csv" download title="Скачать pos_december.csv"><span class="df-name">pos_december.csv</span><span class="df-info">293 строк · 17 КБ</span></a><a class="data-file" href="../data/orders_3m.csv" download title="Скачать orders_3m.csv"><span class="df-name">orders_3m.csv</span><span class="df-info">2089 строк · 141 КБ</span></a><a class="data-file" href="../data/shops.csv" download title="Скачать shops.csv"><span class="df-name">shops.csv</span><span class="df-info">7 строк · 1 КБ</span></a><span class="df-note">В примерах файлы уже подключены — скачивать нужно, только чтобы открыть их у себя.</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 9</span></div>
+    </div>
+    <article class="prose theory"><h2 id="аномалия-ошибка">Аномалия ≠ ошибка</h2>
+<p>Аномалия — значение, которое выбивается из ожидаемого. Бывают три вида:</p>
+<ul>
+<li><strong>Невозможные значения</strong>: отрицательный баланс бонусов, дата рождения в будущем, 0 чашек в заказе. Это ошибки.</li>
+<li><strong>Заглушки</strong>: 1900-01-01 вместо пустой даты, 99999 вместо неизвестного числа. Система не разрешала оставить поле пустым — и кто-то вписал «что-нибудь». По смыслу это пропуски.</li>
+<li><strong>Редкие, но настоящие</strong>: заказ на 40 чашек — возможно, офис заказал кофе на совещание. Это не ошибка, но такое значение сильно влияет на средние.</li>
+</ul>
+<p>Отличить одно от другого может только понимание того, как устроен бизнес. Статистика лишь подсказывает, куда посмотреть.</p>
+<div class="fb" data-sec="аномалия-ошибка"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="быстрый-взгляд-describe">Быстрый взгляд: describe</h2>
+<p><code>describe()</code> показывает минимум, максимум и квартили. Невозможные значения часто видны сразу:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+df = pd.read_csv(&quot;clients_raw.csv&quot;)
+df[&quot;bonus&quot;] = pd.to_numeric(df[&quot;bonus&quot;].str.replace(&quot; &quot;, &quot;&quot;), errors=&quot;coerce&quot;)
+df[&quot;bonus&quot;].describe()</code></pre></div>
+<p>Минимум отрицательный, а максимум — 99 999 при медиане в несколько сотен. Посмотрим на эти строки:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+df = pd.read_csv(&quot;clients_raw.csv&quot;)
+df[&quot;bonus&quot;] = pd.to_numeric(df[&quot;bonus&quot;].str.replace(&quot; &quot;, &quot;&quot;), errors=&quot;coerce&quot;)
+df[(df[&quot;bonus&quot;] &lt; 0) | (df[&quot;bonus&quot;] &gt; 10_000)][[&quot;client_id&quot;, &quot;signup_date&quot;, &quot;bonus&quot;]]</code></pre></div>
+<p>Число можно записывать с подчёркиваниями: <code>10_000</code> — то же, что <code>10000</code>, но читается легче.</p>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-p-describe"><b>3</b> Диапазон цен</a></div>
+<div class="fb" data-sec="быстрый-взгляд-describe"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="правила-здравого-смысла">Правила здравого смысла</h2>
+<p>Самые надёжные проверки — <strong>правила</strong>, которые следуют из смысла поля:</p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Правило</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>баланс бонусов</td>
+<td>не меньше 0</td>
+</tr>
+<tr>
+<td>количество в заказе</td>
+<td>от 1</td>
+</tr>
+<tr>
+<td>дата рождения</td>
+<td>не в будущем, возраст разумный</td>
+</tr>
+<tr>
+<td>дата анкеты</td>
+<td>не раньше запуска программы лояльности</td>
+</tr>
+</tbody>
+</table>
+<p>Правила удобно записывать масками. Метод <code>between(a, b)</code> проверяет «от a до b включительно»:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+pos = pd.read_csv(&quot;pos_december.csv&quot;, sep=&quot;;&quot;, decimal=&quot;,&quot;)
+print(pos[&quot;qty&quot;].describe())
+pos[~pos[&quot;qty&quot;].between(1, 10)]</code></pre></div>
+<p>Два заказа с нулём чашек — ошибка кассира или отменённые заказы. А 40 чашек в одном заказе — то самое «редкое, но настоящее»? Чтобы решить, нужно спросить у кофейни. До ответа такой заказ лучше пометить и посмотреть, как сильно он влияет на итоги.</p>
+<aside class="callout callout-sql"><div class="callout-title">Как в SQL</div>
+<p><code>SELECT * FROM pos WHERE qty NOT BETWEEN 1 AND 10</code> — та же проверка.</p>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-negative"><b>1</b> Отрицательные бонусы</a><a href="#task-zero-qty"><b>2</b> Пустые заказы</a><a href="#task-mask-bonus"><b>5</b> Бонусы без аномалий</a><a href="#task-age-sane"><b>9</b> Правдоподобный возраст</a></div>
+<div class="fb" data-sec="правила-здравого-смысла"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="заглушки">Заглушки</h2>
+<p>Заглушки выдают себя тем, что повторяются чаще, чем должны. Одна и та же дата рождения у нескольких гостей — подозрительно:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+df = pd.read_csv(&quot;clients_raw.csv&quot;)
+born = pd.to_datetime(df[&quot;birth_date&quot;], format=&quot;%Y-%m-%d&quot;, errors=&quot;coerce&quot;)
+born.value_counts().head(3)</code></pre></div>
+<p>1900-01-01 встречается несколько раз — это заглушка старой CRM. По смыслу это пропуск, и его нужно превратить в <code>NaN</code>, иначе средний возраст гостей вырастет на десятки лет.</p>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>Дата рождения 1900-01-01 встречается в анкетах несколько раз. Как с ней поступить?</p>
+<ul>
+<li>[x] Превратить в <code>NaN</code>: это заглушка, по смыслу — неизвестная дата
+<blockquote>
+<p>Значение означает «не указано», а остальная анкета — имя, телефон, бонусы — полезна. Пропуск честнее выдуманной даты.</p>
+</blockquote>
+</li>
+<li>[ ] Удалить анкеты целиком
+<blockquote>
+<p>Неверно только одно поле. Вместе с ним пропадут телефоны и балансы настоящих гостей.</p>
+</blockquote>
+</li>
+<li>[ ] Оставить: раз дата повторяется, это настоящие гости-ровесники
+<blockquote>
+<p>Несколько гостей, родившихся в один и тот же день 1900 года, — неправдоподобно. Повторяемость как раз и выдаёт заглушку.</p>
+</blockquote>
+</li>
+<li>[ ] Заменить на медиану дат рождения
+<blockquote>
+<p>Появятся выдуманные даты, которые не отличить от настоящих, а проблема в данных спрячется.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-placeholder"><b>4</b> Заглушки в датах</a></div>
+<div class="fb" data-sec="заглушки"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="статистика-межквартильный-размах">Статистика: межквартильный размах</h2>
+<p>Для чисел, где жёстких правил нет (сумма заказа, время ожидания), используют статистическое правило. Самое популярное — <strong>правило межквартильного размаха</strong> (IQR):</p>
+<ol>
+<li><code>q1</code> — значение, меньше которого 25 % данных, <code>q3</code> — меньше которого 75 %;</li>
+<li>размах <code>iqr = q3 - q1</code> — ширина «середины» данных;</li>
+<li>выбросы — значения ниже <code>q1 - 1.5 * iqr</code> и выше <code>q3 + 1.5 * iqr</code>.</li>
+</ol>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+df = pd.read_csv(&quot;orders_3m.csv&quot;)
+q1 = df[&quot;amount&quot;].quantile(0.25)
+q3 = df[&quot;amount&quot;].quantile(0.75)
+iqr = q3 - q1
+low, high = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+print(&quot;границы:&quot;, low, high)
+out = df[(df[&quot;amount&quot;] &lt; low) | (df[&quot;amount&quot;] &gt; high)]
+print(&quot;кандидатов:&quot;, len(out))
+out[&quot;qty&quot;].value_counts()</code></pre></div>
+<p>Все «выбросы» здесь — заказы на 2–3 чашки дорогих напитков. Они настоящие, удалять их нельзя. Отсюда главное правило: статистика находит <strong>кандидатов</strong>, а решение принимает человек.</p>
+<p>Почему кандидатов так много — 189 из 2089, это 9 % заказов? Правило 1.5 × IQR рассчитано на данные «колоколом», где за границы выходит меньше 1 %. А суммы заказов идут ступеньками по числу чашек: две трети заказов — на одну чашку, и заказы на 2–3 дорогие чашки оказываются далеко справа. Нижняя граница отрицательная (−22.5): сумма заказа меньше нуля не бывает, значит, снизу выбросов по этому правилу нет.</p>
+<figure class="fig" data-fig="iqr-fences"><div class="fig-scroll"><svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-iqr-fences">
+  <title id="t-iqr-fences">Правило межквартильного размаха на суммах заказов</title>
+  <defs><marker id="ah-iqr-fences" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="131.92857142857142" y="111.2987012987013" width="12.714285714285722" height="18.701298701298704" rx="1"/>
+  <rect class="box" x="145.64285714285714" y="89.67532467532467" width="12.714285714285722" height="40.324675324675326" rx="1"/>
+  <rect class="box" x="159.35714285714286" y="81.49350649350649" width="12.714285714285722" height="48.506493506493506" rx="1"/>
+  <rect class="box" x="173.07142857142858" y="87.04545454545455" width="12.714285714285722" height="42.95454545454545" rx="1"/>
+  <rect class="box" x="186.78571428571428" y="40.0" width="12.714285714285722" height="90.0" rx="1"/>
+  <rect class="box" x="200.5" y="75.35714285714286" width="12.714285714285722" height="54.64285714285714" rx="1"/>
+  <rect class="box" x="214.2142857142857" y="64.83766233766234" width="12.714285714285722" height="65.16233766233766" rx="1"/>
+  <rect class="box" x="227.92857142857144" y="85.0" width="12.714285714285722" height="45.0" rx="1"/>
+  <rect class="box" x="241.64285714285714" y="99.02597402597402" width="12.714285714285722" height="30.974025974025974" rx="1"/>
+  <rect class="box" x="255.35714285714283" y="106.33116883116884" width="12.714285714285722" height="23.66883116883117" rx="1"/>
+  <rect class="box" x="269.07142857142856" y="122.1103896103896" width="12.714285714285722" height="7.8896103896103895" rx="1"/>
+  <rect class="box" x="282.7857142857143" y="121.52597402597402" width="12.714285714285722" height="8.474025974025974" rx="1"/>
+  <rect class="box" x="296.5" y="111.5909090909091" width="12.714285714285722" height="18.40909090909091" rx="1"/>
+  <rect class="box" x="310.2142857142857" y="128.5" width="12.714285714285722" height="1.5" rx="1"/>
+  <rect class="box" x="323.92857142857144" y="109.54545454545455" width="12.714285714285722" height="20.454545454545453" rx="1"/>
+  <rect class="box" x="337.64285714285717" y="106.62337662337663" width="12.714285714285722" height="23.376623376623375" rx="1"/>
+  <rect class="box" x="351.35714285714283" y="125.32467532467533" width="12.714285714285722" height="4.675324675324676" rx="1"/>
+  <rect class="box" x="365.07142857142856" y="119.18831168831169" width="12.714285714285722" height="10.811688311688311" rx="1"/>
+  <rect class="box-err" x="378.7857142857143" y="122.40259740259741" width="12.714285714285722" height="7.597402597402597" rx="1"/>
+  <rect class="box-err" x="392.5" y="121.23376623376623" width="12.714285714285722" height="8.766233766233766" rx="1"/>
+  <rect class="box-err" x="406.21428571428567" y="118.6038961038961" width="12.714285714285722" height="11.396103896103895" rx="1"/>
+  <rect class="box-err" x="419.92857142857144" y="128.24675324675326" width="12.714285714285722" height="1.7532467532467533" rx="1"/>
+  <rect class="box-err" x="433.64285714285717" y="121.52597402597402" width="12.714285714285722" height="8.474025974025974" rx="1"/>
+  <rect class="box-err" x="447.35714285714283" y="128.5" width="12.714285714285722" height="1.5" rx="1"/>
+  <rect class="box-err" x="461.07142857142856" y="127.66233766233766" width="12.714285714285722" height="2.337662337662338" rx="1"/>
+  <rect class="box-err" x="474.78571428571433" y="125.32467532467533" width="12.714285714285722" height="4.675324675324676" rx="1"/>
+  <rect class="box-err" x="488.5" y="128.24675324675326" width="12.714285714285722" height="1.7532467532467533" rx="1"/>
+  <rect class="box-err" x="502.2142857142857" y="128.5" width="12.714285714285722" height="1.5" rx="1"/>
+  <rect class="box-err" x="515.9285714285714" y="128.5" width="12.714285714285722" height="1.5" rx="1"/>
+  <rect class="box-err" x="529.6428571428571" y="127.07792207792208" width="12.714285714285722" height="2.922077922077922" rx="1"/>
+  <rect class="box-err" x="557.0714285714286" y="128.5" width="12.714285714285722" height="1.5" rx="1"/>
+  <rect class="box-err" x="570.7857142857143" y="128.5" width="12.714285714285722" height="1.5" rx="1"/>
+  <rect class="box-err" x="611.9285714285714" y="128.5" width="12.714285714285722" height="1.5" rx="1"/>
+  <rect class="box-err" x="653.0714285714286" y="128.5" width="12.714285714285722" height="1.5" rx="1"/>
+  <path class="ln-mut" d="M40,130 L680,130"/>
+  <text class="mut sm" x="85.71428571428571" y="146" text-anchor="middle">0</text>
+  <text class="mut sm" x="177.14285714285714" y="146" text-anchor="middle">200</text>
+  <text class="mut sm" x="268.57142857142856" y="146" text-anchor="middle">400</text>
+  <text class="mut sm" x="360.0" y="146" text-anchor="middle">600</text>
+  <text class="mut sm" x="451.42857142857144" y="146" text-anchor="middle">800</text>
+  <text class="mut sm" x="542.8571428571429" y="146" text-anchor="middle">1 000</text>
+  <text class="mut sm" x="634.2857142857143" y="146" text-anchor="middle">1 200</text>
+  <text class="mut sm b" x="40" y="18" text-anchor="start">2 089 заказов, сумма заказа в ₽ (по 30 ₽ на столбик)</text>
+  <rect class="box-acc" x="188.57142857142858" y="168" width="75.42857142857142" height="34" rx="3"/>
+  <text class="ink sm b" x="226.28571428571428" y="190" text-anchor="middle">iqr = 165</text>
+  <path class="ln" d="M75.42857142857143,185 H188.57142857142858"/>
+  <path class="ln" d="M264.0,185 H377.14285714285717"/>
+  <text class="acc sm b" x="188.57142857142858" y="220" text-anchor="middle">q1 = 225</text>
+  <text class="acc sm b" x="264.0" y="220" text-anchor="middle">q3 = 390</text>
+  <path class="ln-err dash" d="M75.42857142857143,28 V208"/>
+  <text class="err sm b" x="75.42857142857143" y="238" text-anchor="middle">q1 − 1.5·iqr = -22.5</text>
+  <text class="err sm" x="75.42857142857143" y="254" text-anchor="middle">нижняя граница</text>
+  <path class="ln-err dash" d="M377.14285714285717,28 V208"/>
+  <text class="err sm b" x="377.14285714285717" y="238" text-anchor="middle">q3 + 1.5·iqr = 637.5</text>
+  <text class="err sm" x="377.14285714285717" y="254" text-anchor="middle">верхняя граница</text>
+  <text class="err sm b" x="520.0" y="70" text-anchor="middle">за границей: 189 заказов</text>
+  <text class="err sm" x="520.0" y="86" text-anchor="middle">кандидаты, не приговор</text>
+  <text class="ink2 sm" x="350" y="290" text-anchor="middle">все кандидаты — заказы на 2–3 чашки дорогих напитков: настоящие, их не удаляют</text>
+</svg>
+</div><figcaption>
+<p>Правило межквартильного размаха на суммах 2089 заказов: середина данных (от q1 до q3), границы на полтора размаха дальше и 189 заказов за верхней границей — кандидаты на проверку.</p>
+</figcaption></figure>
+<aside class="callout callout-warn"><div class="callout-title">Частая ошибка</div>
+<p>Не удаляйте выбросы автоматически. Самые большие заказы — часто самые важные гости, а «странные» значения бывают первым признаком новой тенденции. Удаляют только то, что точно ошибка.</p>
+</aside>
+<aside class="callout callout-deep"><div class="callout-title">Почему 1.5</div>
+<p>Множитель 1.5 — договорённость, предложенная статистиком Джоном Тьюки. На этом правиле строится «ящик с усами» (boxplot), который мы нарисуем в главе 4. Для нормального распределения за такие границы выходит меньше 1 % значений.</p>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-iqr"><b>7</b> Границы выбросов</a></div>
+<div class="fb" data-sec="статистика-межквартильный-размах"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="что-делать-с-аномалиями">Что делать с аномалиями</h2>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+s = pd.Series([-50, 120, 380, 99999])
+print(&quot;удалить:     &quot;, s[s.between(0, 10_000)].tolist())
+print(&quot;в NaN (mask):&quot;, s.mask((s &lt; 0) | (s &gt; 10_000)).tolist())
+print(&quot;ограничить:  &quot;, s.clip(lower=0).tolist())</code></pre></div>
+<ul>
+<li><strong>Удалить строку</strong> — когда вся запись мусорная (тестовый заказ, строка-заголовок посреди файла).</li>
+<li><strong>Заменить на <code>NaN</code></strong> — когда неверно одно поле, а остальная строка полезна. <code>mask(условие)</code> — противоположность <code>where</code> из урока «Категоризация: CASE WHEN в pandas»: заменяет на <code>NaN</code> там, где условие <strong>верно</strong>.</li>
+<li><strong>Ограничить</strong> (<code>clip</code>) — когда направление понятно, а величина нет: отрицательный баланс → 0.</li>
+<li><strong>Оставить и пометить</strong> — когда значение может быть правдой. Флаг позволит посчитать метрики с ним и без него.</li>
+</ul>
+<figure class="fig" data-fig="anomaly-decision"><div class="fig-scroll"><svg viewBox="0 0 700 318" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-anomaly-decision">
+  <title id="t-anomaly-decision">Что делать с аномалией: удалить, заменить на NaN, ограничить или пометить</title>
+  <defs><marker id="ah-anomaly-decision" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="50" y="6" width="220" height="30" rx="6"/>
+  <text class="ink sm b" x="160.0" y="25.5" text-anchor="middle">нашли подозрительное значение</text>
+  <path class="ln" d="M160,37 L160,50" marker-end="url(#ah-anomaly-decision)"/>
+  <rect class="box-acc" x="20" y="52" width="280" height="40" rx="6"/>
+  <text class="ink sm b" x="160.0" y="76.5" text-anchor="middle">может ли значение быть правдой?</text>
+  <path class="ln" d="M302,72 L386,72" marker-end="url(#ah-anomaly-decision)"/>
+  <text class="ink2 sm" x="344" y="64" text-anchor="middle">да / не знаем</text>
+  <rect class="box-ok" x="390" y="52" width="290" height="40" rx="6"/>
+  <text class="ink sm b" x="535.0" y="68.5" text-anchor="middle">оставить и пометить флагом</text>
+  <text class="mut sm" x="535.0" y="84.5" text-anchor="middle">qty = 40: кофе на совещание?</text>
+  <path class="ln" d="M160,94 L160,118" marker-end="url(#ah-anomaly-decision)"/>
+  <text class="ink2 sm" x="170" y="110" text-anchor="start">нет</text>
+  <rect class="box-acc" x="20" y="122" width="280" height="40" rx="6"/>
+  <text class="ink sm b" x="160.0" y="146.5" text-anchor="middle">неверна вся строка?</text>
+  <path class="ln" d="M302,142 L386,142" marker-end="url(#ah-anomaly-decision)"/>
+  <text class="ink2 sm" x="344" y="134" text-anchor="middle">да</text>
+  <rect class="box-err" x="390" y="122" width="290" height="40" rx="6"/>
+  <text class="ink sm b" x="535.0" y="138.5" text-anchor="middle">удалить строку</text>
+  <text class="mut sm" x="535.0" y="154.5" text-anchor="middle">тестовый заказ, заголовок посреди файла</text>
+  <path class="ln" d="M160,164 L160,188" marker-end="url(#ah-anomaly-decision)"/>
+  <text class="ink2 sm" x="170" y="180" text-anchor="start">нет</text>
+  <rect class="box-acc" x="20" y="192" width="280" height="40" rx="6"/>
+  <text class="ink sm b" x="160.0" y="216.5" text-anchor="middle">понятно, в какую сторону исправить?</text>
+  <path class="ln" d="M302,212 L386,212" marker-end="url(#ah-anomaly-decision)"/>
+  <text class="ink2 sm" x="344" y="204" text-anchor="middle">да</text>
+  <rect class="box-warn" x="390" y="192" width="290" height="40" rx="6"/>
+  <text class="ink sm b" x="535.0" y="208.5" text-anchor="middle">clip: ограничить</text>
+  <text class="mut sm" x="535.0" y="224.5" text-anchor="middle">отрицательный баланс → 0</text>
+  <path class="ln" d="M160,234 L160,258" marker-end="url(#ah-anomaly-decision)"/>
+  <text class="ink2 sm" x="170" y="250" text-anchor="start">нет</text>
+  <rect class="box-warn" x="20" y="262" width="280" height="40" rx="6"/>
+  <text class="ink sm b" x="160.0" y="278.5" text-anchor="middle">mask: заменить на NaN</text>
+  <text class="mut sm" x="160.0" y="294.5" text-anchor="middle">99 999 в бонусах; имя и город остаются</text>
+  <text class="mut sm" x="530" y="280" text-anchor="middle">каждое решение — строка в журнале:</text>
+  <text class="mut sm" x="530" y="296" text-anchor="middle">что нашли, сколько строк, что сделали</text>
+</svg>
+</div><figcaption>
+<p>Порядок вопросов, по которому выбирают стратегию. Справа и внизу — примеры из урока.</p>
+</figcaption></figure>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">import pandas as pd
+s = pd.Series([-5, 3, 10])
+print(s.clip(upper=5).tolist())</code></pre>
+<ul>
+<li><code>[-5, 3]</code></li>
+<li><code>[0, 3, 5]</code></li>
+<li>[x] <code>[-5, 3, 5]</code></li>
+</ul>
+<p>Почему: <code>clip(upper=5)</code> ограничивает только сверху: всё, что больше 5, становится 5. Нижнюю границу задают отдельно — <code>lower=</code>.</p>
+</div>
+<div class="predict" data-q="q2"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">import pandas as pd
+s = pd.Series([1, -2, 3])
+print(s.mask(s &lt; 0).sum())</code></pre>
+<ul>
+<li><code>2</code></li>
+<li>[x] <code>4.0</code></li>
+<li><code>Ошибка TypeError</code></li>
+</ul>
+<p>Почему: <code>mask</code> заменил −2 на <code>NaN</code>, а <code>sum</code> пропуск не считает: 1 + 3 = 4. Число стало дробным, потому что в столбце появился <code>NaN</code>.</p>
+</div>
+<h3>Разберём вместе: четыре баланса — четыре ответа</h3>
+<p>Возьмём четыре баланса из примера выше: −50, 120, 380, 99 999. Посчитаем средний баланс при каждой стратегии.</p>
+<table>
+<thead>
+<tr>
+<th>стратегия</th>
+<th>что осталось</th>
+<th>среднее</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ничего не делать</td>
+<td>−50, 120, 380, 99 999</td>
+<td>(−50 + 120 + 380 + 99 999) / 4 ≈ <strong>25 112</strong></td>
+</tr>
+<tr>
+<td>удалить невозможные</td>
+<td>120, 380</td>
+<td><strong>250</strong></td>
+</tr>
+<tr>
+<td><code>mask</code> (в <code>NaN</code>)</td>
+<td>NaN, 120, 380, NaN</td>
+<td><strong>250</strong> — <code>mean</code> пропускает <code>NaN</code></td>
+</tr>
+<tr>
+<td><code>clip(lower=0)</code></td>
+<td>0, 120, 380, 99 999</td>
+<td>≈ <strong>25 125</strong></td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>Без чистки среднее в сто раз больше типичного баланса — одна заглушка 99 999 «съела» всю статистику. Медиана при этом — (120 + 380) / 2 = <strong>250</strong>: она устойчива к одному огромному значению.</li>
+<li>Удаление и <code>mask</code> дают одно среднее, но <code>mask</code> сохраняет строки: имя, телефон и город гостя по-прежнему в таблице.</li>
+<li><code>clip(lower=0)</code> исправил отрицательный баланс, но заглушку не тронул — стратегия выбрана не под ту проблему.</li>
+</ol>
+<p>Что получилось: у каждой аномалии своя причина и своя стратегия. Отрицательный баланс и 99 999 — обе невозможны, но если для них выбрать одну и ту же операцию «на автомате», одна из проблем останется. Поэтому журнал решений пишут по каждой аномалии отдельно.</p>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Удалить всё «странное».</strong> Большие заказы и долгие доставки бывают правдой — статистика находит кандидатов, решает человек.</li>
+<li><strong>Удалить строку из-за одного поля.</strong> Если неверен только баланс, <code>mask</code> сохранит остальные полезные данные.</li>
+<li><strong>Проверять только один край.</strong> Заглушки бывают и сверху (99 999), и снизу (1900-01-01).</li>
+<li><strong>Чистка без журнала.</strong> Через месяц никто не вспомнит, почему средний баланс в отчёте не совпадает с CRM.</li>
+</ul>
+</aside>
+<div class="quiz-c" data-q="c2"><div class="predict-title">Проверьте себя</div>
+<p>В заказах есть сумма 1260 ₽ при типичных 225–390 ₽. Что делать?</p>
+<ul>
+<li>[x] Сначала понять, что это: заказ на компанию — оставить, опечатка или тест — исправить или убрать
+<blockquote>
+<p>Аномалия — сигнал разобраться, а не приговор. Правило межквартильного размаха помечает кандидатов, решение принимают по смыслу.</p>
+</blockquote>
+</li>
+<li>[ ] Удалить: всё за границей выбросов — ошибка
+<blockquote>
+<p>Так можно выбросить самых ценных гостей и занизить выручку.</p>
+</blockquote>
+</li>
+<li>[ ] Заменить на медиану
+<blockquote>
+<p>Тогда выручка станет неверной, а заказ — выдуманным.</p>
+</blockquote>
+</li>
+<li>[ ] Ничего не делать, на итоги один заказ не влияет
+<blockquote>
+<p>Таких заказов может быть много, и на средний чек они влияют заметно. Проверить их нужно.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-flag-qty"><b>8</b> Флаг подозрительных заказов</a></div>
+<div class="fb" data-sec="что-делать-с-аномалиями"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="проверка-между-таблицами">Проверка между таблицами</h2>
+<p>Некоторые аномалии видны, только если сравнить данные с другой таблицей. Например, заказ в кофейне, которая ещё не открылась, или анкета гостя из города, где нет ни одной кофейни. Такие проверки делают через <code>merge</code> из главы 2:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+pos = pd.read_csv(&quot;pos_december.csv&quot;, sep=&quot;;&quot;, decimal=&quot;,&quot;)
+shops = pd.read_csv(&quot;shops.csv&quot;)
+pos[&quot;shop&quot;] = pos[&quot;shop&quot;].str.strip().str.upper().str.replace(&quot; &quot;, &quot;-&quot;)
+pos[&quot;time&quot;] = pd.to_datetime(pos[&quot;time&quot;], format=&quot;%d.%m.%Y %H:%M&quot;)
+t = pos.merge(shops[[&quot;shop_id&quot;, &quot;opened&quot;]], left_on=&quot;shop&quot;, right_on=&quot;shop_id&quot;, how=&quot;left&quot;)
+t[&quot;opened&quot;] = pd.to_datetime(t[&quot;opened&quot;])
+print(&quot;заказов до открытия кофейни:&quot;, (t[&quot;time&quot;] &lt; t[&quot;opened&quot;]).sum())
+print(&quot;кофейня не найдена в справочнике:&quot;, t[&quot;opened&quot;].isna().sum())</code></pre></div>
+<p>Ноль и ноль — значит, эта проверка пройдена. Её всё равно стоит оставить в коде: следующая выгрузка может оказаться не такой аккуратной.</p>
+<aside class="callout callout-note"><div class="callout-title">Журнал решений</div>
+<p>Для каждой аномалии запишите: что нашли, сколько строк, что решили и почему. Например: «bonus &lt; 0 — 2 анкеты, заменили на NaN: баланс не бывает отрицательным» или «qty = 40 — 1 заказ, оставили с флагом: ждём ответа кофейни». Без журнала через месяц никто не вспомнит, почему цифры в отчёте именно такие.</p>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-before-open"><b>10</b> Анкета раньше кофейни</a></div>
+<div class="fb" data-sec="проверка-между-таблицами"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="баг-репорт-владельцу-данных">Баг-репорт владельцу данных</h2>
+<p>Журнал решений описывает, что <strong>мы</strong> сделали с аномалией у себя. Но отрицательный баланс и заглушку 1900-01-01 создаёт не аналитик, а CRM. Пока там ничего не исправят, каждую новую выгрузку придётся чистить заново, а другие отделы, которые берут данные из CRM напрямую, будут видеть те же ошибки. Поэтому о проблеме сообщают <strong>владельцу данных</strong> — команде, которая отвечает за систему-источник. Обычно это задача (тикет) в трекере: Jira, YouTrack, Яндекс Трекер.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Заявка в управляющую компанию. «У меня не работает вода» — мастеру придётся перезванивать: где, какая, с какого времени. «Кв. 12, с 8 утра нет горячей воды на кухне, в ванной есть, у соседей сверху тоже нет» — можно идти чинить. Хороший баг-репорт по данным — вторая заявка: по нему можно найти проблему, не задавая вопросов. Где аналогия хромает: воду проверяют глазами, а данные — запросом, и его нужно приложить.</p>
+</aside>
+<h3>Шаблон тикета</h3>
+<table>
+<thead>
+<tr>
+<th>поле</th>
+<th>что писать</th>
+<th>пример: отрицательные бонусы</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Заголовок</td>
+<td>система + что не так, одной строкой</td>
+<td>CRM, анкеты гостей: отрицательный баланс бонусов</td>
+</tr>
+<tr>
+<td>Где</td>
+<td>система, таблица или файл, столбец, дата выгрузки</td>
+<td>выгрузка <a class="data-link" href="../data/clients_raw.csv" download title="Скачать clients_raw.csv"><code>clients_raw.csv</code></a>, столбец <code>bonus</code></td>
+</tr>
+<tr>
+<td>Правило</td>
+<td>какое правило нарушено</td>
+<td>баланс бонусов не может быть меньше 0</td>
+</tr>
+<tr>
+<td>Масштаб</td>
+<td>сколько строк и из скольких</td>
+<td>2 из 307 анкет</td>
+</tr>
+<tr>
+<td>Примеры</td>
+<td>3–5 ключей записей — без имён и телефонов</td>
+<td>C1188, C1033</td>
+</tr>
+<tr>
+<td>Как найти</td>
+<td>запрос или код, который находит строки</td>
+<td><code>bonus &lt; 0</code></td>
+</tr>
+<tr>
+<td>Ожидание</td>
+<td>как должно быть</td>
+<td>баланс от 0 и выше</td>
+</tr>
+<tr>
+<td>Влияние</td>
+<td>что портится и насколько срочно</td>
+<td>рассылка «у вас N бонусов» уйдёт с отрицательными суммами</td>
+</tr>
+<tr>
+<td>Обход</td>
+<td>что сделали у себя, пока не исправят</td>
+<td>в очистке заменяем на <code>NaN</code> (<code>mask</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Самое ценное в тикете — <strong>«Как найти»</strong> и <strong>«Масштаб»</strong>. По запросу владелец данных сам увидит проблемные строки, а после исправления тот же запрос должен вернуть ноль строк. Это готовая проверка, что починили.</p>
+<figure class="fig" data-fig="ticket-loop"><div class="fig-scroll"><svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-ticket-loop">
+  <title id="t-ticket-loop">Путь тикета: от найденной проблемы до проверки исправления</title>
+  <defs><marker id="ah-ticket-loop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box-acc" x="8" y="40" width="154" height="70" rx="6"/>
+  <text class="ink sm b" x="85.0" y="61.5" text-anchor="middle">1. нашли</text>
+  <text class="ink2 sm" x="85.0" y="79.5" text-anchor="middle">bonus &lt; 0: 2 из 307</text>
+  <text class="ink2 sm" x="85.0" y="97.5" text-anchor="middle">C1188, C1033</text>
+  <path class="ln" d="M164,75 L180,75" marker-end="url(#ah-ticket-loop)"/>
+  <rect class="box" x="182" y="40" width="154" height="70" rx="6"/>
+  <text class="ink sm b" x="259.0" y="61.5" text-anchor="middle">2. тикет владельцу</text>
+  <text class="ink2 sm" x="259.0" y="79.5" text-anchor="middle">где, правило, масштаб,</text>
+  <text class="ink2 sm" x="259.0" y="97.5" text-anchor="middle">примеры, как найти</text>
+  <path class="ln" d="M338,75 L354,75" marker-end="url(#ah-ticket-loop)"/>
+  <rect class="box" x="356" y="40" width="154" height="70" rx="6"/>
+  <text class="ink sm b" x="433.0" y="61.5" text-anchor="middle">3. исправляют</text>
+  <text class="ink2 sm" x="433.0" y="79.5" text-anchor="middle">в самой CRM</text>
+  <text class="ink2 sm" x="433.0" y="97.5" text-anchor="middle">(не у нас)</text>
+  <path class="ln" d="M512,75 L528,75" marker-end="url(#ah-ticket-loop)"/>
+  <rect class="box-ok" x="530" y="40" width="154" height="70" rx="6"/>
+  <text class="ink sm b" x="607.0" y="61.5" text-anchor="middle">4. перепроверка</text>
+  <text class="ink2 sm" x="607.0" y="79.5" text-anchor="middle">тот же запрос на новой</text>
+  <text class="ink2 sm" x="607.0" y="97.5" text-anchor="middle">выгрузке → 0 строк</text>
+  <path class="ln dash" d="M607.0,38 V22 H85.0 V36" marker-end="url(#ah-ticket-loop)"/>
+  <text class="mut sm" x="346.0" y="16" text-anchor="middle">не 0 строк — тикет переоткрывают с новыми цифрами</text>
+  <path class="ln" d="M85.0,112 V146" marker-end="url(#ah-ticket-loop)"/>
+  <rect class="box-warn" x="8" y="148" width="328" height="50" rx="6"/>
+  <text class="ink sm b" x="172.0" y="168.5" text-anchor="middle">пока не исправили — обход у себя</text>
+  <text class="ink2 sm" x="172.0" y="186.5" text-anchor="middle">в очистке: mask → NaN, пометка в отчёте</text>
+  <text class="ink2 sm" x="360" y="166" text-anchor="start">запрос из поля «как найти» — это</text>
+  <text class="ink2 sm" x="360" y="184" text-anchor="start">и способ найти проблему, и проверка,</text>
+  <text class="ink2 sm" x="360" y="202" text-anchor="start">что её действительно починили</text>
+  <text class="mut sm" x="350" y="238" text-anchor="middle">в тикете — номера карт, а не имена и телефоны: его читают многие</text>
+</svg>
+</div><figcaption>
+<p>Путь тикета про отрицательные бонусы. Запрос из поля «как найти» находит проблему и потом проверяет исправление; пока источник не починили, у себя работает обход.</p>
+</figcaption></figure>
+<h3>Тикет из кода</h3>
+<p>Все цифры тикета считаются кодом — тогда они точные, и тикет легко обновить на новой выгрузке. Удобно собрать его в словарь, а потом напечатать:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+df = pd.read_csv(&quot;clients_raw.csv&quot;)
+df[&quot;bonus&quot;] = pd.to_numeric(df[&quot;bonus&quot;].str.replace(&quot; &quot;, &quot;&quot;), errors=&quot;coerce&quot;)
+bad = df[df[&quot;bonus&quot;] &lt; 0]
+
+report = {
+    &quot;где&quot;: &quot;clients_raw.csv, столбец bonus&quot;,
+    &quot;правило&quot;: &quot;баланс бонусов не меньше 0&quot;,
+    &quot;строк&quot;: len(bad),
+    &quot;всего&quot;: len(df),
+    &quot;примеры&quot;: bad[&quot;client_id&quot;].head(5).tolist(),
+    &quot;как_найти&quot;: &quot;bonus &lt; 0&quot;,
+    &quot;ожидание&quot;: &quot;баланс от 0 и выше&quot;,
+}
+for key, value in report.items():
+    print(f&quot;{key:&gt;10}: {value}&quot;)</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>bad</code> — только проблемные строки; из них берутся и число, и примеры.</li>
+<li><code>bad[&quot;client_id&quot;].head(5).tolist()</code> — до пяти номеров карт списком. Номера, а не имена: тикет видят многие, персональные данные гостей туда не кладут.</li>
+<li><code>report</code> — словарь «поле тикета → значение»; его можно напечатать, сохранить в файл или отправить в трекер.</li>
+<li><code>f&quot;{key:&gt;10}&quot;</code> выравнивает названия полей по правому краю в 10 символов — так тикет читается столбиком.</li>
+</ul>
+<p>Как читать результат: 2 строки из 307, примеры C1188 и C1033, и строка поиска, которую владелец CRM повторит у себя. Когда он скажет «исправили», запустите тот же код на свежей выгрузке: <code>строк</code> должно стать 0.</p>
+<div class="quiz-c" data-q="c3"><div class="predict-title">Проверьте себя</div>
+<p>Какой текст тикета лучше всего поможет владельцу CRM исправить проблему?</p>
+<ul>
+<li>[x] «CRM, анкеты: у 2 из 307 гостей отрицательный баланс бонусов (C1188, C1033). Выгрузка <a class="data-link" href="../data/clients_raw.csv" download title="Скачать clients_raw.csv"><code>clients_raw.csv</code></a>, найти: <code>bonus &lt; 0</code>. Ожидаем баланс от 0. Влияет на рассылку о бонусах; у себя пока заменяем на <code>NaN</code>»
+<blockquote>
+<p>Есть всё, чтобы найти и проверить: где, сколько, примеры, запрос, ожидание и последствия. Персональных данных нет.</p>
+</blockquote>
+</li>
+<li>[ ] «В выгрузке CRM кривые бонусы, посмотрите, пожалуйста, срочно!»
+<blockquote>
+<p>Неясно, какие бонусы, сколько их и что значит «кривые». Владельцу придётся переспрашивать — или он отложит задачу.</p>
+</blockquote>
+</li>
+<li>[ ] «У гостей Ольги (+7 991 …) и Ивана (+7 987 …) неправильные бонусы, исправьте»
+<blockquote>
+<p>Нет правила и масштаба, а имена и телефоны гостей в тикете — утечка персональных данных. Для поиска достаточно номера карты.</p>
+</blockquote>
+</li>
+<li>[ ] «Прикладываю скриншот таблицы на 307 строк — там видно, что не так»
+<blockquote>
+<p>На скриншоте нельзя повторить поиск, а найти две строки среди трёхсот — работа, которую должен был сделать автор тикета.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Оценки вместо фактов.</strong> «Данные кривые», «много ошибок» — не тикет. Нужны правило, число строк и примеры.</li>
+<li><strong>Нет запроса.</strong> Без «как найти» владелец не сможет повторить проблему, а вы — проверить исправление.</li>
+<li><strong>Персональные данные в тикете.</strong> Имена, телефоны и даты рождения гостей не копируют: указывают ключи записей.</li>
+<li><strong>Тикет без обхода.</strong> Пока источник не исправлен, очистка у себя всё равно нужна — и в отчёте стоит написать, что цифры посчитаны с обходом.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-bug-report"><b>6</b> Тикет про заглушку в датах</a></div>
+<div class="fb" data-sec="баг-репорт-владельцу-данных"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-negative" data-task="negative" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Отрицательные бонусы</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#правила-здравого-смысла">↑ К теории: Правила здравого смысла</a>
+  <div class="task-text prose"><p>Бонусы уже превращены в число. Сохраните в <code>n_negative</code> число анкет с отрицательным балансом.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-zero-qty" data-task="zero-qty" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">Пустые заказы</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#правила-здравого-смысла">↑ К теории: Правила здравого смысла</a>
+  <div class="task-text prose"><p>Сохраните в <code>zero_ids</code> <strong>список</strong> номеров заказов (<code>id</code>) из кассы, где количество равно нулю.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-p-describe" data-task="p-describe" data-level="warmup" data-kind="parsons">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">Диапазон цен</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#быстрый-взгляд-describe">↑ К теории: Быстрый взгляд: describe</a>
+  <div class="task-text prose"><p>Соберите программу, которая выводит минимальную и максимальную цену в кассовой выгрузке через пробел.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-placeholder" data-task="placeholder" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">4</span>
+    <h3 class="task-title">Заглушки в датах</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#заглушки">↑ К теории: Заглушки</a>
+  <div class="task-text prose"><p>Разберите дату рождения (оба формата, как в уроке «Типы: из текста в числа и даты»). Сохраните:</p>
+<ul>
+<li><code>n_1900</code> — сколько анкет с заглушкой 1900-01-01;</li>
+<li><code>n_future</code> — сколько дат рождения позже 1 декабря 2026 года.</li>
+</ul>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-mask-bonus" data-task="mask-bonus" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">5</span>
+    <h3 class="task-title">Бонусы без аномалий</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#правила-здравого-смысла">↑ К теории: Правила здравого смысла</a>
+  <div class="task-text prose"><p>Замените на <code>NaN</code> невозможные балансы: отрицательные и больше 10 000 (это заглушки). Используйте <code>mask</code>. Сохраните очищенный столбец в <code>df[&quot;bonus&quot;]</code>, а в <code>median_before</code> и <code>mean_after</code> — медиану <strong>до</strong> очистки и среднее <strong>после</strong> (оба округлите до 1 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-bug-report" data-task="bug-report" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">6</span>
+    <h3 class="task-title">Тикет про заглушку в датах</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#баг-репорт-владельцу-данных">↑ К теории: Баг-репорт владельцу данных</a>
+  <div class="task-text prose"><p>В уроке нашлась заглушка 1900-01-01 в дате рождения. Соберите тикет для владельца CRM — словарь <code>report</code> с ключами:</p>
+<ul>
+<li><code>&quot;где&quot;</code> — файл и столбец (строка);</li>
+<li><code>&quot;правило&quot;</code> — какое правило нарушено (строка);</li>
+<li><code>&quot;строк&quot;</code> — сколько анкет с заглушкой;</li>
+<li><code>&quot;всего&quot;</code> — сколько анкет в выгрузке;</li>
+<li><code>&quot;доля_%&quot;</code> — доля анкет с заглушкой в процентах, один знак после запятой;</li>
+<li><code>&quot;примеры&quot;</code> — список номеров карт (<code>client_id</code>) таких анкет, не больше пяти, в порядке файла;</li>
+<li><code>&quot;как_найти&quot;</code> — условие, по которому владелец найдёт эти строки (строка).</li>
+</ul>
+<p>Все числа и примеры посчитайте кодом. Имена и телефоны гостей в тикет не кладите.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-iqr" data-task="iqr" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">7</span>
+    <h3 class="task-title">Границы выбросов</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#статистика-межквартильный-размах">↑ К теории: Статистика: межквартильный размах</a>
+  <div class="task-text prose"><p>Посчитайте по правилу межквартильного размаха границы <code>low</code> и <code>high</code> для суммы заказа (<code>amount</code> в <a class="data-link" href="../data/orders_3m.csv" download title="Скачать orders_3m.csv"><code>orders_3m.csv</code></a>) и сохраните в <code>n_high</code> число заказов выше верхней границы.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-flag-qty" data-task="flag-qty" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">8</span>
+    <h3 class="task-title">Флаг подозрительных заказов</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#что-делать-с-аномалиями">↑ К теории: Что делать с аномалиями</a>
+  <div class="task-text prose"><p>Добавьте в кассовую выгрузку столбец-флаг <code>suspicious</code>: <code>True</code>, если количество 0 или больше 10. Строки не удаляйте. Сохраните в <code>avg_with</code> и <code>avg_without</code> среднюю сумму <strong>заказа</strong> (<code>price × qty</code>) со всеми строками и без подозрительных (обе округлите до 2 знаков).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-age-sane" data-task="age-sane" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">9</span>
+    <h3 class="task-title">Правдоподобный возраст</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#правила-здравого-смысла">↑ К теории: Правила здравого смысла</a>
+  <div class="task-text prose"><p>Посчитайте возраст на 1 декабря 2026 (<code>дни // 365.25</code>) и замените на <code>NaN</code> возрасты вне диапазона 14–100 лет (через <code>mask</code> или <code>where</code>). Сохраните возраст в <code>age</code>, а в <code>n_valid</code> — число анкет с правдоподобным возрастом.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-before-open" data-task="before-open" data-level="star" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">10</span>
+    <h3 class="task-title">Анкета раньше кофейни</h3>
+    <span class="lvl lvl-star">Со звёздочкой</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#проверка-между-таблицами">↑ К теории: Проверка между таблицами</a>
+  <div class="task-text prose"><p>Сколько гостей заполнили анкету <strong>раньше</strong>, чем в их городе открылась первая кофейня «Зерна»? Город очистите как в уроке «Строки: чистим и ищем по тексту», дату открытия первой кофейни города возьмите из <a class="data-link" href="../data/shops.csv" download title="Скачать shops.csv"><code>shops.csv</code></a> (самую раннюю по городу). Гости из городов без кофеен в расчёт не входят. Сохраните ответ в <code>n_early</code>, а в <code>by_city</code> — словарь «город → число таких анкет» (только города, где они есть).</p>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>Аномалия — значение, которое не может или вряд ли может быть правдой. Не каждая аномалия — ошибка.</li><li>Быстрый взгляд: <code>describe()</code> — минимум и максимум сразу показывают невозможное.</li><li>Правила здравого смысла: <code>s.between(0, 50_000)</code>, <code>s &lt; 0</code>, дата в будущем. Границы задаёт смысл, а не статистика.</li><li>Заглушки (1900-01-01, 99999, -1) — частые «круглые» значения; ищите через <code>value_counts().head()</code>.</li><li>Статистика: межквартильный размах — <code>iqr = q3 - q1</code>, выбросы за <code>q1 - 1.5*iqr</code> и <code>q3 + 1.5*iqr</code>. Это кандидаты, их проверяют глазами.</li><li>Что делать: удалить строку; заменить на <code>NaN</code> — <code>s.mask(условие)</code>; ограничить — <code>s.clip(lower=0)</code>; оставить и пометить флагом.</li><li>Проблему в источнике сообщают владельцу данных тикетом: где, правило, сколько строк из скольких, 3–5 ключей-примеров (без персональных данных), запрос «как найти», ожидание, влияние и обход. Цифры тикета — из кода.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="06-categories.html"><span class="pl">← Предыдущий</span><span class="pt">7. Категоризация: CASE WHEN в pandas</span></a><a class="next" href="08-pipeline.html"><span class="pl">Следующий урок →</span><span class="pt">9. Очистка целиком: функция и проверки</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#аномалия-ошибка">Аномалия ≠ ошибка</a></li><li><a href="#быстрый-взгляд-describe">Быстрый взгляд: describe</a></li><li><a href="#правила-здравого-смысла">Правила здравого смысла</a></li><li><a href="#заглушки">Заглушки</a></li><li><a href="#статистика-межквартильный-размах">Статистика: межквартильный размах</a></li><li><a href="#что-делать-с-аномалиями">Что делать с аномалиями</a></li><li><a href="#проверка-между-таблицами">Проверка между таблицами</a></li><li><a href="#баг-репорт-владельцу-данных">Баг-репорт владельцу данных</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch03/07-anomalies", "title": "Аномалии и проверка на здравый смысл", "chapter": "Предобработка данных", "tasks": [{"id": "negative", "title": "Отрицательные бонусы", "level": "warmup", "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\ndf[\"bonus\"] = pd.to_numeric(df[\"bonus\"].str.replace(\" \", \"\"), errors=\"coerce\")", "setup": "", "check": "import pandas as _pd\nb = _pd.to_numeric(_pd.read_csv('clients_raw.csv')['bonus'].str.replace(' ', ''), errors='coerce')\nassert need('n_negative') == (b < 0).sum(), f'n_negative = {need(\"n_negative\")}.'", "hints": ["<p>Условие <code>df[&quot;bonus&quot;] &lt; 0<\/code> даёт True/False; сумма True — число анкет.<\/p>\n", "<p><code>n_negative = (df[&quot;bonus&quot;] &lt; 0).sum()<\/code>.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\ndf[\"bonus\"] = pd.to_numeric(df[\"bonus\"].str.replace(\" \", \"\"), errors=\"coerce\")\nn_negative = (df[\"bonus\"] < 0).sum()", "explain": "", "parsons": ""}, {"id": "zero-qty", "title": "Пустые заказы", "level": "warmup", "starter": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")", "setup": "", "check": "import pandas as _pd\np = _pd.read_csv('pos_december.csv', sep=';')\nwant = list(p.loc[p['qty'] == 0, 'id'])\nassert list(need('zero_ids')) == want, f'zero_ids = {list(need(\"zero_ids\"))}, а нужно {want}.'", "hints": ["<p><code>loc[маска, столбец]<\/code> отбирает строки и сразу нужный столбец.<\/p>\n", "<p><code>pos.loc[pos[&quot;qty&quot;] == 0, &quot;id&quot;]<\/code> — и превратите в список: <code>list(...)<\/code> или <code>.tolist()<\/code>.<\/p>\n"], "solution": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")\nzero_ids = pos.loc[pos[\"qty\"] == 0, \"id\"].tolist()", "explain": "", "parsons": ""}, {"id": "p-describe", "title": "Диапазон цен", "level": "warmup", "starter": "", "setup": "", "check": "import pandas as _pd\np = _pd.read_csv('pos_december.csv', sep=';', decimal=',')\nwant = f'{p[\"price\"].min()} {p[\"price\"].max()}'\nassert _lines == [want], f'Должно вывестись {want}. Сейчас: {_lines}'", "hints": ["<p>Сначала загрузка, потом минимум и максимум, вывод — последним.<\/p>\n", "<p><code>print(lo, hi)<\/code> печатает два значения через пробел — ровно то, что нужно.<\/p>\n"], "solution": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")\nlo = pos[\"price\"].min()\nhi = pos[\"price\"].max()\nprint(lo, hi)", "explain": "", "parsons": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")\nlo = pos[\"price\"].min()\nhi = pos[\"price\"].max()\nprint(lo, hi)"}, {"id": "placeholder", "title": "Заглушки в датах", "level": "base", "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\niso = pd.to_datetime(df[\"birth_date\"], format=\"%Y-%m-%d\", errors=\"coerce\")\nru = pd.to_datetime(df[\"birth_date\"], format=\"%d.%m.%Y\", errors=\"coerce\")\nborn = iso.fillna(ru)", "setup": "", "check": "import pandas as _pd\nb = _pd.read_csv('clients_raw.csv')['birth_date']\nborn = _pd.to_datetime(b, format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(b, format='%d.%m.%Y', errors='coerce'))\nassert need('n_1900') == (born == '1900-01-01').sum(), f'n_1900 = {need(\"n_1900\")}.'\nassert need('n_future') == (born > '2026-12-01').sum(), f'n_future = {need(\"n_future\")}.'", "hints": ["<p>Даты можно сравнивать со строкой в формате «год-месяц-день»: <code>born == &quot;1900-01-01&quot;<\/code>, <code>born &gt; &quot;2026-12-01&quot;<\/code>.<\/p>\n", "<p>Сумма маски — число анкет: <code>(born == &quot;1900-01-01&quot;).sum()<\/code>.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\niso = pd.to_datetime(df[\"birth_date\"], format=\"%Y-%m-%d\", errors=\"coerce\")\nru = pd.to_datetime(df[\"birth_date\"], format=\"%d.%m.%Y\", errors=\"coerce\")\nborn = iso.fillna(ru)\nn_1900 = (born == \"1900-01-01\").sum()\nn_future = (born > \"2026-12-01\").sum()", "explain": "<p>Дата 1900-01-01 — типичная заглушка: так форма или система заполняет поле, когда гость ничего не ввёл. Таких анкет 3. Ещё одна дата рождения лежит в будущем — скорее всего, опечатка в годе. Обе находки — не настоящие даты, их нужно превратить в пропуск, а не удалять анкету целиком: телефон и город у этих гостей могут быть в порядке.<\/p>\n", "parsons": ""}, {"id": "mask-bonus", "title": "Бонусы без аномалий", "level": "base", "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\ndf[\"bonus\"] = pd.to_numeric(df[\"bonus\"].str.replace(\" \", \"\"), errors=\"coerce\")", "setup": "", "check": "import pandas as _pd\nb = _pd.to_numeric(_pd.read_csv('clients_raw.csv')['bonus'].str.replace(' ', ''), errors='coerce')\nclean = b.mask((b < 0) | (b > 10_000))\nd = need('df', _pd.DataFrame)\nassert d['bonus'].isna().sum() == clean.isna().sum(), f'В bonus {d[\"bonus\"].isna().sum()} пропусков, а должно быть {clean.isna().sum()}. Строки не удаляйте — меняйте значения на NaN.'\nassert (d['bonus'].fillna(-1) == clean.fillna(-1)).all(), 'bonus не совпадает с ожидаемым.'\nassert close(need('median_before'), round(b.median(), 1)), f'median_before = {need(\"median_before\")}.'\nassert close(need('mean_after'), round(clean.mean(), 1)), f'mean_after = {need(\"mean_after\")}.'", "hints": ["<p>Медиану до очистки посчитайте раньше, чем перезапишете столбец.<\/p>\n", "<p><code>df[&quot;bonus&quot;].mask((df[&quot;bonus&quot;] &lt; 0) | (df[&quot;bonus&quot;] &gt; 10_000))<\/code> — два условия через <code>|<\/code>, каждое в скобках.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\ndf[\"bonus\"] = pd.to_numeric(df[\"bonus\"].str.replace(\" \", \"\"), errors=\"coerce\")\nmedian_before = round(df[\"bonus\"].median(), 1)\ndf[\"bonus\"] = df[\"bonus\"].mask((df[\"bonus\"] < 0) | (df[\"bonus\"] > 10_000))\nmean_after = round(df[\"bonus\"].mean(), 1)", "explain": "<p>Сравните: среднее до очистки было в разы больше медианы — одна заглушка 99 999 тянула его вверх. После очистки среднее стало правдоподобным. Медиана почти не изменилась: она устойчива к единичным огромным значениям. Поэтому при осмотре полезно смотреть на обе цифры: если они сильно расходятся — ищите аномалии.<\/p>\n", "parsons": ""}, {"id": "bug-report", "title": "Тикет про заглушку в датах", "level": "base", "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\niso = pd.to_datetime(df[\"birth_date\"], format=\"%Y-%m-%d\", errors=\"coerce\")\nru = pd.to_datetime(df[\"birth_date\"], format=\"%d.%m.%Y\", errors=\"coerce\")\nborn = iso.fillna(ru)\n\nreport = {}", "setup": "", "check": "import pandas as _pd\nd = _pd.read_csv('clients_raw.csv')\nb = _pd.to_datetime(d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(d['birth_date'], format='%d.%m.%Y', errors='coerce'))\nbad = d[b == '1900-01-01']\nr = need('report', dict)\nkeys = ['где', 'правило', 'строк', 'всего', 'доля_%', 'примеры', 'как_найти']\nmiss = [k for k in keys if k not in r]\nassert not miss, f'В report нет ключей: {miss}.'\nfor k in ['где', 'правило', 'как_найти']:\n    assert isinstance(r[k], str) and r[k].strip(), f'«{k}» — непустая строка с пояснением.'\nassert r['строк'] == len(bad), f'строк = {r[\"строк\"]}, а анкет с 1900-01-01 — {len(bad)}.'\nassert r['всего'] == len(d), f'всего = {r[\"всего\"]}. Это все анкеты выгрузки.'\nassert close(r['доля_%'], round(len(bad) / len(d) * 100, 1), 0.05), f'доля_% = {r[\"доля_%\"]}. Доля = строк / всего × 100, один знак.'\nex = list(r['примеры'])\nassert all(isinstance(x, str) for x in ex) and set(ex) <= set(d['client_id']), 'В примерах должны быть номера карт (client_id), без имён и телефонов.'\nassert ex == bad['client_id'].head(5).tolist(), f'примеры = {ex}. Нужны номера карт анкет с заглушкой, в порядке файла.'\nassert '1900' in r['как_найти'], 'В «как_найти» укажите условие с самой заглушкой, например дату 1900-01-01.'\nassert not has_literal(len(bad)) and not has_literal(len(d)), 'Посчитайте строк и всего кодом (len), а не впишите.'", "hints": ["<p>Проблемные строки — маска <code>born == &quot;1900-01-01&quot;<\/code>: <code>bad = df[born == &quot;1900-01-01&quot;]<\/code>. Из <code>bad<\/code> берутся и число строк, и примеры.<\/p>\n", "<p>Числа: <code>len(bad)<\/code>, <code>len(df)<\/code>, <code>round(len(bad) / len(df) * 100, 1)<\/code>. Примеры: <code>bad[&quot;client_id&quot;].head(5).tolist()<\/code>.<\/p>\n", "<p>Словарь собирается так: <code>report = {&quot;где&quot;: &quot;clients_raw.csv, столбец birth_date&quot;, &quot;правило&quot;: &quot;...&quot;, &quot;строк&quot;: len(bad), ...}<\/code> — по образцу тикета из урока.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\niso = pd.to_datetime(df[\"birth_date\"], format=\"%Y-%m-%d\", errors=\"coerce\")\nru = pd.to_datetime(df[\"birth_date\"], format=\"%d.%m.%Y\", errors=\"coerce\")\nborn = iso.fillna(ru)\nbad = df[born == \"1900-01-01\"]\n\nreport = {\n    \"где\": \"clients_raw.csv, столбец birth_date\",\n    \"правило\": \"дата рождения — настоящая дата; пустое поле не заменять на 1900-01-01\",\n    \"строк\": len(bad),\n    \"всего\": len(df),\n    \"доля_%\": round(len(bad) / len(df) * 100, 1),\n    \"примеры\": bad[\"client_id\"].head(5).tolist(),\n    \"как_найти\": \"birth_date == 1900-01-01\",\n}", "explain": "<p>Заглушка у 3 анкет из 307 — 1.0 %, номера карт C1140, C1061 и C1007. Доля маленькая, но тикет всё равно нужен: заглушку ставит сама CRM, когда гость не ввёл дату, и в каждой новой выгрузке она появится снова. В поле «правило» полезно назвать и причину, а не только симптом: «пустое поле не заменять на 1900-01-01». Тогда владелец исправит форму, а не только эти три строки. Если бы вы вписали <code>&quot;строк&quot;: 3<\/code> руками, через месяц на новой выгрузке тикет врал бы. Посчитанный кодом — обновляется одним запуском.<\/p>\n", "parsons": ""}, {"id": "iqr", "title": "Границы выбросов", "level": "base", "starter": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")", "setup": "", "check": "import pandas as _pd\na = _pd.read_csv('orders_3m.csv')['amount']\nq1, q3 = a.quantile(0.25), a.quantile(0.75)\nlo, hi = q1 - 1.5 * (q3 - q1), q3 + 1.5 * (q3 - q1)\nassert close(need('low'), lo) and close(need('high'), hi), f'low, high = {need(\"low\")}, {need(\"high\")}, а нужно {lo}, {hi}.'\nassert need('n_high') == (a > hi).sum(), f'n_high = {need(\"n_high\")}.'", "hints": ["<p><code>q1 = df[&quot;amount&quot;].quantile(0.25)<\/code>, <code>q3 = df[&quot;amount&quot;].quantile(0.75)<\/code>, <code>iqr = q3 - q1<\/code>.<\/p>\n", "<p><code>low = q1 - 1.5 * iqr<\/code>, <code>high = q3 + 1.5 * iqr<\/code>, <code>n_high = (df[&quot;amount&quot;] &gt; high).sum()<\/code>.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nq1 = df[\"amount\"].quantile(0.25)\nq3 = df[\"amount\"].quantile(0.75)\niqr = q3 - q1\nlow = q1 - 1.5 * iqr\nhigh = q3 + 1.5 * iqr\nn_high = (df[\"amount\"] > high).sum()", "explain": "<p>Межквартильный размах — ширина «середины» данных: между 25-м и 75-м процентилем лежит половина заказов (здесь от 225 до 390 ₽). Граница <code>q3 + 1.5 * iqr<\/code> равна 637.5 ₽, и выше неё 189 заказов из 2089. Нижняя граница отрицательная (−22.5), поэтому снизу выбросов по этому правилу нет. Правило помечает кандидатов, а не ошибки: заказы на 700–1260 ₽ могут быть настоящими заказами на компанию, так что решать, что с ними делать, нужно по смыслу.<\/p>\n", "parsons": ""}, {"id": "flag-qty", "title": "Флаг подозрительных заказов", "level": "base", "starter": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")", "setup": "", "check": "import pandas as _pd\np = _pd.read_csv('pos_december.csv', sep=';', decimal=',')\nflag = (p['qty'] == 0) | (p['qty'] > 10)\npp = need('pos', _pd.DataFrame)\nassert len(pp) == len(p), 'Строки удалять не нужно — только пометить.'\nassert 'suspicious' in pp.columns and (pp['suspicious'] == flag).all(), 'Флаг suspicious не совпадает с ожидаемым.'\ntot = p['price'] * p['qty']\nassert close(need('avg_with'), round(tot.mean(), 2)), f'avg_with = {need(\"avg_with\")}. Нужна средняя сумма заказа price × qty по всем строкам.'\nassert close(need('avg_without'), round(tot[~flag].mean(), 2)), f'avg_without = {need(\"avg_without\")}. Нужна средняя сумма заказа без строк, где suspicious == True.'", "hints": ["<p><code>pos[&quot;suspicious&quot;] = (pos[&quot;qty&quot;] == 0) | (pos[&quot;qty&quot;] &gt; 10)<\/code>.<\/p>\n", "<p>Сумма заказа — <code>pos[&quot;price&quot;] * pos[&quot;qty&quot;]<\/code>; без подозрительных — та же сумма по маске <code>~pos[&quot;suspicious&quot;]<\/code>.<\/p>\n"], "solution": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")\npos[\"suspicious\"] = (pos[\"qty\"] == 0) | (pos[\"qty\"] > 10)\ntotal = pos[\"price\"] * pos[\"qty\"]\navg_with = round(total.mean(), 2)\navg_without = round(total[~pos[\"suspicious\"]].mean(), 2)", "explain": "<p>Подозрительных строк три: два заказа с нулём чашек и один на 40 чашек (8 400 ₽). Средняя сумма заказа со всеми строками — 360.38 ₽, без подозрительных — 335.14 ₽. Разница в 25 ₽ почти целиком из-за одного заказа на 40 чашек: нулевые заказы, наоборот, чуть тянут среднее вниз. Флаг позволяет показать обе цифры и честно написать в отчёте, от чего зависит разница.<\/p>\n", "parsons": ""}, {"id": "age-sane", "title": "Правдоподобный возраст", "level": "plus", "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\niso = pd.to_datetime(df[\"birth_date\"], format=\"%Y-%m-%d\", errors=\"coerce\")\nru = pd.to_datetime(df[\"birth_date\"], format=\"%d.%m.%Y\", errors=\"coerce\")\nborn = iso.fillna(ru)", "setup": "", "check": "import pandas as _pd\nb = _pd.read_csv('clients_raw.csv')['birth_date']\nborn = _pd.to_datetime(b, format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(b, format='%d.%m.%Y', errors='coerce'))\na = (_pd.Timestamp('2026-12-01') - born).dt.days // 365.25\nwant = a.where(a.between(14, 100))\ngot = need('age', _pd.Series)\nassert len(got) == len(b), 'Строки не удаляйте — заменяйте значения на NaN.'\nassert (got.fillna(-1) == want.fillna(-1)).all(), 'age не совпадает с ожидаемым.'\nassert need('n_valid') == want.notna().sum(), f'n_valid = {need(\"n_valid\")}.'", "hints": ["<p>Возраст: <code>(pd.Timestamp(&quot;2026-12-01&quot;) - born).dt.days // 365.25<\/code>.<\/p>\n", "<p><code>age.where(age.between(14, 100))<\/code> — оставить, где возраст правдоподобный, остальное — <code>NaN<\/code>.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\niso = pd.to_datetime(df[\"birth_date\"], format=\"%Y-%m-%d\", errors=\"coerce\")\nru = pd.to_datetime(df[\"birth_date\"], format=\"%d.%m.%Y\", errors=\"coerce\")\nborn = iso.fillna(ru)\nage = (pd.Timestamp(\"2026-12-01\") - born).dt.days // 365.25\nage = age.where(age.between(14, 100))\nn_valid = age.notna().sum()", "explain": "<p><code>between(14, 100)<\/code> описывает, какой возраст правдоподобен для гостя кофейни, а <code>where<\/code> превращает всё остальное в <code>NaN<\/code>. Анкета при этом остаётся в таблице. Правдоподобный возраст у 263 анкет. За границами четыре значения: −5 лет (дата рождения в будущем) и трижды 126 лет (заглушка 1900-01-01). Обе аномалии из прошлой задачи поймались одним правилом.<\/p>\n", "parsons": ""}, {"id": "before-open", "title": "Анкета раньше кофейни", "level": "star", "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\nshops = pd.read_csv(\"shops.csv\")\ndf[\"city\"] = (df[\"city\"].str.strip().str.lower().str.removeprefix(\"г.\").str.strip()\n              .replace({\"екб\": \"екатеринбург\"}).str.capitalize())", "setup": "", "check": "import pandas as _pd\nd = _pd.read_csv('clients_raw.csv')\nd['city'] = d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip().replace({'екб': 'екатеринбург'}).str.capitalize()\nfirst = _pd.read_csv('shops.csv').groupby('city', as_index=False)['opened'].min()\nt = d.merge(first, on='city', how='inner')\nearly = t[_pd.to_datetime(t['signup_date']) < _pd.to_datetime(t['opened'])]\nassert need('n_early') == len(early), f'n_early = {need(\"n_early\")}, а нужно {len(early)}.'\ngot = {k: int(v) for k, v in dict(need('by_city')).items() if v}\nassert got == {k: int(v) for k, v in early['city'].value_counts().items()}, f'by_city = {got}.'", "hints": ["<p>Первая кофейня города: <code>shops.groupby(&quot;city&quot;, as_index=False)[&quot;opened&quot;].min()<\/code>.<\/p>\n", "<p>Соедините анкеты с этой таблицей по <code>city<\/code> (<code>how=&quot;inner&quot;<\/code> сразу отбросит города без кофеен), превратите обе даты в даты и сравните.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\nshops = pd.read_csv(\"shops.csv\")\ndf[\"city\"] = (df[\"city\"].str.strip().str.lower().str.removeprefix(\"г.\").str.strip()\n              .replace({\"екб\": \"екатеринбург\"}).str.capitalize())\nfirst = shops.groupby(\"city\", as_index=False)[\"opened\"].min()\nt = df.merge(first, on=\"city\", how=\"inner\")\nearly = t[pd.to_datetime(t[\"signup_date\"]) < pd.to_datetime(t[\"opened\"])]\nn_early = len(early)\nby_city = dict(early[\"city\"].value_counts())", "explain": "<p>Все такие анкеты — из Уфы и Екатеринбурга, где кофейни открылись недавно. Возможно, это не ошибка: гость мог завести карту в другом городе или в приложении до открытия. Это хороший вопрос бизнесу. Проверка между таблицами находит то, что не видно внутри одной.<\/p>\n", "parsons": ""}], "files": ["clients_raw.csv", "pos_december.csv", "orders_3m.csv", "shops.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+
+
+</body>
+</html>

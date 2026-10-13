@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dropout, BatchNorm и smoke-test — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/katex/katex.min.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch11">Глава 11. Нейросети</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 11</div><div class="side-title">Нейросети</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02"><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03"><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05"><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11" open><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" aria-current="page" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 7 · <span class="deep-eb" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубление</span> · ≈ 55 мин · задач: 3</div>
+      <h1>Dropout, BatchNorm и smoke-test</h1>
+      <p class="lead">Три приёма, без которых не обходится настоящая сеть: dropout против переобучения, BatchNorm — нормировка внутри сети, и smoke-test — минутная проверка, которая ловит ошибку в цикле обучения до многочасового запуска на видеокарте.</p>
+      <div class="data-files"><span class="df-label">Данные урока</span><a class="data-file" href="../data/guests_churn.csv" download title="Скачать guests_churn.csv"><span class="df-name">guests_churn.csv</span><span class="df-info">2400 строк · 131 КБ</span></a><span class="df-note">В примерах файлы уже подключены — скачивать нужно, только чтобы открыть их у себя.</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 3</span></div>
+    </div>
+    <article class="prose theory"><p>Продолжаем работать с сетью из урока «PyTorch: то же самое, но в промышленном масштабе». Код на PyTorch, как и там, — для своего блокнота; задачи — на numpy.</p>
+<h2 id="dropout">Dropout</h2>
+<p>Кроме <code>alpha</code> и ранней остановки из урока «Нейросеть в sklearn: MLP», с переобучением в сетях борются ещё одним способом — <strong>dropout</strong>: на каждом шаге обучения случайно «выключать» долю нейронов (обнулять их выход), а оставшиеся масштабировать, чтобы среднее не изменилось. Сеть не может полагаться на конкретный нейрон и учится более устойчивым признакам. На прогнозе dropout не применяется.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Это как смена в кофейне, где каждый день случайный бариста берёт выходной: команда не может держаться на одном незаменимом человеке, и каждый учится подхватывать чужие участки. В день ревизии — на прогнозе — выходят все. Хромает аналогия в одном: нейроны ничего не «подхватывают» сознательно — выходы оставшихся просто умножают на поправочный множитель, чтобы средний сигнал не изменился, а устойчивость возникает сама, потому что веса учатся без опоры на какой-то один нейрон.</p>
+</aside>
+<pre class="static code"><code class="lang-python">model = nn.Sequential(
+    nn.Linear(64, 128), nn.ReLU(), nn.Dropout(0.3),
+    nn.Linear(128, 10),
+)
+model.train()   # режим обучения: dropout включён
+model.eval()    # режим прогноза: dropout выключен</code></pre>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>nn.Dropout(0.3)</code> — на каждом шаге обучения обнуляет случайные 30 % выходов предыдущего слоя, а оставшиеся умножает на 1 / 0.7, чтобы среднее не изменилось.</li>
+<li><code>model.train()</code> и <code>model.eval()</code> переключают режим всех слоёв сети сразу.</li>
+</ul>
+<p>Переключение <code>train()</code> / <code>eval()</code> — обязательная часть кода на PyTorch: забыли <code>eval()</code> — прогнозы получаются случайными и хуже, чем могли бы.</p>
+<figure class="fig" data-fig="nn-dropout"><div class="fig-scroll"><svg viewBox="0 0 700 270" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-nn-dropout">
+  <title id="t-nn-dropout">Dropout: на обучении случайные нейроны выключены, на прогнозе работают все</title>
+  <defs><marker id="ah-nn-dropout" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink sm b" x="160" y="24" text-anchor="middle">обучение: model.train()</text>
+  <text class="ink2 sm" x="160" y="42" text-anchor="middle">выключено 3 из 10 (p = 0.3)</text>
+  <circle class="box" cx="50" cy="80" r="9"/>
+  <circle class="box" cx="50" cy="120" r="9"/>
+  <circle class="box" cx="50" cy="160" r="9"/>
+  <circle class="box" cx="50" cy="200" r="9"/>
+  <path class="ln-mut" d="M59,80 L151,99.0"/>
+  <path class="ln-mut" d="M59,120 L151,99.0"/>
+  <path class="ln-mut" d="M59,160 L151,99.0"/>
+  <path class="ln-mut" d="M59,200 L151,99.0"/>
+  <path class="ln-mut" d="M169,99.0 L261,140"/>
+  <path class="ln-mut" d="M59,80 L151,117.5"/>
+  <path class="ln-mut" d="M59,120 L151,117.5"/>
+  <path class="ln-mut" d="M59,160 L151,117.5"/>
+  <path class="ln-mut" d="M59,200 L151,117.5"/>
+  <path class="ln-mut" d="M169,117.5 L261,140"/>
+  <path class="ln-mut" d="M59,80 L151,136.0"/>
+  <path class="ln-mut" d="M59,120 L151,136.0"/>
+  <path class="ln-mut" d="M59,160 L151,136.0"/>
+  <path class="ln-mut" d="M59,200 L151,136.0"/>
+  <path class="ln-mut" d="M169,136.0 L261,140"/>
+  <path class="ln-mut" d="M59,80 L151,154.5"/>
+  <path class="ln-mut" d="M59,120 L151,154.5"/>
+  <path class="ln-mut" d="M59,160 L151,154.5"/>
+  <path class="ln-mut" d="M59,200 L151,154.5"/>
+  <path class="ln-mut" d="M169,154.5 L261,140"/>
+  <path class="ln-mut" d="M59,80 L151,191.5"/>
+  <path class="ln-mut" d="M59,120 L151,191.5"/>
+  <path class="ln-mut" d="M59,160 L151,191.5"/>
+  <path class="ln-mut" d="M59,200 L151,191.5"/>
+  <path class="ln-mut" d="M169,191.5 L261,140"/>
+  <path class="ln-mut" d="M59,80 L151,210.0"/>
+  <path class="ln-mut" d="M59,120 L151,210.0"/>
+  <path class="ln-mut" d="M59,160 L151,210.0"/>
+  <path class="ln-mut" d="M59,200 L151,210.0"/>
+  <path class="ln-mut" d="M169,210.0 L261,140"/>
+  <path class="ln-mut" d="M59,80 L151,228.5"/>
+  <path class="ln-mut" d="M59,120 L151,228.5"/>
+  <path class="ln-mut" d="M59,160 L151,228.5"/>
+  <path class="ln-mut" d="M59,200 L151,228.5"/>
+  <path class="ln-mut" d="M169,228.5 L261,140"/>
+  <circle class="box-err" cx="160" cy="62.0" r="8"/>
+  <text class="err sm b" x="160" y="66.0" text-anchor="middle">×</text>
+  <circle class="box-err" cx="160" cy="80.5" r="8"/>
+  <text class="err sm b" x="160" y="84.5" text-anchor="middle">×</text>
+  <circle class="box-acc" cx="160" cy="99.0" r="8"/>
+  <circle class="box-acc" cx="160" cy="117.5" r="8"/>
+  <circle class="box-acc" cx="160" cy="136.0" r="8"/>
+  <circle class="box-acc" cx="160" cy="154.5" r="8"/>
+  <circle class="box-err" cx="160" cy="173.0" r="8"/>
+  <text class="err sm b" x="160" y="177.0" text-anchor="middle">×</text>
+  <circle class="box-acc" cx="160" cy="191.5" r="8"/>
+  <circle class="box-acc" cx="160" cy="210.0" r="8"/>
+  <circle class="box-acc" cx="160" cy="228.5" r="8"/>
+  <circle class="box-ok" cx="270" cy="140" r="11"/>
+  <text class="ink sm b" x="520" y="24" text-anchor="middle">прогноз: model.eval()</text>
+  <text class="ink2 sm" x="520" y="42" text-anchor="middle">работают все нейроны</text>
+  <circle class="box" cx="410" cy="80" r="9"/>
+  <circle class="box" cx="410" cy="120" r="9"/>
+  <circle class="box" cx="410" cy="160" r="9"/>
+  <circle class="box" cx="410" cy="200" r="9"/>
+  <path class="ln-mut" d="M419,80 L511,62.0"/>
+  <path class="ln-mut" d="M419,120 L511,62.0"/>
+  <path class="ln-mut" d="M419,160 L511,62.0"/>
+  <path class="ln-mut" d="M419,200 L511,62.0"/>
+  <path class="ln-mut" d="M529,62.0 L621,140"/>
+  <path class="ln-mut" d="M419,80 L511,80.5"/>
+  <path class="ln-mut" d="M419,120 L511,80.5"/>
+  <path class="ln-mut" d="M419,160 L511,80.5"/>
+  <path class="ln-mut" d="M419,200 L511,80.5"/>
+  <path class="ln-mut" d="M529,80.5 L621,140"/>
+  <path class="ln-mut" d="M419,80 L511,99.0"/>
+  <path class="ln-mut" d="M419,120 L511,99.0"/>
+  <path class="ln-mut" d="M419,160 L511,99.0"/>
+  <path class="ln-mut" d="M419,200 L511,99.0"/>
+  <path class="ln-mut" d="M529,99.0 L621,140"/>
+  <path class="ln-mut" d="M419,80 L511,117.5"/>
+  <path class="ln-mut" d="M419,120 L511,117.5"/>
+  <path class="ln-mut" d="M419,160 L511,117.5"/>
+  <path class="ln-mut" d="M419,200 L511,117.5"/>
+  <path class="ln-mut" d="M529,117.5 L621,140"/>
+  <path class="ln-mut" d="M419,80 L511,136.0"/>
+  <path class="ln-mut" d="M419,120 L511,136.0"/>
+  <path class="ln-mut" d="M419,160 L511,136.0"/>
+  <path class="ln-mut" d="M419,200 L511,136.0"/>
+  <path class="ln-mut" d="M529,136.0 L621,140"/>
+  <path class="ln-mut" d="M419,80 L511,154.5"/>
+  <path class="ln-mut" d="M419,120 L511,154.5"/>
+  <path class="ln-mut" d="M419,160 L511,154.5"/>
+  <path class="ln-mut" d="M419,200 L511,154.5"/>
+  <path class="ln-mut" d="M529,154.5 L621,140"/>
+  <path class="ln-mut" d="M419,80 L511,173.0"/>
+  <path class="ln-mut" d="M419,120 L511,173.0"/>
+  <path class="ln-mut" d="M419,160 L511,173.0"/>
+  <path class="ln-mut" d="M419,200 L511,173.0"/>
+  <path class="ln-mut" d="M529,173.0 L621,140"/>
+  <path class="ln-mut" d="M419,80 L511,191.5"/>
+  <path class="ln-mut" d="M419,120 L511,191.5"/>
+  <path class="ln-mut" d="M419,160 L511,191.5"/>
+  <path class="ln-mut" d="M419,200 L511,191.5"/>
+  <path class="ln-mut" d="M529,191.5 L621,140"/>
+  <path class="ln-mut" d="M419,80 L511,210.0"/>
+  <path class="ln-mut" d="M419,120 L511,210.0"/>
+  <path class="ln-mut" d="M419,160 L511,210.0"/>
+  <path class="ln-mut" d="M419,200 L511,210.0"/>
+  <path class="ln-mut" d="M529,210.0 L621,140"/>
+  <path class="ln-mut" d="M419,80 L511,228.5"/>
+  <path class="ln-mut" d="M419,120 L511,228.5"/>
+  <path class="ln-mut" d="M419,160 L511,228.5"/>
+  <path class="ln-mut" d="M419,200 L511,228.5"/>
+  <path class="ln-mut" d="M529,228.5 L621,140"/>
+  <circle class="box-acc" cx="520" cy="62.0" r="8"/>
+  <circle class="box-acc" cx="520" cy="80.5" r="8"/>
+  <circle class="box-acc" cx="520" cy="99.0" r="8"/>
+  <circle class="box-acc" cx="520" cy="117.5" r="8"/>
+  <circle class="box-acc" cx="520" cy="136.0" r="8"/>
+  <circle class="box-acc" cx="520" cy="154.5" r="8"/>
+  <circle class="box-acc" cx="520" cy="173.0" r="8"/>
+  <circle class="box-acc" cx="520" cy="191.5" r="8"/>
+  <circle class="box-acc" cx="520" cy="210.0" r="8"/>
+  <circle class="box-acc" cx="520" cy="228.5" r="8"/>
+  <circle class="box-ok" cx="630" cy="140" r="11"/>
+  <text class="ink2 sm" x="160" y="254" text-anchor="middle">выжившие × 1 / (1 − 0.3) ≈ 1.43: средний сигнал тот же</text>
+  <text class="ink2 sm" x="520" y="254" text-anchor="middle">никаких множителей и случайности</text>
+  <path class="ln-mut dash" d="M350,30 L350,240"/>
+</svg>
+</div><figcaption>
+<p>На обучении на каждом шаге выключается свой случайный набор нейронов (здесь 3 из 10), выходы остальных умножаются на 1 / 0.7. На прогнозе работают все нейроны без множителя. Какие именно нейроны выключены — условно.</p>
+</figcaption></figure>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Dropout на выходном слое.</strong> <code>nn.Dropout</code> после последнего <code>nn.Linear</code> случайно обнуляет сам прогноз. Его ставят между скрытыми слоями, после активации.</li>
+<li><strong>Слишком большая доля.</strong> При <code>p = 0.8</code> на каждом шаге остаётся пятая часть нейронов, и маленькая сеть на табличных данных просто недообучается. Обычный диапазон — 0.1…0.5; подбирают по валидации, как <code>alpha</code>.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-dropout"><b>1</b> Dropout руками</a></div>
+<div class="fb" data-sec="dropout"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="batchnorm-нормировка-внутри-сети">BatchNorm: нормировка внутри сети</h2>
+<p><strong>Зачем.</strong> Признаки перед сетью мы масштабируем (<code>StandardScaler</code>, глава 7), иначе спуск идёт плохо. Но после первого слоя масштаб снова «плывёт»: выходы нейронов могут быть в сотнях у одного и в сотых у другого, и он меняется по мере обучения весов предыдущих слоёв. <strong>Batch normalization</strong> (BatchNorm, BN) — слой, который нормирует выходы каждого нейрона прямо внутри сети, на каждом батче. С ним глубокие сети учатся быстрее и меньше зависят от удачного шага <code>lr</code> и инициализации.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Это как приводить отчёты всех кофеен к общей шкале перед общим совещанием: выручку Перми и Казани показывают не в рублях, а в «насколько выше или ниже среднего по сети», и уже потом каждый руководитель может домножить на свой коэффициент. Хромает аналогия в одном: сеть сама учится, какой коэффициент и сдвиг вернуть каждому нейрону (γ и β ниже), а среднее берётся не по всей сети, а только по текущему батчу.</p>
+</aside>
+<p><strong>Игрушечный пример руками.</strong> Один нейрон, батч из четырёх гостей, выходы 2, 4, 6 и 8:</p>
+<ol>
+<li>среднее батча <span class="math inline">\mu = (2 + 4 + 6 + 8) / 4 = 5</span>;</li>
+<li>дисперсия <span class="math inline">\sigma^2 = (9 + 1 + 1 + 9) / 4 = 5</span>, отклонение <span class="math inline">\sqrt{5} \approx 2.236</span>;</li>
+<li>нормировка: <span class="math inline">(2 - 5) / 2.236 = -1.342</span>, затем <span class="math inline">-0.447</span>, <span class="math inline">0.447</span>, <span class="math inline">1.342</span> — среднее 0, отклонение 1;</li>
+<li>обучаемые масштаб <span class="math inline">\gamma = 2</span> и сдвиг <span class="math inline">\beta = 1</span>: <span class="math inline">2 \cdot (-1.342) + 1 = -1.683</span>, затем 0.106, 1.894, 3.683.</li>
+</ol>
+<div class="math block">
+\hat{x} = \frac{x - \mu_B}{\sqrt{\sigma_B^2 + \varepsilon}}, \qquad y = \gamma \cdot \hat{x} + \beta
+</div>
+<p>Здесь <span class="math inline">x</span> — выход нейрона у объекта батча, <span class="math inline">\mu_B</span> и <span class="math inline">\sigma_B^2</span> — среднее и дисперсия этого нейрона по батчу, <span class="math inline">\varepsilon</span> — крошечное число (обычно <span class="math inline">10^{-5}</span>), чтобы не делить на ноль, <span class="math inline">\gamma</span> и <span class="math inline">\beta</span> — обучаемые параметры слоя (по паре на нейрон): сеть может вернуть любой нужный ей масштаб, в том числе отменить нормировку.</p>
+<p><strong>Обучение и прогноз ведут себя по-разному.</strong> На прогнозе батча может не быть — например, оценить надо одного гостя. Поэтому во время обучения BN копит <strong>скользящие</strong> среднее и дисперсию: после каждого батча <code>running = 0.9 · running + 0.1 · батч</code> (0.1 называется momentum), а в режиме прогноза нормирует ими.</p>
+<figure class="fig" data-fig="nn-batchnorm"><div class="fig-scroll"><svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-nn-batchnorm">
+  <title id="t-nn-batchnorm">BatchNorm по одному нейрону на батче из четырёх гостей</title>
+  <defs><marker id="ah-nn-batchnorm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="ink sm b" x="60" y="26" text-anchor="middle">выход нейрона x</text>
+  <rect class="box" x="14" y="38" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="60" y="57" text-anchor="middle">2</text>
+  <rect class="box" x="14" y="72" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="60" y="91" text-anchor="middle">4</text>
+  <rect class="box" x="14" y="106" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="60" y="125" text-anchor="middle">6</text>
+  <rect class="box" x="14" y="140" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="60" y="159" text-anchor="middle">8</text>
+  <text class="ink sm b" x="290" y="26" text-anchor="middle">x̂ = (x − μ) / σ</text>
+  <rect class="box-acc" x="244" y="38" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="290" y="57" text-anchor="middle">-1.342</text>
+  <rect class="box-acc" x="244" y="72" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="290" y="91" text-anchor="middle">-0.447</text>
+  <rect class="box-acc" x="244" y="106" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="290" y="125" text-anchor="middle">0.447</text>
+  <rect class="box-acc" x="244" y="140" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="290" y="159" text-anchor="middle">1.342</text>
+  <text class="ink sm b" x="530" y="26" text-anchor="middle">y = γ·x̂ + β</text>
+  <rect class="box-ok" x="484" y="38" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="530" y="57" text-anchor="middle">-1.683</text>
+  <rect class="box-ok" x="484" y="72" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="530" y="91" text-anchor="middle">0.106</text>
+  <rect class="box-ok" x="484" y="106" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="530" y="125" text-anchor="middle">1.894</text>
+  <rect class="box-ok" x="484" y="140" width="92" height="28" rx="5"/>
+  <text class="ink sm" x="530" y="159" text-anchor="middle">3.683</text>
+  <path class="ln" d="M110,100 L238,100" marker-end="url(#ah-nn-batchnorm)"/>
+  <text class="ink2 sm b" x="174" y="86" text-anchor="middle">μ = 5</text>
+  <text class="ink2 sm" x="174" y="120" text-anchor="middle">σ = √5 ≈ 2.236</text>
+  <path class="ln" d="M340,100 L478,100" marker-end="url(#ah-nn-batchnorm)"/>
+  <text class="ink2 sm b" x="409" y="86" text-anchor="middle">γ = 2, β = 1</text>
+  <text class="ink2 sm" x="409" y="120" text-anchor="middle">обучаемые</text>
+  <text class="mut sm" x="290" y="186" text-anchor="middle">среднее 0, отклонение 1</text>
+  <text class="mut sm" x="530" y="186" text-anchor="middle">масштаб выбирает сеть</text>
+  <text class="mut sm" x="60" y="186" text-anchor="middle">один столбец батча</text>
+  <rect class="box-acc" x="20" y="206" width="320" height="82" rx="8"/>
+  <text class="ink sm b" x="180" y="228" text-anchor="middle">model.train()</text>
+  <text class="ink2 sm" x="180" y="248" text-anchor="middle">μ и σ — по текущему батчу</text>
+  <text class="ink2 sm" x="180" y="268" text-anchor="middle">running = 0.9·running + 0.1·батч</text>
+  <rect class="box-ok" x="360" y="206" width="320" height="82" rx="8"/>
+  <text class="ink sm b" x="520" y="228" text-anchor="middle">model.eval()</text>
+  <text class="ink2 sm" x="520" y="248" text-anchor="middle">μ и σ — накопленные running_mean/var</text>
+  <text class="ink2 sm" x="520" y="268" text-anchor="middle">один гость нормируется как в любом батче</text>
+  <path class="ln" d="M342,247 L358,247" marker-end="url(#ah-nn-batchnorm)"/>
+</svg>
+</div><figcaption>
+<p>Пример с четырьмя гостями из списка выше: нормировка по батчу, затем обучаемые γ и β. Внизу — чем режимы обучения и прогноза отличаются для этого слоя.</p>
+</figcaption></figure>
+<p>Посмотрим на признаках гостей:</p>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+import pandas as pd
+
+g = pd.read_csv(&quot;guests_churn.csv&quot;)
+X = g[[&quot;tenure_months&quot;, &quot;visits_90d&quot;, &quot;days_since_last&quot;, &quot;complaints&quot;]].to_numpy(float)
+
+def batchnorm_train(Xb, gamma, beta, run_mean, run_var, momentum=0.1, eps=1e-5):
+    mu, var = Xb.mean(axis=0), Xb.var(axis=0)             # статистики ЭТОГО батча
+    out = gamma * (Xb - mu) / np.sqrt(var + eps) + beta
+    run_mean = (1 - momentum) * run_mean + momentum * mu   # скользящие средние — на будущее
+    run_var = (1 - momentum) * run_var + momentum * var
+    return out, run_mean, run_var
+
+def batchnorm_eval(X, gamma, beta, run_mean, run_var, eps=1e-5):
+    return gamma * (X - run_mean) / np.sqrt(run_var + eps) + beta
+
+k = X.shape[1]
+gamma, beta = np.ones(k), np.zeros(k)                      # обучаемые: масштаб и сдвиг
+run_mean, run_var = np.zeros(k), np.ones(k)
+order = np.random.default_rng(0).permutation(len(X))
+for start in range(0, len(X), 64):                         # одна эпоха батчами по 64
+    out, run_mean, run_var = batchnorm_train(X[order[start:start + 64]], gamma, beta, run_mean, run_var)
+
+print(&quot;до BN, отклонения столбцов:&quot;, X.std(axis=0).round(1))
+print(&quot;после BN, последний батч: среднее&quot;, out.mean(axis=0).round(2) + 0.0, &quot;отклонение&quot;, out.std(axis=0).round(2))
+print(&quot;скользящее среднее:&quot;, run_mean.round(1))
+print(&quot;среднее по всем:   &quot;, X.mean(axis=0).round(1))
+one = batchnorm_eval(X[:1], gamma, beta, run_mean, run_var)
+print(&quot;гость G-10001 в режиме прогноза:&quot;, one.round(2))</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>batchnorm_train</code> нормирует по статистикам текущего батча (<code>axis=0</code> — по объектам, отдельно для каждого столбца) и обновляет скользящие средние.</li>
+<li><code>batchnorm_eval</code> не смотрит на батч вообще: только на <code>run_mean</code> и <code>run_var</code>. Поэтому один гость нормируется так же, как в составе любого батча.</li>
+<li>Цикл по батчам по 64 — одна эпоха (38 батчей).</li>
+</ul>
+<p><strong>Как читать результат:</strong> до BN разброс столбцов — от 0.3 (жалобы) до 35.6 (дней с последнего визита). После BN у батча среднее 0 и отклонение 1 по каждому столбцу. Скользящее среднее за эпоху почти догнало среднее по всем гостям (17.8 против 18.0 месяцев стажа): от стартового нуля осталось <span class="math inline">0.9^{38} \approx 2\%</span>, плюс шум последних батчей. Гостю G-10001 в режиме прогноза достались числа от −0.27 до −0.46 — по всем четырём признакам он чуть ниже среднего, но в пределах полуотклонения.</p>
+<p>В PyTorch BN ставят между линейным слоем и активацией:</p>
+<pre class="static code"><code class="lang-python">model = nn.Sequential(
+    nn.Linear(8, 32), nn.BatchNorm1d(32), nn.ReLU(),
+    nn.Linear(32, 1),
+)
+bn = nn.BatchNorm1d(1)
+x = torch.tensor([[2.0], [4.0], [6.0], [8.0]])
+bn.train(); print(bn(x).detach().squeeze())       # [-1.342, -0.447, 0.447, 1.342]
+print(bn.running_mean, bn.running_var)           # tensor([0.5000]) tensor([1.5667])
+bn.eval();  print(bn(x).detach().squeeze())       # [1.198, 2.796, 4.394, 5.992]</code></pre>
+<p>После одного батча скользящее среднее — только <span class="math inline">0.9 \cdot 0 + 0.1 \cdot 5 = 0.5</span>, и в режиме <code>eval()</code> числа получаются совсем другими. Поэтому BN в режиме прогноза честен только после того, как сеть обучилась на многих батчах.</p>
+<aside class="callout callout-deep"><div class="callout-title">Тонкости BatchNorm в PyTorch</div>
+<ul>
+<li><strong>Дисперсия с делением на <span class="math inline">n - 1</span>.</strong> В <code>running_var</code> PyTorch кладёт дисперсию батча с делением на <span class="math inline">n - 1</span>, а не на <span class="math inline">n</span>: <span class="math inline">0.9 \cdot 1 + 0.1 \cdot 20/3 = 1.5667</span> вместо <span class="math inline">0.9 + 0.1 \cdot 5 = 1.4</span>. На батчах из десятков объектов разница незаметна.</li>
+<li><strong>Очень маленькие батчи (2–8 объектов).</strong> Среднее и дисперсия по батчу шумные, BN мешает больше, чем помогает. Для таких случаев есть <code>nn.LayerNorm</code> — нормировка по нейронам одного объекта, без батча.</li>
+</ul>
+</aside>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>Сеть с BatchNorm обучили, а при прогнозе для одного гостя в режиме <code>model.train()</code> PyTorch упал с ошибкой <code>Expected more than 1 value per channel when training</code>. В чём дело?</p>
+<ul>
+<li>[x] В режиме обучения BN нормирует по статистикам батча, а по одному объекту дисперсию не посчитать; на прогнозе нужно <code>model.eval()</code> — тогда BN берёт накопленные скользящие средние
+<blockquote>
+<p>Именно поэтому у BN две статистики: батчевая — для обучения, скользящая — для прогноза.</p>
+</blockquote>
+</li>
+<li>[ ] BatchNorm вообще нельзя использовать для прогноза по одному объекту — нужно собрать батч
+<blockquote>
+<p>Можно: в режиме <code>eval()</code> слой нормирует скользящими средними и с батчем из одного объекта работает.</p>
+</blockquote>
+</li>
+<li>[ ] Гость пришёл с пропусками в признаках
+<blockquote>
+<p>Пропуски дали бы <code>nan</code> в выходе, а не эту ошибку. Сообщение прямо говорит про «один объект на канал в режиме обучения».</p>
+</blockquote>
+</li>
+<li>[ ] У гостя другие признаки, чем при обучении, — нужно заново обучить BN
+<blockquote>
+<p>BN не обучают отдельно; его γ и β обучаются вместе с сетью, а скользящие средние копятся сами при обучении.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Забыли <code>model.eval()</code>.</strong> BN в режиме обучения нормирует по текущему батчу: прогноз гостя зависит от того, с кем он попал в батч, и меняется от запуска к запуску. Плюс скользящие средние продолжают «уезжать» на тестовых данных.</li>
+<li><strong>Батч из одного объекта при обучении.</strong> Падает <code>ValueError: Expected more than 1 value per channel when training</code>. Чаще всего это последний короткий батч эпохи: у <code>DataLoader</code> есть <code>drop_last=True</code>.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-batchnorm"><b>2</b> BatchNorm руками</a></div>
+<div class="fb" data-sec="batchnorm-нормировка-внутри-сети"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="видеокарта-и-smoke-test">Видеокарта и smoke-test</h2>
+<p><strong>Зачем.</strong> Сеть для распознавания анкет или текстов отзывов «Зерна» на процессоре может учиться часами. Видеокарта (GPU) считает умножения матриц параллельно и ускоряет это в разы, а иногда в десятки раз. Но долгий запуск страшен другим: через три часа выясняется, что в цикле была ошибка. Поэтому перед любым долгим обучением делают <strong>smoke-test</strong> — «дымовую проверку»: короткий прогон, который за минуту ловит грубые ошибки.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Название пришло от электроники: собрал плату, включил — если не задымилось, можно проверять всерьёз. В кофейне то же самое перед открытием новой точки: варят первые десять чашек для своих, а не сразу встречают очередь. Хромает аналогия в одном: «не задымилось» ещё не значит «работает правильно» — smoke-test ловит поломки, а качество модели проверяет только валидация.</p>
+</aside>
+<p><strong>Как перенести вычисления на видеокарту.</strong> В PyTorch и модель, и каждый батч явно отправляют на одно и то же устройство:</p>
+<pre class="static code"><code class="lang-python">import torch
+
+if torch.cuda.is_available():
+    device = &quot;cuda&quot;                       # видеокарта NVIDIA
+elif torch.backends.mps.is_available():
+    device = &quot;mps&quot;                        # видеоядро Mac на Apple Silicon
+else:
+    device = &quot;cpu&quot;
+
+model = ChurnNet(n_in=8).to(device)      # веса — на устройство один раз (ChurnNet — из урока про PyTorch)
+for xb, yb in train_loader:
+    xb, yb = xb.to(device), yb.to(device) # каждый батч — на то же устройство
+    ...
+preds = model(X_test.to(device)).detach().cpu().numpy()   # назад в numpy — через .cpu()</code></pre>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>torch.cuda.is_available()</code> — есть ли видеокарта NVIDIA с драйверами; <code>mps</code> — ускоритель на Mac с процессором Apple. Иначе — обычный процессор: код тот же, просто медленнее.</li>
+<li><code>.to(device)</code> у модели переносит все её параметры; у тензора возвращает <strong>копию</strong> на устройстве — поэтому <code>xb = xb.to(device)</code>, а не просто <code>xb.to(device)</code>.</li>
+<li><code>.cpu()</code> перед <code>.numpy()</code> — numpy живёт только в обычной памяти.</li>
+</ul>
+<p>Своей видеокарты нет — подойдёт облачный блокнот с GPU (например, Google Colab или Kaggle Notebooks): там тот же Jupyter, а <code>torch.cuda.is_available()</code> вернёт <code>True</code>. Код, написанный с <code>device</code>, переносится туда без правок.</p>
+<p><strong>Smoke-test — четыре проверки за минуту:</strong></p>
+<ol>
+<li><strong>Один батч вперёд:</strong> форма выхода совпадает с формой ответа, в выходе нет <code>nan</code>.</li>
+<li><strong>Стартовая потеря разумна:</strong> пока сеть ничего не знает, логиты маленькие, вероятности около 0.5, и бинарная потеря близка к <span class="math inline">\ln 2 \approx 0.693</span>; для <span class="math inline">K</span> классов — к <span class="math inline">\ln K</span> (для 10 цифр — 2.303). Потеря в десятки раз больше — неудачный масштаб весов или признаков.</li>
+<li><strong>Переобучиться на крошечном куске:</strong> 16–32 объекта, несколько сотен шагов. Сеть с сотнями параметров обязана их «зазубрить», потеря должна упасть почти до нуля. Не падает — ошибка в цикле, градиентах или данных.</li>
+<li><strong>Короткая эпоха на 1 % данных:</strong> засечь время и умножить — станет ясно, сколько ждать полного обучения, и не упадёт ли что-то на сохранении результатов.</li>
+</ol>
+<figure class="fig" data-fig="nn-smoke-test"><div class="fig-scroll"><svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-nn-smoke-test">
+  <title id="t-nn-smoke-test">Четыре проверки перед долгим обучением</title>
+  <defs><marker id="ah-nn-smoke-test" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box-acc" x="12" y="20" width="156" height="110" rx="8"/>
+  <text class="ink sm b" x="90" y="42" text-anchor="middle">1. один батч вперёд</text>
+  <text class="ink2 sm" x="90" y="64" text-anchor="middle">форма выхода</text>
+  <text class="ink2 sm" x="90" y="81" text-anchor="middle">как у ответа, нет nan</text>
+  <text class="acc sm" x="90" y="104" text-anchor="middle">полумесяцы: (32,),</text>
+  <text class="acc sm" x="90" y="120" text-anchor="middle">nan нет</text>
+  <path class="ln-acc" d="M168,75 L184,75" marker-end="url(#ah-nn-smoke-test)"/>
+  <path class="ln-err" d="M90,130 L90,166" marker-end="url(#ah-nn-smoke-test)"/>
+  <text class="err sm b" x="96" y="152" text-anchor="start">нет</text>
+  <rect class="box-err" x="12" y="168" width="156" height="50" rx="8"/>
+  <text class="ink sm" x="90" y="188" text-anchor="middle">ошибка в forward,</text>
+  <text class="ink sm" x="90" y="206" text-anchor="middle">формах, данных</text>
+  <rect class="box-acc" x="184" y="20" width="156" height="110" rx="8"/>
+  <text class="ink sm b" x="262" y="42" text-anchor="middle">2. стартовая потеря</text>
+  <text class="ink2 sm" x="262" y="64" text-anchor="middle">около ln 2 = 0.693</text>
+  <text class="ink2 sm" x="262" y="81" text-anchor="middle">(K классов — ln K)</text>
+  <text class="acc sm" x="262" y="104" text-anchor="middle">0.687 при ориентире</text>
+  <text class="acc sm" x="262" y="120" text-anchor="middle">0.693</text>
+  <path class="ln-acc" d="M340,75 L356,75" marker-end="url(#ah-nn-smoke-test)"/>
+  <path class="ln-err" d="M262,130 L262,166" marker-end="url(#ah-nn-smoke-test)"/>
+  <text class="err sm b" x="268" y="152" text-anchor="start">нет</text>
+  <rect class="box-err" x="184" y="168" width="156" height="50" rx="8"/>
+  <text class="ink sm" x="262" y="188" text-anchor="middle">масштаб весов</text>
+  <text class="ink sm" x="262" y="206" text-anchor="middle">или признаков</text>
+  <rect class="box-acc" x="356" y="20" width="156" height="110" rx="8"/>
+  <text class="ink sm b" x="434" y="42" text-anchor="middle">3. зазубрить кусок</text>
+  <text class="ink2 sm" x="434" y="64" text-anchor="middle">16–32 объекта,</text>
+  <text class="ink2 sm" x="434" y="81" text-anchor="middle">потеря → почти 0</text>
+  <text class="acc sm" x="434" y="104" text-anchor="middle">16 объектов, 300</text>
+  <text class="acc sm" x="434" y="120" text-anchor="middle">шагов: 0.048</text>
+  <path class="ln-acc" d="M512,75 L528,75" marker-end="url(#ah-nn-smoke-test)"/>
+  <path class="ln-err" d="M434,130 L434,166" marker-end="url(#ah-nn-smoke-test)"/>
+  <text class="err sm b" x="440" y="152" text-anchor="start">нет</text>
+  <rect class="box-err" x="356" y="168" width="156" height="50" rx="8"/>
+  <text class="ink sm" x="434" y="188" text-anchor="middle">ошибка в цикле,</text>
+  <text class="ink sm" x="434" y="206" text-anchor="middle">градиентах, данных</text>
+  <rect class="box-acc" x="528" y="20" width="156" height="110" rx="8"/>
+  <text class="ink sm b" x="606" y="42" text-anchor="middle">4. эпоха на 1 %</text>
+  <text class="ink2 sm" x="606" y="64" text-anchor="middle">засечь время,</text>
+  <text class="ink2 sm" x="606" y="81" text-anchor="middle">умножить на 100</text>
+  <text class="acc sm" x="606" y="104" text-anchor="middle">сколько ждать,</text>
+  <text class="acc sm" x="606" y="120" text-anchor="middle">не упадёт ли запись</text>
+  <path class="ln-err" d="M606,130 L606,166" marker-end="url(#ah-nn-smoke-test)"/>
+  <text class="err sm b" x="612" y="152" text-anchor="start">нет</text>
+  <rect class="box-err" x="528" y="168" width="156" height="50" rx="8"/>
+  <text class="ink sm" x="606" y="188" text-anchor="middle">менять план</text>
+  <text class="ink sm" x="606" y="206" text-anchor="middle">до запуска</text>
+  <text class="mut sm" x="12" y="244" text-anchor="start">числа синим — проверки 1–3 на numpy-сети с полумесяцами из урока</text>
+  <path class="ln-acc" d="M680,75 L690,75 L690,262 L520,262" marker-end="url(#ah-nn-smoke-test)"/>
+  <rect class="box-ok" x="330" y="248" width="190" height="32" rx="8"/>
+  <text class="ink sm b" x="425" y="269" text-anchor="middle">всё да → полное обучение</text>
+</svg>
+</div><figcaption>
+<p>Четыре проверки по порядку и что искать, если проверка не прошла. Синим — результаты проверок 1–3 на numpy-сети с полумесяцами из кода ниже.</p>
+</figcaption></figure>
+<p>Проверки 1–3 на нашей numpy-сети с полумесяцами:</p>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+from sklearn.datasets import make_moons
+
+X, y = make_moons(400, noise=0.2, random_state=0)
+
+def init(hidden=16, seed=0):
+    rng = np.random.default_rng(seed)
+    return [rng.normal(size=(2, hidden)) * np.sqrt(2 / 2), np.zeros(hidden),   # He для слоя 2 → 16
+            rng.normal(size=hidden) * np.sqrt(1 / hidden), 0.0]               # Xavier для выхода
+
+def logits(params, X):
+    W1, b1, w2, b2 = params
+    return np.maximum(0, X @ W1 + b1) @ w2 + b2
+
+def loss_of(params, X, y):
+    z = logits(params, X)
+    return float(np.mean(np.logaddexp(0, z) - y * z))                        # BCE по логитам
+
+def step(params, X, y, lr):
+    W1, b1, w2, b2 = params
+    Z1 = X @ W1 + b1
+    H = np.maximum(0, Z1)
+    p = 1 / (1 + np.exp(-(H @ w2 + b2)))
+    d2 = (p - y) / len(y)
+    dH = np.outer(d2, w2) * (Z1 &gt; 0)
+    return [W1 - lr * X.T @ dH, b1 - lr * dH.sum(axis=0), w2 - lr * H.T @ d2, b2 - lr * d2.sum()]
+
+params = init()
+z = logits(params, X[:32])
+print(&quot;1) форма выхода:&quot;, z.shape, &quot;| есть nan:&quot;, bool(np.isnan(z).any()))
+print(&quot;2) стартовая потеря:&quot;, round(loss_of(params, X, y), 3), &quot;| ориентир ln 2 =&quot;, round(float(np.log(2)), 3))
+Xs, ys = X[:16], y[:16]
+for _ in range(300):
+    params = step(params, Xs, ys, 0.5)
+print(&quot;3) потеря на 16 объектах после 300 шагов:&quot;, round(loss_of(params, Xs, ys), 3))</code></pre></div>
+<p><strong>Что здесь происходит:</strong></p>
+<ul>
+<li><code>init</code> — веса по He и Xavier (урок «Граф вычислений, инициализация и обрезка градиента»), <code>logits</code> — прямой проход без сигмоиды, <code>loss_of</code> — устойчивая логистическая потеря по логитам (раздел «Выход и потеря под тип задачи» урока «Softmax, выход под задачу и мини-батчи»), <code>step</code> — один шаг обучения из урока «Обучение сети: обратное распространение ошибки».</li>
+<li>Проверка 1 — один батч из 32 объектов: выход формы (32,), <code>nan</code> нет.</li>
+<li>Проверка 2 — потеря до обучения сравнивается с <span class="math inline">\ln 2</span>.</li>
+<li>Проверка 3 — 300 шагов только на 16 объектах.</li>
+</ul>
+<p><strong>Как читать результат:</strong> стартовая потеря 0.687 почти совпадает с ориентиром 0.693 — масштабы в порядке. На 16 объектах потеря упала до 0.048 — сеть умеет учиться, значит, градиенты и шаг написаны верно. Теперь можно запускать полное обучение. Если бы на третьем шаге потеря застряла около 0.4 — искать ошибку, а не подбирать <code>lr</code>.</p>
+<p>В PyTorch тот же тест — десяток строк перед долгим запуском:</p>
+<pre class="static code"><code class="lang-python">xb, yb = next(iter(train_loader))                 # один батч
+xb, yb = xb.to(device), yb.to(device)
+logits = model(xb)
+assert logits.shape == yb.shape and not torch.isnan(logits).any()
+print(&quot;стартовая потеря:&quot;, loss_fn(logits, yb).item())          # ориентир ln 2 ≈ 0.693
+
+opt = torch.optim.Adam(model.parameters(), lr=1e-2)
+model.train()
+for _ in range(300):                               # зазубрить один батч
+    opt.zero_grad()
+    loss = loss_fn(model(xb), yb)
+    loss.backward()
+    opt.step()
+print(&quot;после 300 шагов на одном батче:&quot;, loss.item())            # должно быть близко к 0</code></pre>
+<p>На гостях «Зерна» такой тест дал стартовую потерю 0.676 и 0.061 после 300 шагов — можно запускать полное обучение. Условия прогона: батч — первые 64 гостя, 8 числовых признаков (стаж, приложение, визиты, дни с визита, средний чек с пропусками, заменёнными нулём, доля доставки, промо, жалобы) после стандартизации, сеть <code>ChurnNet</code> из раздела про <code>nn.Module</code> урока «PyTorch: то же самое, но в промышленном масштабе», <code>torch.manual_seed(0)</code>. До нуля потеря не дошла из-за dropout: в режиме <code>train()</code> он и при «зазубривании» выключает часть нейронов. Для smoke-теста dropout можно временно поставить в 0.</p>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong><code>Expected all tensors to be on the same device</code>.</strong> Модель на <code>cuda</code>, а батч остался на <code>cpu</code> (или наоборот). Каждый тензор, который входит в модель или в потерю, — через <code>.to(device)</code>.</li>
+<li><strong><code>xb.to(device)</code> без присвоения.</strong> Метод тензора возвращает копию, исходный тензор остаётся на старом месте — та же ошибка про устройства.</li>
+<li><strong>Smoke-test пропущен «потому что код маленький».</strong> Сеть с ошибкой в градиентах часто всё равно учится — медленнее и хуже, и без теста это выглядит как «плохие гиперпараметры». Часы подбора <code>lr</code> вместо минуты проверки.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-smoke-test"><b>3</b> Smoke-test находит ошибку</a></div>
+<div class="fb" data-sec="видеокарта-и-smoke-test"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-dropout" data-task="dropout" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Dropout руками</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#dropout">↑ К теории: Dropout</a>
+  <div class="task-text prose"><p>Напишите функцию <code>dropout(H, rate, rng)</code>: маска «оставить» — <code>rng.random(H.shape) &gt;= rate</code>, результат — <code>H * mask / (1 - rate)</code>. Примените к матрице из единиц 1000 × 50 с <code>rate = 0.3</code> и генератором <code>np.random.default_rng(0)</code>. Сохраните <code>kept_share</code> — долю ненулевых элементов (3 знака) и <code>mean_after</code> — среднее результата (3 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-batchnorm" data-task="batchnorm" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">BatchNorm руками</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#batchnorm-нормировка-внутри-сети">↑ К теории: BatchNorm: нормировка внутри сети</a>
+  <div class="task-text prose"><p>Напишите две функции, как в теории: <code>batchnorm_train(Xb, gamma, beta, run_mean, run_var, momentum=0.1, eps=1e-5)</code> возвращает <code>(out, run_mean, run_var)</code> — нормированный батч и обновлённые скользящие средние (дисперсию считайте <code>Xb.var(axis=0)</code>); <code>batchnorm_eval(X, gamma, beta, run_mean, run_var, eps=1e-5)</code> нормирует по скользящим средним.</p>
+<p>Данные — первые 6 гостей, три признака (<code>B</code> в заготовке), <code>gamma</code> и <code>beta</code> заданы, стартовые <code>run_mean</code> — нули, <code>run_var</code> — единицы. Пропустите через <code>batchnorm_train</code> сначала батч <code>B[:3]</code>, затем <code>B[3:]</code>. Сохраните <code>out1</code> — выход первого батча (3 знака), <code>run_mean</code> и <code>run_var</code> после двух батчей (4 знака) и <code>pred</code> — <code>batchnorm_eval</code> для первого гостя <code>B[:1]</code> после двух батчей (3 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-smoke-test" data-task="smoke-test" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">Smoke-test находит ошибку</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#видеокарта-и-smoke-test">↑ К теории: Видеокарта и smoke-test</a>
+  <div class="task-text prose"><p>Коллега прислал две версии шага обучения сети с полумесяцами из урока «Обучение сети: обратное распространение ошибки» — <code>step_a</code> и <code>step_b</code> (они уже загружены, код скрыт). Обе выглядят рабочими: на полумесяцах потеря у обеих падает. Найдите версию с ошибкой smoke-тестом. В заготовке есть данные <code>X</code>, <code>y</code>, функции <code>init()</code> и <code>loss_of(params, X, y)</code> из теории.</p>
+<p>Напишите <code>smoke(step, n=16, steps=300, lr=0.5)</code>: берёт свежие веса <code>init()</code>, считает стартовую потерю на <strong>всех</strong> <code>X, y</code>, затем делает <code>steps</code> шагов <code>params = step(params, X[:n], y[:n], lr)</code> только на первых <code>n</code> объектах и возвращает <code>(стартовая потеря, потеря на этих n объектах после обучения)</code>. Сохраните:</p>
+<ul>
+<li><code>res</code> — словарь <code>{&quot;a&quot;: …, &quot;b&quot;: …}</code> с парами для обеих версий (3 знака);</li>
+<li><code>start_ok</code> — <code>True</code>, если стартовая потеря отличается от <span class="math inline">\ln 2</span> меньше чем на 0.1;</li>
+<li><code>buggy</code> — <code>&quot;a&quot;</code> или <code>&quot;b&quot;</code>: у какой версии потеря на 16 объектах не опустилась ниже 0.1;</li>
+<li><code>both_learn</code> — <code>True</code>, если у обеих версий потеря на 16 объектах после обучения меньше стартовой.</li>
+</ul>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>Dropout на обучении случайно выключает долю нейронов — регуляризация против переобучения.</li><li>BatchNorm нормирует выход каждого нейрона по батчу и возвращает масштаб обучаемыми γ и β; на прогнозе (<code>model.eval()</code>) использует скользящие средние, накопленные при обучении.</li><li>Модель и каждый батч — на одно устройство: <code>.to(device)</code>. Перед долгим обучением — smoke-test: формы и nan, стартовая потеря ≈ ln 2 (ln K), переобучение на 16–32 объектах до потери около нуля.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="04b-softmax.html"><span class="pl">← Предыдущий</span><span class="pt">6. Softmax, выход под задачу и мини-батчи</span></a><a class="next" href="05-project.html"><span class="pl">Следующий урок →</span><span class="pt">8. Проект: распознать цифры в бумажных анкетах</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#dropout">Dropout</a></li><li><a href="#batchnorm-нормировка-внутри-сети">BatchNorm: нормировка внутри сети</a></li><li><a href="#видеокарта-и-smoke-test">Видеокарта и smoke-test</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch11/04c-debug", "title": "Dropout, BatchNorm и smoke-test", "chapter": "Нейросети", "tasks": [{"id": "dropout", "title": "Dropout руками", "level": "base", "starter": "import numpy as np\nH = np.ones((1000, 50))", "setup": "", "check": "import numpy as _np\nm = _np.random.default_rng(0).random((1000, 50)) >= 0.3\nout = _np.ones((1000, 50)) * m / 0.7\nassert close(need('kept_share'), round((out != 0).mean(), 3), 0.0011), f'kept_share = {need(\"kept_share\")}.'\nassert close(need('mean_after'), round(out.mean(), 3), 0.0011), f'mean_after = {need(\"mean_after\")}.'", "hints": ["<p><code>mask = rng.random(H.shape) &gt;= rate<\/code>; генератор создайте один раз и передайте в функцию.<\/p>\n", "<p>Оставшиеся значения масштабируйте: <code>H * mask / (1 - rate)<\/code>.<\/p>\n"], "solution": "import numpy as np\nH = np.ones((1000, 50))\n\ndef dropout(H, rate, rng):\n    mask = rng.random(H.shape) >= rate\n    return H * mask / (1 - rate)\n\nout = dropout(H, 0.3, np.random.default_rng(0))\nkept_share = round((out != 0).mean(), 3)\nmean_after = round(out.mean(), 3)", "explain": "<p>Выключено около 30 % значений, но среднее осталось около 1: оставшиеся выросли в 1 / 0.7 раза. Без этого масштабирования на прогнозе (когда dropout выключен) сеть видела бы «слишком громкие» сигналы.<\/p>\n", "parsons": ""}, {"id": "batchnorm", "title": "BatchNorm руками", "level": "base", "starter": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nB = g[[\"visits_90d\", \"days_since_last\", \"complaints\"]].head(6).to_numpy(float)\ngamma = np.array([1.0, 2.0, 0.5])\nbeta = np.array([0.0, 1.0, -1.0])\nrun_mean, run_var = np.zeros(3), np.ones(3)", "setup": "", "check": "import numpy as _np\nimport pandas as _pd\nB0 = _pd.read_csv(\"guests_churn.csv\")[[\"visits_90d\", \"days_since_last\", \"complaints\"]].head(6).to_numpy(float)\nga, be = _np.array([1.0, 2.0, 0.5]), _np.array([0.0, 1.0, -1.0])\ndef _bt(Xb, rm, rv):\n    mu, var = Xb.mean(0), Xb.var(0)\n    return ga * (Xb - mu) / _np.sqrt(var + 1e-5) + be, 0.9 * rm + 0.1 * mu, 0.9 * rv + 0.1 * var\no1, rm, rv = _bt(B0[:3], _np.zeros(3), _np.ones(3)); _, rm, rv = _bt(B0[3:], rm, rv)\npr = ga * (B0[:1] - rm) / _np.sqrt(rv + 1e-5) + be\nf = need('batchnorm_train')\nt_out, t_rm, t_rv = f(B0[:3], ga, be, _np.zeros(3), _np.ones(3))\nassert _np.allclose(t_out, o1, atol=1e-6), 'batchnorm_train нормирует не так: среднее и дисперсия — по объектам батча (axis=0), затем gamma * x̂ + beta.'\nassert _np.allclose(t_rm, 0.1 * B0[:3].mean(0)), 'Скользящее среднее: (1 - momentum) * run_mean + momentum * среднее батча.'\nassert _np.allclose(need('out1'), o1.round(3), atol=1e-3), f'out1 = {need(\"out1\")}.'\nassert _np.allclose(need('run_mean'), rm.round(4), atol=1e-4) and _np.allclose(need('run_var'), rv.round(4), atol=1e-4), f'run_mean = {need(\"run_mean\")}, run_var = {need(\"run_var\")}. Проверьте, что второй батч продолжил обновлять скользящие средние после первого.'\nassert _np.allclose(need('pred'), pr.round(3), atol=1e-3), f'pred = {need(\"pred\")}, а нужно {pr.round(3)}. На прогнозе батч не нужен — только run_mean и run_var.'", "hints": ["<p>Внутри <code>batchnorm_train<\/code>: <code>mu, var = Xb.mean(axis=0), Xb.var(axis=0)<\/code>, выход — <code>gamma * (Xb - mu) / np.sqrt(var + eps) + beta<\/code>, затем два обновления скользящих средних.<\/p>\n", "<p>Два вызова подряд, каждый раз перезаписывая скользящие средние: <code>out1, run_mean, run_var = batchnorm_train(B[:3], gamma, beta, run_mean, run_var)<\/code>, потом то же для <code>B[3:]<\/code>. Округлять — только при сохранении результатов.<\/p>\n"], "solution": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nB = g[[\"visits_90d\", \"days_since_last\", \"complaints\"]].head(6).to_numpy(float)\ngamma = np.array([1.0, 2.0, 0.5])\nbeta = np.array([0.0, 1.0, -1.0])\nrun_mean, run_var = np.zeros(3), np.ones(3)\n\ndef batchnorm_train(Xb, gamma, beta, run_mean, run_var, momentum=0.1, eps=1e-5):\n    mu, var = Xb.mean(axis=0), Xb.var(axis=0)\n    out = gamma * (Xb - mu) / np.sqrt(var + eps) + beta\n    run_mean = (1 - momentum) * run_mean + momentum * mu\n    run_var = (1 - momentum) * run_var + momentum * var\n    return out, run_mean, run_var\n\ndef batchnorm_eval(X, gamma, beta, run_mean, run_var, eps=1e-5):\n    return gamma * (X - run_mean) / np.sqrt(run_var + eps) + beta\n\nout1, run_mean, run_var = batchnorm_train(B[:3], gamma, beta, run_mean, run_var)\n_, run_mean, run_var = batchnorm_train(B[3:], gamma, beta, run_mean, run_var)\npred = batchnorm_eval(B[:1], gamma, beta, run_mean, run_var).round(3)\nout1, run_mean, run_var = out1.round(3), run_mean.round(4), run_var.round(4)\nprint(out1, run_mean, run_var, pred)", "explain": "<p>В первом батче у каждого столбца после нормировки среднее 0, а масштаб задают <code>gamma<\/code> и <code>beta<\/code>: второй столбец растянут вдвое и сдвинут на 1. Третий столбец — жалобы — у всех шести гостей нулевой: дисперсия 0, и без <code>eps<\/code> было бы деление 0 / 0 = <code>nan<\/code>; с <code>eps<\/code> выход равен просто <code>beta<\/code> = −1. Скользящие средние после двух батчей ещё далеки от правды: среднее визитов 0.64 при настоящем 3.33 — от стартового нуля ушли только на <span class=\"math inline\">1 - 0.9^2 = 19\\%<\/span> пути. Поэтому <code>pred<\/code> для первого гостя (2.44 и 1.43) совсем не похож на его же выход в режиме обучения (0.981 и −1.172). Это та же картина, что у PyTorch в теории: режим прогноза BN честен только после многих батчей обучения.<\/p>\n", "parsons": ""}, {"id": "smoke-test", "title": "Smoke-test находит ошибку", "level": "plus", "starter": "import numpy as np\n\ndef smoke(step, n=16, steps=300, lr=0.5):\n    params = init()\n    ...", "setup": "import numpy as np\nfrom sklearn.datasets import make_moons\nX, y = make_moons(400, noise=0.2, random_state=0)\ndef init(hidden=16, seed=0):\n    rng = np.random.default_rng(seed)\n    return [rng.normal(size=(2, hidden)) * np.sqrt(2 / 2), np.zeros(hidden),\n            rng.normal(size=hidden) * np.sqrt(1 / hidden), 0.0]\ndef loss_of(params, X, y):\n    W1, b1, w2, b2 = params\n    z = np.maximum(0, X @ W1 + b1) @ w2 + b2\n    return float(np.mean(np.logaddexp(0, z) - y * z))\ndef _make_step(mask_sign):\n    def step(params, X, y, lr):\n        W1, b1, w2, b2 = params\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * ((Z1 > 0) if mask_sign > 0 else (Z1 < 0))\n        return [W1 - lr * X.T @ dH, b1 - lr * dH.sum(axis=0), w2 - lr * H.T @ d2, b2 - lr * d2.sum()]\n    return step\nstep_a = _make_step(1)\nstep_b = _make_step(-1)", "check": "import numpy as _np\nX0, y0 = need('X'), need('y'); ini, lo = need('init'), need('loss_of')\ndef _sm(step):\n    P = ini(); s = lo(P, X0, y0)\n    for _ in range(300):\n        P = step(P, X0[:16], y0[:16], 0.5)\n    return round(s, 3), round(lo(P, X0[:16], y0[:16]), 3)\nwant = {'a': _sm(need('step_a')), 'b': _sm(need('step_b'))}\nf = need('smoke')\ngot_a = tuple(f(need('step_a')))\nassert len(got_a) == 2 and close(got_a[0], want['a'][0], 0.0011) and close(got_a[1], want['a'][1], 0.0011), f'smoke(step_a) = {got_a}, а нужно {want[\"a\"]}. Стартовая потеря — на всех X, итоговая — на первых n.'\nr = need('res', dict)\nfor k in want:\n    assert k in r and all(close(u, v, 0.0011) for u, v in zip(r[k], want[k])), f'res[{k!r}] = {r.get(k)}, а нужно {want[k]}.'\nassert need('start_ok') == (abs(want['a'][0] - _np.log(2)) < 0.1), f'start_ok = {need(\"start_ok\")}.'\nassert need('buggy') == [k for k in want if want[k][1] >= 0.1][0], f'buggy = {need(\"buggy\")!r}.'\nassert need('both_learn') == all(want[k][1] < want[k][0] for k in want), f'both_learn = {need(\"both_learn\")}.'", "hints": ["<p>Внутри <code>smoke<\/code>: <code>start = loss_of(params, X, y)<\/code>, цикл <code>for _ in range(steps): params = step(params, X[:n], y[:n], lr)<\/code>, затем <code>return start, loss_of(params, X[:n], y[:n])<\/code>.<\/p>\n", "<p><code>res = {k: tuple(round(v, 3) for v in smoke(s)) for k, s in {&quot;a&quot;: step_a, &quot;b&quot;: step_b}.items()}<\/code>. Сравнение с <span class=\"math inline\">\\ln 2<\/span> — через <code>np.log(2)<\/code>.<\/p>\n", "<p><code>buggy = [k for k in res if res[k][1] &gt;= 0.1][0]<\/code>, <code>both_learn = all(res[k][1] &lt; res[k][0] for k in res)<\/code>.<\/p>\n"], "solution": "import numpy as np\n\ndef smoke(step, n=16, steps=300, lr=0.5):\n    params = init()\n    start = loss_of(params, X, y)\n    for _ in range(steps):\n        params = step(params, X[:n], y[:n], lr)\n    return start, loss_of(params, X[:n], y[:n])\n\nres = {k: tuple(round(v, 3) for v in smoke(s)) for k, s in {\"a\": step_a, \"b\": step_b}.items()}\nstart_ok = abs(res[\"a\"][0] - np.log(2)) < 0.1\nbuggy = [k for k in res if res[k][1] >= 0.1][0]\nboth_learn = all(res[k][1] < res[k][0] for k in res)\nprint(res, start_ok, buggy, both_learn)", "explain": "<p>Стартовая потеря у обеих версий одинаковая — 0.687 (веса одни и те же), и она близка к <span class=\"math inline\">\\ln 2<\/span>: прямой проход и масштабы в порядке. Разница видна только на третьей проверке: версия <code>a<\/code> за 300 шагов «зазубрила» 16 объектов до 0.048, версия <code>b<\/code> застряла на 0.402. При этом обе учатся — потеря у <code>b<\/code> тоже ниже стартовой, — поэтому на графике обычного обучения ошибку легко принять за «неудачный <code>lr<\/code>». В <code>step_b<\/code> перепутана маска ReLU: <code>(Z1 &lt; 0)<\/code> вместо <code>(Z1 &gt; 0)<\/code>. Выходной слой учится правильно, а в скрытом градиент идёт к нейронам, которые на данном объекте выключены (их выход 0, на прогноз они не влияли), и не доходит до включённых. Веса скрытого слоя меняются не туда, и полезную работу делает фактически только последний слой. Числовая проверка градиента (урок «Обучение сети: обратное распространение ошибки») нашла бы эту ошибку точно, smoke-test — быстро и без знания формул.<\/p>\n", "parsons": ""}], "files": ["guests_churn.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/katex/katex.min.js?v=b555cf35b0"></script>
+<script>document.querySelectorAll(".math").forEach(function(e){try{katex.render(e.textContent.trim(),e,{displayMode:e.classList.contains("block"),throwOnError:false})}catch(x){}});</script>
+
+</body>
+</html>

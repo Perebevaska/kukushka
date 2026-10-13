@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Дубликаты — явные и неявные — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch03">Глава 3. Предобработка данных</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 3</div><div class="side-title">Предобработка данных</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02"><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03" open><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" aria-current="page" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05"><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11"><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 5 · основной путь · ≈ 55 мин · задач: 11</div>
+      <h1>Дубликаты — явные и неявные</h1>
+      <p class="lead">Одна и та же запись дважды — значит, выручка посчитана дважды, а гость учтён как двое. Ищем полные копии строк, повторы по ключу и неявные дубли, которые прячутся за разным написанием. И решаем, какую из копий оставить.</p>
+      <div class="data-files"><span class="df-label">Данные урока</span><a class="data-file" href="../data/clients_raw.csv" download title="Скачать clients_raw.csv"><span class="df-name">clients_raw.csv</span><span class="df-info">307 строк · 27 КБ</span></a><a class="data-file" href="../data/pos_december.csv" download title="Скачать pos_december.csv"><span class="df-name">pos_december.csv</span><span class="df-info">293 строк · 17 КБ</span></a><a class="data-file" href="../data/orders_3m.csv" download title="Скачать orders_3m.csv"><span class="df-name">orders_3m.csv</span><span class="df-info">2089 строк · 141 КБ</span></a><a class="data-file" href="../data/delivery_flat.csv" download title="Скачать delivery_flat.csv"><span class="df-name">delivery_flat.csv</span><span class="df-info">801 строк · 97 КБ</span></a><span class="df-note">В примерах файлы уже подключены — скачивать нужно, только чтобы открыть их у себя.</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 10</span></div>
+    </div>
+    <article class="prose theory"><h2 id="откуда-берутся-дубли">Откуда берутся дубли</h2>
+<ul>
+<li><strong>Двойная выгрузка.</strong> Одну и ту же порцию данных выгрузили или загрузили дважды — получаются полные копии строк.</li>
+<li><strong>Повторный ввод.</strong> Гость заполнил анкету ещё раз, касса повторно отправила заказ после сбоя связи.</li>
+<li><strong>Разное написание.</strong> «C1012» и « c1012» — для человека одно, для pandas — разные значения. Это <strong>неявные</strong> дубли: простой поиск копий их не находит.</li>
+</ul>
+<p>Чем опасны дубли: в анкетах один гость посчитается дважды, в заказах — выручка завысится. И снова никакой ошибки: просто неверные цифры.</p>
+<div class="fb" data-sec="откуда-берутся-дубли"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="полные-копии-строк">Полные копии строк</h2>
+<p><code>duplicated()</code> проходит по таблице сверху вниз и помечает <code>True</code> строку, если точно такая же уже встречалась выше. Первое появление остаётся <code>False</code>:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+t = pd.DataFrame({&quot;id&quot;: [&quot;A&quot;, &quot;B&quot;, &quot;A&quot;, &quot;A&quot;], &quot;v&quot;: [1, 2, 1, 5]})
+t[&quot;dup&quot;] = t.duplicated()
+t</code></pre></div>
+<p>Строка 2 — полная копия строки 0. Строка 3 повторяет <code>id</code>, но <code>v</code> другое, поэтому это не полный дубль.</p>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">import pandas as pd
+s = pd.Series([&quot;a&quot;, &quot;b&quot;, &quot;a&quot;, &quot;a&quot;])
+print(s.duplicated().sum())</code></pre>
+<ul>
+<li><code>3</code></li>
+<li>[x] <code>2</code></li>
+<li><code>1</code></li>
+</ul>
+<p>Почему: первое «a» — оригинал, два следующих — повторы. <code>duplicated().sum()</code> показывает, сколько строк <strong>лишние</strong>, а не сколько всего строк участвуют в повторах.</p>
+</div>
+<p>В анкетах:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+df = pd.read_csv(&quot;clients_raw.csv&quot;)
+print(&quot;полных дублей:&quot;, df.duplicated().sum())
+df[df.duplicated(keep=False)].sort_values(&quot;client_id&quot;).head(6)</code></pre></div>
+<p><code>keep=False</code> помечает <strong>все</strong> копии, включая оригинал, — удобно, чтобы посмотреть на повторы целиком.</p>
+<figure class="fig" data-fig="dup-keep"><div class="fig-scroll"><svg viewBox="0 0 700 270" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-dup-keep">
+  <title id="t-dup-keep">duplicated() с разными keep: какие строки считаются лишними</title>
+  <defs><marker id="ah-dup-keep" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="70" y="46" width="616" height="28" rx="3"/>
+  <text class="ink2 sm b" x="98.0" y="64.5" text-anchor="middle"></text>
+  <text class="ink2 sm b" x="161.0" y="64.5" text-anchor="middle">id</text>
+  <text class="ink2 sm b" x="231.0" y="64.5" text-anchor="middle">v</text>
+  <text class="ink2 sm b" x="336.0" y="64.5" text-anchor="middle">keep="first"</text>
+  <text class="ink2 sm b" x="476.0" y="64.5" text-anchor="middle">keep="last"</text>
+  <text class="ink2 sm b" x="616.0" y="64.5" text-anchor="middle">keep=False</text>
+  <rect class="box-acc" x="70" y="76" width="616" height="28" rx="3"/>
+  <text class="ink sm" x="98.0" y="94.5" text-anchor="middle">0</text>
+  <text class="ink sm" x="161.0" y="94.5" text-anchor="middle">A</text>
+  <text class="ink sm" x="231.0" y="94.5" text-anchor="middle">1</text>
+  <text class="mut sm" x="336.0" y="94.5" text-anchor="middle">False</text>
+  <text class="err sm b" x="476.0" y="94.5" text-anchor="middle">True</text>
+  <text class="err sm b" x="616.0" y="94.5" text-anchor="middle">True</text>
+  <rect class="box" x="70" y="106" width="616" height="28" rx="3"/>
+  <text class="ink sm" x="98.0" y="124.5" text-anchor="middle">1</text>
+  <text class="ink sm" x="161.0" y="124.5" text-anchor="middle">B</text>
+  <text class="ink sm" x="231.0" y="124.5" text-anchor="middle">2</text>
+  <text class="mut sm" x="336.0" y="124.5" text-anchor="middle">False</text>
+  <text class="mut sm" x="476.0" y="124.5" text-anchor="middle">False</text>
+  <text class="mut sm" x="616.0" y="124.5" text-anchor="middle">False</text>
+  <rect class="box-acc" x="70" y="136" width="616" height="28" rx="3"/>
+  <text class="ink sm" x="98.0" y="154.5" text-anchor="middle">2</text>
+  <text class="ink sm" x="161.0" y="154.5" text-anchor="middle">A</text>
+  <text class="ink sm" x="231.0" y="154.5" text-anchor="middle">1</text>
+  <text class="err sm b" x="336.0" y="154.5" text-anchor="middle">True</text>
+  <text class="mut sm" x="476.0" y="154.5" text-anchor="middle">False</text>
+  <text class="err sm b" x="616.0" y="154.5" text-anchor="middle">True</text>
+  <rect class="box" x="70" y="166" width="616" height="28" rx="3"/>
+  <text class="ink sm" x="98.0" y="184.5" text-anchor="middle">3</text>
+  <text class="ink sm" x="161.0" y="184.5" text-anchor="middle">A</text>
+  <text class="ink sm" x="231.0" y="184.5" text-anchor="middle">5</text>
+  <text class="mut sm" x="336.0" y="184.5" text-anchor="middle">False</text>
+  <text class="mut sm" x="476.0" y="184.5" text-anchor="middle">False</text>
+  <text class="mut sm" x="616.0" y="184.5" text-anchor="middle">False</text>
+  <text class="mut sm b" x="173" y="34" text-anchor="middle">таблица</text>
+  <text class="acc sm b" x="488" y="20" text-anchor="middle">df.duplicated(keep=…)</text>
+  <text class="mut sm" x="348" y="34" text-anchor="middle">по умолчанию</text>
+  <text class="mut sm" x="488" y="34" text-anchor="middle">оригинал — последний</text>
+  <text class="mut sm" x="628" y="34" text-anchor="middle">все копии</text>
+  <text class="acc sm" x="12" y="95" text-anchor="start">копии →</text>
+  <text class="acc sm" x="12" y="155" text-anchor="start">копии →</text>
+  <text class="ink2 sm" x="350" y="218" text-anchor="middle">строки 0 и 2 совпадают целиком; строка 3 повторяет только id — это не полный дубль</text>
+  <text class="ink2 sm" x="350" y="240" text-anchor="middle">True — «лишняя»: duplicated().sum() считает лишние, drop_duplicates(keep=…) их удаляет</text>
+  <text class="mut sm" x="350" y="260" text-anchor="middle">keep=False ничего не оставляет «оригиналом» — удобно, чтобы посмотреть на все повторы</text>
+</svg>
+</div><figcaption>
+<p>Одна таблица — три ответа <code>duplicated()</code>. <code>True</code> — строка, которую считают лишней; от <code>keep</code> зависит, какую из копий считать оригиналом.</p>
+</figcaption></figure>
+<p>Удаляет полные дубли <code>drop_duplicates()</code>. Индексы у оставшихся строк сохраняются старые, с дырками; если нужна нумерация по порядку, добавьте <code>reset_index(drop=True)</code>:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+df = pd.read_csv(&quot;clients_raw.csv&quot;)
+clean = df.drop_duplicates().reset_index(drop=True)
+print(len(df), &quot;→&quot;, len(clean))</code></pre></div>
+<aside class="callout callout-sql"><div class="callout-title">Как в SQL</div>
+<p><code>drop_duplicates()</code> — это <code>SELECT DISTINCT * FROM clients</code>.</p>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-n-exact"><b>1</b> Полные копии</a><a href="#task-drop-exact"><b>2</b> Убрать копии</a></div>
+<div class="fb" data-sec="полные-копии-строк"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="повторы-по-ключу">Повторы по ключу</h2>
+<p>Полные дубли убраны. Проверим ключ — номер карты. <code>subset</code> говорит, по каким столбцам сравнивать строки:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+df = pd.read_csv(&quot;clients_raw.csv&quot;).drop_duplicates()
+print(&quot;номера уникальны:&quot;, df[&quot;client_id&quot;].is_unique)
+print(&quot;повторов номера:&quot;, df.duplicated(subset=[&quot;client_id&quot;]).sum())</code></pre></div>
+<p>Номера уникальны — кажется, всё в порядке. Но <code>duplicated</code> и <code>is_unique</code> сравнивают значения как есть, символ в символ. Посмотрим на номера, которые записаны не так, как остальные:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+df = pd.read_csv(&quot;clients_raw.csv&quot;).drop_duplicates()
+ids = df[&quot;client_id&quot;]
+ids[ids.str.strip().str.upper() != ids].tolist()</code></pre></div>
+<p>Вот они — неявные дубли: «c1012» строчными, номера с пробелами по краям.</p>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-p-pos"><b>3</b> Касса без повторов</a></div>
+<div class="fb" data-sec="повторы-по-ключу"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="неявные-дубли-сначала-нормализовать">Неявные дубли: сначала нормализовать</h2>
+<p>Правило: <strong>прежде чем искать дубли, приведите ключ к одному виду</strong>. Для номера карты — убрать пробелы и перевести в верхний регистр:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+df = pd.read_csv(&quot;clients_raw.csv&quot;).drop_duplicates()
+df[&quot;client_id&quot;] = df[&quot;client_id&quot;].str.strip().str.upper()
+print(&quot;повторов номера:&quot;, df.duplicated(subset=[&quot;client_id&quot;]).sum())
+df[df.duplicated(subset=[&quot;client_id&quot;], keep=False)].sort_values(&quot;client_id&quot;).head(6)</code></pre></div>
+<p>У пар одинаковые номера, но разные даты анкеты и балансы бонусов: гость заполнил анкету повторно.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Список гостей на свадьбу, который вели три родственника: «Иванова А.», «А. Иванова» и «иванова анна». Чтобы увидеть, что это один человек, сначала всех переписывают в одном виде — «Иванова А.», — и только потом вычёркивают повторы. Где аналогия хромает: человек догадается и без переписывания, а pandas сравнивает строки символ в символ.</p>
+</aside>
+<div class="predict" data-q="q2"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">import pandas as pd
+s = pd.Series([&quot;x1&quot;, &quot; x1&quot;, &quot;X1&quot;])
+print(s.nunique(), s.str.strip().str.lower().nunique())</code></pre>
+<ul>
+<li><code>1 1</code></li>
+<li><code>3 3</code></li>
+<li>[x] <code>3 1</code></li>
+</ul>
+<p>Почему: до нормализации три разные строки, после <code>strip()</code> и <code>lower()</code> — одна.</p>
+</div>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-norm-id"><b>4</b> Нормализовать номер карты</a><a href="#task-versions"><b>11</b> Все версии анкет</a></div>
+<div class="fb" data-sec="неявные-дубли-сначала-нормализовать"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="какую-копию-оставить">Какую копию оставить</h2>
+<p>Когда дубли по ключу отличаются в других полях, нужно решить, какую строку оставить. Частое правило — <strong>самую свежую</strong>: отсортировать по дате и оставить последнюю копию (<code>keep=&quot;last&quot;</code>):</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+df = pd.read_csv(&quot;clients_raw.csv&quot;).drop_duplicates()
+df[&quot;client_id&quot;] = df[&quot;client_id&quot;].str.strip().str.upper()
+clients = (df.sort_values(&quot;signup_date&quot;)
+             .drop_duplicates(subset=[&quot;client_id&quot;], keep=&quot;last&quot;)
+             .reset_index(drop=True))
+print(len(df), &quot;→&quot;, len(clients), &quot;| уникальны:&quot;, clients[&quot;client_id&quot;].is_unique)</code></pre></div>
+<p>Даты в <code>signup_date</code> записаны как «2026-03-10» — год, месяц, день. Такие строки сортируются правильно даже без превращения в даты. Для дат вида «10.03.2026» это не так: сначала <code>to_datetime</code>.</p>
+<aside class="callout callout-sql"><div class="callout-title">Как в SQL</div>
+<p>В SQL то же самое делают оконной функцией:</p>
+<pre class="static code"><code class="lang-sql">SELECT * FROM (
+  SELECT *, ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY signup_date DESC) AS rn
+  FROM clients
+) t WHERE rn = 1</code></pre>
+</aside>
+<aside class="callout callout-warn"><div class="callout-title">Частая ошибка</div>
+<p>Ищите дубли только по <strong>ключу</strong> — по тому, что действительно определяет запись. Два гостя по имени Анна из Перми — это, скорее всего, два разных человека. Если искать повторы по имени и городу, вы склеите разных людей.</p>
+</aside>
+<h3>Разберём вместе: от 307 анкет к 293 гостям</h3>
+<p>Проследим, как меняется число строк на каждом шаге.</p>
+<ol>
+<li><strong>Сырая выгрузка</strong> — 307 анкет.</li>
+<li><strong>Полные дубли</strong> — 8 строк совпадают целиком (анкету отправили дважды). <code>drop_duplicates()</code> → <strong>299</strong>.</li>
+<li><strong>Повторы номера карты до нормализации</strong> — 0. Кажется, всё чисто.</li>
+<li><strong>Нормализация</strong> <code>client_id</code>: <code>.str.strip().str.upper()</code> — « C1012» и «c1012» становятся «C1012». Повторов номера — уже <strong>6</strong>.</li>
+<li><strong>По одной анкете на гостя</strong> → 299 − 6 = <strong>293</strong> гостя.</li>
+</ol>
+<p>Какую из двух анкет оставить? Возьмём гостя C1012:</p>
+<table>
+<thead>
+<tr>
+<th>анкета</th>
+<th>дата</th>
+<th>бонусы</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>первая</td>
+<td>2024-04-21</td>
+<td>80</td>
+</tr>
+<tr>
+<td>вторая</td>
+<td>2024-07-11</td>
+<td>640</td>
+</tr>
+</tbody>
+</table>
+<p>Если оставить первую (<code>keep=&quot;first&quot;</code> без сортировки), у гостя 80 бонусов, если самую свежую — 640. Разница в 8 раз — для рассылки «у вас скоро сгорят бонусы» это совсем разные письма. Правило «оставляем самую свежую по <code>signup_date</code>» нужно сформулировать до удаления, а не после.</p>
+<p>Что получилось: шаг 3 показывает главную ловушку — «повторов нет» до нормализации ничего не значит. Сначала приводим ключ к одному виду, потом ищем повторы.</p>
+<figure class="fig" data-fig="dedup-latest"><div class="fig-scroll"><svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-dedup-latest">
+  <title id="t-dedup-latest">Самая свежая анкета: нормализовать ключ, отсортировать по дате, оставить последнюю</title>
+  <defs><marker id="ah-dedup-latest" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="mut sm" x="108.0" y="42" text-anchor="middle">как в файле</text>
+  <rect class="box" x="8" y="50" width="200" height="24" rx="3"/>
+  <text class="ink2 sm b" x="40.0" y="66.5" text-anchor="middle">id</text>
+  <text class="ink2 sm b" x="115.0" y="66.5" text-anchor="middle">дата</text>
+  <text class="ink2 sm b" x="183.0" y="66.5" text-anchor="middle">бонусы</text>
+  <rect class="box-acc" x="8" y="76" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="40.0" y="92.5" text-anchor="middle">«C1012»</text>
+  <text class="ink sm" x="115.0" y="92.5" text-anchor="middle">2024-04-21</text>
+  <text class="ink sm" x="183.0" y="92.5" text-anchor="middle">80</text>
+  <rect class="box-acc" x="8" y="102" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="40.0" y="118.5" text-anchor="middle">« C1012»</text>
+  <text class="ink sm" x="115.0" y="118.5" text-anchor="middle">2024-07-11</text>
+  <text class="ink sm" x="183.0" y="118.5" text-anchor="middle">640</text>
+  <rect class="box-warn" x="8" y="128" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="40.0" y="144.5" text-anchor="middle">«C1131 »</text>
+  <text class="ink sm" x="115.0" y="144.5" text-anchor="middle">2025-03-17</text>
+  <text class="ink sm" x="183.0" y="144.5" text-anchor="middle">70</text>
+  <rect class="box-warn" x="8" y="154" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="40.0" y="170.5" text-anchor="middle">«C1131»</text>
+  <text class="ink sm" x="115.0" y="170.5" text-anchor="middle">2025-01-25</text>
+  <text class="ink sm" x="183.0" y="170.5" text-anchor="middle">150</text>
+  <text class="acc b" x="108" y="24" text-anchor="middle">1</text>
+  <text class="mut sm" x="336.0" y="42" text-anchor="middle">strip().upper()</text>
+  <rect class="box" x="236" y="50" width="200" height="24" rx="3"/>
+  <text class="ink2 sm b" x="268.0" y="66.5" text-anchor="middle">id</text>
+  <text class="ink2 sm b" x="343.0" y="66.5" text-anchor="middle">дата</text>
+  <text class="ink2 sm b" x="411.0" y="66.5" text-anchor="middle">бонусы</text>
+  <rect class="box-acc" x="236" y="76" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="268.0" y="92.5" text-anchor="middle">C1012</text>
+  <text class="ink sm" x="343.0" y="92.5" text-anchor="middle">2024-04-21</text>
+  <text class="ink sm" x="411.0" y="92.5" text-anchor="middle">80</text>
+  <rect class="box-acc" x="236" y="102" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="268.0" y="118.5" text-anchor="middle">C1012</text>
+  <text class="ink sm" x="343.0" y="118.5" text-anchor="middle">2024-07-11</text>
+  <text class="ink sm" x="411.0" y="118.5" text-anchor="middle">640</text>
+  <rect class="box-warn" x="236" y="128" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="268.0" y="144.5" text-anchor="middle">C1131</text>
+  <text class="ink sm" x="343.0" y="144.5" text-anchor="middle">2025-03-17</text>
+  <text class="ink sm" x="411.0" y="144.5" text-anchor="middle">70</text>
+  <rect class="box-warn" x="236" y="154" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="268.0" y="170.5" text-anchor="middle">C1131</text>
+  <text class="ink sm" x="343.0" y="170.5" text-anchor="middle">2025-01-25</text>
+  <text class="ink sm" x="411.0" y="170.5" text-anchor="middle">150</text>
+  <text class="acc b" x="336" y="24" text-anchor="middle">2</text>
+  <text class="mut sm" x="564.0" y="42" text-anchor="middle">sort_values("signup_date")</text>
+  <rect class="box" x="464" y="50" width="200" height="24" rx="3"/>
+  <text class="ink2 sm b" x="496.0" y="66.5" text-anchor="middle">id</text>
+  <text class="ink2 sm b" x="571.0" y="66.5" text-anchor="middle">дата</text>
+  <text class="ink2 sm b" x="639.0" y="66.5" text-anchor="middle">бонусы</text>
+  <rect class="box-acc" x="464" y="76" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="496.0" y="92.5" text-anchor="middle">C1012</text>
+  <text class="ok sm b" x="571.0" y="92.5" text-anchor="middle">2024-04-21</text>
+  <text class="ink sm" x="639.0" y="92.5" text-anchor="middle">80</text>
+  <rect class="box-acc" x="464" y="102" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="496.0" y="118.5" text-anchor="middle">C1012</text>
+  <text class="ok sm b" x="571.0" y="118.5" text-anchor="middle">2024-07-11</text>
+  <text class="ink sm" x="639.0" y="118.5" text-anchor="middle">640</text>
+  <rect class="box-warn" x="464" y="128" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="496.0" y="144.5" text-anchor="middle">C1131</text>
+  <text class="ok sm b" x="571.0" y="144.5" text-anchor="middle">2025-01-25</text>
+  <text class="ink sm" x="639.0" y="144.5" text-anchor="middle">150</text>
+  <rect class="box-warn" x="464" y="154" width="200" height="24" rx="3"/>
+  <text class="ink sm" x="496.0" y="170.5" text-anchor="middle">C1131</text>
+  <text class="ok sm b" x="571.0" y="170.5" text-anchor="middle">2025-03-17</text>
+  <text class="ink sm" x="639.0" y="170.5" text-anchor="middle">70</text>
+  <text class="acc b" x="564" y="24" text-anchor="middle">3</text>
+  <path class="ln" d="M210,115 L232,115" marker-end="url(#ah-dedup-latest)"/>
+  <path class="ln" d="M438,115 L460,115" marker-end="url(#ah-dedup-latest)"/>
+  <path class="ln" d="M564,184 V200" marker-end="url(#ah-dedup-latest)"/>
+  <rect class="box-acc" x="464" y="204" width="200" height="24" rx="3"/>
+  <text class="ok sm b" x="496.0" y="220.5" text-anchor="middle">C1012</text>
+  <text class="ok sm b" x="571.0" y="220.5" text-anchor="middle">2024-07-11</text>
+  <text class="ok sm b" x="639.0" y="220.5" text-anchor="middle">640</text>
+  <rect class="box-warn" x="464" y="230" width="200" height="24" rx="3"/>
+  <text class="ok sm b" x="496.0" y="246.5" text-anchor="middle">C1131</text>
+  <text class="ok sm b" x="571.0" y="246.5" text-anchor="middle">2025-03-17</text>
+  <text class="ok sm b" x="639.0" y="246.5" text-anchor="middle">70</text>
+  <text class="acc sm b" x="452" y="222" text-anchor="end">drop_duplicates(</text>
+  <text class="acc sm b" x="452" y="238" text-anchor="end">"client_id", keep="last")</text>
+  <text class="acc b" x="452" y="206" text-anchor="end">4</text>
+  <text class="ink2 sm" x="350" y="274" text-anchor="middle">Без шага 2 «C1131 » и «C1131» — разные ключи: повторов не найдётся.</text>
+  <text class="ink2 sm" x="350" y="292" text-anchor="middle">Без шага 3 keep="last" оставил бы у C1131 анкету от 2025-01-25 с 150 бонусами — более старую.</text>
+</svg>
+</div><figcaption>
+<p>Две пары повторных анкет из <a class="data-link" href="../data/clients_raw.csv" download title="Скачать clients_raw.csv"><code>clients_raw.csv</code></a>. Без нормализации повторов не видно, без сортировки <code>keep=&quot;last&quot;</code> берёт последнюю по порядку в файле, а не по дате.</p>
+</figcaption></figure>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>Гость заполнял анкету дважды: в марте и в сентябре, и номера телефона в анкетах разные. Какую анкету оставить?</p>
+<ul>
+<li>[x] Сентябрьскую: отсортировать по дате анкеты и <code>drop_duplicates(subset=[&quot;client_id&quot;], keep=&quot;last&quot;)</code>
+<blockquote>
+<p>Самая свежая анкета вероятнее всего содержит актуальные данные. Сортировка нужна, чтобы «последняя» значило «по дате», а не «по порядку в файле».</p>
+</blockquote>
+</li>
+<li>[ ] Любую — они про одного человека
+<blockquote>
+<p>Данные в них различаются, и от выбора зависит, на какой номер уйдёт SMS.</p>
+</blockquote>
+</li>
+<li>[ ] Обе: это не дубль, раз телефоны разные
+<blockquote>
+<p>Номер карты один, значит и гость один. Две строки на гостя задвоят его во всех подсчётах.</p>
+</blockquote>
+</li>
+<li>[ ] Первую, <code>keep=&quot;first&quot;</code>, без сортировки
+<blockquote>
+<p>«Первая» будет первой по порядку в файле, а он не обязательно идёт по датам.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-keep-last"><b>5</b> Самая свежая анкета</a><a href="#task-dedupe-fn"><b>9</b> Функция дедупликации</a></div>
+<div class="fb" data-sec="какую-копию-оставить"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="дубли-в-заказах">Дубли в заказах</h2>
+<p>В кассовой выгрузке ключ — номер заказа <code>id</code>. Касса иногда отправляет заказ повторно:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+pos = pd.read_csv(&quot;pos_december.csv&quot;, sep=&quot;;&quot;, decimal=&quot;,&quot;)
+print(&quot;повторов id:&quot;, pos.duplicated(subset=[&quot;id&quot;]).sum())
+print(&quot;полных дублей:&quot;, pos.duplicated().sum())
+pos[pos.duplicated(subset=[&quot;id&quot;], keep=False)]</code></pre></div>
+<p>Здесь повторы по ключу совпадают с полными дублями — это технический сбой, удаляем смело. Если бы у одного <code>id</code> были разные суммы, удалять вслепую было бы нельзя: сначала выяснить, какая версия правильная.</p>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong><code>drop_duplicates()</code> на сырых ключах.</strong> Пробелы и регистр прячут повторы.</li>
+<li><strong><code>keep=&quot;first&quot;</code> без сортировки.</strong> «Первая» строка — какая попалась в выгрузке, а не самая старая и не самая свежая.</li>
+<li><strong>Удалили и не посчитали.</strong> Сколько строк ушло на каждом шаге — часть отчёта.</li>
+<li><strong>Дубли по неполному ключу.</strong> Два заказа одного гостя в один день — не дубль; ключ заказа — его номер.</li>
+</ul>
+</aside>
+<aside class="callout callout-note"><div class="callout-title">Чек-лист работы с дублями</div>
+<ol>
+<li>Убрать полные копии строк: <code>drop_duplicates()</code>.</li>
+<li>Нормализовать ключ: пробелы, регистр, лишние символы.</li>
+<li>Найти повторы ключа: <code>duplicated(subset=[ключ], keep=False)</code> — и посмотреть на них глазами.</li>
+<li>Решить, какую копию оставить (самую свежую, самую полную) — и записать правило.</li>
+<li>Проверить: <code>is_unique</code> для ключа, сколько строк было и стало.</li>
+</ol>
+</aside>
+<div class="quiz-c" data-q="c2"><div class="predict-title">Проверьте себя</div>
+<p>В кассовой выгрузке у двух строк один и тот же <code>id</code>, но суммы разные: 250 и 350 ₽. Что делать?</p>
+<ul>
+<li>[x] Не удалять вслепую: выяснить у кофейни, какая версия правильная, и записать решение
+<blockquote>
+<p>Это уже не технический повтор, а две разные версии заказа. Любой автоматический выбор — догадка.</p>
+</blockquote>
+</li>
+<li>[ ] <code>drop_duplicates()</code> — и одна из строк уйдёт
+<blockquote>
+<p>Полный дубль ищется по всем столбцам, а суммы разные — <code>drop_duplicates()</code> оставит обе строки.</p>
+</blockquote>
+</li>
+<li>[ ] Оставить обе: раз суммы разные, это два разных заказа
+<blockquote>
+<p>Номер заказа — ключ, и он один. Если оставить обе строки, выручка по этому заказу задвоится.</p>
+</blockquote>
+</li>
+<li>[ ] <code>drop_duplicates(subset=[&quot;id&quot;])</code> — оставит первую, этого достаточно
+<blockquote>
+<p>Оставит ту, что первой попалась в файле. Правильная ли она — неизвестно.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-dup-ids"><b>6</b> Какие заказы повторились</a><a href="#task-overcount"><b>8</b> Цена дублей</a></div>
+<div class="fb" data-sec="дубли-в-заказах"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="справочник-из-плоской-выгрузки">Справочник из плоской выгрузки</h2>
+<p>Партнёр по доставке присылает заказы одной широкой таблицей — <a class="data-link" href="../data/delivery_flat.csv" download title="Скачать delivery_flat.csv"><code>delivery_flat.csv</code></a>. Отдельного справочника кофеен у него нет, поэтому в каждой из 801 строки заново записаны адрес кофейни, город и управляющий. Нам нужен <strong>справочник</strong>: одна строка на кофейню. С ним можно соединять другие таблицы по <code>shop_id</code> (как <code>merge</code> в главе 2), отвечать на вопрос «кто управляющий в Казани» и не хранить восемьсот копий одного адреса.</p>
+<p>Собрать справочник — та же работа с дублями, что и выше, только дубли ищем не среди заказов, а среди <strong>атрибутов кофейни</strong>: из каждой строки берём столбцы кофейни, убираем повторы и проверяем, что ключ <code>shop_id</code> стал уникальным.</p>
+<aside class="callout callout-sql"><div class="callout-title">Как в SQL</div>
+<p><code>SELECT DISTINCT shop_id, shop_address, city, manager FROM delivery</code> — и затем проверка <code>GROUP BY shop_id HAVING COUNT(*) &gt; 1</code>: у ключа не должно остаться двух версий. В Excel — скопировать столбцы кофейни на новый лист и нажать «Удалить дубликаты».</p>
+</aside>
+<h3>Игрушечный пример: пять заказов — две кофейни</h3>
+<table>
+<thead>
+<tr>
+<th>заказ</th>
+<th>shop_id</th>
+<th>город</th>
+<th>управляющий</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>A</td>
+<td>Пермь</td>
+<td>Ольга</td>
+</tr>
+<tr>
+<td>2</td>
+<td>B</td>
+<td>Казань</td>
+<td>Рустам</td>
+</tr>
+<tr>
+<td>3</td>
+<td>A</td>
+<td>Пермь</td>
+<td>Ольга</td>
+</tr>
+<tr>
+<td>4</td>
+<td>B</td>
+<td>казань</td>
+<td>Рустам</td>
+</tr>
+<tr>
+<td>5</td>
+<td>B</td>
+<td>Казань</td>
+<td>Тимур</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li><strong>Убрать повторы атрибутов.</strong> Заказ 3 повторяет заказ 1 — остаются 4 строки: A–Пермь–Ольга, B–Казань–Рустам, B–казань–Рустам, B–Казань–Тимур. Ключ B встречается трижды — это ещё не справочник.</li>
+<li><strong>Нормализовать написание.</strong> «казань» → «Казань», и строки 2 и 4 совпали. Осталось 3 строки, но у B по-прежнему две версии: Рустам и Тимур.</li>
+<li><strong>Разобраться с настоящим различием.</strong> Это уже не опечатка: управляющий сменился. Правило — взять самую свежую версию (заказ 5). Итог — 2 строки: A–Пермь–Ольга и B–Казань–Тимур, ключ уникален.</li>
+</ol>
+<figure class="fig" data-fig="ref-from-flat"><div class="fig-scroll"><svg viewBox="0 0 700 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-ref-from-flat">
+  <title id="t-ref-from-flat">Справочник кофеен из плоской выгрузки: три шага</title>
+  <defs><marker id="ah-ref-from-flat" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="mut sm" x="87.0" y="44" text-anchor="middle">5 заказов</text>
+  <rect class="box" x="6" y="52" width="162" height="24" rx="3"/>
+  <text class="ink2 sm b" x="21.0" y="68.5" text-anchor="middle">id</text>
+  <text class="ink2 sm b" x="69.0" y="68.5" text-anchor="middle">город</text>
+  <text class="ink2 sm b" x="135.0" y="68.5" text-anchor="middle">управл.</text>
+  <rect class="box" x="6" y="78" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="21.0" y="94.5" text-anchor="middle">A</text>
+  <text class="ink sm" x="69.0" y="94.5" text-anchor="middle">Пермь</text>
+  <text class="ink sm" x="135.0" y="94.5" text-anchor="middle">Ольга</text>
+  <rect class="box" x="6" y="104" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="21.0" y="120.5" text-anchor="middle">B</text>
+  <text class="ink sm" x="69.0" y="120.5" text-anchor="middle">Казань</text>
+  <text class="ink sm" x="135.0" y="120.5" text-anchor="middle">Рустам</text>
+  <rect class="box-err" x="6" y="130" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="21.0" y="146.5" text-anchor="middle">A</text>
+  <text class="ink sm" x="69.0" y="146.5" text-anchor="middle">Пермь</text>
+  <text class="ink sm" x="135.0" y="146.5" text-anchor="middle">Ольга</text>
+  <rect class="box" x="6" y="156" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="21.0" y="172.5" text-anchor="middle">B</text>
+  <text class="ink sm" x="69.0" y="172.5" text-anchor="middle">казань</text>
+  <text class="ink sm" x="135.0" y="172.5" text-anchor="middle">Рустам</text>
+  <rect class="box" x="6" y="182" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="21.0" y="198.5" text-anchor="middle">B</text>
+  <text class="ink sm" x="69.0" y="198.5" text-anchor="middle">Казань</text>
+  <text class="ink sm" x="135.0" y="198.5" text-anchor="middle">Тимур</text>
+  <text class="mut sm" x="263.0" y="44" text-anchor="middle">drop_duplicates(): 4</text>
+  <rect class="box" x="182" y="52" width="162" height="24" rx="3"/>
+  <text class="ink2 sm b" x="197.0" y="68.5" text-anchor="middle">id</text>
+  <text class="ink2 sm b" x="245.0" y="68.5" text-anchor="middle">город</text>
+  <text class="ink2 sm b" x="311.0" y="68.5" text-anchor="middle">управл.</text>
+  <rect class="box" x="182" y="78" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="197.0" y="94.5" text-anchor="middle">A</text>
+  <text class="ink sm" x="245.0" y="94.5" text-anchor="middle">Пермь</text>
+  <text class="ink sm" x="311.0" y="94.5" text-anchor="middle">Ольга</text>
+  <rect class="box" x="182" y="104" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="197.0" y="120.5" text-anchor="middle">B</text>
+  <text class="ink sm" x="245.0" y="120.5" text-anchor="middle">Казань</text>
+  <text class="ink sm" x="311.0" y="120.5" text-anchor="middle">Рустам</text>
+  <rect class="box-warn" x="182" y="130" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="197.0" y="146.5" text-anchor="middle">B</text>
+  <text class="err sm b" x="245.0" y="146.5" text-anchor="middle">казань</text>
+  <text class="ink sm" x="311.0" y="146.5" text-anchor="middle">Рустам</text>
+  <rect class="box" x="182" y="156" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="197.0" y="172.5" text-anchor="middle">B</text>
+  <text class="ink sm" x="245.0" y="172.5" text-anchor="middle">Казань</text>
+  <text class="ink sm" x="311.0" y="172.5" text-anchor="middle">Тимур</text>
+  <text class="mut sm" x="439.0" y="44" text-anchor="middle">нормализовать: 3</text>
+  <rect class="box" x="358" y="52" width="162" height="24" rx="3"/>
+  <text class="ink2 sm b" x="373.0" y="68.5" text-anchor="middle">id</text>
+  <text class="ink2 sm b" x="421.0" y="68.5" text-anchor="middle">город</text>
+  <text class="ink2 sm b" x="487.0" y="68.5" text-anchor="middle">управл.</text>
+  <rect class="box" x="358" y="78" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="373.0" y="94.5" text-anchor="middle">A</text>
+  <text class="ink sm" x="421.0" y="94.5" text-anchor="middle">Пермь</text>
+  <text class="ink sm" x="487.0" y="94.5" text-anchor="middle">Ольга</text>
+  <rect class="box-warn" x="358" y="104" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="373.0" y="120.5" text-anchor="middle">B</text>
+  <text class="ink sm" x="421.0" y="120.5" text-anchor="middle">Казань</text>
+  <text class="ink sm" x="487.0" y="120.5" text-anchor="middle">Рустам</text>
+  <rect class="box-warn" x="358" y="130" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="373.0" y="146.5" text-anchor="middle">B</text>
+  <text class="ink sm" x="421.0" y="146.5" text-anchor="middle">Казань</text>
+  <text class="ink sm" x="487.0" y="146.5" text-anchor="middle">Тимур</text>
+  <text class="mut sm" x="615.0" y="44" text-anchor="middle">свежая версия: 2</text>
+  <rect class="box" x="534" y="52" width="162" height="24" rx="3"/>
+  <text class="ink2 sm b" x="549.0" y="68.5" text-anchor="middle">id</text>
+  <text class="ink2 sm b" x="597.0" y="68.5" text-anchor="middle">город</text>
+  <text class="ink2 sm b" x="663.0" y="68.5" text-anchor="middle">управл.</text>
+  <rect class="box-ok" x="534" y="78" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="549.0" y="94.5" text-anchor="middle">A</text>
+  <text class="ink sm" x="597.0" y="94.5" text-anchor="middle">Пермь</text>
+  <text class="ink sm" x="663.0" y="94.5" text-anchor="middle">Ольга</text>
+  <rect class="box-ok" x="534" y="104" width="162" height="24" rx="3"/>
+  <text class="ink sm" x="549.0" y="120.5" text-anchor="middle">B</text>
+  <text class="ink sm" x="597.0" y="120.5" text-anchor="middle">Казань</text>
+  <text class="ink sm" x="663.0" y="120.5" text-anchor="middle">Тимур</text>
+  <path class="ln" d="M170,100 L180,100" marker-end="url(#ah-ref-from-flat)"/>
+  <path class="ln" d="M346,100 L356,100" marker-end="url(#ah-ref-from-flat)"/>
+  <path class="ln" d="M522,100 L532,100" marker-end="url(#ah-ref-from-flat)"/>
+  <text class="err sm" x="88" y="232" text-anchor="middle">красная — копия</text>
+  <text class="err sm" x="88" y="248" text-anchor="middle">заказа 1</text>
+  <text class="warn sm" x="264" y="232" text-anchor="middle">«казань» — грязь</text>
+  <text class="warn sm" x="264" y="248" text-anchor="middle">написания</text>
+  <text class="warn sm" x="440" y="232" text-anchor="middle">у B две версии:</text>
+  <text class="warn sm" x="440" y="248" text-anchor="middle">сменился управляющий</text>
+  <text class="ok sm b" x="616" y="168" text-anchor="middle">ключ уникален:</text>
+  <text class="ok sm" x="616" y="184" text-anchor="middle">assert is_unique</text>
+  <text class="mut sm" x="350" y="280" text-anchor="middle">в справочник берут только столбцы кофейни; атрибуты заказа (напиток, дата) дали бы сотни «версий»</text>
+</svg>
+</div><figcaption>
+<p>Игрушка из пяти заказов: убрать повторы атрибутов, нормализовать написание, взять самую свежую версию — и проверить, что ключ уникален.</p>
+</figcaption></figure>
+<h3>На настоящей выгрузке</h3>
+<p>Те же три шага. Сначала просто убираем повторы атрибутов:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+flat = pd.read_csv(&quot;delivery_flat.csv&quot;)
+cols = [&quot;shop_id&quot;, &quot;shop_address&quot;, &quot;city&quot;, &quot;manager&quot;]
+ref = flat[cols].drop_duplicates()
+print(&quot;строк:&quot;, len(flat), &quot;| версий кофеен:&quot;, len(ref), &quot;| shop_id уникален:&quot;, ref[&quot;shop_id&quot;].is_unique)
+ref.sort_values(&quot;shop_id&quot;)</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>flat[cols]</code> — только столбцы кофейни: всё, что относится к заказу (напиток, цена, дата), в справочник не идёт.</li>
+<li><code>drop_duplicates()</code> оставляет по одной строке на каждую <strong>разную</strong> комбинацию атрибутов.</li>
+<li><code>is_unique</code> по ключу — главная проверка справочника. Здесь <code>False</code>: из 801 строки получилось 10 версий на 7 кофеен.</li>
+</ul>
+<p>Как читать результат: у KZN-1 город записан и «Казань», и «казань», у TMN-1 — «Тюмень» и «Тюмень » с пробелом в конце. Это грязь написания — её нормализуем, как в уроке про неявные дубли:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+flat = pd.read_csv(&quot;delivery_flat.csv&quot;)
+cols = [&quot;shop_id&quot;, &quot;shop_address&quot;, &quot;city&quot;, &quot;manager&quot;]
+flat[&quot;city&quot;] = flat[&quot;city&quot;].str.strip().str.capitalize()
+ref = flat[cols].drop_duplicates()
+print(&quot;версий:&quot;, len(ref), &quot;| shop_id уникален:&quot;, ref[&quot;shop_id&quot;].is_unique)
+print(ref[ref[&quot;shop_id&quot;].duplicated(keep=False)])
+flat.groupby([&quot;shop_id&quot;, &quot;manager&quot;])[&quot;date&quot;].agg([&quot;min&quot;, &quot;max&quot;]).loc[&quot;KZN-2&quot;]</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>str.strip().str.capitalize()</code> убирает пробелы по краям и делает первую букву заглавной, остальные — строчными.</li>
+<li><code>duplicated(keep=False)</code> показывает <strong>все</strong> версии ключа, у которого их больше одной.</li>
+<li><code>groupby([&quot;shop_id&quot;, &quot;manager&quot;])[&quot;date&quot;].agg([&quot;min&quot;, &quot;max&quot;])</code> — с какой по какую дату встречается каждый управляющий.</li>
+<li>После группировки по двум столбцам индекс <strong>двухуровневый</strong>: у каждой строки пара «кофейня, управляющий». <code>.loc[&quot;KZN-2&quot;]</code> задаёт только первый уровень и поэтому возвращает все строки, где кофейня — KZN-2, сколько бы управляющих там ни было.</li>
+</ul>
+<p>Осталось 8 версий: у KZN-2 два управляющих. Даты показывают, что это не опечатка: Алина Сафина — с 1 октября по 9 ноября, Тимур Гарипов — с 10 ноября. Управляющий сменился. Для справочника «как сейчас» берём самую свежую версию — как самую свежую анкету выше:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+flat = pd.read_csv(&quot;delivery_flat.csv&quot;)
+cols = [&quot;shop_id&quot;, &quot;shop_address&quot;, &quot;city&quot;, &quot;manager&quot;]
+flat[&quot;city&quot;] = flat[&quot;city&quot;].str.strip().str.capitalize()
+shops = (flat.sort_values(&quot;date&quot;)
+             .drop_duplicates(subset=[&quot;shop_id&quot;], keep=&quot;last&quot;)[cols]
+             .sort_values(&quot;shop_id&quot;)
+             .reset_index(drop=True))
+assert shops[&quot;shop_id&quot;].is_unique, &quot;в справочнике повторяется код кофейни&quot;
+shops</code></pre></div>
+<p>Что получилось: 7 строк — по одной на кофейню, ключ уникален, у KZN-2 текущий управляющий. Даты в <code>date</code> записаны как «2026-10-01 09:44» — год впереди, поэтому строки сортируются правильно и без перевода в даты.</p>
+<aside class="callout callout-deep"><div class="callout-title">История изменений</div>
+<p>Справочник «как сейчас» теряет историю: по нему уже не узнать, кто руководил KZN-2 в октябре. Если история нужна, в справочнике оставляют все версии и добавляют столбцы «действует с» и «действует по» — это те самые <code>min</code> и <code>max</code> дат из примера выше. В хранилищах данных такой справочник называют медленно меняющимся измерением (SCD, тип 2).</p>
+</aside>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Справочник без проверки ключа.</strong> <code>drop_duplicates()</code> по атрибутам не гарантирует одну строку на кофейню: любая опечатка в городе даёт вторую версию. Симптом — после <code>merge</code> с таким справочником строк становится больше, чем было заказов. Проверка — <code>assert shops[&quot;shop_id&quot;].is_unique</code>.</li>
+<li><strong>В справочник попали атрибуты заказа.</strong> Если взять в <code>cols</code> напиток или дату, «версий» кофейни станут сотни.</li>
+<li><strong>Склеили настоящие изменения как опечатки.</strong> Смена управляющего — не грязь. Сначала посмотрите на даты версий, потом решайте: оставить самую свежую или хранить историю.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-price-list"><b>7</b> Прайс из заказов</a><a href="#task-shops-ref"><b>10</b> Справочник кофеен</a></div>
+<div class="fb" data-sec="справочник-из-плоской-выгрузки"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-n-exact" data-task="n-exact" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Полные копии</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#полные-копии-строк">↑ К теории: Полные копии строк</a>
+  <div class="task-text prose"><p>Сохраните в <code>n_exact</code> число полных дублей строк в анкетах.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-drop-exact" data-task="drop-exact" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">Убрать копии</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#полные-копии-строк">↑ К теории: Полные копии строк</a>
+  <div class="task-text prose"><p>Сохраните в <code>clean</code> анкеты без полных дублей, с индексом по порядку от 0.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-p-pos" data-task="p-pos" data-level="warmup" data-kind="parsons">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">Касса без повторов</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#повторы-по-ключу">↑ К теории: Повторы по ключу</a>
+  <div class="task-text prose"><p>Соберите программу, которая убирает повторно отправленные заказы и выводит, сколько заказов осталось.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-norm-id" data-task="norm-id" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">4</span>
+    <h3 class="task-title">Нормализовать номер карты</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#неявные-дубли-сначала-нормализовать">↑ К теории: Неявные дубли: сначала нормализовать</a>
+  <div class="task-text prose"><p>Уберите полные дубли, затем приведите <code>client_id</code> к одному виду: без пробелов по краям, буквы — заглавные. Таблицу сохраните в <code>df</code>, а в <code>n_id_dups</code> — сколько после этого осталось повторов номера.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-keep-last" data-task="keep-last" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">5</span>
+    <h3 class="task-title">Самая свежая анкета</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#какую-копию-оставить">↑ К теории: Какую копию оставить</a>
+  <div class="task-text prose"><p>Оставьте по одной анкете на гостя — самую свежую по <code>signup_date</code>. Порядок: полные дубли → нормализация номера → сортировка → удаление повторов. Результат — в <code>clients</code> с индексом по порядку.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-dup-ids" data-task="dup-ids" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">6</span>
+    <h3 class="task-title">Какие заказы повторились</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#дубли-в-заказах">↑ К теории: Дубли в заказах</a>
+  <div class="task-text prose"><p>Сохраните в <code>dup_ids</code> отсортированный <strong>список</strong> номеров заказов (<code>id</code>), которые встречаются в кассовой выгрузке больше одного раза. Каждый номер — один раз.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-price-list" data-task="price-list" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">7</span>
+    <h3 class="task-title">Прайс из заказов</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#справочник-из-плоской-выгрузки">↑ К теории: Справочник из плоской выгрузки</a>
+  <div class="task-text prose"><p>В <a class="data-link" href="../data/orders_3m.csv" download title="Скачать orders_3m.csv"><code>orders_3m.csv</code></a> нет отдельного прайса, но цена чашки есть в каждом заказе: <code>amount / qty</code>. Соберите из заказов справочник цен <code>prices</code> — таблицу со столбцами <code>drink</code>, <code>size</code>, <code>price</code>, по одной строке на пару «напиток + размер». В <code>ok</code> сохраните <code>True</code>, если пара «напиток + размер» в <code>prices</code> действительно не повторяется (получите это проверкой, а не впишите).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-overcount" data-task="overcount" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">8</span>
+    <h3 class="task-title">Цена дублей</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#дубли-в-заказах">↑ К теории: Дубли в заказах</a>
+  <div class="task-text prose"><p>Насколько повторно отправленные заказы завышают выручку кассы? Сохраните в <code>overcount</code> разницу между суммой <code>price × qty</code> по сырой выгрузке и по выгрузке без повторов <code>id</code>, округлённую до двух знаков.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-dedupe-fn" data-task="dedupe-fn" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">9</span>
+    <h3 class="task-title">Функция дедупликации</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#какую-копию-оставить">↑ К теории: Какую копию оставить</a>
+  <div class="task-text prose"><p>Напишите функцию <code>dedupe(df, key, by)</code>: оставляет по одной строке на каждое значение столбца <code>key</code> — ту, у которой значение столбца <code>by</code> наибольшее (самая свежая дата, самая большая сумма). Индекс результата — по порядку от 0. Исходная таблица меняться не должна.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-shops-ref" data-task="shops-ref" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">10</span>
+    <h3 class="task-title">Справочник кофеен</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#справочник-из-плоской-выгрузки">↑ К теории: Справочник из плоской выгрузки</a>
+  <div class="task-text prose"><p>Соберите из <a class="data-link" href="../data/delivery_flat.csv" download title="Скачать delivery_flat.csv"><code>delivery_flat.csv</code></a> справочник кофеен <code>shops</code> — по одной строке на <code>shop_id</code> со столбцами <code>shop_id</code>, <code>shop_address</code>, <code>city</code>, <code>manager</code>:</p>
+<ul>
+<li>город приведите к одному виду: без пробелов по краям, с заглавной буквы;</li>
+<li>если у кофейни сменился управляющий, оставьте самого свежего (по дате заказа).</li>
+</ul>
+<p>В <code>n_changed</code> сохраните, у скольких кофеен <strong>после нормализации города</strong> осталось больше одной версии атрибутов.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-versions" data-task="versions" data-level="star" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">11</span>
+    <h3 class="task-title">Все версии анкет</h3>
+    <span class="lvl lvl-star">Со звёздочкой</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#неявные-дубли-сначала-нормализовать">↑ К теории: Неявные дубли: сначала нормализовать</a>
+  <div class="task-text prose"><p>Для проверки маркетинг просит показать все анкеты гостей, которые заполняли её больше одного раза. Уберите полные дубли, нормализуйте номер карты и сохраните в <code>versions</code> <strong>все</strong> строки с повторяющимся номером, отсортированные по номеру и дате анкеты. В <code>n_guests</code> — сколько таких гостей.</p>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li><code>df.duplicated()</code> — <code>True</code> у каждой строки, которая уже встречалась выше. <code>df.duplicated().sum()</code> — сколько лишних копий.</li><li><code>df.drop_duplicates()</code> — убрать полные дубли. <code>subset=[&quot;client_id&quot;]</code> — дубли только по ключу.</li><li><code>keep=&quot;first&quot;</code> (по умолчанию) / <code>&quot;last&quot;</code> — какую копию оставить; <code>keep=False</code> в <code>duplicated</code> помечает все копии.</li><li>Неявные дубли: сначала привести ключ к одному виду (<code>str.strip().str.upper()</code>), потом искать повторы.</li><li>Оставить самую свежую запись: <code>sort_values(&quot;signup_date&quot;).drop_duplicates(&quot;client_id&quot;, keep=&quot;last&quot;)</code> — как <code>ROW_NUMBER() … = 1</code> в SQL.</li><li>После удаления проверьте: ключ уникален (<code>is_unique</code>), сколько строк было и стало.</li><li>Справочник из плоской выгрузки: <code>flat[[&quot;shop_id&quot;, &quot;city&quot;, &quot;manager&quot;]].drop_duplicates()</code> → нормализовать написание → самую свежую версию на ключ → <code>assert ref[&quot;shop_id&quot;].is_unique</code>.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="03b-excel.html"><span class="pl">← Предыдущий</span><span class="pt">4. Книга Excel: листы, шапка, итоги</span></a><a class="next" href="05-strings.html"><span class="pl">Следующий урок →</span><span class="pt">6. Строки: чистим и ищем по тексту</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#откуда-берутся-дубли">Откуда берутся дубли</a></li><li><a href="#полные-копии-строк">Полные копии строк</a></li><li><a href="#повторы-по-ключу">Повторы по ключу</a></li><li><a href="#неявные-дубли-сначала-нормализовать">Неявные дубли: сначала нормализовать</a></li><li><a href="#какую-копию-оставить">Какую копию оставить</a></li><li><a href="#дубли-в-заказах">Дубли в заказах</a></li><li><a href="#справочник-из-плоской-выгрузки">Справочник из плоской выгрузки</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch03/04-duplicates", "title": "Дубликаты — явные и неявные", "chapter": "Предобработка данных", "tasks": [{"id": "n-exact", "title": "Полные копии", "level": "warmup", "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")", "setup": "", "check": "import pandas as _pd\nwant = _pd.read_csv('clients_raw.csv').duplicated().sum()\ngot = need('n_exact')\nassert got != 2 * want, f'n_exact = {got} — похоже, посчитаны и оригиналы (keep=False). Нужно число лишних копий.'\nassert got == want, f'n_exact = {got}, а нужно {want}.'", "hints": ["<p><code>duplicated()<\/code> помечает <code>True<\/code> каждую строку, которая уже встречалась выше целиком.<\/p>\n", "<p><code>n_exact = df.duplicated().sum()<\/code>.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\nn_exact = df.duplicated().sum()", "explain": "", "parsons": ""}, {"id": "drop-exact", "title": "Убрать копии", "level": "warmup", "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")", "setup": "", "check": "import pandas as _pd\nd = _pd.read_csv('clients_raw.csv')\nc = need('clean', _pd.DataFrame)\nassert len(c) == len(d.drop_duplicates()), f'В clean {len(c)} строк, а нужно {len(d.drop_duplicates())}.'\nassert list(c.index) == list(range(len(c))), 'Индекс должен идти 0, 1, 2, … — добавьте reset_index(drop=True).'", "hints": ["<p>После удаления строк индекс идёт с пропусками (0, 1, 3, …) — его нужно пересобрать.<\/p>\n", "<p><code>df.drop_duplicates().reset_index(drop=True)<\/code>.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\nclean = df.drop_duplicates().reset_index(drop=True)", "explain": "", "parsons": ""}, {"id": "p-pos", "title": "Касса без повторов", "level": "warmup", "starter": "", "setup": "", "check": "import pandas as _pd\nwant = _pd.read_csv('pos_december.csv', sep=';')['id'].nunique()\nassert _lines == [str(want)], f'Должно вывестись {want}. Сейчас: {_lines}'", "hints": ["<p>Загрузка → удаление дублей → вывод.<\/p>\n", "<p>Повтор заказа — одинаковый <code>id<\/code>: <code>drop_duplicates(subset=[&quot;id&quot;])<\/code>, затем <code>print(len(...))<\/code>.<\/p>\n"], "solution": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")\npos = pos.drop_duplicates(subset=[\"id\"])\nprint(len(pos))", "explain": "", "parsons": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")\npos = pos.drop_duplicates(subset=[\"id\"])\nprint(len(pos))"}, {"id": "norm-id", "title": "Нормализовать номер карты", "level": "base", "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")", "setup": "", "check": "import pandas as _pd\nd0 = _pd.read_csv('clients_raw.csv').drop_duplicates()\nids = d0['client_id'].str.strip().str.upper()\nd = need('df', _pd.DataFrame)\nassert len(d) == len(d0), f'В df {len(d)} строк — уберите только полные дубли, их должно остаться {len(d0)}.'\nassert (d['client_id'].str.strip().str.upper() == d['client_id']).all(), 'В client_id остались пробелы по краям или строчные буквы.'\nassert need('n_id_dups') == ids.duplicated().sum(), f'n_id_dups = {need(\"n_id_dups\")}, а нужно {ids.duplicated().sum()}.'", "hints": ["<p><code>df[&quot;client_id&quot;] = df[&quot;client_id&quot;].str.strip().str.upper()<\/code>.<\/p>\n", "<p>Повторы номера — <code>df.duplicated(subset=[&quot;client_id&quot;]).sum()<\/code>. Полные дубли убирайте до этого.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\").drop_duplicates()\ndf[\"client_id\"] = df[\"client_id\"].str.strip().str.upper()\nn_id_dups = df.duplicated(subset=[\"client_id\"]).sum()", "explain": "<p>До нормализации повторов номера 0, после — 6. Пробел в начале и строчная «c» превращали одного гостя в двух. Это типичный результат ручного ввода: номер карты набирали на кассе.<\/p>\n", "parsons": ""}, {"id": "keep-last", "title": "Самая свежая анкета", "level": "base", "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")", "setup": "", "check": "import pandas as _pd\nd0 = _pd.read_csv('clients_raw.csv').drop_duplicates()\nd0['client_id'] = d0['client_id'].str.strip().str.upper()\nwant = d0.sort_values('signup_date').drop_duplicates('client_id', keep='last')\nc = need('clients', _pd.DataFrame)\nassert c['client_id'].is_unique, 'Номера карт в clients должны быть уникальны.'\nassert len(c) == len(want), f'В clients {len(c)} строк, а нужно {len(want)}. Номер нормализовали?'\nw = want.set_index('client_id')['signup_date']\ng = c.set_index('client_id')['signup_date']\nbad = [k for k in w.index if g.get(k) != w[k]]\nassert not bad, f'Для {bad[0]} осталась анкета от {g.get(bad[0])}, а нужна самая свежая — {w[bad[0]]}.'\nassert list(c.index) == list(range(len(c))), 'Индекс должен идти по порядку — reset_index(drop=True).'", "hints": ["<p><code>df.sort_values(&quot;signup_date&quot;).drop_duplicates(subset=[&quot;client_id&quot;], keep=&quot;last&quot;)<\/code>.<\/p>\n", "<p>Не забудьте нормализовать <code>client_id<\/code> до удаления повторов — иначе « C1012» и «C1012» останутся разными гостями.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\").drop_duplicates()\ndf[\"client_id\"] = df[\"client_id\"].str.strip().str.upper()\nclients = (df.sort_values(\"signup_date\")\n             .drop_duplicates(subset=[\"client_id\"], keep=\"last\")\n             .reset_index(drop=True))", "explain": "<p>Сортировка перед удалением делает правило явным: <code>keep=&quot;last&quot;<\/code> после <code>sort_values(&quot;signup_date&quot;)<\/code> — это «самая свежая анкета». Без сортировки <code>keep=&quot;last&quot;<\/code> значило бы «последняя в файле», а порядок строк в выгрузке ничего не гарантирует.<\/p>\n", "parsons": ""}, {"id": "dup-ids", "title": "Какие заказы повторились", "level": "base", "starter": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")", "setup": "", "check": "import pandas as _pd\np = _pd.read_csv('pos_december.csv', sep=';')\nwant = sorted(p.loc[p['id'].duplicated(), 'id'].unique())\nassert need('dup_ids') == want, f'dup_ids = {need(\"dup_ids\")}, а нужно {want}.'", "hints": ["<p><code>pos[pos.duplicated(subset=[&quot;id&quot;])][&quot;id&quot;]<\/code> — номера лишних копий.<\/p>\n", "<p>Или через подсчёт: <code>vc = pos[&quot;id&quot;].value_counts()<\/code>, затем <code>vc[vc &gt; 1].index<\/code>.<\/p>\n"], "solution": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")\nvc = pos[\"id\"].value_counts()\ndup_ids = sorted(vc[vc > 1].index)", "explain": "<p>Четыре номера заказов повторились — скорее всего, касса отправила их повторно. Список номеров полезнее числа: его можно передать в бухгалтерию, чтобы проверить чеки.<\/p>\n", "parsons": ""}, {"id": "price-list", "title": "Прайс из заказов", "level": "base", "starter": "import pandas as pd\norders = pd.read_csv(\"orders_3m.csv\")", "setup": "", "check": "import pandas as _pd\no = _pd.read_csv('orders_3m.csv')\no['price'] = o['amount'] / o['qty']\nwant = o[['drink', 'size', 'price']].drop_duplicates()\npr = need('prices', _pd.DataFrame)\nassert list(pr.columns) == ['drink', 'size', 'price'], f'Столбцы prices: {list(pr.columns)}. Нужны drink, size, price — в этом порядке.'\nassert len(pr) != len(o), f'В prices {len(pr)} строк — столько же, сколько заказов. Уберите повторы.'\nassert len(pr) == len(want), f'В prices {len(pr)} строк, а разных пар «напиток + размер» — {len(want)}.'\nm = pr.merge(want, on=['drink', 'size'], suffixes=('', '_w'))\nassert len(m) == len(want) and (m['price'] - m['price_w']).abs().max() < 1e-9, 'Цены не совпадают с amount / qty.'\nassert bool(need('ok')) is True, 'ok должен получиться True: проверьте, что пары drink + size не повторяются.'\nassert not has_literal(True), 'Получите ok проверкой (duplicated или is_unique), а не вписывайте True.'", "hints": ["<p>Цена чашки — новый столбец: <code>orders[&quot;price&quot;] = orders[&quot;amount&quot;] / orders[&quot;qty&quot;]<\/code>. Дальше — те же шаги, что для справочника кофеен. Ключ здесь <strong>составной<\/strong> — пара <code>drink<\/code> + <code>size<\/code>, поэтому и уникальность проверяют по паре: <code>duplicated(subset=[&quot;drink&quot;, &quot;size&quot;])<\/code>.<\/p>\n", "<p><code>orders[[&quot;drink&quot;, &quot;size&quot;, &quot;price&quot;]].drop_duplicates()<\/code> — по строке на каждую разную тройку. Если у пары окажется две цены, пара повторится.<\/p>\n", "<p>Проверка: <code>ok = not prices.duplicated(subset=[&quot;drink&quot;, &quot;size&quot;]).any()<\/code>.<\/p>\n"], "solution": "import pandas as pd\norders = pd.read_csv(\"orders_3m.csv\")\norders[\"price\"] = orders[\"amount\"] / orders[\"qty\"]\nprices = orders[[\"drink\", \"size\", \"price\"]].drop_duplicates()\nok = not prices.duplicated(subset=[\"drink\", \"size\"]).any()", "explain": "<p>Из 2089 заказов получилось 33 строки: 11 напитков × 3 размера, и у каждой пары ровно одна цена — <code>ok<\/code> равен <code>True<\/code>. Проверку нельзя пропускать: если бы в середине осени подняли цену на раф, пара «Раф + M» встретилась бы дважды, с двумя ценами. Тогда <code>merge<\/code> заказов с таким прайсом удвоил бы заказы рафа, а справочнику понадобилась бы дата начала действия цены. Цена здесь дробная (<code>190.0<\/code>), потому что деление <code>/<\/code> в pandas всегда даёт <code>float<\/code>.<\/p>\n", "parsons": ""}, {"id": "overcount", "title": "Цена дублей", "level": "plus", "starter": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")", "setup": "", "check": "import pandas as _pd\np = _pd.read_csv('pos_december.csv', sep=';', decimal=',')\nr = lambda t: (t['price'] * t['qty']).sum()\nwant = round(r(p) - r(p.drop_duplicates(subset=['id'])), 2)\nassert close(need('overcount'), want), f'overcount = {need(\"overcount\")}, а нужно {want}.'", "hints": ["<p>Посчитайте выручку дважды: по <code>pos<\/code> и по <code>pos.drop_duplicates(subset=[&quot;id&quot;])<\/code>.<\/p>\n", "<p><code>(pos[&quot;price&quot;] * pos[&quot;qty&quot;]).sum()<\/code> — для каждой таблицы; разница — <code>round(..., 2)<\/code>.<\/p>\n"], "solution": "import pandas as pd\npos = pd.read_csv(\"pos_december.csv\", sep=\";\", decimal=\",\")\nraw_rev = (pos[\"price\"] * pos[\"qty\"]).sum()\nuniq = pos.drop_duplicates(subset=[\"id\"])\novercount = round(raw_rev - (uniq[\"price\"] * uniq[\"qty\"]).sum(), 2)", "explain": "<p>Четыре повторных заказа завысили выручку на 1 220 ₽ — около 1 % недели. Мало для одной недели, но такая ошибка повторяется каждый день, и за год набегает заметная сумма в отчёте, которой не было на счёте.<\/p>\n", "parsons": ""}, {"id": "dedupe-fn", "title": "Функция дедупликации", "level": "plus", "starter": "import pandas as pd\n\ndef dedupe(df, key, by):\n    ...\n\nt = pd.DataFrame({\"id\": [\"A\", \"B\", \"A\"], \"d\": [\"2026-01-05\", \"2026-02-01\", \"2026-03-10\"], \"v\": [1, 2, 3]})\ndedupe(t, \"id\", \"d\")", "setup": "", "check": "import pandas as _pd\nf = need('dedupe')\nt = _pd.DataFrame({'id': ['A', 'B', 'A', 'C', 'B'], 'd': ['2026-01-05', '2026-02-01', '2026-03-10', '2026-01-01', '2025-12-31'], 'v': [1, 2, 3, 4, 5]})\nbefore = t.copy()\nr = f(t, 'id', 'd')\nassert isinstance(r, _pd.DataFrame), 'dedupe должна возвращать DataFrame.'\nassert t.equals(before), 'Исходная таблица изменилась — функция должна возвращать новую.'\nassert sorted(r['id']) == ['A', 'B', 'C'], f'Ключи в результате: {sorted(r[\"id\"])}.'\nassert dict(zip(r['id'], r['v'])) == {'A': 3, 'B': 2, 'C': 4}, f'Оставлены не те строки: {dict(zip(r[\"id\"], r[\"v\"]))}. Нужна строка с наибольшим by.'\nassert list(r.index) == list(range(len(r))), 'Индекс — по порядку от 0.'\nr2 = f(_pd.DataFrame({'k': [1, 1, 2], 'amount': [500, 900, 100]}), 'k', 'amount')\nassert dict(zip(r2['k'], r2['amount'])) == {1: 900, 2: 100}, 'Функция должна работать с любыми названиями столбцов.'", "hints": ["<p>Внутри — та же цепочка, что в задаче про свежую анкету, только вместо названий столбцов — параметры <code>key<\/code> и <code>by<\/code>.<\/p>\n", "<p><code>return df.sort_values(by).drop_duplicates(subset=[key], keep=&quot;last&quot;).reset_index(drop=True)<\/code> — <code>sort_values<\/code> возвращает новую таблицу, исходная не меняется.<\/p>\n"], "solution": "import pandas as pd\n\ndef dedupe(df, key, by):\n    return (df.sort_values(by)\n              .drop_duplicates(subset=[key], keep=\"last\")\n              .reset_index(drop=True))\n\nt = pd.DataFrame({\"id\": [\"A\", \"B\", \"A\"], \"d\": [\"2026-01-05\", \"2026-02-01\", \"2026-03-10\"], \"v\": [1, 2, 3]})\ndedupe(t, \"id\", \"d\")", "explain": "<p><code>sort_values<\/code> и <code>drop_duplicates<\/code> возвращают новые таблицы, поэтому исходная не меняется. Такую функцию можно применять к любой выгрузке — это первый кирпичик воспроизводимой очистки из урока «Очистка целиком: функция и проверки».<\/p>\n", "parsons": ""}, {"id": "shops-ref", "title": "Справочник кофеен", "level": "plus", "starter": "import pandas as pd\nflat = pd.read_csv(\"delivery_flat.csv\")\ncols = [\"shop_id\", \"shop_address\", \"city\", \"manager\"]\nshops = flat[cols].drop_duplicates()", "setup": "", "check": "import pandas as _pd\nf = _pd.read_csv('delivery_flat.csv')\ncols = ['shop_id', 'shop_address', 'city', 'manager']\nf['city'] = f['city'].str.strip().str.capitalize()\nwant = f.sort_values('date').drop_duplicates('shop_id', keep='last')[cols].set_index('shop_id').sort_index()\nv = f[cols].drop_duplicates()\nwant_changed = int(v['shop_id'].duplicated().groupby(v['shop_id']).any().sum())\ns = need('shops', _pd.DataFrame)\nassert set(cols) <= set(s.columns), f'В shops нужны столбцы {cols}, сейчас {list(s.columns)}.'\nassert len(s.columns) == 4, f'В shops лишние столбцы: {[c for c in s.columns if c not in cols]}. Атрибуты заказа в справочник не идут.'\nassert s['shop_id'].is_unique, f'shop_id повторяется: {sorted(s.loc[s[\"shop_id\"].duplicated(), \"shop_id\"].unique())}. Нормализуйте город и оставьте самую свежую версию.'\ng = s.set_index('shop_id').sort_index()[want.columns]\nassert list(g.index) == list(want.index), f'Коды в shops: {list(g.index)}, а нужны {list(want.index)}.'\nbad_city = g.index[g['city'] != want['city']].tolist()\nassert not bad_city, f'Город не совпадает у {bad_city}: уберите пробелы по краям и сделайте первую букву заглавной.'\nbad_mgr = g.index[g['manager'] != want['manager']].tolist()\nassert not bad_mgr, f'Управляющий у {bad_mgr} не самый свежий. Отсортируйте по date перед drop_duplicates(keep=\"last\").'\nassert need('n_changed') == want_changed, f'n_changed = {need(\"n_changed\")}. Посчитайте кофейни, у которых после нормализации города больше одной версии.'", "hints": ["<p>Порядок важен: сначала нормализуйте город во всей выгрузке, потом смотрите версии. Иначе опечатка «Тюмень » выглядит как изменение.<\/p>\n", "<p>Версии после нормализации: <code>v = flat[cols].drop_duplicates()<\/code>; кофейни с несколькими версиями — <code>v[&quot;shop_id&quot;].value_counts()<\/code> больше 1.<\/p>\n", "<p>Самая свежая версия: <code>flat.sort_values(&quot;date&quot;).drop_duplicates(subset=[&quot;shop_id&quot;], keep=&quot;last&quot;)[cols]<\/code>. <code>n_changed = (v[&quot;shop_id&quot;].value_counts() &gt; 1).sum()<\/code>.<\/p>\n"], "solution": "import pandas as pd\nflat = pd.read_csv(\"delivery_flat.csv\")\ncols = [\"shop_id\", \"shop_address\", \"city\", \"manager\"]\nflat[\"city\"] = flat[\"city\"].str.strip().str.capitalize()\nversions = flat[cols].drop_duplicates()\nn_changed = (versions[\"shop_id\"].value_counts() > 1).sum()\nshops = (flat.sort_values(\"date\")\n             .drop_duplicates(subset=[\"shop_id\"], keep=\"last\")[cols]\n             .reset_index(drop=True))", "explain": "<p>До нормализации у трёх кофеен было по две версии, после — только у KZN-2: там с 10 ноября новый управляющий. Это единственное настоящее изменение, остальное — грязь написания. Порядок шагов решает всё. Если искать «последнюю версию» до чистки города, у TMN-1 случайно останется «Тюмень » с пробелом — смотря какой заказ оказался последним. Если взять первую версию вместо последней, справочник назовёт управляющей KZN-2 Алину Сафину, которая там больше не работает. Готовый справочник проверяют так же, как в задаче про прайс: ключ уникален, строк столько, сколько кофеен.<\/p>\n", "parsons": ""}, {"id": "versions", "title": "Все версии анкет", "level": "star", "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")", "setup": "", "check": "import pandas as _pd\nd0 = _pd.read_csv('clients_raw.csv').drop_duplicates()\nd0['client_id'] = d0['client_id'].str.strip().str.upper()\nwant = d0[d0.duplicated('client_id', keep=False)].sort_values(['client_id', 'signup_date'])\nv = need('versions', _pd.DataFrame)\nassert len(v) == len(want), f'В versions {len(v)} строк, а нужно {len(want)} — по две и больше на гостя, включая первую анкету.'\nassert list(v['client_id']) == list(want['client_id']) and list(v['signup_date']) == list(want['signup_date']), 'Порядок строк не тот: сначала по номеру, внутри — по дате.'\nassert need('n_guests') == want['client_id'].nunique(), f'n_guests = {need(\"n_guests\")}.'", "hints": ["<p>Все копии, включая первую, помечает <code>duplicated(subset=[&quot;client_id&quot;], keep=False)<\/code>.<\/p>\n", "<p>Сортировка по двум столбцам — списком: <code>sort_values([&quot;client_id&quot;, &quot;signup_date&quot;])<\/code>.<\/p>\n"], "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\").drop_duplicates()\ndf[\"client_id\"] = df[\"client_id\"].str.strip().str.upper()\nversions = (df[df.duplicated(subset=[\"client_id\"], keep=False)]\n              .sort_values([\"client_id\", \"signup_date\"]))\nn_guests = versions[\"client_id\"].nunique()", "explain": "<p>Порядок шагов важен. Сначала удаляем полные копии строк, потом нормализуем номер карты: только после этого «c1023 » и «C1023» становятся одним гостем. <code>keep=False<\/code> помечает все строки повторяющегося номера, а не только вторую и следующие, поэтому маркетинг видит каждую версию анкеты. Получается 12 строк от 6 гостей. Сортировка по номеру и дате ставит версии одного гостя рядом в хронологическом порядке: сразу видно, что он поменял между анкетами.<\/p>\n", "parsons": ""}], "files": ["clients_raw.csv", "pos_december.csv", "orders_3m.csv", "delivery_flat.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+
+
+</body>
+</html>

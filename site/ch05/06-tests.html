@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Статистические тесты: какой выбрать — DS для аналитиков</title>
+<link rel="icon" href="../assets/favicon.svg?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/vendor/katex/katex.min.css?v=b555cf35b0">
+<link rel="stylesheet" href="../assets/app.css?v=b555cf35b0">
+<script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="page-lesson" data-root="../" data-v="b555cf35b0">
+<a class="skip" href="#main">К уроку</a>
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a class="brand" href="../index.html"><svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg><span>DS для аналитиков</span></a>
+  <span class="crumbs"><a href="../index.html#ch05">Глава 5. Статистика и проверка гипотез</a></span>
+  <span class="spacer"></span>
+  <button class="search-btn" id="search-btn" aria-label="Поиск по курсу"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span><kbd class="mod">Ctrl</kbd><kbd>K</kbd></button>
+  <nav class="topnav" aria-label="Разделы">
+    <a href="../cheatsheet.html" title="Шпаргалка SQL ↔ Python"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span>Шпаргалка</span></a>
+    <a href="../notes.html" title="Мои заметки"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg><span>Заметки</span></a>
+    <a href="../stats.html" title="Статистика и повторение"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-7"/></svg><span>Статистика</span></a>
+  </nav>
+  <span class="py-pill" id="py-pill" data-state="idle" title="Состояние Python в браузере"><i></i><span>Python</span></span>
+  <span class="save-pill" id="save-pill" data-state="browser" title=""><i></i><span>В браузере</span></span>
+  <button class="icon-btn" id="theme-btn" aria-label="Сменить тему"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" class="fill"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Уроки главы"><div class="side-head"><div class="eyebrow">Глава 5</div><div class="side-title">Статистика и проверка гипотез</div><div class="meter" id="chapter-meter"><i></i></div></div><div class="tree-head"><span class="eyebrow">Оглавление курса</span><button class="linklike tree-toggle" type="button" data-tree-toggle>Развернуть всё</button></div><label class="core-only-toggle"><input type="checkbox" data-core-only> Только основной путь</label><ul class="course-tree"><li><details class="tree-ch" data-ch="ch01"><summary class="tree-sum"><span class="tree-num">01</span><span class="tree-t">Python для аналитика</span><span class="tree-c" data-chp="ch01">14</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch01/index.html" data-chintro="ch01"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch01/01-start.html" data-lesson="ch01/01-start"><span class="dot"></span><span class="num">1</span><span class="t">Первая программа и ошибки</span></a></li><li data-core="1"><a href="../ch01/02-numbers.html" data-lesson="ch01/02-numbers"><span class="dot"></span><span class="num">2</span><span class="t">Переменные и числа</span></a></li><li data-core="1"><a href="../ch01/03-strings.html" data-lesson="ch01/03-strings"><span class="dot"></span><span class="num">3</span><span class="t">Строки и f-строки</span></a></li><li data-core="1"><a href="../ch01/04-lists.html" data-lesson="ch01/04-lists"><span class="dot"></span><span class="num">4</span><span class="t">Списки</span></a></li><li data-core="1"><a href="../ch01/05-for.html" data-lesson="ch01/05-for"><span class="dot"></span><span class="num">5</span><span class="t">Цикл for</span></a></li><li data-core="1"><a href="../ch01/06-if.html" data-lesson="ch01/06-if"><span class="dot"></span><span class="num">6</span><span class="t">Условия и цикл while</span></a></li><li data-core="1"><a href="../ch01/07-tables.html" data-lesson="ch01/07-tables"><span class="dot"></span><span class="num">7</span><span class="t">Таблица из списков</span></a></li><li data-core="1"><a href="../ch01/08-dicts.html" data-lesson="ch01/08-dicts"><span class="dot"></span><span class="num">8</span><span class="t">Словари — GROUP BY своими руками</span></a></li><li data-core="1"><a href="../ch01/09-functions.html" data-lesson="ch01/09-functions"><span class="dot"></span><span class="num">9</span><span class="t">Функции</span></a></li><li class="exam-item"><a href="../ch01/exam-1.html" data-exam="ch01/exam-1"><span class="dot"></span><span class="num">✓</span><span class="t">Контрольная точка: уроки 1–9</span></a></li><li data-core="1"><a href="../ch01/10-tuples-sets.html" data-lesson="ch01/10-tuples-sets"><span class="dot"></span><span class="num">10</span><span class="t">Кортежи и множества</span></a></li><li data-core="1"><a href="../ch01/11-comprehensions.html" data-lesson="ch01/11-comprehensions"><span class="dot"></span><span class="num">11</span><span class="t">Генераторы списков, zip, sorted</span></a></li><li data-core="1"><a href="../ch01/12-errors.html" data-lesson="ch01/12-errors"><span class="dot"></span><span class="num">12</span><span class="t">Исключения — как не падать на грязных данных</span></a></li><li data-core="1"><a href="../ch01/13-files.html" data-lesson="ch01/13-files"><span class="dot"></span><span class="num">13</span><span class="t">Файлы, CSV и модули</span></a></li><li data-core="1"><a href="../ch01/14-project.html" data-lesson="ch01/14-project"><span class="dot"></span><span class="num">14</span><span class="t">Мини-проект: отчёт по заказам</span></a></li><li class="exam-item"><a href="../ch01/test.html" data-ctest="ch01" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch02"><summary class="tree-sum"><span class="tree-num">02</span><span class="tree-t">pandas — таблицы как в SQL</span><span class="tree-c" data-chp="ch02">22</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch02/index.html" data-chintro="ch02"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch02/01-dataframe.html" data-lesson="ch02/01-dataframe"><span class="dot"></span><span class="num">1</span><span class="t">DataFrame — таблица в Python</span></a></li><li data-core="1"><a href="../ch02/02-select.html" data-lesson="ch02/02-select"><span class="dot"></span><span class="num">2</span><span class="t">Выбор столбцов и строк: SELECT и WHERE</span></a></li><li data-core="1"><a href="../ch02/03-columns.html" data-lesson="ch02/03-columns"><span class="dot"></span><span class="num">3</span><span class="t">Сортировка и новые столбцы: ORDER BY, CASE</span></a></li><li data-core="1"><a href="../ch02/04-groupby.html" data-lesson="ch02/04-groupby"><span class="dot"></span><span class="num">4</span><span class="t">Группировки: GROUP BY и HAVING</span></a></li><li data-core="1"><a href="../ch02/04a-guest-metrics.html" data-lesson="ch02/04a-guest-metrics"><span class="dot"></span><span class="num">5</span><span class="t">Метрики на гостя: повторные и конверсия</span></a></li><li data-core="1"><a href="../ch02/04b-pivot.html" data-lesson="ch02/04b-pivot"><span class="dot"></span><span class="num">6</span><span class="t">Сводные таблицы: широкий и длинный формат</span></a></li><li data-core="1"><a href="../ch02/05-merge.html" data-lesson="ch02/05-merge"><span class="dot"></span><span class="num">7</span><span class="t">Соединения: JOIN и UNION</span></a></li><li data-core="1"><a href="../ch02/05b-join-index.html" data-lesson="ch02/05b-join-index"><span class="dot"></span><span class="num">8</span><span class="t">Соединения по индексу, anti join и UNION</span></a></li><li data-core="1"><a href="../ch02/06-dates.html" data-lesson="ch02/06-dates"><span class="dot"></span><span class="num">9</span><span class="t">Даты и время</span></a></li><li data-core="1"><a href="../ch02/06b-timezones.html" data-lesson="ch02/06b-timezones"><span class="dot"></span><span class="num">10</span><span class="t">Часовые пояса и unix-время</span></a></li><li data-core="1"><a href="../ch02/07-duckdb.html" data-lesson="ch02/07-duckdb"><span class="dot"></span><span class="num">11</span><span class="t">SQL прямо по датафрейму — DuckDB</span></a></li><li data-core="1"><a href="../ch02/07a-sql-python.html" data-lesson="ch02/07a-sql-python"><span class="dot"></span><span class="num">12</span><span class="t">SQL из Python к базе: параметры и подключения</span></a></li><li data-core="0"><a href="../ch02/07b-sql-windows.html" data-lesson="ch02/07b-sql-windows"><span class="dot"></span><span class="num">13</span><span class="t">Оконные функции SQL: ранги, доли, соседние строки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch02/07c-sql-frames.html" data-lesson="ch02/07c-sql-frames"><span class="dot"></span><span class="num">14</span><span class="t">Рамки окна SQL: накопительные итоги и скользящие средние</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/08-jupyter.html" data-lesson="ch02/08-jupyter"><span class="dot"></span><span class="num">15</span><span class="t">Своё рабочее место — uv и Jupyter</span></a></li><li data-core="1"><a href="../ch02/08a-nb-report.html" data-lesson="ch02/08a-nb-report"><span class="dot"></span><span class="num">16</span><span class="t">Блокнот-отчёт: структура, выводы, привычки</span></a></li><li data-core="1"><a href="../ch02/08b-jupyter-keys.html" data-lesson="ch02/08b-jupyter-keys"><span class="dot"></span><span class="num">17</span><span class="t">Jupyter: руки на клавиатуре</span></a></li><li data-core="0"><a href="../ch02/08c-terminal-memory.html" data-lesson="ch02/08c-terminal-memory"><span class="dot"></span><span class="num">18</span><span class="t">Терминал и память: заглянуть в файл, не открывая его</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch02/09-project.html" data-lesson="ch02/09-project"><span class="dot"></span><span class="num">19</span><span class="t">Проект: три месяца продаж</span></a></li><li data-core="1"><a href="../ch02/10-git.html" data-lesson="ch02/10-git"><span class="dot"></span><span class="num">20</span><span class="t">Git: коммиты, история, ветки и .gitignore</span></a></li><li data-core="1"><a href="../ch02/10b-git-github.html" data-lesson="ch02/10b-git-github"><span class="dot"></span><span class="num">21</span><span class="t">Блокнот в git и портфолио на GitHub</span></a></li><li data-core="0"><a href="../ch02/11-sql-project.html" data-lesson="ch02/11-sql-project"><span class="dot"></span><span class="num">22</span><span class="t">Проект: база данных сети на SQL</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch02/test.html" data-ctest="ch02" data-n="13"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch03"><summary class="tree-sum"><span class="tree-num">03</span><span class="tree-t">Предобработка данных</span><span class="tree-c" data-chp="ch03">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch03/index.html" data-chintro="ch03"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch03/01-inspect.html" data-lesson="ch03/01-inspect"><span class="dot"></span><span class="num">1</span><span class="t">Первый осмотр: что не так с данными</span></a></li><li data-core="1"><a href="../ch03/02-missing.html" data-lesson="ch03/02-missing"><span class="dot"></span><span class="num">2</span><span class="t">Пропуски</span></a></li><li data-core="1"><a href="../ch03/03-types.html" data-lesson="ch03/03-types"><span class="dot"></span><span class="num">3</span><span class="t">Типы: из текста в числа и даты</span></a></li><li data-core="1"><a href="../ch03/03b-excel.html" data-lesson="ch03/03b-excel"><span class="dot"></span><span class="num">4</span><span class="t">Книга Excel: листы, шапка, итоги</span></a></li><li data-core="1"><a href="../ch03/04-duplicates.html" data-lesson="ch03/04-duplicates"><span class="dot"></span><span class="num">5</span><span class="t">Дубликаты — явные и неявные</span></a></li><li data-core="1"><a href="../ch03/05-strings.html" data-lesson="ch03/05-strings"><span class="dot"></span><span class="num">6</span><span class="t">Строки: чистим и ищем по тексту</span></a></li><li data-core="1"><a href="../ch03/06-categories.html" data-lesson="ch03/06-categories"><span class="dot"></span><span class="num">7</span><span class="t">Категоризация: CASE WHEN в pandas</span></a></li><li data-core="1"><a href="../ch03/07-anomalies.html" data-lesson="ch03/07-anomalies"><span class="dot"></span><span class="num">8</span><span class="t">Аномалии и проверка на здравый смысл</span></a></li><li data-core="1"><a href="../ch03/08-pipeline.html" data-lesson="ch03/08-pipeline"><span class="dot"></span><span class="num">9</span><span class="t">Очистка целиком: функция и проверки</span></a></li><li data-core="1"><a href="../ch03/09-project.html" data-lesson="ch03/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: кто наши гости</span></a></li><li class="exam-item"><a href="../ch03/test.html" data-ctest="ch03" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch04"><summary class="tree-sum"><span class="tree-num">04</span><span class="tree-t">Исследовательский анализ и графики</span><span class="tree-c" data-chp="ch04">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch04/index.html" data-chintro="ch04"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch04/01-plots.html" data-lesson="ch04/01-plots"><span class="dot"></span><span class="num">1</span><span class="t">Первый график: matplotlib и pandas</span></a></li><li data-core="1"><a href="../ch04/02-histograms.html" data-lesson="ch04/02-histograms"><span class="dot"></span><span class="num">2</span><span class="t">Распределения и гистограммы</span></a></li><li data-core="1"><a href="../ch04/03-boxplots.html" data-lesson="ch04/03-boxplots"><span class="dot"></span><span class="num">3</span><span class="t">Ящик с усами и выбросы</span></a></li><li data-core="1"><a href="../ch04/03b-sigma.html" data-lesson="ch04/03b-sigma"><span class="dot"></span><span class="num">4</span><span class="t">Стандартное отклонение: разброс одним числом</span></a></li><li data-core="1"><a href="../ch04/04-slices.html" data-lesson="ch04/04-slices"><span class="dot"></span><span class="num">5</span><span class="t">Срезы: сравниваем группы</span></a></li><li data-core="1"><a href="../ch04/05-time.html" data-lesson="ch04/05-time"><span class="dot"></span><span class="num">6</span><span class="t">Динамика во времени</span></a></li><li data-core="0"><a href="../ch04/05b-cohorts.html" data-lesson="ch04/05b-cohorts"><span class="dot"></span><span class="num">7</span><span class="t">Когорты и удержание</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch04/05c-dau-mau.html" data-lesson="ch04/05c-dau-mau"><span class="dot"></span><span class="num">8</span><span class="t">Когорты в SQL и DAU/MAU: проверка и частота</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch04/06-correlation.html" data-lesson="ch04/06-correlation"><span class="dot"></span><span class="num">9</span><span class="t">Связи: рассеяние и корреляция</span></a></li><li data-core="1"><a href="../ch04/07-readable.html" data-lesson="ch04/07-readable"><span class="dot"></span><span class="num">10</span><span class="t">Понятный график</span></a></li><li data-core="1"><a href="../ch04/07c-metrics.html" data-lesson="ch04/07c-metrics"><span class="dot"></span><span class="num">11</span><span class="t">Метрики: чьё среднее и воронка</span></a></li><li data-core="1"><a href="../ch04/08-eda.html" data-lesson="ch04/08-eda"><span class="dot"></span><span class="num">12</span><span class="t">EDA по плану: от вопроса к выводу</span></a></li><li data-core="1"><a href="../ch04/09-project.html" data-lesson="ch04/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: почему доставка опаздывает</span></a></li><li class="exam-item"><a href="../ch04/test.html" data-ctest="ch04" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch05" open><summary class="tree-sum"><span class="tree-num">05</span><span class="tree-t">Статистика и проверка гипотез</span><span class="tree-c" data-chp="ch05">10</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch05/index.html" data-chintro="ch05"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch05/01-probability.html" data-lesson="ch05/01-probability"><span class="dot"></span><span class="num">1</span><span class="t">Вероятность: частота и симуляция</span></a></li><li data-core="1"><a href="../ch05/02-distributions.html" data-lesson="ch05/02-distributions"><span class="dot"></span><span class="num">2</span><span class="t">Распределения: мат. ожидание, биномиальное, Пуассона</span></a></li><li data-core="1"><a href="../ch05/02b-normal.html" data-lesson="ch05/02b-normal"><span class="dot"></span><span class="num">3</span><span class="t">Нормальное распределение, приближение и z-оценка</span></a></li><li data-core="1"><a href="../ch05/03-sampling.html" data-lesson="ch05/03-sampling"><span class="dot"></span><span class="num">4</span><span class="t">Выборки и центральная предельная теорема</span></a></li><li data-core="1"><a href="../ch05/04-confidence.html" data-lesson="ch05/04-confidence"><span class="dot"></span><span class="num">5</span><span class="t">Доверительные интервалы</span></a></li><li data-core="1"><a href="../ch05/05-hypotheses.html" data-lesson="ch05/05-hypotheses"><span class="dot"></span><span class="num">6</span><span class="t">Проверка гипотез: логика и p-value</span></a></li><li data-core="1"><a href="../ch05/06-tests.html" aria-current="page" data-lesson="ch05/06-tests"><span class="dot"></span><span class="num">7</span><span class="t">Статистические тесты: какой выбрать</span></a></li><li data-core="1"><a href="../ch05/07-ab.html" data-lesson="ch05/07-ab"><span class="dot"></span><span class="num">8</span><span class="t">A/B-тест: от дизайна до решения</span></a></li><li data-core="1"><a href="../ch05/08-pitfalls.html" data-lesson="ch05/08-pitfalls"><span class="dot"></span><span class="num">9</span><span class="t">Ловушки статистики</span></a></li><li data-core="1"><a href="../ch05/09-project.html" data-lesson="ch05/09-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: новое обещание доставки</span></a></li><li class="exam-item"><a href="../ch05/test.html" data-ctest="ch05" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch06"><summary class="tree-sum"><span class="tree-num">06</span><span class="tree-t">Первые модели машинного обучения</span><span class="tree-c" data-chp="ch06">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch06/index.html" data-chintro="ch06"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch06/01-what-is-ml.html" data-lesson="ch06/01-what-is-ml"><span class="dot"></span><span class="num">1</span><span class="t">Что такое машинное обучение</span></a></li><li data-core="1"><a href="../ch06/02-split.html" data-lesson="ch06/02-split"><span class="dot"></span><span class="num">2</span><span class="t">Обучающая и тестовая выборки</span></a></li><li data-core="1"><a href="../ch06/03-tree.html" data-lesson="ch06/03-tree"><span class="dot"></span><span class="num">3</span><span class="t">Решающее дерево изнутри</span></a></li><li data-core="1"><a href="../ch06/04-categorical.html" data-lesson="ch06/04-categorical"><span class="dot"></span><span class="num">4</span><span class="t">Категориальные признаки и утечки</span></a></li><li data-core="1"><a href="../ch06/05-forest.html" data-lesson="ch06/05-forest"><span class="dot"></span><span class="num">5</span><span class="t">Случайный лес</span></a></li><li data-core="1"><a href="../ch06/06-logistic.html" data-lesson="ch06/06-logistic"><span class="dot"></span><span class="num">6</span><span class="t">Логистическая регрессия и вероятности</span></a></li><li data-core="1"><a href="../ch06/06b-probabilities.html" data-lesson="ch06/06b-probabilities"><span class="dot"></span><span class="num">7</span><span class="t">Что делать с вероятностями: ранжирование и калибровка</span></a></li><li data-core="1"><a href="../ch06/07-regression.html" data-lesson="ch06/07-regression"><span class="dot"></span><span class="num">8</span><span class="t">Регрессия: сколько минут</span></a></li><li data-core="1"><a href="../ch06/08-validation.html" data-lesson="ch06/08-validation"><span class="dot"></span><span class="num">9</span><span class="t">Честное сравнение моделей</span></a></li><li data-core="1"><a href="../ch06/08b-groups-speed.html" data-lesson="ch06/08b-groups-speed"><span class="dot"></span><span class="num">10</span><span class="t">Групповое разбиение и цена модели</span></a></li><li data-core="1"><a href="../ch06/09-project.html" data-lesson="ch06/09-project"><span class="dot"></span><span class="num">11</span><span class="t">Проект: кто из гостей уйдёт</span></a></li><li class="exam-item"><a href="../ch06/test.html" data-ctest="ch06" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch07"><summary class="tree-sum"><span class="tree-num">07</span><span class="tree-t">Признаки, метрики и Pipeline</span><span class="tree-c" data-chp="ch07">13</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch07/index.html" data-chintro="ch07"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch07/01-confusion.html" data-lesson="ch07/01-confusion"><span class="dot"></span><span class="num">1</span><span class="t">Матрица ошибок</span></a></li><li data-core="1"><a href="../ch07/02-precision-recall.html" data-lesson="ch07/02-precision-recall"><span class="dot"></span><span class="num">2</span><span class="t">Precision, recall и F1</span></a></li><li data-core="1"><a href="../ch07/03-threshold.html" data-lesson="ch07/03-threshold"><span class="dot"></span><span class="num">3</span><span class="t">Порог, PR- и ROC-кривые</span></a></li><li data-core="1"><a href="../ch07/03b-money-threshold.html" data-lesson="ch07/03b-money-threshold"><span class="dot"></span><span class="num">4</span><span class="t">Порог по деньгам</span></a></li><li data-core="1"><a href="../ch07/04-imbalance.html" data-lesson="ch07/04-imbalance"><span class="dot"></span><span class="num">5</span><span class="t">Дисбаланс классов</span></a></li><li data-core="1"><a href="../ch07/05-scaling.html" data-lesson="ch07/05-scaling"><span class="dot"></span><span class="num">6</span><span class="t">Масштабирование и ближайшие соседи</span></a></li><li data-core="1"><a href="../ch07/05b-regularization.html" data-lesson="ch07/05b-regularization"><span class="dot"></span><span class="num">7</span><span class="t">Регуляризация: штраф за большие веса</span></a></li><li data-core="1"><a href="../ch07/06-features.html" data-lesson="ch07/06-features"><span class="dot"></span><span class="num">8</span><span class="t">Новые признаки</span></a></li><li data-core="1"><a href="../ch07/06b-feature-check.html" data-lesson="ch07/06b-feature-check"><span class="dot"></span><span class="num">9</span><span class="t">Форма связи и важность признаков</span></a></li><li data-core="1"><a href="../ch07/07-pipeline.html" data-lesson="ch07/07-pipeline"><span class="dot"></span><span class="num">10</span><span class="t">Pipeline: предобработка и модель вместе</span></a></li><li data-core="0"><a href="../ch07/07b-own-steps.html" data-lesson="ch07/07b-own-steps"><span class="dot"></span><span class="num">11</span><span class="t">Свои шаги конвейера: порядок категорий, функции и свой класс</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch07/08-tuning.html" data-lesson="ch07/08-tuning"><span class="dot"></span><span class="num">12</span><span class="t">Подбор гиперпараметров</span></a></li><li data-core="1"><a href="../ch07/09-project.html" data-lesson="ch07/09-project"><span class="dot"></span><span class="num">13</span><span class="t">Проект: какие заявки довести до договора</span></a></li><li class="exam-item"><a href="../ch07/test.html" data-ctest="ch07" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch08"><summary class="tree-sum"><span class="tree-num">08</span><span class="tree-t">ML для бизнес-решений</span><span class="tree-c" data-chp="ch08">11</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch08/index.html" data-chintro="ch08"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch08/01-value.html" data-lesson="ch08/01-value"><span class="dot"></span><span class="num">1</span><span class="t">Из прогноза — в деньги</span></a></li><li data-core="1"><a href="../ch08/01a-pilot.html" data-lesson="ch08/01a-pilot"><span class="dot"></span><span class="num">2</span><span class="t">Пилот и P&amp;L: что обещала модель и что вышло</span></a></li><li data-core="0"><a href="../ch08/01b-metric-tree.html" data-lesson="ch08/01b-metric-tree"><span class="dot"></span><span class="num">3</span><span class="t">Дерево метрик: откуда взялось изменение выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/02-budget.html" data-lesson="ch08/02-budget"><span class="dot"></span><span class="num">4</span><span class="t">Когда бюджет ограничен</span></a></li><li data-core="0"><a href="../ch08/03-risk.html" data-lesson="ch08/03-risk"><span class="dot"></span><span class="num">5</span><span class="t">Риск: сколько можно потерять</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04-monitoring.html" data-lesson="ch08/04-monitoring"><span class="dot"></span><span class="num">6</span><span class="t">Модель в работе: мониторинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch08/04b-segments.html" data-lesson="ch08/04b-segments"><span class="dot"></span><span class="num">7</span><span class="t">Качество по сегментам и отчёт о метрике</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch08/05-explain.html" data-lesson="ch08/05-explain"><span class="dot"></span><span class="num">8</span><span class="t">Объяснить модель бизнесу</span></a></li><li data-core="1"><a href="../ch08/05b-fairness.html" data-lesson="ch08/05b-fairness"><span class="dot"></span><span class="num">9</span><span class="t">Этика данных и справедливость модели</span></a></li><li data-core="1"><a href="../ch08/06-project.html" data-lesson="ch08/06-project"><span class="dot"></span><span class="num">10</span><span class="t">Проект: где поставить кофейные автоматы</span></a></li><li data-core="1"><a href="../ch08/07-final-project.html" data-lesson="ch08/07-final-project"><span class="dot"></span><span class="num">11</span><span class="t">Итоговый проект: от базы данных до рекомендаций</span></a></li><li class="exam-item"><a href="../ch08/test.html" data-ctest="ch08" data-n="11"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch09"><summary class="tree-sum"><span class="tree-num">09</span><span class="tree-t">Линейная алгебра для ML</span><span class="tree-c" data-chp="ch09">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch09/index.html" data-chintro="ch09"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch09/01-vectors.html" data-lesson="ch09/01-vectors"><span class="dot"></span><span class="num">1</span><span class="t">Векторы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02-matrices.html" data-lesson="ch09/02-matrices"><span class="dot"></span><span class="num">2</span><span class="t">Матрицы</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/02b-vectorize.html" data-lesson="ch09/02b-vectorize"><span class="dot"></span><span class="num">3</span><span class="t">Без циклов: векторизация и замер времени</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03-normal-equation.html" data-lesson="ch09/03-normal-equation"><span class="dot"></span><span class="num">4</span><span class="t">Как обучается линейная регрессия</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/03b-own-model.html" data-lesson="ch09/03b-own-model"><span class="dot"></span><span class="num">5</span><span class="t">Своя модель: класс с fit и predict</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/04-transform.html" data-lesson="ch09/04-transform"><span class="dot"></span><span class="num">6</span><span class="t">Преобразовать признаки матрицей</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch09/05-project.html" data-lesson="ch09/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: спрятать анкеты и не потерять модель</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch09/test.html" data-ctest="ch09" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch10"><summary class="tree-sum"><span class="tree-num">10</span><span class="tree-t">Градиентный спуск и бустинг</span><span class="tree-c" data-chp="ch10">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch10/index.html" data-chintro="ch10"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch10/01-gradient.html" data-lesson="ch10/01-gradient"><span class="dot"></span><span class="num">1</span><span class="t">Градиентный спуск: шаг за шагом к минимуму</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/01b-numeric.html" data-lesson="ch10/01b-numeric"><span class="dot"></span><span class="num">2</span><span class="t">Численные методы: цена формулы и деление пополам</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02-gd-many.html" data-lesson="ch10/02-gd-many"><span class="dot"></span><span class="num">3</span><span class="t">Спуск для многих признаков</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/02b-optimizers.html" data-lesson="ch10/02b-optimizers"><span class="dot"></span><span class="num">4</span><span class="t">Оптимизаторы: инерция, Adam и затухание весов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/03-boosting.html" data-lesson="ch10/03-boosting"><span class="dot"></span><span class="num">5</span><span class="t">Бустинг: каждое дерево исправляет ошибки предыдущих</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/04-tuning.html" data-lesson="ch10/04-tuning"><span class="dot"></span><span class="num">6</span><span class="t">Настройка бустинга</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/05-project.html" data-lesson="ch10/05-project"><span class="dot"></span><span class="num">7</span><span class="t">Проект: прогноз дневной выручки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch10/06-libraries.html" data-lesson="ch10/06-libraries"><span class="dot"></span><span class="num">8</span><span class="t">CatBoost и LightGBM в своём Jupyter</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch10/test.html" data-ctest="ch10" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch11"><summary class="tree-sum"><span class="tree-num">11</span><span class="tree-t">Нейросети</span><span class="tree-c" data-chp="ch11">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch11/index.html" data-chintro="ch11"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch11/01-neuron.html" data-lesson="ch11/01-neuron"><span class="dot"></span><span class="num">1</span><span class="t">Нейрон и слои</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02-backprop.html" data-lesson="ch11/02-backprop"><span class="dot"></span><span class="num">2</span><span class="t">Обучение сети: обратное распространение ошибки</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/02b-graph.html" data-lesson="ch11/02b-graph"><span class="dot"></span><span class="num">3</span><span class="t">Граф вычислений, инициализация и обрезка градиента</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/03-mlp.html" data-lesson="ch11/03-mlp"><span class="dot"></span><span class="num">4</span><span class="t">Нейросеть в sklearn: MLP</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04-pytorch.html" data-lesson="ch11/04-pytorch"><span class="dot"></span><span class="num">5</span><span class="t">PyTorch: то же самое, но в промышленном масштабе</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04b-softmax.html" data-lesson="ch11/04b-softmax"><span class="dot"></span><span class="num">6</span><span class="t">Softmax, выход под задачу и мини-батчи</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/04c-debug.html" data-lesson="ch11/04c-debug"><span class="dot"></span><span class="num">7</span><span class="t">Dropout, BatchNorm и smoke-test</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch11/05-project.html" data-lesson="ch11/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: распознать цифры в бумажных анкетах</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch11/test.html" data-ctest="ch11" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch12"><summary class="tree-sum"><span class="tree-num">12</span><span class="tree-t">Временные ряды</span><span class="tree-c" data-chp="ch12">6</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch12/index.html" data-chintro="ch12"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch12/01-resample.html" data-lesson="ch12/01-resample"><span class="dot"></span><span class="num">1</span><span class="t">Временной ряд: индекс-дата, resample и скользящие окна</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/02-decompose.html" data-lesson="ch12/02-decompose"><span class="dot"></span><span class="num">2</span><span class="t">Тренд, сезонность и остаток</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03-features.html" data-lesson="ch12/03-features"><span class="dot"></span><span class="num">3</span><span class="t">Признаки для прогноза ряда</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/03b-time-split.html" data-lesson="ch12/03b-time-split"><span class="dot"></span><span class="num">4</span><span class="t">Проверка по времени: хвост ряда и TimeSeriesSplit</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/04-forecast.html" data-lesson="ch12/04-forecast"><span class="dot"></span><span class="num">5</span><span class="t">Прогноз: ориентиры, горизонт и метрики</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch12/05-project.html" data-lesson="ch12/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: сколько бариста поставить на смену</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch12/test.html" data-ctest="ch12" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch13"><summary class="tree-sum"><span class="tree-num">13</span><span class="tree-t">Тексты: от TF-IDF до LLM</span><span class="tree-c" data-chp="ch13">9</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch13/index.html" data-chintro="ch13"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch13/01-text-prep.html" data-lesson="ch13/01-text-prep"><span class="dot"></span><span class="num">1</span><span class="t">Текст как данные: очистка и токены</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/01b-lemmas.html" data-lesson="ch13/01b-lemmas"><span class="dot"></span><span class="num">2</span><span class="t">Леммы и словарь исключений</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/02-tfidf.html" data-lesson="ch13/02-tfidf"><span class="dot"></span><span class="num">3</span><span class="t">Мешок слов и TF-IDF</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03-classify.html" data-lesson="ch13/03-classify"><span class="dot"></span><span class="num">4</span><span class="t">Классификация текстов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/03b-labels.html" data-lesson="ch13/03b-labels"><span class="dot"></span><span class="num">5</span><span class="t">Качество разметки: голосование, каппа, золотой набор</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04-embeddings.html" data-lesson="ch13/04-embeddings"><span class="dot"></span><span class="num">6</span><span class="t">Эмбеддинги: векторы слов и отзывов</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04b-transformers.html" data-lesson="ch13/04b-transformers"><span class="dot"></span><span class="num">7</span><span class="t">Внутри трансформера: токены, маска, пулинг</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/04c-llm.html" data-lesson="ch13/04c-llm"><span class="dot"></span><span class="num">8</span><span class="t">Разметка текстов языковой моделью</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch13/05-project.html" data-lesson="ch13/05-project"><span class="dot"></span><span class="num">9</span><span class="t">Проект: о чём жалуются гости</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch13/test.html" data-ctest="ch13" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch14"><summary class="tree-sum"><span class="tree-num">14</span><span class="tree-t">Компьютерное зрение</span><span class="tree-c" data-chp="ch14">8</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch14/index.html" data-chintro="ch14"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="0"><a href="../ch14/01-pixels.html" data-lesson="ch14/01-pixels"><span class="dot"></span><span class="num">1</span><span class="t">Картинка — это массив чисел</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/01b-files.html" data-lesson="ch14/01b-files"><span class="dot"></span><span class="num">2</span><span class="t">Файлы картинок и память</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/02-filters.html" data-lesson="ch14/02-filters"><span class="dot"></span><span class="num">3</span><span class="t">Свёртка и фильтры</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/03-classic.html" data-lesson="ch14/03-classic"><span class="dot"></span><span class="num">4</span><span class="t">Модели на пикселях: ошибки, аугментация, устойчивость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04-cnn.html" data-lesson="ch14/04-cnn"><span class="dot"></span><span class="num">5</span><span class="t">Свёрточные нейросети</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04b-transfer.html" data-lesson="ch14/04b-transfer"><span class="dot"></span><span class="num">6</span><span class="t">Перенос обучения и дообучение</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/04c-detection.html" data-lesson="ch14/04c-detection"><span class="dot"></span><span class="num">7</span><span class="t">Регрессия по фото, детекция и сегментация</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch14/05-project.html" data-lesson="ch14/05-project"><span class="dot"></span><span class="num">8</span><span class="t">Проект: что закончилось на витрине</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li class="exam-item"><a href="../ch14/test.html" data-ctest="ch14" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li><li><details class="tree-ch" data-ch="ch15"><summary class="tree-sum"><span class="tree-num">15</span><span class="tree-t">Модель в работе: MLflow, FastAPI, Docker</span><span class="tree-c" data-chp="ch15">7</span></summary><ol class="side-list"><li class="intro-item"><a href="../ch15/index.html" data-chintro="ch15"><span class="dot"></span><span class="num">i</span><span class="t">О главе</span></a></li><li data-core="1"><a href="../ch15/01-artifact.html" data-lesson="ch15/01-artifact"><span class="dot"></span><span class="num">1</span><span class="t">Модель как артефакт: файл, паспорт, контрольный набор</span></a></li><li data-core="0"><a href="../ch15/02-service.html" data-lesson="ch15/02-service"><span class="dot"></span><span class="num">2</span><span class="t">Модель как сервис: запрос, проверка, ответ</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/02b-service-run.html" data-lesson="ch15/02b-service-run"><span class="dot"></span><span class="num">3</span><span class="t">Сервис в работе: пакет, время ответа, FastAPI, тесты</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/03-experiments.html" data-lesson="ch15/03-experiments"><span class="dot"></span><span class="num">4</span><span class="t">Учёт экспериментов и воспроизводимость</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/04-deploy.html" data-lesson="ch15/04-deploy"><span class="dot"></span><span class="num">5</span><span class="t">Упаковка и запуск: окружение, Docker, расписание, журнал</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="0"><a href="../ch15/05-project.html" data-lesson="ch15/05-project"><span class="dot"></span><span class="num">6</span><span class="t">Проект: разбор инцидента в сервисе модели</span><span class="tag deep" title="Углубление: не входит в основной путь курса. Можно пропустить и вернуться позже.">углубл.</span></a></li><li data-core="1"><a href="../ch15/06-final-project.html" data-lesson="ch15/06-final-project"><span class="dot"></span><span class="num">7</span><span class="t">Финальный проект курса</span></a></li><li class="exam-item"><a href="../ch15/test.html" data-ctest="ch15" data-n="10"><span class="dot"></span><span class="num">?</span><span class="t">Итоговый тест главы</span></a></li></ol></details></li></ul></nav>
+  <div class="scrim" id="scrim"></div>
+  <main id="main" class="lesson">
+    <div class="lesson-head">
+      <div class="eyebrow">Урок 7 · основной путь · ≈ 75 мин · задач: 10</div>
+      <h1>Статистические тесты: какой выбрать</h1>
+      <p class="lead">Перестановочный тест универсален, но медленный и требует писать цикл. Для типовых вопросов есть готовые тесты в scipy и statsmodels — одна строка вместо цикла. Разбираем шесть самых нужных, учимся выбирать тест по вопросу и типу данных — и решать, когда тест может быть односторонним (<code>alternative=</code>).</p>
+      <div class="data-files"><span class="df-label">Данные урока</span><a class="data-file" href="../data/deliveries.csv" download title="Скачать deliveries.csv"><span class="df-name">deliveries.csv</span><span class="df-info">1877 строк · 131 КБ</span></a><span class="df-note">В примерах файлы уже подключены — скачивать нужно, только чтобы открыть их у себя.</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из 9</span></div>
+    </div>
+    <article class="prose theory"><h2 id="карта-тестов">Карта тестов</h2>
+<table>
+<thead>
+<tr>
+<th>Вопрос</th>
+<th>Данные</th>
+<th>Тест</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Различаются ли средние двух групп?</td>
+<td>числа, две независимые группы</td>
+<td>t-тест Уэлча <code>ttest_ind(..., equal_var=False)</code></td>
+</tr>
+<tr>
+<td>Отличается ли среднее от заданного числа?</td>
+<td>числа, одна группа</td>
+<td><code>ttest_1samp</code></td>
+</tr>
+<tr>
+<td>Изменилось ли «после» по сравнению с «до»?</td>
+<td>пары измерений на одних объектах</td>
+<td>парный t-тест <code>ttest_rel</code></td>
+</tr>
+<tr>
+<td>Различаются ли доли двух групп?</td>
+<td>0/1, две группы</td>
+<td>z-тест для долей <code>proportions_ztest</code></td>
+</tr>
+<tr>
+<td>Связаны ли две категории?</td>
+<td>таблица сопряжённости</td>
+<td>хи-квадрат <code>chi2_contingency</code></td>
+</tr>
+<tr>
+<td>Различаются ли группы, если данные сильно скошены или это оценки 1–5?</td>
+<td>числа или порядковые</td>
+<td>Манна — Уитни <code>mannwhitneyu</code></td>
+</tr>
+</tbody>
+</table>
+<p>Все тесты устроены одинаково: H₀ — «различий нет», результат — статистика и p-value.</p>
+<figure class="fig" data-fig="test-choice"><div class="fig-scroll"><svg viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-test-choice">
+  <title id="t-test-choice">Как выбрать статистический тест</title>
+  <defs><marker id="ah-test-choice" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="230" y="8" width="240" height="34" rx="6"/>
+  <text class="ink b" x="350.0" y="29.5" text-anchor="middle">Что сравниваем?</text>
+  <rect class="box-acc" x="20" y="76" width="380" height="36" rx="6"/>
+  <text class="ink sm b" x="210.0" y="98.5" text-anchor="middle">числа: минуты, рубли, чек</text>
+  <rect class="box-acc" x="420" y="76" width="125" height="36" rx="6"/>
+  <text class="ink sm b" x="482.5" y="98.5" text-anchor="middle">доли (0 / 1)</text>
+  <rect class="box-acc" x="555" y="76" width="125" height="36" rx="6"/>
+  <text class="ink sm b" x="617.5" y="98.5" text-anchor="middle">категории</text>
+  <path class="ln" d="M350,42 L210,76" marker-end="url(#ah-test-choice)"/>
+  <path class="ln" d="M350,42 L482,76" marker-end="url(#ah-test-choice)"/>
+  <path class="ln" d="M350,42 L617,76" marker-end="url(#ah-test-choice)"/>
+  <rect class="box-ok" x="420" y="146" width="125" height="34" rx="6"/>
+  <text class="ink sm b" x="482.5" y="167.5" text-anchor="middle">proportions_ztest</text>
+  <rect class="box-ok" x="555" y="146" width="125" height="34" rx="6"/>
+  <text class="ink sm b" x="617.5" y="167.5" text-anchor="middle">chi2_contingency</text>
+  <path class="ln" d="M482,112 L482,146" marker-end="url(#ah-test-choice)"/>
+  <path class="ln" d="M617,112 L617,146" marker-end="url(#ah-test-choice)"/>
+  <rect class="box" x="20" y="146" width="150" height="40" rx="6"/>
+  <text class="ink2 sm" x="95.0" y="162.0" text-anchor="middle">одна группа</text>
+  <text class="ink2 sm" x="95.0" y="179.0" text-anchor="middle">против числа</text>
+  <rect class="box" x="190" y="146" width="210" height="40" rx="6"/>
+  <text class="ink2 sm" x="295.0" y="170.5" text-anchor="middle">две группы</text>
+  <path class="ln" d="M110,112 L95,146" marker-end="url(#ah-test-choice)"/>
+  <path class="ln" d="M300,112 L295,146" marker-end="url(#ah-test-choice)"/>
+  <rect class="box-ok" x="20" y="220" width="150" height="34" rx="6"/>
+  <text class="ink sm b" x="95.0" y="241.5" text-anchor="middle">ttest_1samp</text>
+  <path class="ln" d="M95,186 L95,220" marker-end="url(#ah-test-choice)"/>
+  <rect class="box-warn" x="190" y="220" width="210" height="40" rx="6"/>
+  <text class="ink2 sm" x="295.0" y="236.0" text-anchor="middle">одни и те же объекты</text>
+  <text class="ink2 sm" x="295.0" y="253.0" text-anchor="middle">до и после?</text>
+  <path class="ln" d="M295,186 L295,220" marker-end="url(#ah-test-choice)"/>
+  <rect class="box-ok" x="190" y="290" width="120" height="34" rx="6"/>
+  <text class="ink sm b" x="250.0" y="311.5" text-anchor="middle">ttest_rel</text>
+  <path class="ln" d="M250,260 L250,290" marker-end="url(#ah-test-choice)"/>
+  <text class="ink2 sm" x="258" y="280" text-anchor="start">да</text>
+  <rect class="box-warn" x="440" y="220" width="240" height="40" rx="6"/>
+  <text class="ink2 sm" x="560.0" y="236.0" text-anchor="middle">сильный перекос, выбросы</text>
+  <text class="ink2 sm" x="560.0" y="253.0" text-anchor="middle">или оценки 1–5?</text>
+  <path class="ln" d="M400,240 L440,240" marker-end="url(#ah-test-choice)"/>
+  <text class="ink2 sm" x="420" y="232" text-anchor="middle">нет</text>
+  <rect class="box-ok" x="420" y="290" width="120" height="34" rx="6"/>
+  <text class="ink sm b" x="480.0" y="311.5" text-anchor="middle">mannwhitneyu</text>
+  <rect class="box-ok" x="550" y="290" width="130" height="40" rx="6"/>
+  <text class="ink sm b" x="615.0" y="306.0" text-anchor="middle">ttest_ind(...,</text>
+  <text class="ink sm b" x="615.0" y="323.0" text-anchor="middle">equal_var=False)</text>
+  <path class="ln" d="M500,260 L480,290" marker-end="url(#ah-test-choice)"/>
+  <text class="ink2 sm" x="476" y="280" text-anchor="end">да</text>
+  <path class="ln" d="M620,260 L615,290" marker-end="url(#ah-test-choice)"/>
+  <text class="ink2 sm" x="626" y="280" text-anchor="start">нет</text>
+  <text class="mut sm" x="350" y="352" text-anchor="middle">у всех тестов H₀ — «различий нет», на выходе статистика и p-value</text>
+</svg>
+</div><figcaption>
+<p>Карта тестов из таблицы выше в виде дерева вопросов: какие данные, сколько групп, одни ли это объекты, нет ли сильного перекоса.</p>
+</figcaption></figure>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-choose"><b>8</b> Какой тест</a></div>
+<div class="fb" data-sec="карта-тестов"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="t-тест-средние-двух-групп">t-тест: средние двух групп</h2>
+<p>Различается ли среднее время доставки авто- и вело-курьеров?</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from scipy import stats
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)]
+auto = ok.loc[ok[&quot;courier&quot;] == &quot;авто&quot;, &quot;actual_min&quot;]
+velo = ok.loc[ok[&quot;courier&quot;] == &quot;вело&quot;, &quot;actual_min&quot;]
+res = stats.ttest_ind(auto, velo, equal_var=False)
+print(f&quot;среднее авто {auto.mean():.1f}, вело {velo.mean():.1f}&quot;)
+print(f&quot;t = {res.statistic:.2f}, p = {res.pvalue:.3f}&quot;)</code></pre></div>
+<p><code>t</code> — <strong>статистика теста</strong>: разница средних, делённая на её стандартную ошибку, то есть та же идея, что z в z-тесте для двух долей. При H₀ она ложится на колокол около нуля, поэтому |t| около 2 и больше уже редкость. Здесь |t| мал, и p ≈ 0.5 — различие средних укладывается в случайность. Авто возят дальше, но быстрее; в итоге среднее время похоже.</p>
+<p><code>equal_var=False</code> — <strong>t-тест Уэлча</strong>: он не предполагает, что разброс в группах одинаковый. Это безопасный выбор по умолчанию: если дисперсии равны, он работает почти так же, как классический, а если нет — не ошибается.</p>
+<aside class="callout callout-sql"><div class="callout-title">Как в SQL</div>
+<p>В SQL статистических тестов обычно нет — их считают в Python. Но исходные числа для них (среднее, дисперсию, количество по группам) удобно получить запросом <code>GROUP BY</code> с <code>AVG</code>, <code>VAR_SAMP</code>, <code>COUNT</code>.</p>
+</aside>
+<div class="practice-link"><span>Потренироваться — задачи:</span><a href="#task-welch"><b>1</b> Пешие против вело</a><a href="#task-agree"><b>9</b> Формула и перемешивание согласны</a></div>
+<div class="fb" data-sec="t-тест-средние-двух-групп"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="одна-группа-против-числа">Одна группа против числа</h2>
+<p>Доставкам с обещанием 45 минут — укладываемся ли мы в среднем в обещание?</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from scipy import stats
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)]
+t45 = ok.loc[ok[&quot;promised_min&quot;] == 45, &quot;actual_min&quot;]
+res = stats.ttest_1samp(t45, 45)
+print(f&quot;n = {len(t45)}, среднее {t45.mean():.1f}, p = {res.pvalue:.2e}&quot;)</code></pre></div>
+<p>Среднее заметно меньше 45, и p крошечное (<code>2e-117</code> — это <span class="math inline">2 \times 10^{-117}</span>). Для зоны 45 минут обещание с запасом.</p>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-one-sample"><b>2</b> Обещание 30 минут</a></div>
+<div class="fb" data-sec="одна-группа-против-числа"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="парный-t-тест-до-и-после-на-одних-объектах">Парный t-тест: до и после на одних объектах</h2>
+<p>Если одни и те же объекты измерены дважды (кофейня в октябре и в ноябре), группы <strong>не независимы</strong>: у медленной кофейни оба числа будут выше. Парный тест сравнивает разницы внутри пар:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from scipy import stats
+
+d = pd.read_csv(&quot;deliveries.csv&quot;, parse_dates=[&quot;created&quot;])
+ok = d[d[&quot;actual_min&quot;].between(1, 299)]
+ok = ok.assign(month=ok[&quot;created&quot;].dt.month)          # месяц — отдельным столбцом
+m = ok.pivot_table(index=&quot;shop_id&quot;, columns=&quot;month&quot;, values=&quot;actual_min&quot;, aggfunc=&quot;mean&quot;)
+print(m.round(1))
+res = stats.ttest_rel(m[11], m[10])
+print(f&quot;в среднем по кофейням +{(m[11] - m[10]).mean():.1f} мин, p = {res.pvalue:.3f}&quot;)</code></pre></div>
+<p>Всего 6 пар, и p около 0.05 — на грани. По шести кофейням трудно уверенно говорить о росте.</p>
+<h3>Разберём вместе: парный тест руками</h3>
+<p>Ноябрь против октября по шести кофейням. Доли опозданий (%):</p>
+<table>
+<thead>
+<tr>
+<th>кофейня</th>
+<th>октябрь</th>
+<th>ноябрь</th>
+<th>разница</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KZN-1</td>
+<td>24.8</td>
+<td>19.1</td>
+<td>−5.7</td>
+</tr>
+<tr>
+<td>KZN-2</td>
+<td>29.2</td>
+<td>38.6</td>
+<td>+9.4</td>
+</tr>
+<tr>
+<td>PRM-1</td>
+<td>17.7</td>
+<td>27.6</td>
+<td>+9.9</td>
+</tr>
+<tr>
+<td>PRM-2</td>
+<td>17.0</td>
+<td>16.2</td>
+<td>−0.8</td>
+</tr>
+<tr>
+<td>TMN-1</td>
+<td>20.2</td>
+<td>34.5</td>
+<td>+14.3</td>
+</tr>
+<tr>
+<td>UFA-1</td>
+<td>19.2</td>
+<td>20.7</td>
+<td>+1.5</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>Парный тест смотрит только на столбец «разница». Среднее разниц: (−5.7 + 9.4 + 9.9 − 0.8 + 14.3 + 1.5) / 6 ≈ <strong>+4.8 п.п.</strong></li>
+<li>Стандартное отклонение разниц ≈ <strong>7.6</strong> п.п. (сумма квадратов отклонений ≈ 290, делим на 5, корень).</li>
+<li>SE = 7.6 / √6 ≈ <strong>3.1</strong>; t = 4.8 / 3.1 ≈ <strong>1.53</strong>.</li>
+<li>При 5 степенях свободы p ≈ <strong>0.19</strong>.</li>
+</ol>
+<p>Что получилось: в ноябре стало хуже в среднем на 5 пунктов, но кофейни разошлись в разные стороны (от −6 до +14), а их всего шесть. Такой рост неотличим от шума. Обычный t-тест на двух столбцах здесь ошибся бы иначе: он не знает, что строки — одни и те же кофейни, и смешал бы различия между кофейнями с изменением во времени.</p>
+<figure class="fig" data-fig="paired-lines"><div class="fig-scroll"><svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-paired-lines">
+  <title id="t-paired-lines">Парный тест смотрит на изменение внутри каждой кофейни</title>
+  <defs><marker id="ah-paired-lines" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <path class="ln-mut" d="M150,250 L150,42"/>
+  <path class="ln-mut" d="M360,250 L360,42"/>
+  <text class="ink b" x="150" y="22" text-anchor="middle">октябрь</text>
+  <text class="ink b" x="360" y="22" text-anchor="middle">ноябрь</text>
+  <text class="mut sm" x="120" y="246" text-anchor="end">15 %</text>
+  <text class="mut sm" x="120" y="206" text-anchor="end">20 %</text>
+  <text class="mut sm" x="120" y="166" text-anchor="end">25 %</text>
+  <text class="mut sm" x="120" y="126" text-anchor="end">30 %</text>
+  <text class="mut sm" x="120" y="86" text-anchor="end">35 %</text>
+  <text class="mut sm" x="120" y="46" text-anchor="end">40 %</text>
+  <path class="ln-ok" d="M150,163.6 L360,209.2"/>
+  <circle class="ink2" cx="150.0" cy="163.6" r="4"/>
+  <circle class="ink2" cx="360.0" cy="209.2" r="4"/>
+  <path class="ln-err" d="M150,128.4 L360,53.2"/>
+  <circle class="ink2" cx="150.0" cy="128.4" r="4"/>
+  <circle class="ink2" cx="360.0" cy="53.2" r="4"/>
+  <path class="ln-err" d="M150,220.4 L360,141.2"/>
+  <circle class="ink2" cx="150.0" cy="220.4" r="4"/>
+  <circle class="ink2" cx="360.0" cy="141.2" r="4"/>
+  <path class="ln-ok" d="M150,226.0 L360,232.4"/>
+  <circle class="ink2" cx="150.0" cy="226.0" r="4"/>
+  <circle class="ink2" cx="360.0" cy="232.4" r="4"/>
+  <path class="ln-err" d="M150,200.4 L360,86.0"/>
+  <circle class="ink2" cx="150.0" cy="200.4" r="4"/>
+  <circle class="ink2" cx="360.0" cy="86.0" r="4"/>
+  <path class="ln-err" d="M150,208.4 L360,196.4"/>
+  <circle class="ink2" cx="150.0" cy="208.4" r="4"/>
+  <circle class="ink2" cx="360.0" cy="196.4" r="4"/>
+  <text class="ink2 sm" x="372" y="57.2" text-anchor="start">KZN-2</text>
+  <text class="ink2 sm" x="372" y="90.0" text-anchor="start">TMN-1</text>
+  <text class="ink2 sm" x="372" y="145.2" text-anchor="start">PRM-1</text>
+  <text class="ink2 sm" x="372" y="192.4" text-anchor="start">UFA-1</text>
+  <text class="ink2 sm" x="372" y="219.2" text-anchor="start">KZN-1</text>
+  <text class="ink2 sm" x="372" y="238.4" text-anchor="start">PRM-2</text>
+  <text class="mut sm" x="560" y="40" text-anchor="middle">разница ноябрь − октябрь, п.п.</text>
+  <text class="ink2 sm" x="500" y="62" text-anchor="start">KZN-1</text>
+  <text class="ok sm b" x="640" y="62" text-anchor="end">-5.7</text>
+  <text class="ink2 sm" x="500" y="86" text-anchor="start">KZN-2</text>
+  <text class="err sm b" x="640" y="86" text-anchor="end">+9.4</text>
+  <text class="ink2 sm" x="500" y="110" text-anchor="start">PRM-1</text>
+  <text class="err sm b" x="640" y="110" text-anchor="end">+9.9</text>
+  <text class="ink2 sm" x="500" y="134" text-anchor="start">PRM-2</text>
+  <text class="ok sm b" x="640" y="134" text-anchor="end">-0.8</text>
+  <text class="ink2 sm" x="500" y="158" text-anchor="start">TMN-1</text>
+  <text class="err sm b" x="640" y="158" text-anchor="end">+14.3</text>
+  <text class="ink2 sm" x="500" y="182" text-anchor="start">UFA-1</text>
+  <text class="err sm b" x="640" y="182" text-anchor="end">+1.5</text>
+  <path class="ln-mut" d="M500,194 L650,194"/>
+  <text class="ink sm b" x="500" y="212" text-anchor="start">среднее</text>
+  <text class="ink sm b" x="640" y="212" text-anchor="end">+4.8</text>
+  <text class="ink2 sm" x="560" y="236" text-anchor="middle">σ разниц 7.6, t = 1.53, p = 0.19</text>
+  <text class="mut sm" x="560" y="254" text-anchor="middle">медленная кофейня медленна в оба месяца —</text>
+  <text class="mut sm" x="560" y="270" text-anchor="middle">разница внутри пары убирает этот сдвиг</text>
+  <text class="mut sm" x="255" y="290" text-anchor="middle">доля опозданий по кофейням: красные — стало хуже, зелёные — лучше</text>
+</svg>
+</div><figcaption>
+<p>Те же шесть кофеен: линия соединяет октябрь и ноябрь одной кофейни. Парный тест смотрит только на столбец разниц справа — различия между кофейнями (одни выше, другие ниже) ему не мешают.</p>
+</figcaption></figure>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Чтобы понять, похудели ли участники марафона, вес каждого сравнивают с его же весом месяц назад, а не среднее «до» со средним «после». Разница между людьми — десятки килограммов, и она заглушила бы пару килограммов эффекта; разница внутри одного человека её убирает. Парный тест делает то же с кофейнями: сравнивает каждую с самой собой.</p>
+</aside>
+<div class="cell"><pre class="cell-src"><code>import numpy as np
+from scipy import stats
+oct_ = np.array([24.8, 29.2, 17.7, 17.0, 20.2, 19.2])
+nov = np.array([19.1, 38.6, 27.6, 16.2, 34.5, 20.7])
+diff = nov - oct_
+print(diff.mean().round(2), diff.std(ddof=1).round(2))
+print(stats.ttest_rel(nov, oct_))</code></pre></div>
+<div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
+<p>Почему «октябрь против ноября» по тем же шести кофейням сравнивают парным тестом, а не обычным t-тестом двух групп?</p>
+<ul>
+<li>[x] Измерения связаны парами: парный тест смотрит на изменение внутри каждой кофейни, и различия между кофейнями ему не мешают
+<blockquote>
+<p>Медленная кофейня медленна в оба месяца. Разница внутри пары убирает этот постоянный сдвиг и оставляет только изменение во времени.</p>
+</blockquote>
+</li>
+<li>[ ] Потому что кофеен мало, а парный тест работает на маленьких выборках
+<blockquote>
+<p>Размер выборки тут ни при чём: и обычный t-тест считается на шести значениях. Дело в том, что значения связаны попарно.</p>
+</blockquote>
+</li>
+<li>[ ] Потому что доли опозданий не распределены нормально
+<blockquote>
+<p>Форма распределения влияет на выбор между t-тестом и ранговым тестом (для пар — Уилкоксона), но парный тест нужен не из-за формы, а из-за пар.</p>
+</blockquote>
+</li>
+<li>[ ] Потому что сравниваем ровно две группы
+<blockquote>
+<p>Две группы сравнивает и обычный t-тест Уэлча. Парный нужен, когда группы — это одни и те же объекты.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-paired"><b>4</b> До и после</a></div>
+<div class="fb" data-sec="парный-t-тест-до-и-после-на-одних-объектах"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="z-тест-для-долей">z-тест для долей</h2>
+<p>Две доли — две группы «успехов» и «попыток». statsmodels принимает их списками:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from statsmodels.stats.proportion import proportions_ztest
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;late&quot;] = ok[&quot;actual_min&quot;] &gt; ok[&quot;promised_min&quot;]
+snow = ok[&quot;weather&quot;] == &quot;снег&quot;
+count = [ok.loc[snow, &quot;late&quot;].sum(), ok.loc[~snow, &quot;late&quot;].sum()]
+nobs = [snow.sum(), (~snow).sum()]
+z, p = proportions_ztest(count, nobs)
+print(f&quot;z = {z:.2f}, p = {p:.4f}&quot;)</code></pre></div>
+<p>p ≈ 0.001 — тот же вывод, что дал перестановочный тест в уроке «Проверка гипотез: логика и p-value», только быстрее.</p>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-p-ztest"><b>3</b> z-тест для долей</a></div>
+<div class="fb" data-sec="z-тест-для-долей"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="хи-квадрат-связь-категорий">Хи-квадрат: связь категорий</h2>
+<p>Связан ли тип курьера с опозданием? Здесь не две группы, а три — и «успех» тоже категория. Тест <strong>хи-квадрат</strong> проверяет, отличается ли таблица сопряжённости от той, что была бы при независимости:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from scipy import stats
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;late&quot;] = ok[&quot;actual_min&quot;] &gt; ok[&quot;promised_min&quot;]
+ct = pd.crosstab(ok[&quot;courier&quot;], ok[&quot;late&quot;])
+chi2, p, dof, expected = stats.chi2_contingency(ct)
+print(ct)
+print(f&quot;хи-квадрат = {chi2:.0f}, p = {p:.1e}&quot;)</code></pre></div>
+<p><code>expected</code> — таблица, которая была бы при независимости (урок «Вероятность: частота и симуляция»: <span class="math inline">P(A \text{ и } B) = P(A) \cdot P(B)</span>). Чем сильнее настоящая таблица отличается от ожидаемой, тем больше хи-квадрат и меньше p. Сама статистика — сумма по всем клеткам (наблюдаемое − ожидаемое)² / ожидаемое. <code>dof</code> — степени свободы таблицы, (строк − 1) × (столбцов − 1), здесь (3 − 1) × (2 − 1) = 2; по ним scipy переводит хи-квадрат в p, нам их считать не нужно.</p>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-chi2"><b>5</b> Погода и опоздания</a></div>
+<div class="fb" data-sec="хи-квадрат-связь-категорий"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="манна-уитни-когда-среднее-не-подходит">Манна — Уитни: когда среднее не подходит</h2>
+<p>Оценки 1–5 — <strong>порядковые</strong>: «5» лучше «4», но не «на одну единицу». Среднее оценок — не совсем честная величина. Тест Манна — Уитни сравнивает группы по рангам (как Спирмен в главе 4) и не требует нормальности:</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from scipy import stats
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299)].copy()
+ok[&quot;late&quot;] = ok[&quot;actual_min&quot;] &gt; ok[&quot;promised_min&quot;]
+r = ok.dropna(subset=[&quot;rating&quot;])
+res = stats.mannwhitneyu(r.loc[r[&quot;late&quot;], &quot;rating&quot;], r.loc[~r[&quot;late&quot;], &quot;rating&quot;])
+print(f&quot;p = {res.pvalue:.1e}&quot;)</code></pre></div>
+<p>Его статистика U — сколько пар «значение из первой группы больше значения из второй» (ничья считается за половину пары). Если группы одинаковы, U около половины всех пар; чем дальше от половины, тем меньше p.</p>
+<p>Он же подходит для сильно скошенных чисел (время, деньги) с выбросами, когда среднее «тянется» хвостом.</p>
+<div class="predict" data-q="q1"><div class="predict-title">Предскажите вывод</div><p class="predict-ask">Что выведет этот код? Сначала ответьте, потом запустите.</p>
+<pre class="static code"><code class="lang-python">from scipy import stats
+a = [1, 2, 3, 4, 5]
+b = [1, 2, 3, 4, 5]
+print(round(stats.ttest_ind(a, b).pvalue, 2))</code></pre>
+<ul>
+<li><code>0.0</code></li>
+<li><code>0.05</code></li>
+<li>[x] <code>1.0</code></li>
+</ul>
+<p>Почему: группы одинаковые, разница средних ноль — данные идеально совместимы с H₀. p-value равно 1.</p>
+</div>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Обычный t-тест для пар.</strong> «До» и «после» на тех же объектах — <code>ttest_rel</code>, иначе различия между объектами растворят эффект.</li>
+<li><strong>t-тест для оценок 1–5.</strong> Порядковые данные с сильным перекосом — Манна — Уитни.</li>
+<li><strong>Хи-квадрат на долях вместо чисел.</strong> <code>chi2_contingency</code> принимает <strong>количества</strong>, не проценты.</li>
+<li><strong>Знак результата.</strong> <code>ttest_ind(a, b)</code> — статистика положительна, если среднее <code>a</code> больше; порядок аргументов важен для односторонних выводов.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-mwu"><b>6</b> Оценки: Манна — Уитни</a></div>
+<div class="fb" data-sec="манна-уитни-когда-среднее-не-подходит"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="односторонний-тест-параметр-alternative">Односторонний тест: параметр <code>alternative=</code></h2>
+<p><strong>Зачем.</strong> Отдел доставки хочет добавлять 5 минут к обещанию в дождь — но только если в дождь доставки действительно <strong>дольше</strong>. Вопрос направленный: «быстрее в дождь» нас не интересует, решение в этом случае такое же, как при «разницы нет», — ничего не менять. В уроке «Проверка гипотез: логика и p-value» такой тест назывался <strong>односторонним</strong>, и мы считали его перемешиванием. Во всех тестах scipy он задаётся одним параметром.</p>
+<aside class="callout callout-tip"><div class="callout-title">Аналогия</div>
+<p>Охранник на входе проверяет только тех, кто проходит <strong>внутрь</strong>: выходящие его не интересуют. Двусторонний тест — охранник, который смотрит в обе стороны: его внимание делится надвое, и каждого отдельного «нарушителя» он замечает хуже.</p>
+</aside>
+<h3>Игрушечный пример: одна статистика, три p-value</h3>
+<p>Пусть тест дал статистику t = 1.8 (для больших выборок её распределение при H₀ — стандартное нормальное). Посмотрим, где лежат «не менее крайние» значения:</p>
+<ol>
+<li><strong>Двусторонний</strong> (H₁: «различаются»): крайние — и больше 1.8, и меньше −1.8. Правый хвост — 0.036, левый — столько же: p = 2 × 0.036 = <strong>0.072</strong>.</li>
+<li><strong>«Больше»</strong> (H₁: «первая группа больше»): крайние — только больше 1.8: p = <strong>0.036</strong>.</li>
+<li><strong>«Меньше»</strong> (H₁: «первая группа меньше»): крайние — всё, что меньше 1.8, то есть почти весь колокол: p = <strong>0.964</strong>.</li>
+</ol>
+<p>При α = 0.05 двусторонний тест говорит «не отвергаем», односторонний «больше» — «отвергаем». Поэтому направление и выбирают <strong>до</strong> данных.</p>
+<figure class="fig" data-fig="alt-tails"><div class="fig-scroll"><svg viewBox="0 0 700 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-alt-tails">
+  <title id="t-alt-tails">Одна статистика t = 1.8 и три разных p-value</title>
+  <defs><marker id="ah-alt-tails" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <path class="box-err" d="M174.8,130.7 L175.5,131.5 L176.1,132.3 L176.8,133.1 L177.4,133.8 L178.1,134.5 L178.7,135.2 L179.4,135.9 L180.0,136.5 L180.7,137.1 L181.4,137.7 L182.0,138.3 L182.7,138.9 L183.3,139.4 L184.0,139.9 L184.6,140.4 L185.3,140.9 L185.9,141.3 L186.6,141.8 L187.3,142.2 L187.9,142.6 L188.6,143.0 L189.2,143.4 L189.9,143.7 L190.5,144.1 L191.2,144.4 L191.8,144.7 L192.5,145.0 L193.2,145.3 L193.8,145.5 L194.5,145.8 L195.1,146.0 L195.8,146.3 L196.4,146.5 L197.1,146.7 L197.7,146.9 L198.4,147.1 L199.1,147.2 L199.7,147.4 L200.4,147.6 L201.0,147.7 L201.7,147.9 L202.3,148.0 L203.0,148.1 L203.6,148.2 L204.3,148.4 L205.0,148.5 L205.6,148.6 L206.3,148.7 L206.9,148.8 L207.6,148.8 L208.2,148.9 L208.9,149.0 L209.5,149.1 L210.2,149.1 L210.9,149.2 L211.5,149.2 L212.2,149.3 L212.8,149.3 L213.5,149.4 L214.1,149.4 L214.8,149.5 L215.4,149.5 L216.1,149.6 L216.8,149.6 L217.4,149.6 L218.1,149.6 L218.7,149.7 L219.4,149.7 L220.0,149.7 L220.7,149.7 L221.3,149.8 L222.0,149.8 L222.0,150.0 L174.8,150.0 Z"/>
+  <path class="box-err" d="M26.0,149.8 L26.7,149.8 L27.3,149.7 L28.0,149.7 L28.6,149.7 L29.3,149.7 L29.9,149.6 L30.6,149.6 L31.2,149.6 L31.9,149.6 L32.6,149.5 L33.2,149.5 L33.9,149.4 L34.5,149.4 L35.2,149.3 L35.8,149.3 L36.5,149.2 L37.1,149.2 L37.8,149.1 L38.5,149.1 L39.1,149.0 L39.8,148.9 L40.4,148.8 L41.1,148.8 L41.7,148.7 L42.4,148.6 L43.0,148.5 L43.7,148.4 L44.4,148.2 L45.0,148.1 L45.7,148.0 L46.3,147.9 L47.0,147.7 L47.6,147.6 L48.3,147.4 L48.9,147.2 L49.6,147.1 L50.3,146.9 L50.9,146.7 L51.6,146.5 L52.2,146.3 L52.9,146.0 L53.5,145.8 L54.2,145.5 L54.8,145.3 L55.5,145.0 L56.2,144.7 L56.8,144.4 L57.5,144.1 L58.1,143.7 L58.8,143.4 L59.4,143.0 L60.1,142.6 L60.7,142.2 L61.4,141.8 L62.1,141.3 L62.7,140.9 L63.4,140.4 L64.0,139.9 L64.7,139.4 L65.3,138.9 L66.0,138.3 L66.6,137.7 L67.3,137.1 L68.0,136.5 L68.6,135.9 L69.3,135.2 L69.9,134.5 L70.6,133.8 L71.2,133.1 L71.9,132.3 L72.5,131.5 L73.2,130.7 L73.2,150.0 L26.0,150.0 Z"/>
+  <path class="ln" d="M26.0,149.8 L26.7,149.8 L27.3,149.7 L28.0,149.7 L28.6,149.7 L29.3,149.7 L29.9,149.6 L30.6,149.6 L31.2,149.6 L31.9,149.6 L32.6,149.5 L33.2,149.5 L33.9,149.4 L34.5,149.4 L35.2,149.3 L35.8,149.3 L36.5,149.2 L37.1,149.2 L37.8,149.1 L38.5,149.1 L39.1,149.0 L39.8,148.9 L40.4,148.8 L41.1,148.8 L41.7,148.7 L42.4,148.6 L43.0,148.5 L43.7,148.4 L44.4,148.2 L45.0,148.1 L45.7,148.0 L46.3,147.9 L47.0,147.7 L47.6,147.6 L48.3,147.4 L48.9,147.2 L49.6,147.1 L50.3,146.9 L50.9,146.7 L51.6,146.5 L52.2,146.3 L52.9,146.0 L53.5,145.8 L54.2,145.5 L54.8,145.3 L55.5,145.0 L56.2,144.7 L56.8,144.4 L57.5,144.1 L58.1,143.7 L58.8,143.4 L59.4,143.0 L60.1,142.6 L60.7,142.2 L61.4,141.8 L62.1,141.3 L62.7,140.9 L63.4,140.4 L64.0,139.9 L64.7,139.4 L65.3,138.9 L66.0,138.3 L66.6,137.7 L67.3,137.1 L68.0,136.5 L68.6,135.9 L69.3,135.2 L69.9,134.5 L70.6,133.8 L71.2,133.1 L71.9,132.3 L72.5,131.5 L73.2,130.7 L73.9,129.9 L74.5,129.0 L75.2,128.1 L75.8,127.2 L76.5,126.3 L77.1,125.4 L77.8,124.4 L78.4,123.4 L79.1,122.4 L79.8,121.3 L80.4,120.2 L81.1,119.1 L81.7,118.0 L82.4,116.9 L83.0,115.7 L83.7,114.5 L84.3,113.3 L85.0,112.1 L85.7,110.9 L86.3,109.6 L87.0,108.3 L87.6,107.0 L88.3,105.7 L88.9,104.4 L89.6,103.0 L90.2,101.7 L90.9,100.3 L91.6,98.9 L92.2,97.5 L92.9,96.1 L93.5,94.7 L94.2,93.3 L94.8,91.9 L95.5,90.5 L96.1,89.0 L96.8,87.6 L97.5,86.2 L98.1,84.8 L98.8,83.4 L99.4,82.0 L100.1,80.6 L100.7,79.2 L101.4,77.8 L102.0,76.5 L102.7,75.1 L103.4,73.8 L104.0,72.5 L104.7,71.2 L105.3,70.0 L106.0,68.7 L106.6,67.5 L107.3,66.3 L107.9,65.2 L108.6,64.0 L109.3,62.9 L109.9,61.9 L110.6,60.9 L111.2,59.9 L111.9,58.9 L112.5,58.0 L113.2,57.2 L113.8,56.4 L114.5,55.6 L115.2,54.9 L115.8,54.2 L116.5,53.6 L117.1,53.0 L117.8,52.4 L118.4,52.0 L119.1,51.5 L119.7,51.1 L120.4,50.8 L121.1,50.5 L121.7,50.3 L122.4,50.2 L123.0,50.1 L123.7,50.0 L124.3,50.0 L125.0,50.1 L125.6,50.2 L126.3,50.3 L126.9,50.5 L127.6,50.8 L128.3,51.1 L128.9,51.5 L129.6,52.0 L130.2,52.4 L130.9,53.0 L131.5,53.6 L132.2,54.2 L132.8,54.9 L133.5,55.6 L134.2,56.4 L134.8,57.2 L135.5,58.0 L136.1,58.9 L136.8,59.9 L137.4,60.9 L138.1,61.9 L138.7,62.9 L139.4,64.0 L140.1,65.2 L140.7,66.3 L141.4,67.5 L142.0,68.7 L142.7,70.0 L143.3,71.2 L144.0,72.5 L144.6,73.8 L145.3,75.1 L146.0,76.5 L146.6,77.8 L147.3,79.2 L147.9,80.6 L148.6,82.0 L149.2,83.4 L149.9,84.8 L150.5,86.2 L151.2,87.6 L151.9,89.0 L152.5,90.5 L153.2,91.9 L153.8,93.3 L154.5,94.7 L155.1,96.1 L155.8,97.5 L156.4,98.9 L157.1,100.3 L157.8,101.7 L158.4,103.0 L159.1,104.4 L159.7,105.7 L160.4,107.0 L161.0,108.3 L161.7,109.6 L162.3,110.9 L163.0,112.1 L163.7,113.3 L164.3,114.5 L165.0,115.7 L165.6,116.9 L166.3,118.0 L166.9,119.1 L167.6,120.2 L168.2,121.3 L168.9,122.4 L169.6,123.4 L170.2,124.4 L170.9,125.4 L171.5,126.3 L172.2,127.2 L172.8,128.1 L173.5,129.0 L174.1,129.9 L174.8,130.7 L175.5,131.5 L176.1,132.3 L176.8,133.1 L177.4,133.8 L178.1,134.5 L178.7,135.2 L179.4,135.9 L180.0,136.5 L180.7,137.1 L181.4,137.7 L182.0,138.3 L182.7,138.9 L183.3,139.4 L184.0,139.9 L184.6,140.4 L185.3,140.9 L185.9,141.3 L186.6,141.8 L187.3,142.2 L187.9,142.6 L188.6,143.0 L189.2,143.4 L189.9,143.7 L190.5,144.1 L191.2,144.4 L191.8,144.7 L192.5,145.0 L193.2,145.3 L193.8,145.5 L194.5,145.8 L195.1,146.0 L195.8,146.3 L196.4,146.5 L197.1,146.7 L197.7,146.9 L198.4,147.1 L199.1,147.2 L199.7,147.4 L200.4,147.6 L201.0,147.7 L201.7,147.9 L202.3,148.0 L203.0,148.1 L203.6,148.2 L204.3,148.4 L205.0,148.5 L205.6,148.6 L206.3,148.7 L206.9,148.8 L207.6,148.8 L208.2,148.9 L208.9,149.0 L209.5,149.1 L210.2,149.1 L210.9,149.2 L211.5,149.2 L212.2,149.3 L212.8,149.3 L213.5,149.4 L214.1,149.4 L214.8,149.5 L215.4,149.5 L216.1,149.6 L216.8,149.6 L217.4,149.6 L218.1,149.6 L218.7,149.7 L219.4,149.7 L220.0,149.7 L220.7,149.7 L221.3,149.8 L222.0,149.8"/>
+  <path class="ln" d="M26.0,150 L222.0,150"/>
+  <path class="ln-acc" d="M174.4,36 L174.4,154"/>
+  <text class="acc sm b" x="174.4" y="30" text-anchor="middle">t = 1.8</text>
+  <path class="ln-acc dash" d="M73.6,46 L73.6,154"/>
+  <text class="ink2 sm" x="124" y="174" text-anchor="middle">двусторонний: alternative="two-sided"</text>
+  <text class="ink b" x="124" y="194" text-anchor="middle">p = 0.072</text>
+  <path class="box-err" d="M402.8,130.7 L403.5,131.5 L404.1,132.3 L404.8,133.1 L405.4,133.8 L406.1,134.5 L406.7,135.2 L407.4,135.9 L408.0,136.5 L408.7,137.1 L409.4,137.7 L410.0,138.3 L410.7,138.9 L411.3,139.4 L412.0,139.9 L412.6,140.4 L413.3,140.9 L413.9,141.3 L414.6,141.8 L415.3,142.2 L415.9,142.6 L416.6,143.0 L417.2,143.4 L417.9,143.7 L418.5,144.1 L419.2,144.4 L419.8,144.7 L420.5,145.0 L421.2,145.3 L421.8,145.5 L422.5,145.8 L423.1,146.0 L423.8,146.3 L424.4,146.5 L425.1,146.7 L425.7,146.9 L426.4,147.1 L427.1,147.2 L427.7,147.4 L428.4,147.6 L429.0,147.7 L429.7,147.9 L430.3,148.0 L431.0,148.1 L431.6,148.2 L432.3,148.4 L433.0,148.5 L433.6,148.6 L434.3,148.7 L434.9,148.8 L435.6,148.8 L436.2,148.9 L436.9,149.0 L437.5,149.1 L438.2,149.1 L438.9,149.2 L439.5,149.2 L440.2,149.3 L440.8,149.3 L441.5,149.4 L442.1,149.4 L442.8,149.5 L443.4,149.5 L444.1,149.6 L444.8,149.6 L445.4,149.6 L446.1,149.6 L446.7,149.7 L447.4,149.7 L448.0,149.7 L448.7,149.7 L449.3,149.8 L450.0,149.8 L450.0,150.0 L402.8,150.0 Z"/>
+  <path class="ln" d="M254.0,149.8 L254.7,149.8 L255.3,149.7 L256.0,149.7 L256.6,149.7 L257.3,149.7 L257.9,149.6 L258.6,149.6 L259.2,149.6 L259.9,149.6 L260.6,149.5 L261.2,149.5 L261.9,149.4 L262.5,149.4 L263.2,149.3 L263.8,149.3 L264.5,149.2 L265.1,149.2 L265.8,149.1 L266.5,149.1 L267.1,149.0 L267.8,148.9 L268.4,148.8 L269.1,148.8 L269.7,148.7 L270.4,148.6 L271.0,148.5 L271.7,148.4 L272.4,148.2 L273.0,148.1 L273.7,148.0 L274.3,147.9 L275.0,147.7 L275.6,147.6 L276.3,147.4 L276.9,147.2 L277.6,147.1 L278.3,146.9 L278.9,146.7 L279.6,146.5 L280.2,146.3 L280.9,146.0 L281.5,145.8 L282.2,145.5 L282.8,145.3 L283.5,145.0 L284.2,144.7 L284.8,144.4 L285.5,144.1 L286.1,143.7 L286.8,143.4 L287.4,143.0 L288.1,142.6 L288.7,142.2 L289.4,141.8 L290.1,141.3 L290.7,140.9 L291.4,140.4 L292.0,139.9 L292.7,139.4 L293.3,138.9 L294.0,138.3 L294.6,137.7 L295.3,137.1 L296.0,136.5 L296.6,135.9 L297.3,135.2 L297.9,134.5 L298.6,133.8 L299.2,133.1 L299.9,132.3 L300.5,131.5 L301.2,130.7 L301.9,129.9 L302.5,129.0 L303.2,128.1 L303.8,127.2 L304.5,126.3 L305.1,125.4 L305.8,124.4 L306.4,123.4 L307.1,122.4 L307.8,121.3 L308.4,120.2 L309.1,119.1 L309.7,118.0 L310.4,116.9 L311.0,115.7 L311.7,114.5 L312.3,113.3 L313.0,112.1 L313.7,110.9 L314.3,109.6 L315.0,108.3 L315.6,107.0 L316.3,105.7 L316.9,104.4 L317.6,103.0 L318.2,101.7 L318.9,100.3 L319.6,98.9 L320.2,97.5 L320.9,96.1 L321.5,94.7 L322.2,93.3 L322.8,91.9 L323.5,90.5 L324.1,89.0 L324.8,87.6 L325.5,86.2 L326.1,84.8 L326.8,83.4 L327.4,82.0 L328.1,80.6 L328.7,79.2 L329.4,77.8 L330.0,76.5 L330.7,75.1 L331.4,73.8 L332.0,72.5 L332.7,71.2 L333.3,70.0 L334.0,68.7 L334.6,67.5 L335.3,66.3 L335.9,65.2 L336.6,64.0 L337.3,62.9 L337.9,61.9 L338.6,60.9 L339.2,59.9 L339.9,58.9 L340.5,58.0 L341.2,57.2 L341.8,56.4 L342.5,55.6 L343.2,54.9 L343.8,54.2 L344.5,53.6 L345.1,53.0 L345.8,52.4 L346.4,52.0 L347.1,51.5 L347.7,51.1 L348.4,50.8 L349.1,50.5 L349.7,50.3 L350.4,50.2 L351.0,50.1 L351.7,50.0 L352.3,50.0 L353.0,50.1 L353.6,50.2 L354.3,50.3 L354.9,50.5 L355.6,50.8 L356.3,51.1 L356.9,51.5 L357.6,52.0 L358.2,52.4 L358.9,53.0 L359.5,53.6 L360.2,54.2 L360.8,54.9 L361.5,55.6 L362.2,56.4 L362.8,57.2 L363.5,58.0 L364.1,58.9 L364.8,59.9 L365.4,60.9 L366.1,61.9 L366.7,62.9 L367.4,64.0 L368.1,65.2 L368.7,66.3 L369.4,67.5 L370.0,68.7 L370.7,70.0 L371.3,71.2 L372.0,72.5 L372.6,73.8 L373.3,75.1 L374.0,76.5 L374.6,77.8 L375.3,79.2 L375.9,80.6 L376.6,82.0 L377.2,83.4 L377.9,84.8 L378.5,86.2 L379.2,87.6 L379.9,89.0 L380.5,90.5 L381.2,91.9 L381.8,93.3 L382.5,94.7 L383.1,96.1 L383.8,97.5 L384.4,98.9 L385.1,100.3 L385.8,101.7 L386.4,103.0 L387.1,104.4 L387.7,105.7 L388.4,107.0 L389.0,108.3 L389.7,109.6 L390.3,110.9 L391.0,112.1 L391.7,113.3 L392.3,114.5 L393.0,115.7 L393.6,116.9 L394.3,118.0 L394.9,119.1 L395.6,120.2 L396.2,121.3 L396.9,122.4 L397.6,123.4 L398.2,124.4 L398.9,125.4 L399.5,126.3 L400.2,127.2 L400.8,128.1 L401.5,129.0 L402.1,129.9 L402.8,130.7 L403.5,131.5 L404.1,132.3 L404.8,133.1 L405.4,133.8 L406.1,134.5 L406.7,135.2 L407.4,135.9 L408.0,136.5 L408.7,137.1 L409.4,137.7 L410.0,138.3 L410.7,138.9 L411.3,139.4 L412.0,139.9 L412.6,140.4 L413.3,140.9 L413.9,141.3 L414.6,141.8 L415.3,142.2 L415.9,142.6 L416.6,143.0 L417.2,143.4 L417.9,143.7 L418.5,144.1 L419.2,144.4 L419.8,144.7 L420.5,145.0 L421.2,145.3 L421.8,145.5 L422.5,145.8 L423.1,146.0 L423.8,146.3 L424.4,146.5 L425.1,146.7 L425.7,146.9 L426.4,147.1 L427.1,147.2 L427.7,147.4 L428.4,147.6 L429.0,147.7 L429.7,147.9 L430.3,148.0 L431.0,148.1 L431.6,148.2 L432.3,148.4 L433.0,148.5 L433.6,148.6 L434.3,148.7 L434.9,148.8 L435.6,148.8 L436.2,148.9 L436.9,149.0 L437.5,149.1 L438.2,149.1 L438.9,149.2 L439.5,149.2 L440.2,149.3 L440.8,149.3 L441.5,149.4 L442.1,149.4 L442.8,149.5 L443.4,149.5 L444.1,149.6 L444.8,149.6 L445.4,149.6 L446.1,149.6 L446.7,149.7 L447.4,149.7 L448.0,149.7 L448.7,149.7 L449.3,149.8 L450.0,149.8"/>
+  <path class="ln" d="M254.0,150 L450.0,150"/>
+  <path class="ln-acc" d="M402.4,36 L402.4,154"/>
+  <text class="acc sm b" x="402.4" y="30" text-anchor="middle">t = 1.8</text>
+  <text class="ink2 sm" x="352" y="174" text-anchor="middle">«больше»: alternative="greater"</text>
+  <text class="ink b" x="352" y="194" text-anchor="middle">p = 0.036</text>
+  <path class="box-err" d="M482.0,149.8 L482.7,149.8 L483.3,149.7 L484.0,149.7 L484.6,149.7 L485.3,149.7 L485.9,149.6 L486.6,149.6 L487.2,149.6 L487.9,149.6 L488.6,149.5 L489.2,149.5 L489.9,149.4 L490.5,149.4 L491.2,149.3 L491.8,149.3 L492.5,149.2 L493.1,149.2 L493.8,149.1 L494.5,149.1 L495.1,149.0 L495.8,148.9 L496.4,148.8 L497.1,148.8 L497.7,148.7 L498.4,148.6 L499.0,148.5 L499.7,148.4 L500.4,148.2 L501.0,148.1 L501.7,148.0 L502.3,147.9 L503.0,147.7 L503.6,147.6 L504.3,147.4 L504.9,147.2 L505.6,147.1 L506.3,146.9 L506.9,146.7 L507.6,146.5 L508.2,146.3 L508.9,146.0 L509.5,145.8 L510.2,145.5 L510.8,145.3 L511.5,145.0 L512.2,144.7 L512.8,144.4 L513.5,144.1 L514.1,143.7 L514.8,143.4 L515.4,143.0 L516.1,142.6 L516.7,142.2 L517.4,141.8 L518.1,141.3 L518.7,140.9 L519.4,140.4 L520.0,139.9 L520.7,139.4 L521.3,138.9 L522.0,138.3 L522.6,137.7 L523.3,137.1 L524.0,136.5 L524.6,135.9 L525.3,135.2 L525.9,134.5 L526.6,133.8 L527.2,133.1 L527.9,132.3 L528.5,131.5 L529.2,130.7 L529.9,129.9 L530.5,129.0 L531.2,128.1 L531.8,127.2 L532.5,126.3 L533.1,125.4 L533.8,124.4 L534.4,123.4 L535.1,122.4 L535.8,121.3 L536.4,120.2 L537.1,119.1 L537.7,118.0 L538.4,116.9 L539.0,115.7 L539.7,114.5 L540.3,113.3 L541.0,112.1 L541.7,110.9 L542.3,109.6 L543.0,108.3 L543.6,107.0 L544.3,105.7 L544.9,104.4 L545.6,103.0 L546.2,101.7 L546.9,100.3 L547.6,98.9 L548.2,97.5 L548.9,96.1 L549.5,94.7 L550.2,93.3 L550.8,91.9 L551.5,90.5 L552.1,89.0 L552.8,87.6 L553.5,86.2 L554.1,84.8 L554.8,83.4 L555.4,82.0 L556.1,80.6 L556.7,79.2 L557.4,77.8 L558.0,76.5 L558.7,75.1 L559.4,73.8 L560.0,72.5 L560.7,71.2 L561.3,70.0 L562.0,68.7 L562.6,67.5 L563.3,66.3 L563.9,65.2 L564.6,64.0 L565.3,62.9 L565.9,61.9 L566.6,60.9 L567.2,59.9 L567.9,58.9 L568.5,58.0 L569.2,57.2 L569.8,56.4 L570.5,55.6 L571.2,54.9 L571.8,54.2 L572.5,53.6 L573.1,53.0 L573.8,52.4 L574.4,52.0 L575.1,51.5 L575.7,51.1 L576.4,50.8 L577.1,50.5 L577.7,50.3 L578.4,50.2 L579.0,50.1 L579.7,50.0 L580.3,50.0 L581.0,50.1 L581.6,50.2 L582.3,50.3 L582.9,50.5 L583.6,50.8 L584.3,51.1 L584.9,51.5 L585.6,52.0 L586.2,52.4 L586.9,53.0 L587.5,53.6 L588.2,54.2 L588.8,54.9 L589.5,55.6 L590.2,56.4 L590.8,57.2 L591.5,58.0 L592.1,58.9 L592.8,59.9 L593.4,60.9 L594.1,61.9 L594.7,62.9 L595.4,64.0 L596.1,65.2 L596.7,66.3 L597.4,67.5 L598.0,68.7 L598.7,70.0 L599.3,71.2 L600.0,72.5 L600.6,73.8 L601.3,75.1 L602.0,76.5 L602.6,77.8 L603.3,79.2 L603.9,80.6 L604.6,82.0 L605.2,83.4 L605.9,84.8 L606.5,86.2 L607.2,87.6 L607.9,89.0 L608.5,90.5 L609.2,91.9 L609.8,93.3 L610.5,94.7 L611.1,96.1 L611.8,97.5 L612.4,98.9 L613.1,100.3 L613.8,101.7 L614.4,103.0 L615.1,104.4 L615.7,105.7 L616.4,107.0 L617.0,108.3 L617.7,109.6 L618.3,110.9 L619.0,112.1 L619.7,113.3 L620.3,114.5 L621.0,115.7 L621.6,116.9 L622.3,118.0 L622.9,119.1 L623.6,120.2 L624.2,121.3 L624.9,122.4 L625.6,123.4 L626.2,124.4 L626.9,125.4 L627.5,126.3 L628.2,127.2 L628.8,128.1 L629.5,129.0 L630.1,129.9 L630.1,150.0 L482.0,150.0 Z"/>
+  <path class="ln" d="M482.0,149.8 L482.7,149.8 L483.3,149.7 L484.0,149.7 L484.6,149.7 L485.3,149.7 L485.9,149.6 L486.6,149.6 L487.2,149.6 L487.9,149.6 L488.6,149.5 L489.2,149.5 L489.9,149.4 L490.5,149.4 L491.2,149.3 L491.8,149.3 L492.5,149.2 L493.1,149.2 L493.8,149.1 L494.5,149.1 L495.1,149.0 L495.8,148.9 L496.4,148.8 L497.1,148.8 L497.7,148.7 L498.4,148.6 L499.0,148.5 L499.7,148.4 L500.4,148.2 L501.0,148.1 L501.7,148.0 L502.3,147.9 L503.0,147.7 L503.6,147.6 L504.3,147.4 L504.9,147.2 L505.6,147.1 L506.3,146.9 L506.9,146.7 L507.6,146.5 L508.2,146.3 L508.9,146.0 L509.5,145.8 L510.2,145.5 L510.8,145.3 L511.5,145.0 L512.2,144.7 L512.8,144.4 L513.5,144.1 L514.1,143.7 L514.8,143.4 L515.4,143.0 L516.1,142.6 L516.7,142.2 L517.4,141.8 L518.1,141.3 L518.7,140.9 L519.4,140.4 L520.0,139.9 L520.7,139.4 L521.3,138.9 L522.0,138.3 L522.6,137.7 L523.3,137.1 L524.0,136.5 L524.6,135.9 L525.3,135.2 L525.9,134.5 L526.6,133.8 L527.2,133.1 L527.9,132.3 L528.5,131.5 L529.2,130.7 L529.9,129.9 L530.5,129.0 L531.2,128.1 L531.8,127.2 L532.5,126.3 L533.1,125.4 L533.8,124.4 L534.4,123.4 L535.1,122.4 L535.8,121.3 L536.4,120.2 L537.1,119.1 L537.7,118.0 L538.4,116.9 L539.0,115.7 L539.7,114.5 L540.3,113.3 L541.0,112.1 L541.7,110.9 L542.3,109.6 L543.0,108.3 L543.6,107.0 L544.3,105.7 L544.9,104.4 L545.6,103.0 L546.2,101.7 L546.9,100.3 L547.6,98.9 L548.2,97.5 L548.9,96.1 L549.5,94.7 L550.2,93.3 L550.8,91.9 L551.5,90.5 L552.1,89.0 L552.8,87.6 L553.5,86.2 L554.1,84.8 L554.8,83.4 L555.4,82.0 L556.1,80.6 L556.7,79.2 L557.4,77.8 L558.0,76.5 L558.7,75.1 L559.4,73.8 L560.0,72.5 L560.7,71.2 L561.3,70.0 L562.0,68.7 L562.6,67.5 L563.3,66.3 L563.9,65.2 L564.6,64.0 L565.3,62.9 L565.9,61.9 L566.6,60.9 L567.2,59.9 L567.9,58.9 L568.5,58.0 L569.2,57.2 L569.8,56.4 L570.5,55.6 L571.2,54.9 L571.8,54.2 L572.5,53.6 L573.1,53.0 L573.8,52.4 L574.4,52.0 L575.1,51.5 L575.7,51.1 L576.4,50.8 L577.1,50.5 L577.7,50.3 L578.4,50.2 L579.0,50.1 L579.7,50.0 L580.3,50.0 L581.0,50.1 L581.6,50.2 L582.3,50.3 L582.9,50.5 L583.6,50.8 L584.3,51.1 L584.9,51.5 L585.6,52.0 L586.2,52.4 L586.9,53.0 L587.5,53.6 L588.2,54.2 L588.8,54.9 L589.5,55.6 L590.2,56.4 L590.8,57.2 L591.5,58.0 L592.1,58.9 L592.8,59.9 L593.4,60.9 L594.1,61.9 L594.7,62.9 L595.4,64.0 L596.1,65.2 L596.7,66.3 L597.4,67.5 L598.0,68.7 L598.7,70.0 L599.3,71.2 L600.0,72.5 L600.6,73.8 L601.3,75.1 L602.0,76.5 L602.6,77.8 L603.3,79.2 L603.9,80.6 L604.6,82.0 L605.2,83.4 L605.9,84.8 L606.5,86.2 L607.2,87.6 L607.9,89.0 L608.5,90.5 L609.2,91.9 L609.8,93.3 L610.5,94.7 L611.1,96.1 L611.8,97.5 L612.4,98.9 L613.1,100.3 L613.8,101.7 L614.4,103.0 L615.1,104.4 L615.7,105.7 L616.4,107.0 L617.0,108.3 L617.7,109.6 L618.3,110.9 L619.0,112.1 L619.7,113.3 L620.3,114.5 L621.0,115.7 L621.6,116.9 L622.3,118.0 L622.9,119.1 L623.6,120.2 L624.2,121.3 L624.9,122.4 L625.6,123.4 L626.2,124.4 L626.9,125.4 L627.5,126.3 L628.2,127.2 L628.8,128.1 L629.5,129.0 L630.1,129.9 L630.8,130.7 L631.5,131.5 L632.1,132.3 L632.8,133.1 L633.4,133.8 L634.1,134.5 L634.7,135.2 L635.4,135.9 L636.0,136.5 L636.7,137.1 L637.4,137.7 L638.0,138.3 L638.7,138.9 L639.3,139.4 L640.0,139.9 L640.6,140.4 L641.3,140.9 L641.9,141.3 L642.6,141.8 L643.3,142.2 L643.9,142.6 L644.6,143.0 L645.2,143.4 L645.9,143.7 L646.5,144.1 L647.2,144.4 L647.8,144.7 L648.5,145.0 L649.2,145.3 L649.8,145.5 L650.5,145.8 L651.1,146.0 L651.8,146.3 L652.4,146.5 L653.1,146.7 L653.7,146.9 L654.4,147.1 L655.1,147.2 L655.7,147.4 L656.4,147.6 L657.0,147.7 L657.7,147.9 L658.3,148.0 L659.0,148.1 L659.6,148.2 L660.3,148.4 L661.0,148.5 L661.6,148.6 L662.3,148.7 L662.9,148.8 L663.6,148.8 L664.2,148.9 L664.9,149.0 L665.5,149.1 L666.2,149.1 L666.9,149.2 L667.5,149.2 L668.2,149.3 L668.8,149.3 L669.5,149.4 L670.1,149.4 L670.8,149.5 L671.4,149.5 L672.1,149.6 L672.8,149.6 L673.4,149.6 L674.1,149.6 L674.7,149.7 L675.4,149.7 L676.0,149.7 L676.7,149.7 L677.3,149.8 L678.0,149.8"/>
+  <path class="ln" d="M482.0,150 L678.0,150"/>
+  <path class="ln-acc" d="M630.4,36 L630.4,154"/>
+  <text class="acc sm b" x="630.4" y="30" text-anchor="middle">t = 1.8</text>
+  <text class="ink2 sm" x="580" y="174" text-anchor="middle">«меньше»: alternative="less"</text>
+  <text class="ink b" x="580" y="194" text-anchor="middle">p = 0.964</text>
+  <text class="mut sm" x="350" y="222" text-anchor="middle">красное — «не менее крайние» значения при H₀; направление выбирают до данных</text>
+</svg>
+</div><figcaption>
+<p>Одна и та же статистика t = 1.8 при трёх альтернативах. Красное — значения, которые считаются «не менее крайними»; их площадь и есть p-value.</p>
+</figcaption></figure>
+<div class="cell"><pre class="cell-src"><code>from scipy import stats
+t = 1.8
+print(&quot;двусторонний:&quot;, round(2 * stats.norm.sf(t), 3))
+print(&quot;больше:      &quot;, round(stats.norm.sf(t), 3))
+print(&quot;меньше:      &quot;, round(stats.norm.cdf(t), 3))</code></pre></div>
+<h3>В scipy и statsmodels</h3>
+<p>У <code>ttest_ind</code>, <code>ttest_1samp</code>, <code>ttest_rel</code> и <code>mannwhitneyu</code> есть параметр <code>alternative</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Значение</th>
+<th>H₁</th>
+<th>Пример</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&quot;two-sided&quot;</code> (по умолчанию)</td>
+<td>группы различаются</td>
+<td><code>ttest_ind(a, b)</code></td>
+</tr>
+<tr>
+<td><code>&quot;greater&quot;</code></td>
+<td><strong>первый</strong> аргумент больше второго (или больше числа)</td>
+<td><code>ttest_ind(rain, clear, alternative=&quot;greater&quot;)</code></td>
+</tr>
+<tr>
+<td><code>&quot;less&quot;</code></td>
+<td><strong>первый</strong> аргумент меньше второго</td>
+<td><code>ttest_1samp(t30, 30, alternative=&quot;less&quot;)</code></td>
+</tr>
+</tbody>
+</table>
+<p>В statsmodels слова другие: <code>proportions_ztest(..., alternative=&quot;larger&quot;)</code> или <code>&quot;smaller&quot;</code>; по умолчанию <code>&quot;two-sided&quot;</code>.</p>
+<p>Проверим дождь против ясной погоды в Тюмени (TMN-1):</p>
+<div class="cell"><pre class="cell-src"><code>import pandas as pd
+from scipy import stats
+
+d = pd.read_csv(&quot;deliveries.csv&quot;)
+ok = d[d[&quot;actual_min&quot;].between(1, 299) &amp; (d[&quot;shop_id&quot;] == &quot;TMN-1&quot;)]
+rain = ok.loc[ok[&quot;weather&quot;] == &quot;дождь&quot;, &quot;actual_min&quot;]
+clear = ok.loc[ok[&quot;weather&quot;] == &quot;ясно&quot;, &quot;actual_min&quot;]
+print(f&quot;дождь {rain.mean():.1f} мин (n={len(rain)}), ясно {clear.mean():.1f} мин (n={len(clear)})&quot;)
+for alt in (&quot;two-sided&quot;, &quot;greater&quot;, &quot;less&quot;):
+    res = stats.ttest_ind(rain, clear, equal_var=False, alternative=alt)
+    print(f&quot;{alt:&gt;9}: p = {res.pvalue:.4f}&quot;)</code></pre></div>
+<p>Что здесь происходит:</p>
+<ul>
+<li><code>rain</code> и <code>clear</code> — время доставок TMN-1 в дождь и в ясную погоду; порядок аргументов важен: <code>alternative</code> говорит о <strong>первом</strong> относительно второго;</li>
+<li>цикл трижды запускает один и тот же тест Уэлча с разными H₁;</li>
+<li>статистика t во всех трёх случаях одна и та же — меняется только то, какой хвост считать «крайним».</li>
+</ul>
+<p>Как читать результат: в дождь доставка дольше на 3.6 минуты. Двустороннее p = 0.0527 — чуть выше 0.05; одностороннее «больше» — 0.0263, вдвое меньше; «меньше» — 0.9737: данные совсем не похожи на «в дождь быстрее». Если вопрос «дольше ли в дождь» был сформулирован до просмотра данных и обратный результат ничего бы не изменил, честный ответ — односторонний: p = 0.026, добавлять 5 минут в Тюмени оправданно.</p>
+<p><strong>Когда односторонний тест допустим:</strong></p>
+<ul>
+<li>направление записано <strong>до</strong> просмотра данных и следует из бизнес-вопроса;</li>
+<li>результат в обратную сторону приведёт к тому же решению, что и «разницы нет»;</li>
+<li>эффект в обратную сторону не опасен. Если новая упаковка может <strong>замедлить</strong> доставку и это важно знать, нужен двусторонний тест: односторонний «быстрее» такой вред не заметит.</li>
+</ul>
+<div class="quiz-c" data-q="c2"><div class="predict-title">Проверьте себя</div>
+<p>Аналитик сравнил средний чек в кофейнях с новым меню и со старым: <code>ttest_ind(new, old, alternative=&quot;greater&quot;)</code> дал p = 0.97. Что это значит?</p>
+<ul>
+<li>[x] Данные совсем не поддерживают «в новом меню чек больше»; скорее всего, он даже меньше — но этот тест такой вывод не проверяет
+<blockquote>
+<p>p близко к 1 при «greater» означает, что статистика ушла в другую сторону. Вопрос «стал ли чек меньше» — отдельная гипотеза, и её надо было задать заранее.</p>
+</blockquote>
+</li>
+<li>[ ] Чек в новом меню больше с вероятностью 97 %
+<blockquote>
+<p>p-value — не вероятность гипотезы. Большое p при «greater» говорит как раз об обратном направлении.</p>
+</blockquote>
+</li>
+<li>[ ] Ошибка: p-value не бывает таким большим
+<blockquote>
+<p>Бывает: у одностороннего теста «не в ту сторону» p близко к 1.</p>
+</blockquote>
+</li>
+<li>[ ] Нужно взять 1 − 0.97 = 0.03 и объявить, что чек значимо меньше
+<blockquote>
+<p>Это смена направления после просмотра данных — та самая подгонка, которой односторонний тест опасен.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<aside class="callout callout-warn"><div class="callout-title">Типичные ошибки</div>
+<ul>
+<li><strong>Направление после данных.</strong> Посмотрели на средние, увидели «дождь дольше» и выбрали <code>&quot;greater&quot;</code> — p вдвое меньше честного. Направление фиксируют в плане анализа до расчётов; если его нет — <code>&quot;two-sided&quot;</code>.</li>
+<li><strong>Перепутали порядок аргументов.</strong> <code>ttest_ind(clear, rain, alternative=&quot;greater&quot;)</code> проверяет «в ясную погоду дольше»; p выйдет близким к 1. Симптом: p ≈ 0.97 при явно видимом эффекте — поменяйте местами аргументы или <code>&quot;greater&quot;</code> на <code>&quot;less&quot;</code>.</li>
+<li><strong>Слова из scipy в statsmodels.</strong> <code>proportions_ztest(..., alternative=&quot;greater&quot;)</code> выдаст <code>ValueError</code>: там <code>&quot;larger&quot;</code> и <code>&quot;smaller&quot;</code>.</li>
+<li><strong>Односторонний тест для «защитной» метрики.</strong> Если важно поймать вред в любую сторону (выручка, жалобы), тест двусторонний.</li>
+</ul>
+</aside>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-alt-rain"><b>7</b> Дождь в Казани: дольше ли</a></div>
+<div class="fb" data-sec="односторонний-тест-параметр-alternative"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div><h2 id="p-value-не-размер-эффекта">p-value — не размер эффекта</h2>
+<p>Маленькое p говорит «разница, скорее всего, не случайна», но не говорит, <strong>большая</strong> ли она. На огромных данных даже разница в 0.1 минуты будет «значимой». Поэтому вместе с p-value всегда сообщают размер эффекта:</p>
+<blockquote>
+<p>В снег опаздывают на 11 п.п. чаще (34 % против 23 %; 95 % ДИ разницы 4–19 п.п.; p = 0.001).</p>
+</blockquote>
+<p>Такая фраза отвечает на три вопроса сразу: насколько, насколько точно и не случайно ли.</p>
+<div class="quiz-c" data-q="c3"><div class="predict-title">Проверьте себя</div>
+<p>На 200 000 заказах t-тест показал p &lt; 0.001 для разницы средних чеков 1.5 ₽. Стоит ли менять меню ради этой разницы?</p>
+<ul>
+<li>[x] Скорее нет: разница надёжно отлична от нуля, но слишком мала, чтобы ради неё что-то менять
+<blockquote>
+<p>На больших данных значимой становится почти любая разница. Решение принимают по размеру эффекта и его интервалу.</p>
+</blockquote>
+</li>
+<li>[ ] Да: p &lt; 0.001 — очень сильный эффект
+<blockquote>
+<p>p-value говорит о надёжности, а не о величине. 1.5 ₽ — сила эффекта, и она мала.</p>
+</blockquote>
+</li>
+<li>[ ] Нет: тест ошибся, потому что данных слишком много
+<blockquote>
+<p>Тест не ошибся, просто «значимо» не значит «важно».</p>
+</blockquote>
+</li>
+<li>[ ] Нужно уменьшить выборку, чтобы p стал честнее
+<blockquote>
+<p>Выбрасывать данные бессмысленно. Смотрите на эффект и интервал.</p>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-report"><b>10</b> Фраза для отчёта</a></div>
+<div class="fb" data-sec="p-value-не-размер-эффекта"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
+    <section class="practice" id="practice">
+      <h2>Практика</h2>
+      <p class="legend">Задачи идут от простых к сложным. Для урока достаточно решить все, кроме задач <span class="lvl lvl-star">со звёздочкой</span>.
+      <kbd class="mod">Ctrl</kbd>+<kbd>Enter</kbd> — запустить, <kbd>Shift</kbd>+<kbd>Enter</kbd> — проверить.</p>
+      <section class="task" id="task-welch" data-task="welch" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">1</span>
+    <h3 class="task-title">Пешие против вело</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#t-тест-средние-двух-групп">↑ К теории: t-тест: средние двух групп</a>
+  <div class="task-text prose"><p>Сравните t-тестом Уэлча среднее время доставки пеших и вело-курьеров (1–299 минут). Сохраните <code>t_stat</code> (4 знака) и <code>p_value</code> — без округления: оно меньше 0.0001, и округление превратило бы его в ноль.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-one-sample" data-task="one-sample" data-level="warmup" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">2</span>
+    <h3 class="task-title">Обещание 30 минут</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#одна-группа-против-числа">↑ К теории: Одна группа против числа</a>
+  <div class="task-text prose"><p>Проверьте, укладываемся ли мы в среднем в обещание 30 минут: t-тест для одной выборки по доставкам с <code>promised_min == 30</code>. Сохраните <code>mean_30</code> (среднее, 1 знак) и <code>p_value</code> (без округления или с 4 знаками — проверка примет оба). В <code>beyond</code> — <code>True</code>, если среднее <strong>больше</strong> 30 и при этом p &lt; 0.05.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-p-ztest" data-task="p-ztest" data-level="warmup" data-kind="parsons">
+  <header class="task-head">
+    <span class="task-num">3</span>
+    <h3 class="task-title">z-тест для долей</h3>
+    <span class="lvl lvl-warmup">Разминка</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#z-тест-для-долей">↑ К теории: z-тест для долей</a>
+  <div class="task-text prose"><p>Соберите программу, которая сравнивает доли 30 из 200 и 45 из 210 и выводит p-value (3 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-paired" data-task="paired" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">4</span>
+    <h3 class="task-title">До и после</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#парный-t-тест-до-и-после-на-одних-объектах">↑ К теории: Парный t-тест: до и после на одних объектах</a>
+  <div class="task-text prose"><p>Посчитайте для каждой кофейни долю опозданий в октябре и в ноябре (таблица <code>m</code>: строки — кофейни, столбцы — месяцы 10 и 11). Проведите парный t-тест «ноябрь против октября» и сохраните <code>mean_change</code> — среднее изменение доли по кофейням в п.п. (1 знак) и <code>p_value</code> (3 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-chi2" data-task="chi2" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">5</span>
+    <h3 class="task-title">Погода и опоздания</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#хи-квадрат-связь-категорий">↑ К теории: Хи-квадрат: связь категорий</a>
+  <div class="task-text prose"><p>Проверьте хи-квадратом, связана ли погода с опозданием. Сохраните таблицу сопряжённости в <code>ct</code> (строки — погода, столбцы — <code>late</code>), а в <code>chi2_p</code> — p-value. В <code>max_gap_weather</code> — вид погоды, где наблюдаемое число опозданий сильнее всего <strong>превышает</strong> ожидаемое при независимости.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-mwu" data-task="mwu" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">6</span>
+    <h3 class="task-title">Оценки: Манна — Уитни</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#манна-уитни-когда-среднее-не-подходит">↑ К теории: Манна — Уитни: когда среднее не подходит</a>
+  <div class="task-text prose"><p>Сравните оценки гостей при доставке в снег и в остальную погоду тестом Манна — Уитни. Сохраните <code>med_snow</code>, <code>med_other</code> — медианы оценок и <code>p_value</code> (4 знака).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-alt-rain" data-task="alt-rain" data-level="base" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">7</span>
+    <h3 class="task-title">Дождь в Казани: дольше ли</h3>
+    <span class="lvl lvl-base">База</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#односторонний-тест-параметр-alternative">↑ К теории: Односторонний тест: параметр alternative=</a>
+  <div class="task-text prose"><p>План анализа записан заранее: «добавляем 5 минут к обещанию в дождь, если в дождь доставки дольше, чем в ясную погоду; α = 0.05». Проверьте его для кофейни KZN-2 тестом Уэлча (время 1–299 минут). Сохраните p-value трёх вариантов: <code>p_two</code> (двусторонний), <code>p_greater</code> (H₁: в дождь дольше) и <code>p_less</code> (H₁: в дождь быстрее) — все 4 знака. В <code>add_5min</code> — <code>True</code> или <code>False</code>: решение по тесту, который соответствует плану.</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-choose" data-task="choose" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">8</span>
+    <h3 class="task-title">Какой тест</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#карта-тестов">↑ К теории: Карта тестов</a>
+  <div class="task-text prose"><p>Напишите функцию <code>choose_test(kind, groups, paired=False, skewed=False)</code>, которая по описанию задачи возвращает название теста:</p>
+<ul>
+<li><code>kind=&quot;share&quot;</code>, <code>groups=2</code> → <code>&quot;proportions_ztest&quot;</code>;</li>
+<li><code>kind=&quot;category&quot;</code> (любое число групп) → <code>&quot;chi2_contingency&quot;</code>;</li>
+<li><code>kind=&quot;mean&quot;</code>, <code>groups=1</code> → <code>&quot;ttest_1samp&quot;</code>;</li>
+<li><code>kind=&quot;mean&quot;</code>, <code>groups=2</code>, <code>paired=True</code> → <code>&quot;ttest_rel&quot;</code>;</li>
+<li><code>kind=&quot;mean&quot;</code>, <code>groups=2</code>, <code>skewed=True</code> → <code>&quot;mannwhitneyu&quot;</code>;</li>
+<li><code>kind=&quot;mean&quot;</code>, <code>groups=2</code> (иначе) → <code>&quot;ttest_ind&quot;</code>.</li>
+</ul>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-agree" data-task="agree" data-level="plus" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">9</span>
+    <h3 class="task-title">Формула и перемешивание согласны</h3>
+    <span class="lvl lvl-plus">Посложнее</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#t-тест-средние-двух-групп">↑ К теории: t-тест: средние двух групп</a>
+  <div class="task-text prose"><p>Сравните долю опозданий в KZN-2 и KZN-1 двумя способами: z-тестом для долей (<code>p_z</code>) и перестановочным тестом на 4 000 перемешиваний (<code>p_perm</code>, <code>rng = np.random.default_rng(2)</code>). Оба p-value должны быть близки. Сохраните ещё <code>diff_pp</code> — разницу долей в п.п. (1 знак).</p>
+</div>
+  <div class="task-ui"></div>
+</section><section class="task" id="task-report" data-task="report" data-level="star" data-kind="code">
+  <header class="task-head">
+    <span class="task-num">10</span>
+    <h3 class="task-title">Фраза для отчёта</h3>
+    <span class="lvl lvl-star">Со звёздочкой</span>
+    <span class="task-state" aria-hidden="true"></span>
+  </header>
+  <a class="task-ref" href="#p-value-не-размер-эффекта">↑ К теории: p-value — не размер эффекта</a>
+  <div class="task-text prose"><p>Напишите функцию <code>compare_shares(late_a, late_b)</code>: принимает два массива <code>True/False</code> (опоздания в группах A и B) и возвращает строку вида</p>
+<p><code>&quot;A: 30.0 %, B: 20.0 %, разница 10.0 п.п. (95 % ДИ -1.9…21.9), p = 0.1025&quot;</code></p>
+<p>— доли и разница с 1 знаком, интервал разницы — по формуле из урока «Доверительные интервалы», p — z-тест для долей, 4 знака. Между границами интервала — символ многоточия «…», а не три точки. Образец выше — для выдуманных групп 30 из 100 и 20 из 100. Проверьте функцию на KZN-2 (A) и KZN-1 (B): результат — в <code>phrase</code>.</p>
+</div>
+  <div class="task-ui"></div>
+</section>
+    </section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>Средние двух групп: <code>stats.ttest_ind(a, b, equal_var=False)</code> — t-тест Уэлча (не требует равных дисперсий).</li><li>Среднее против числа: <code>stats.ttest_1samp(a, 45)</code>. Пары «до/после» на одних объектах: <code>stats.ttest_rel(after, before)</code>.</li><li>Доли двух групп: <code>proportions_ztest([успехов_a, успехов_b], [n_a, n_b])</code> из statsmodels.</li><li>Связь двух категорий: <code>stats.chi2_contingency(pd.crosstab(a, b))</code> — хи-квадрат.</li><li>Скошенные данные или порядковые оценки (1–5): <code>stats.mannwhitneyu(a, b)</code> — сравнивает распределения по рангам.</li><li>Односторонний тест — параметр <code>alternative=&quot;greater&quot;</code> или <code>&quot;less&quot;</code> (о первом аргументе относительно второго); в statsmodels — <code>&quot;larger&quot;</code>/<code>&quot;smaller&quot;</code>. Направление фиксируют до данных и только если обратный эффект не важен; иначе — <code>&quot;two-sided&quot;</code>.</li><li>Каждый тест возвращает статистику и p-value: <code>res.pvalue</code>. К p-value всегда добавляйте размер эффекта — разницу и её интервал.</li></ul></section>
+    
+    <section class="notes" id="notes">
+      <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
+      <textarea id="notes-text" placeholder="Что было непонятно, что хочется запомнить своими словами, вопросы на потом… Сохраняется само." spellcheck="true"></textarea>
+      <p class="muted small">Все заметки — на странице <a href="../notes.html">«Заметки»</a>, их можно выгрузить в Markdown.</p>
+    </section>
+    <nav class="pager"><a class="prev" href="05-hypotheses.html"><span class="pl">← Предыдущий</span><span class="pt">6. Проверка гипотез: логика и p-value</span></a><a class="next" href="07-ab.html"><span class="pl">Следующий урок →</span><span class="pt">8. A/B-тест: от дизайна до решения</span></a></nav>
+    <footer class="foot">Текст курса — CC BY-SA 4.0. Нашли ошибку или непонятное место — <button class="linklike" id="ask-lesson">скопировать вопрос для ИИ-репетитора</button>.</footer>
+  </main>
+  <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#карта-тестов">Карта тестов</a></li><li><a href="#t-тест-средние-двух-групп">t-тест: средние двух групп</a></li><li><a href="#одна-группа-против-числа">Одна группа против числа</a></li><li><a href="#парный-t-тест-до-и-после-на-одних-объектах">Парный t-тест: до и после на одних объектах</a></li><li><a href="#z-тест-для-долей">z-тест для долей</a></li><li><a href="#хи-квадрат-связь-категорий">Хи-квадрат: связь категорий</a></li><li><a href="#манна-уитни-когда-среднее-не-подходит">Манна — Уитни: когда среднее не подходит</a></li><li><a href="#односторонний-тест-параметр-alternative">Односторонний тест: параметр alternative=</a></li><li><a href="#p-value-не-размер-эффекта">p-value — не размер эффекта</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="lesson-data">{"lesson": "ch05/06-tests", "title": "Статистические тесты: какой выбрать", "chapter": "Статистика и проверка гипотез", "tasks": [{"id": "welch", "title": "Пешие против вело", "level": "warmup", "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]", "setup": "", "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nr = _st.ttest_ind(ok.loc[ok['courier'] == 'пеший', 'actual_min'], ok.loc[ok['courier'] == 'вело', 'actual_min'], equal_var=False)\nassert close(need('t_stat'), round(r.statistic, 4)), f't_stat = {need(\"t_stat\")}, а нужно {round(r.statistic, 4)}. Порядок групп: пешие, потом вело; equal_var=False.'\nassert close(need('p_value'), round(r.pvalue, 4)), f'p_value = {need(\"p_value\")}.'", "hints": ["<p>Две группы: <code>walk<\/code> — время пеших доставок, <code>velo<\/code> — вело; обе — Series <code>actual_min<\/code> с фильтром по <code>courier<\/code>.<\/p>\n", "<p><code>stats.ttest_ind(walk, velo, equal_var=False)<\/code>; результат — <code>.statistic<\/code>, <code>.pvalue<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nwalk = ok.loc[ok[\"courier\"] == \"пеший\", \"actual_min\"]\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"]\nres = stats.ttest_ind(walk, velo, equal_var=False)\nt_stat = round(res.statistic, 4)\np_value = round(res.pvalue, 4)", "explain": "<p>Пешие в среднем доставляют за 39.9 минуты, вело — за 33.1; t ≈ 9.3, p ≈ 2 · 10⁻¹⁹. В отчёт такое p пишут как «p &lt; 0.0001», а не «p = 0.0». Разница почти 7 минут на сотнях доставок — это не может быть случайностью. Но тест не говорит почему: пешие могут возить на другие расстояния (урок «Ловушки статистики» — про такие ловушки).<\/p>\n", "parsons": ""}, {"id": "one-sample", "title": "Обещание 30 минут", "level": "warmup", "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]", "setup": "", "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nt = ok.loc[ok['promised_min'] == 30, 'actual_min']\nr = _st.ttest_1samp(t, 30)\nassert close(need('mean_30'), round(t.mean(), 1)), f'mean_30 = {need(\"mean_30\")}.'\nassert close(need('p_value'), r.pvalue, 6e-5), f'p_value = {need(\"p_value\")}, а нужно около {r.pvalue:.4f}. Тест — stats.ttest_1samp(t30, 30).'\nassert need('beyond') == bool(t.mean() > 30 and r.pvalue < 0.05), 'beyond — среднее больше 30 и p < 0.05.'", "hints": ["<p><code>t30<\/code> — время доставок с обещанием 30 минут: <code>ok.loc[ok[&quot;promised_min&quot;] == 30, &quot;actual_min&quot;]<\/code>.<\/p>\n", "<p><code>stats.ttest_1samp(t30, 30)<\/code>; <code>beyond = bool(t30.mean() &gt; 30 and p &lt; 0.05)<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nt30 = ok.loc[ok[\"promised_min\"] == 30, \"actual_min\"]\nres = stats.ttest_1samp(t30, 30)\nmean_30 = round(t30.mean(), 1)\np_value = res.pvalue\nbeyond = bool(t30.mean() > 30 and res.pvalue < 0.05)", "explain": "<p>Среднее в зоне 30 минут — 30.1, на 0.1 минуты выше обещания, p ≈ 0.65: в среднем обещание выполняется впритык, значимого превышения нет, и <code>beyond = False<\/code>. Но «в среднем» — не то же, что «для гостя»: при среднем около 30 минут почти половина доставок (45 %) приезжает позже обещанного. Беда зоны 30 — не среднее, а доля опозданий (глава 4); средним её не увидеть.<\/p>\n", "parsons": ""}, {"id": "p-ztest", "title": "z-тест для долей", "level": "warmup", "starter": "", "setup": "", "check": "from statsmodels.stats.proportion import proportions_ztest as _z\nassert _lines == [str(round(_z([30, 45], [200, 210])[1], 3))], f'Сейчас: {_lines}'", "hints": ["<p>Списки «успехов» и «попыток» — до вызова теста.<\/p>\n", "<p><code>proportions_ztest<\/code> возвращает пару (статистика, p-value); печатайте второе число.<\/p>\n"], "solution": "from statsmodels.stats.proportion import proportions_ztest\ncount = [30, 45]\nnobs = [200, 210]\nz, p = proportions_ztest(count, nobs)\nprint(round(p, 3))", "explain": "", "parsons": "from statsmodels.stats.proportion import proportions_ztest\ncount = [30, 45]\nnobs = [200, 210]\nz, p = proportions_ztest(count, nobs)\nprint(round(p, 3))"}, {"id": "paired", "title": "До и после", "level": "base", "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"month\"] = ok[\"created\"].dt.month", "setup": "", "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\nm = o.pivot_table(index='shop_id', columns=o['created'].dt.month, values='late', aggfunc='mean')\nr = _st.ttest_rel(m[11], m[10])\nassert close(need('mean_change'), round((m[11] - m[10]).mean() * 100, 1)), f'mean_change = {need(\"mean_change\")}.'\nassert close(need('p_value'), round(r.pvalue, 3)), f'p_value = {need(\"p_value\")}, а нужно {round(r.pvalue, 3)}. Тест — ttest_rel(ноябрь, октябрь).'", "hints": ["<p>Месяц — <code>ok[&quot;created&quot;].dt.month<\/code>, его нужно добавить в <code>ok<\/code> до сводной таблицы.<\/p>\n", "<p><code>m = ok.pivot_table(index=&quot;shop_id&quot;, columns=&quot;month&quot;, values=&quot;late&quot;, aggfunc=&quot;mean&quot;)<\/code>; столбцы — <code>m[10]<\/code>, <code>m[11]<\/code>. Тест — <code>stats.ttest_rel(m[11], m[10])<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"month\"] = ok[\"created\"].dt.month\nm = ok.pivot_table(index=\"shop_id\", columns=\"month\", values=\"late\", aggfunc=\"mean\")\nmean_change = round((m[11] - m[10]).mean() * 100, 1)\np_value = round(stats.ttest_rel(m[11], m[10]).pvalue, 3)", "explain": "<p>Ноябрь хуже октября в среднем на 4.8 п.п., но p ≈ 0.19: на шести кофейнях с разнонаправленными изменениями это может быть шумом. Парный тест сравнивает каждую кофейню с самой собой — и всё равно не находит уверенного эффекта.<\/p>\n", "parsons": ""}, {"id": "chi2", "title": "Погода и опоздания", "level": "base", "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]", "setup": "", "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\nct = _pd.crosstab(o['weather'], o['late'])\nchi2, p, dof, exp = _st.chi2_contingency(ct)\nc = need('ct', _pd.DataFrame)\nassert c.shape == ct.shape, 'ct — pd.crosstab(погода, late).'\nassert close(need('chi2_p'), p, 6e-5), f'chi2_p = {need(\"chi2_p\")}, а нужно около {p:.6f}.'\ngap = ct[True] - exp[:, list(ct.columns).index(True)]\nassert need('max_gap_weather') == gap.idxmax(), f'max_gap_weather = {need(\"max_gap_weather\")!r}, а нужно {gap.idxmax()!r}.'", "hints": ["<p><code>chi2, p, dof, expected = stats.chi2_contingency(ct)<\/code>; <code>expected<\/code> — массив той же формы, что <code>ct<\/code>.<\/p>\n", "<p>Опоздания — столбец <code>True<\/code>. Ожидаемые опоздания — <code>expected[:, 1]<\/code> (второй столбец). Разница — Series с индексом погоды: <code>ct[True] - expected[:, 1]<\/code>, и её <code>idxmax()<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nct = pd.crosstab(ok[\"weather\"], ok[\"late\"])\nchi2, chi2_p, dof, expected = stats.chi2_contingency(ct)\ngap = ct[True] - expected[:, 1]\nmax_gap_weather = gap.idxmax()", "explain": "<p>p ≈ 0.0003: погода и опоздания связаны. Сильнее всего ожидание при независимости превышено в снег — на 17 опозданий больше, чем было бы при общей частоте; в облачную погоду, наоборот, на 30 меньше. Хи-квадрат говорит «связь есть», а таблица «наблюдаемое − ожидаемое» — где она.<\/p>\n", "parsons": ""}, {"id": "mwu", "title": "Оценки: Манна — Уитни", "level": "base", "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nr = ok.dropna(subset=[\"rating\"])", "setup": "", "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nr = ok.dropna(subset=['rating'])\ns = r['weather'] == 'снег'\nassert close(need('med_snow'), r.loc[s, 'rating'].median()) and close(need('med_other'), r.loc[~s, 'rating'].median()), 'Медианы оценок не совпадают.'\nassert close(need('p_value'), round(_st.mannwhitneyu(r.loc[s, 'rating'], r.loc[~s, 'rating']).pvalue, 4)), f'p_value = {need(\"p_value\")}.'", "hints": ["<p>Оценки есть не у всех доставок: возьмите строки с непустым <code>rating<\/code> (<code>r = ok.dropna(subset=[&quot;rating&quot;])<\/code>).<\/p>\n", "<p><code>stats.mannwhitneyu(r.loc[snow, &quot;rating&quot;], r.loc[~snow, &quot;rating&quot;]).pvalue<\/code>.<\/p>\n"], "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nr = ok.dropna(subset=[\"rating\"])\nsnow = r[\"weather\"] == \"снег\"\nmed_snow = r.loc[snow, \"rating\"].median()\nmed_other = r.loc[~snow, \"rating\"].median()\np_value = round(stats.mannwhitneyu(r.loc[snow, \"rating\"], r.loc[~snow, \"rating\"]).pvalue, 4)", "explain": "<p>Медианы одинаковые — пятёрки, а p около 0.06 — на грани. Манна — Уитни сравнивает распределения целиком: в снег оценок 1–3 больше (около 16 % против 7 %), но снежных оценок всего несколько десятков, и уверенно сказать, что различие не случайно, нельзя. Медиана для оценок 1–5 — грубая мера; доля «не пятёрок» часто говорит больше.<\/p>\n", "parsons": ""}, {"id": "alt-rain", "title": "Дождь в Казани: дольше ли", "level": "base", "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299) & (d[\"shop_id\"] == \"KZN-2\")]", "setup": "", "check": "import pandas as _pd\nfrom scipy import stats as _st\n_d = _pd.read_csv('deliveries.csv')\n_ok = _d[_d['actual_min'].between(1, 299) & (_d['shop_id'] == 'KZN-2')]\n_r = _ok.loc[_ok['weather'] == 'дождь', 'actual_min']\n_c = _ok.loc[_ok['weather'] == 'ясно', 'actual_min']\n_p = {a: _st.ttest_ind(_r, _c, equal_var=False, alternative=a).pvalue for a in ('two-sided', 'greater', 'less')}\nassert close(need('p_two'), round(_p['two-sided'], 4)), f'p_two = {need(\"p_two\")}. Двусторонний тест Уэлча: ttest_ind(rain, clear, equal_var=False).'\npg, pl = need('p_greater'), need('p_less')\nif close(pg, round(_p['less'], 4)) and close(pl, round(_p['greater'], 4)):\n    raise AssertionError('p_greater и p_less поменялись местами. alternative говорит о первом аргументе: ttest_ind(rain, clear, alternative=\"greater\") — «в дождь больше».')\nassert close(pg, round(_p['greater'], 4)), f'p_greater = {pg}. H₁ «в дождь дольше»: первый аргумент — дождь, alternative=\"greater\".'\nassert close(pl, round(_p['less'], 4)), f'p_less = {pl}. H₁ «в дождь быстрее»: alternative=\"less\".'\nassert need('add_5min') == (_p['greater'] < 0.05), 'add_5min — решение по одностороннему тесту «дольше» из плана при α = 0.05.'", "hints": ["<p>Разделите доставки KZN-2 на дождь и ясно и трижды запустите <code>stats.ttest_ind(rain, clear, equal_var=False, alternative=...)<\/code>.<\/p>\n", "<p>Значения <code>alternative<\/code>: <code>&quot;two-sided&quot;<\/code>, <code>&quot;greater&quot;<\/code>, <code>&quot;less&quot;<\/code>. План говорит «дольше в дождь» — это <code>&quot;greater&quot;<\/code> при первом аргументе <code>rain<\/code>.<\/p>\n", "<p><code>add_5min = p_greater &lt; 0.05<\/code> — сравнивайте с α именно p из плана, а не самое маленькое из трёх.<\/p>\n"], "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299) & (d[\"shop_id\"] == \"KZN-2\")]\nrain = ok.loc[ok[\"weather\"] == \"дождь\", \"actual_min\"]\nclear = ok.loc[ok[\"weather\"] == \"ясно\", \"actual_min\"]\np_two = round(stats.ttest_ind(rain, clear, equal_var=False).pvalue, 4)\np_greater = round(stats.ttest_ind(rain, clear, equal_var=False, alternative=\"greater\").pvalue, 4)\np_less = round(stats.ttest_ind(rain, clear, equal_var=False, alternative=\"less\").pvalue, 4)\nadd_5min = p_greater < 0.05", "explain": "<p>В KZN-2 в дождь доставка дольше на 3 минуты, но групп немного (50 дождливых и 106 ясных доставок). Двустороннее p = 0.108, одностороннее по плану — 0.054: тоже выше 0.05, поэтому <code>add_5min = False<\/code> — данных пока недостаточно, решение откладываем до новых наблюдений. Заметьте: p_greater + p_less = 1 — это два хвоста одной и той же статистики. Типичная подгонка — увидеть 0.054, «вспомнить», что α можно взять 0.1, или сравнить с α самое маленькое из трёх p. План для того и пишут заранее, чтобы таких соблазнов не было.<\/p>\n", "parsons": ""}, {"id": "choose", "title": "Какой тест", "level": "plus", "starter": "def choose_test(kind, groups, paired=False, skewed=False):\n    ...\n\nchoose_test(\"mean\", 2)", "setup": "", "check": "f = need('choose_test')\ncases = [(('share', 2), {}, 'proportions_ztest'), (('category', 3), {}, 'chi2_contingency'), (('category', 2), {}, 'chi2_contingency'),\n         (('mean', 1), {}, 'ttest_1samp'), (('mean', 2), {'paired': True}, 'ttest_rel'), (('mean', 2), {'skewed': True}, 'mannwhitneyu'),\n         (('mean', 2), {}, 'ttest_ind')]\nfor args, kw, want in cases:\n    got = f(*args, **kw)\n    assert got == want, f'choose_test{args}{\", \" + str(kw) if kw else \"\"} = {got!r}, а нужно {want!r}.'", "hints": ["<p>Сначала разберите <code>kind<\/code>, внутри «mean» — число групп, потом <code>paired<\/code> и <code>skewed<\/code>.<\/p>\n", "<p>Порядок проверок внутри «mean» важен: <code>groups == 1<\/code> → <code>paired<\/code> → <code>skewed<\/code> → иначе <code>ttest_ind<\/code>.<\/p>\n"], "solution": "def choose_test(kind, groups, paired=False, skewed=False):\n    if kind == \"share\":\n        return \"proportions_ztest\"\n    if kind == \"category\":\n        return \"chi2_contingency\"\n    if groups == 1:\n        return \"ttest_1samp\"\n    if paired:\n        return \"ttest_rel\"\n    if skewed:\n        return \"mannwhitneyu\"\n    return \"ttest_ind\"\n\nchoose_test(\"mean\", 2)", "explain": "<p>Функция повторяет логику аналитика: что сравниваем (доли, категории, средние), сколько групп, связаны ли наблюдения, похоже ли распределение на колокол. Проверку <code>paired<\/code> до <code>skewed<\/code> делают потому, что для парных скошенных данных есть свой тест (Уилкоксона), а не Манна — Уитни.<\/p>\n", "parsons": ""}, {"id": "agree", "title": "Формула и перемешивание согласны", "level": "plus", "starter": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nx = ok[ok[\"shop_id\"].isin([\"KZN-2\", \"KZN-1\"])]\nlate = (x[\"actual_min\"] > x[\"promised_min\"]).to_numpy()\ngrp = (x[\"shop_id\"] == \"KZN-2\").to_numpy()\nrng = np.random.default_rng(2)", "setup": "", "check": "from statsmodels.stats.proportion import proportions_ztest as _z\nimport numpy as _np\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nx = ok[ok['shop_id'].isin(['KZN-2', 'KZN-1'])]\nlate = (x['actual_min'] > x['promised_min']).to_numpy()\ng = (x['shop_id'] == 'KZN-2').to_numpy()\npz = _z([late[g].sum(), late[~g].sum()], [g.sum(), (~g).sum()])[1]\nassert close(need('p_z'), pz, 6e-5), f'p_z = {need(\"p_z\")}, а нужно около {pz:.6f}.'\nassert abs(need('p_perm') - pz) < 0.004, f'p_perm = {need(\"p_perm\")} — должно быть близко к p_z = {pz:.4f}.'\nassert close(need('diff_pp'), round((late[g].mean() - late[~g].mean()) * 100, 1)), f'diff_pp = {need(\"diff_pp\")}.'", "hints": ["<p>z-тест: <code>proportions_ztest([late[grp].sum(), late[~grp].sum()], [grp.sum(), (~grp).sum()])<\/code>.<\/p>\n", "<p>Перестановки — как в уроке «Проверка гипотез: логика и p-value».<\/p>\n"], "solution": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nx = ok[ok[\"shop_id\"].isin([\"KZN-2\", \"KZN-1\"])]\nlate = (x[\"actual_min\"] > x[\"promised_min\"]).to_numpy()\ngrp = (x[\"shop_id\"] == \"KZN-2\").to_numpy()\nrng = np.random.default_rng(2)\nz, p_z = proportions_ztest([late[grp].sum(), late[~grp].sum()], [grp.sum(), (~grp).sum()])\nobserved = late[grp].mean() - late[~grp].mean()\ndiffs = np.array([late[s].mean() - late[~s].mean() for s in (rng.permutation(grp) for _ in range(4000))])\np_perm = (np.abs(diffs) >= abs(observed)).mean()\ndiff_pp = round(observed * 100, 1)", "explain": "<p>Формула и симуляция дают почти одно и то же p. Формулы — это сокращённый путь, который работает, когда выборки достаточно большие. Перемешивание — запасной вариант на любой случай.<\/p>\n", "parsons": ""}, {"id": "report", "title": "Фраза для отчёта", "level": "star", "starter": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef compare_shares(late_a, late_b):\n    ...\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate = ok[\"actual_min\"] > ok[\"promised_min\"]\nphrase = compare_shares(late[ok[\"shop_id\"] == \"KZN-2\"].to_numpy(), late[ok[\"shop_id\"] == \"KZN-1\"].to_numpy())\nphrase", "setup": "", "check": "import numpy as _np\nfrom statsmodels.stats.proportion import proportions_ztest as _z\ndef _w(a, b):\n    p1, p2, n1, n2 = a.mean(), b.mean(), len(a), len(b)\n    se = _np.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2)\n    dd = p1 - p2\n    p = _z([a.sum(), b.sum()], [n1, n2])[1]\n    return f'A: {p1 * 100:.1f} %, B: {p2 * 100:.1f} %, разница {dd * 100:.1f} п.п. (95 % ДИ {(dd - 1.96 * se) * 100:.1f}…{(dd + 1.96 * se) * 100:.1f}), p = {p:.4f}'\nf = need('compare_shares')\na = _np.array([True] * 30 + [False] * 70)\nb = _np.array([True] * 20 + [False] * 80)\nassert f(a, b) == _w(a, b), f'Для 30/100 и 20/100:\\n{f(a, b)!r}\\nа нужно\\n{_w(a, b)!r}'\nassert need('phrase').startswith('A: ') and ' п.п. (95 % ДИ ' in need('phrase'), 'phrase — результат функции на KZN-2 и KZN-1.'", "hints": ["<p>Внутри: <code>p1, p2 = a.mean(), b.mean()<\/code>, <code>n1, n2 = len(a), len(b)<\/code>, SE разницы — <code>np.sqrt(p1*(1-p1)/n1 + p2*(1-p2)/n2)<\/code>.<\/p>\n", "<p>Формат в f-строке: <code>{p1 * 100:.1f}<\/code>, <code>{p:.4f}<\/code>. Многоточие — символ «…».<\/p>\n"], "solution": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef compare_shares(late_a, late_b):\n    p1, p2 = late_a.mean(), late_b.mean()\n    n1, n2 = len(late_a), len(late_b)\n    se = np.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2)\n    diff = p1 - p2\n    z, p = proportions_ztest([late_a.sum(), late_b.sum()], [n1, n2])\n    return (f\"A: {p1 * 100:.1f} %, B: {p2 * 100:.1f} %, разница {diff * 100:.1f} п.п. \"\n            f\"(95 % ДИ {(diff - 1.96 * se) * 100:.1f}…{(diff + 1.96 * se) * 100:.1f}), p = {p:.4f}\")\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate = ok[\"actual_min\"] > ok[\"promised_min\"]\nphrase = compare_shares(late[ok[\"shop_id\"] == \"KZN-2\"].to_numpy(), late[ok[\"shop_id\"] == \"KZN-1\"].to_numpy())\nphrase", "explain": "<p>Эта функция — заготовка для анализа A/B-теста в следующем уроке: там ровно такой вопрос — различаются ли доли в двух группах, насколько и насколько уверенно.<\/p>\n", "parsons": ""}], "files": ["deliveries.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/python.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=b555cf35b0"></script>
+<script src="../assets/course.js?v=b555cf35b0"></script>
+<script src="../assets/search.js?v=b555cf35b0" defer></script>
+<script src="../assets/core.js?v=b555cf35b0"></script>
+<script src="../assets/lesson.js?v=b555cf35b0"></script>
+<script src="../assets/vendor/katex/katex.min.js?v=b555cf35b0"></script>
+<script>document.querySelectorAll(".math").forEach(function(e){try{katex.render(e.textContent.trim(),e,{displayMode:e.classList.contains("block"),throwOnError:false})}catch(x){}});</script>
+
+</body>
+</html>

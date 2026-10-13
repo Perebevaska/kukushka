@@ -1,0 +1,1159 @@
+{
+ "chapter": "ch10",
+ "title": "Градиентный спуск и бустинг",
+ "tasks": {
+  "ch10/01-gradient/loss-at": {
+   "chapter": "ch10",
+   "lesson": "01-gradient",
+   "lesson_title": "Градиентный спуск: шаг за шагом к минимуму",
+   "id": "loss-at",
+   "title": "Потеря в точке",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nx0 = _np.array([1.0, 2.0, 3.0, 4.5, 6.0]); y0 = _np.array([18.0, 25.0, 34.0, 44.0, 55.0])\nL = lambda w: _np.mean((w * x0 - y0) ** 2)\nassert close(need('loss')(7), L(7)), 'loss(w) должна возвращать среднее квадратов ошибок модели w * x.'\nassert close(need('l5'), L(5)) and close(need('l10'), L(10)), f'l5, l10 = {need(\"l5\")}, {need(\"l10\")}.'\nassert need('better') == (5 if L(5) < L(10) else 10), f'better = {need(\"better\")}.'",
+   "starter": "import numpy as np\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])",
+   "solution": "import numpy as np\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\nl5, l10 = loss(5), loss(10)\nbetter = 5 if l5 < l10 else 10",
+   "hints": [
+    "Прогноз модели — `w * x`; ошибка — прогноз минус факт; потеря — среднее квадратов ошибок.",
+    "`np.mean((w * x - y) ** 2)`."
+   ],
+   "explain": ""
+  },
+  "ch10/01-gradient/numeric-grad": {
+   "chapter": "ch10",
+   "lesson": "01-gradient",
+   "lesson_title": "Градиентный спуск: шаг за шагом к минимуму",
+   "id": "numeric-grad",
+   "title": "Численная производная",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": true,
+   "setup": "",
+   "check": "f = need('num_grad')\nassert close(f(lambda w: w ** 3, 2), 12, 1e-3), 'Для w³ в точке 2 производная должна быть 12.'\nassert abs(f(abs, 0.0)) < 1e-6, f'Для |w| в точке 0 ваша функция дала {float(f(abs, 0.0))}, а симметричная разность даёт 0. Похоже, вы сдвигаетесь только в одну сторону: (f(w + eps) − f(w)) / eps. Нужны обе точки, w + eps и w − eps, и деление на 2·eps.'\nassert close(need('g3'), 6, 1e-4), f'g3 = {need(\"g3\")}.'\nassert close(need('g5_formula'), -138.7, 1e-6), f'g5_formula = {need(\"g5_formula\")}, а grad(5) = -138.7.'\nassert close(need('g5_numeric'), -138.7, 1e-3), f'g5_numeric = {need(\"g5_numeric\")}, а нужно около -138.7: num_grad(loss, 5).'",
+   "starter": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * km - minutes) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * km - minutes) * km)",
+   "solution": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * km - minutes) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * km - minutes) * km)\n\ndef num_grad(f, w, eps=1e-5):\n    return (f(w + eps) - f(w - eps)) / (2 * eps)\n\ng3 = num_grad(lambda w: w ** 2, 3)\ng5_formula = grad(5)\ng5_numeric = num_grad(loss, 5)\nprint(g3, g5_formula, g5_numeric)",
+   "hints": [
+    "Численная производная — насколько изменилась функция между точками `w − eps` и `w + eps`, делённое на расстояние между ними.",
+    "`return (f(w + eps) - f(w - eps)) / (2 * eps)`."
+   ],
+   "explain": "Формула и численная оценка совпали до четвёртого знака: −138.7. Значит, множители 2 и $x$ в формуле на месте. Почему сдвигаются в обе стороны: односторонняя разность (f(w + eps) − f(w)) / eps смотрит на наклон чуть правее точки и ошибается примерно на eps · f″ / 2. Симметричная берёт наклон с обеих сторон, и эти ошибки взаимно гасятся. На гладкой функции разница крошечная: для `loss` в точке 5 односторонняя разность даёт −138.69986 вместо −138.7. А на изломе, как у |w| в нуле, односторонняя даёт 1, хотя наклон слева −1, а справа +1. Симметричная честно показывает 0 — середину между ними."
+  },
+  "ch10/01-gradient/p-gd": {
+   "chapter": "ch10",
+   "lesson": "01-gradient",
+   "lesson_title": "Градиентный спуск: шаг за шагом к минимуму",
+   "id": "p-gd",
+   "title": "Цикл спуска",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [],
+   "display": true,
+   "setup": "",
+   "check": "assert _lines == ['2.0'], f'Сейчас: {_lines}. y = 2x — вес должен сойтись к 2.'",
+   "starter": "",
+   "solution": "import numpy as np\nx = np.array([1.0, 2.0, 3.0])\ny = np.array([2.0, 4.0, 6.0])\nw, lr = 0.0, 0.05\nfor _ in range(100):\n    g = np.mean(2 * (w * x - y) * x)\n    w = w - lr * g\nprint(round(float(w), 3))",
+   "hints": [
+    "Производная считается внутри цикла заново на каждом шаге — до обновления веса.",
+    "Сначала начальные значения (`w`, `lr`), потом цикл, внутри — одна строка обновления."
+   ],
+   "explain": ""
+  },
+  "ch10/01-gradient/lr-modes": {
+   "chapter": "ch10",
+   "lesson": "01-gradient",
+   "lesson_title": "Градиентный спуск: шаг за шагом к минимуму",
+   "id": "lr-modes",
+   "title": "Три шага обучения",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nx0 = _np.array([1.0, 2.0, 3.0, 4.5, 6.0]); y0 = _np.array([18.0, 25.0, 34.0, 44.0, 55.0])\nL = lambda w: _np.mean((w * x0 - y0) ** 2); G = lambda w: _np.mean(2 * (w * x0 - y0) * x0)\nwant = {}\nfor lr in (0.001, 0.01, 0.1):\n    w = 0.0\n    for _ in range(30): w -= lr * G(w)\n    want[lr] = L(w)\nf = need('final', dict)\nfor lr, v in want.items():\n    assert lr in f and close(f[lr], v, max(1e-6, abs(v) * 1e-6)), f'final[{lr}] = {f.get(lr)}, а нужно {v:.4g}.'\nassert sorted(need('diverged')) == [lr for lr, v in want.items() if v > L(0)], f'diverged = {need(\"diverged\")}.'",
+   "starter": "import numpy as np\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)",
+   "solution": "import numpy as np\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)\n\nfinal = {}\nfor lr in (0.001, 0.01, 0.1):\n    w = 0.0\n    for _ in range(30):\n        w = w - lr * grad(w)\n    final[lr] = loss(w)\ndiverged = [lr for lr, v in final.items() if v > loss(0.0)]",
+   "hints": [
+    "Внешний цикл по шагам обучения, внутри — 30 обновлений, начиная каждый раз с `w = 0.0`.",
+    "«Разошёлся» — значит, после 30 шагов потеря больше стартовой `loss(0.0)`: `diverged = [lr for lr in final if final[lr] > loss(0.0)]`."
+   ],
+   "explain": "С шагом 0.1 ошибка взлетает до астрономических значений: каждый шаг перепрыгивает дно и оказывается ещё выше на противоположном склоне. Простой признак этого режима — растущая ошибка; при обучении её всегда выводят на экран или график."
+  },
+  "ch10/01-gradient/history": {
+   "chapter": "ch10",
+   "lesson": "01-gradient",
+   "lesson_title": "Градиентный спуск: шаг за шагом к минимуму",
+   "id": "history",
+   "title": "Кривая обучения",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nx0 = _np.array([1.0, 2.0, 3.0, 4.5, 6.0]); y0 = _np.array([18.0, 25.0, 34.0, 44.0, 55.0])\nw = 0.0; h = []\nfor _ in range(40):\n    w -= 0.01 * _np.mean(2 * (w * x0 - y0) * x0); h.append(_np.mean((w * x0 - y0) ** 2))\nhh = need('history')\nassert len(hh) == 40 and _np.allclose(hh, h), 'history — 40 значений MSE после каждого шага.'\nfirst = next(i + 1 for i, v in enumerate(h) if v < 30)\nassert need('steps_to_30') == first, f'steps_to_30 = {need(\"steps_to_30\")}, а нужно {first}.'\nax = ax_of(0)\nassert ax.get_xlabel() == 'шаг' and ax.get_ylabel() == 'MSE', 'Подпишите оси: «шаг» и «MSE».'\nassert len(ax.lines) >= 1 and len(ax.lines[0].get_ydata()) == 40, 'Нужна одна линия из 40 точек.'",
+   "starter": "import numpy as np\nimport matplotlib.pyplot as plt\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)",
+   "solution": "import numpy as np\nimport matplotlib.pyplot as plt\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)\n\nw, history = 0.0, []\nfor _ in range(40):\n    w = w - 0.01 * grad(w)\n    history.append(loss(w))\nsteps_to_30 = next(i + 1 for i, v in enumerate(history) if v < 30)\n\nfig, ax = plt.subplots()\nax.plot(range(1, 41), history)\nax.set_xlabel(\"шаг\")\nax.set_ylabel(\"MSE\")\nplt.show()",
+   "hints": [
+    "Добавляйте `loss(w)` в список после каждого обновления веса.",
+    "График — `plt.plot(history)`, подписи — `plt.xlabel(\"шаг\")`, `plt.ylabel(\"MSE\")`. Номер шага — первый индекс, где `history[i] < 30`, плюс 1: `next(i + 1 for i, v in enumerate(history) if v < 30)`."
+   ],
+   "explain": "В начале MSE падает стремительно (743 → 397 → 218 → …), потом всё медленнее. Градиент пропорционален ошибке: пока вес далёк от лучшего, шаги большие, ближе к цели они сами мельчают. Порог 30 пройден на 9-м шаге. К 40-му шагу MSE равна 26.14, а вес ≈ 9.94 — это и есть минимум для модели без свободного члена, ниже спуск опуститься не может. Такой график называют кривой обучения: по нему видно, сошёлся ли спуск и не стоит ли поменять шаг."
+  },
+  "ch10/01-gradient/stop-rule": {
+   "chapter": "ch10",
+   "lesson": "01-gradient",
+   "lesson_title": "Градиентный спуск: шаг за шагом к минимуму",
+   "id": "stop-rule",
+   "title": "Правило остановки",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": true,
+   "setup": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\ndef loss(w):\n    return np.mean((w * km - minutes) ** 2)\ndef grad(w):\n    return np.mean(2 * (w * km - minutes) * km)",
+   "check": "import numpy as _np\nL, G = need('loss'), need('grad')\ndef _d(lr, tol=1e-6, ms=10000):\n    w, prev = 0.0, L(0.0)\n    for st in range(1, ms + 1):\n        w = w - lr * G(w); cur = L(w)\n        if abs(prev - cur) < tol: return w, st\n        prev = cur\n    return w, ms\nw = {lr: _d(lr) for lr in [0.001, 0.01, 0.03]}\ng = {float(k): v for k, v in need('steps', dict).items()}\nassert all(g[k] == w[k][1] for k in w), f'steps = {g}, а нужно {({k: v[1] for k, v in w.items()})}.'\ngw = {float(k): v for k, v in need('w_found', dict).items()}\nassert all(close(gw[k], round(w[k][0], 4), 2e-4) for k in w), f'w_found = {gw}.'\nw1 = _d(0.1)\nassert need('steps_01') == w1[1], f'steps_01 = {need(\"steps_01\")}, а нужно {w1[1]}.'\nassert not _np.isfinite(need('w_01')) or abs(need('w_01')) > 1e6, f'w_01 = {need(\"w_01\")}: при lr = 0.1 спуск расходится — вес улетает.'",
+   "starter": "def descend(lr, tol=1e-6, max_steps=10000):\n    w, prev = 0.0, loss(0.0)\n    ...",
+   "solution": "def descend(lr, tol=1e-6, max_steps=10000):\n    w, prev = 0.0, loss(0.0)\n    for step in range(1, max_steps + 1):\n        w = w - lr * grad(w)\n        cur = loss(w)\n        if abs(prev - cur) < tol:\n            return w, step\n        prev = cur\n    return w, max_steps\n\nsteps, w_found = {}, {}\nfor lr in [0.001, 0.01, 0.03]:\n    w, n = descend(lr)\n    steps[lr], w_found[lr] = n, round(float(w), 4)\nw_01, steps_01 = descend(0.1)\nprint(steps, w_found, steps_01, w_01)",
+   "hints": [
+    "Цикл по номерам шагов от 1: обновить `w`, посчитать новую потерю, сравнить с предыдущей; если разница меньше `tol` — `return w, step`. В конце цикла — `prev = cur`.",
+    "После цикла (если так и не остановились) — `return w, max_steps`.",
+    "При `lr = 0.1` потеря растёт с каждым шагом, разница никогда не становится маленькой — спуск отработает все `max_steps` шагов, а вес станет огромным (или `inf`/`nan`)."
+   ],
+   "explain": "Правило остановки «потеря почти не меняется» срабатывает и тогда, когда спуск просто очень медленный, — поэтому его дополняют страховкой `max_steps` и проверкой результата. При `lr = 0.1` правило не сработало ни разу: потеря росла всё быстрее, и за 10 000 шагов вес улетел в бесконечность (numpy при этом может напечатать предупреждение о переполнении). В рабочем коде расхождение ловят явно: если потеря стала больше стартовой или `nan` — останавливаются и уменьшают шаг."
+  },
+  "ch10/01-gradient/two-params": {
+   "chapter": "ch10",
+   "lesson": "01-gradient",
+   "lesson_title": "Градиентный спуск: шаг за шагом к минимуму",
+   "id": "two-params",
+   "title": "Вес и свободный член",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nx0 = _np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0]); y0 = _np.array([14.0, 19.0, 22.0, 31.0, 38.0, 52.0])\nw = b = 0.0\nfor _ in range(3000):\n    e = w * x0 + b - y0; w, b = w - 0.02 * _np.mean(2 * e * x0), b - 0.02 * _np.mean(2 * e)\nassert close(need('w'), round(w, 2)) and close(need('b'), round(b, 2)), f'w, b = {need(\"w\")}, {need(\"b\")}, а нужно {round(w, 2)}, {round(b, 2)}.'\nex = _np.polyfit(x0, y0, 1).round(2)\nassert _np.allclose(need('exact'), ex), f'exact = {need(\"exact\")}.'\nassert need('close_enough') == bool(abs(w - ex[0]) < 0.05 and abs(b - ex[1]) < 0.05), f'close_enough = {need(\"close_enough\")}.'",
+   "starter": "import numpy as np\nx = np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0])\ny = np.array([14.0, 19.0, 22.0, 31.0, 38.0, 52.0])",
+   "solution": "import numpy as np\nx = np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0])\ny = np.array([14.0, 19.0, 22.0, 31.0, 38.0, 52.0])\n\nw = b = 0.0\nfor _ in range(3000):\n    err = w * x + b - y\n    dw = np.mean(2 * err * x)\n    db = np.mean(2 * err)\n    w, b = w - 0.02 * dw, b - 0.02 * db\nexact = np.polyfit(x, y, 1).round(2)\nclose_enough = bool(abs(w - exact[0]) < 0.05 and abs(b - exact[1]) < 0.05)\nw, b = round(w, 2), round(b, 2)",
+   "hints": [
+    "Две производные: по w — `np.mean(2 * err * x)`, по b — `np.mean(2 * err)`.",
+    "Обновляйте оба параметра одновременно, по ошибке, посчитанной до обновления: `w, b = w - lr * dw, b - lr * db`."
+   ],
+   "explain": "С двумя параметрами спуск идёт в плоскости (w, b): на каждом шаге оба веса сдвигаются против своих производных. Важно обновлять их одновременно, по одной и той же ошибке `err`. Если сначала обновить `w`, а потом считать `db` уже с новым `w`, получится другой, хотя и похожий, алгоритм. За 3000 шагов спуск приходит к w = 5.79, b = 10.52 — тем же числам, что даёт точная формула `np.polyfit`. Для линейной регрессии ответ можно найти и без спуска, а спуск нужен там, где точной формулы нет — например, в нейросетях."
+  },
+  "ch10/01-gradient/mae-gd": {
+   "chapter": "ch10",
+   "lesson": "01-gradient",
+   "lesson_title": "Градиентный спуск: шаг за шагом к минимуму",
+   "id": "mae-gd",
+   "title": "Спуск по другой потере",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nx0 = _np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0, 6.0]); y0 = _np.array([14.0, 20.0, 24.0, 34.0, 45.0, 59.0, 120.0])\nw = b = 0.0\nfor _ in range(5000):\n    s = _np.sign(w * x0 + b - y0); w, b = w - 0.05 * _np.mean(s * x0), b - 0.05 * _np.mean(s)\nassert close(need('w_mae'), round(w, 2), 0.011) and close(need('b_mae'), round(b, 2), 0.011), f'w_mae, b_mae = {need(\"w_mae\")}, {need(\"b_mae\")}, а нужно {round(w, 2)}, {round(b, 2)}.'\nwm = round(_np.polyfit(x0, y0, 1)[0], 2)\nassert close(need('w_mse'), wm), f'w_mse = {need(\"w_mse\")}.'\nassert need('robust') == ('MAE' if abs(w - 7) < abs(wm - 7) else 'MSE'), f'robust = {need(\"robust\")!r}.'",
+   "starter": "import numpy as np\nx = np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0, 6.0])\ny = np.array([14.0, 20.0, 24.0, 34.0, 45.0, 59.0, 120.0])   # последний заказ — сбой часов",
+   "solution": "import numpy as np\nx = np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0, 6.0])\ny = np.array([14.0, 20.0, 24.0, 34.0, 45.0, 59.0, 120.0])\n\nw = b = 0.0\nfor _ in range(5000):\n    s = np.sign(w * x + b - y)\n    w, b = w - 0.05 * np.mean(s * x), b - 0.05 * np.mean(s)\nw_mae, b_mae = round(w, 2), round(b, 2)\nw_mse = round(np.polyfit(x, y, 1)[0], 2)\nrobust = \"MAE\" if abs(w_mae - 7) < abs(w_mse - 7) else \"MSE\"",
+   "hints": [
+    "Производная модуля |e| — это знак e: +1, если ошибка положительная, −1 — если отрицательная.",
+    "Вместо `2 * err` в производных стоит `np.sign(err)`."
+   ],
+   "explain": "Квадрат ошибки делает выброс огромным, и прямая по MSE тянется к нему. MAE штрафует выброс линейно — прямая почти его не замечает. Для MAE нет формулы, как для MSE, но градиентному спуску формула и не нужна: достаточно уметь считать наклон. Так же устроено обучение бустинга с любой функцией потерь."
+  },
+  "ch10/01b-numeric/ops-count": {
+   "chapter": "ch10",
+   "lesson": "01b-numeric",
+   "lesson_title": "Численные методы: цена формулы и деление пополам",
+   "id": "ops-count",
+   "title": "Формула или спуск",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfn, fg = need('ops_normal'), need('ops_gd')\nassert fn(10, 3) == 10 * 9 + 27, f'ops_normal(10, 3) = {fn(10, 3)}, а нужно 117: n·d² + d³.'\nassert fg(10, 3, 5) == 300, f'ops_gd(10, 3, 5) = {fg(10, 3, 5)}, а нужно 300: 2·n·d·steps.'\nt0 = {'доставки': (1841, 4), 'чеки за год': (1_000_000, 20), 'тексты отзывов': (100_000, 50_000)}\nc = need('cost', _pd.DataFrame)\nassert set(t0) <= set(c.index), f'В индексе cost должны быть названия таблиц, а сейчас {list(c.index)}.'\nfor k, (n, d) in t0.items():\n    ne, gd = n * d * d + d ** 3, 2 * n * d * 500\n    assert c.loc[k, 'normal'] == ne and c.loc[k, 'gd'] == gd, f'{k}: normal, gd = {c.loc[k, \"normal\"]}, {c.loc[k, \"gd\"]}, а нужно {ne}, {gd}. Шагов — 500.'\n    assert c.loc[k, 'cheaper'] == ('формула' if ne < gd else 'спуск'), f'{k}: cheaper = {c.loc[k, \"cheaper\"]!r}.'\nassert need('ratio_text') == 75, f'ratio_text = {need(\"ratio_text\")}. Это normal / gd для текстов, целым числом.'\nassert close(need('mem_gb'), 20.0, 1e-6), f'mem_gb = {need(\"mem_gb\")}. Таблица d × d, по 8 байт на число, делим на 10**9.'\ndb = next(d for d in range(1, 5001) if 100_000 * d * d + d ** 3 > 2 * 100_000 * d * 500)\nassert need('d_break') == db, f'd_break = {need(\"d_break\")}. Перебирайте d по возрастанию и остановитесь на первом, где ops_normal > ops_gd.'",
+   "starter": "import pandas as pd\n\ntables = {\n    \"доставки\": (1841, 4),\n    \"чеки за год\": (1_000_000, 20),\n    \"тексты отзывов\": (100_000, 50_000),\n}",
+   "solution": "import pandas as pd\n\ntables = {\n    \"доставки\": (1841, 4),\n    \"чеки за год\": (1_000_000, 20),\n    \"тексты отзывов\": (100_000, 50_000),\n}\n\ndef ops_normal(n, d):\n    return n * d * d + d ** 3\n\ndef ops_gd(n, d, steps):\n    return 2 * n * d * steps\n\nrows = []\nfor name, (n, d) in tables.items():\n    ne, gd = ops_normal(n, d), ops_gd(n, d, 500)\n    rows.append({\"name\": name, \"normal\": ne, \"gd\": gd, \"cheaper\": \"формула\" if ne < gd else \"спуск\"})\ncost = pd.DataFrame(rows).set_index(\"name\")\n\nratio_text = int(cost.loc[\"тексты отзывов\", \"normal\"] / cost.loc[\"тексты отзывов\", \"gd\"])\nmem_gb = 50_000 * 50_000 * 8 / 10**9\nd_break = next(d for d in range(1, 5001) if ops_normal(100_000, d) > ops_gd(100_000, d, 500))\nprint(cost)\nprint(ratio_text, mem_gb, d_break)",
+   "hints": [
+    "Обе функции — одна строка `return ...` по формулам из раздела. Таблицу удобно собрать списком словарей, а затем `pd.DataFrame(rows).set_index(\"name\")`.",
+    "`cheaper`: `\"формула\" if ne < gd else \"спуск\"`. Память: `d * d * 8 / 10**9`. Первое подходящее `d`: `next(d for d in range(1, 5001) if ops_normal(100_000, d) > ops_gd(100_000, d, 500))`.",
+    "```python\nrows = []\nfor name, (n, d) in tables.items():\n    ne, gd = ops_normal(n, d), ops_gd(n, d, 500)\n    rows.append({\"name\": name, \"normal\": ne, \"gd\": gd, \"cheaper\": ...})\ncost = pd.DataFrame(rows).set_index(\"name\")\n```"
+   ],
+   "explain": "Граница — 991 признак: при 100 000 строк и 500 шагах ниже неё дешевле формула, выше — спуск. Почему около тысячи: поделите обе оценки на $n \\cdot d$. У формулы останется примерно $d$ (слагаемое $d^2 / n$ мало), у спуска — $2 \\cdot 500 = 1000$. Отсюда правило на глаз: формула выгоднее, пока признаков меньше, чем шагов спуска. А для текстов есть ещё и память: 20 ГБ на одну служебную таблицу. Если бы вы считали $n \\cdot d$ вместо $n \\cdot d^2$, формула всегда казалась бы дешёвой, и граница исчезла бы."
+  },
+  "ch10/01b-numeric/bisect": {
+   "chapter": "ch10",
+   "lesson": "01b-numeric",
+   "lesson_title": "Численные методы: цена формулы и деление пополам",
+   "id": "bisect",
+   "title": "Деление пополам",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, math as _m\nb = need('bisect')\nr = b(lambda t: t - 0.3, 0, 1)\nassert isinstance(r, tuple) and len(r) == 2, 'bisect должна возвращать пару (x, steps).'\nassert abs(r[0] - 0.3) < 1e-6, f'bisect(lambda t: t - 0.3, 0, 1) вернула {r[0]}, а ноль в 0.3. Проверьте, какой край двигаете при одинаковых знаках.'\nr2 = b(lambda t: 1 - t * t, 0, 3)\nassert abs(r2[0] - 1) < 1e-6, f'Для убывающей функции 1 - t² на [0, 3] получилось {r2[0]}, а ноль в 1. Сравнивайте знаки через f(lo) * f(mid) > 0, а не «f(mid) > 0».'\nassert r[1] == _m.ceil(_m.log2(1 / 1e-6)), f'На отрезке длины 1 с tol = 1e-6 нужно {_m.ceil(_m.log2(1e6))} шагов, а у вас {r[1]}. Считайте каждое деление.'\nassert close(need('root3'), round(2 ** (1 / 3), 6), 2e-6), f'root3 = {need(\"root3\")}, а 2^(1/3) ≈ {2 ** (1 / 3):.6f}.'\nassert need('steps3') == _m.ceil(_m.log2(2 / 1e-6)), f'steps3 = {need(\"steps3\")}.'\nx0 = _np.array([0.8, 1.5, 2.5, 3.0, 5.0]); y0 = _np.array([10.0, 16.0, 24.0, 31.0, 47.0])\nex = round(float((x0 * y0).sum() / (x0 ** 2).sum()), 3)\nassert close(need('exact'), ex, 1e-9), f'exact = {need(\"exact\")}, а нужно {ex}.'\nassert close(need('w_min'), ex, 0.0011), f'w_min = {need(\"w_min\")}, а точный ответ {ex}. Ищите ноль grad на [0, 30].'",
+   "starter": "import numpy as np\nx = np.array([0.8, 1.5, 2.5, 3.0, 5.0])\ny = np.array([10.0, 16.0, 24.0, 31.0, 47.0])\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)\n\ndef bisect(f, lo, hi, tol=1e-6):\n    ...",
+   "solution": "import numpy as np\nx = np.array([0.8, 1.5, 2.5, 3.0, 5.0])\ny = np.array([10.0, 16.0, 24.0, 31.0, 47.0])\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)\n\ndef bisect(f, lo, hi, tol=1e-6):\n    steps = 0\n    while hi - lo > tol:\n        mid = (lo + hi) / 2\n        if f(lo) * f(mid) > 0:\n            lo = mid\n        else:\n            hi = mid\n        steps += 1\n    return (lo + hi) / 2, steps\n\nr, steps3 = bisect(lambda t: t ** 3 - 2, 0, 2)\nroot3 = round(r, 6)\nw, _ = bisect(grad, 0, 30)\nw_min = round(float(w), 3)\nexact = round(float((x * y).sum() / (x ** 2).sum()), 3)\nprint(root3, steps3, w_min, exact)",
+   "hints": [
+    "Пока отрезок длиннее `tol`, берите середину и оставляйте ту половину, на краях которой знаки разные. Каждое деление увеличивает счётчик шагов на 1.",
+    "`mid = (lo + hi) / 2`; если `f(lo) * f(mid) > 0` (знаки одинаковые), то `lo = mid`, иначе `hi = mid`. После цикла `return (lo + hi) / 2, steps`.",
+    "```python\ndef bisect(f, lo, hi, tol=1e-6):\n    steps = 0\n    while hi - lo > tol:\n        mid = ...\n        if f(lo) * f(mid) > 0:\n            lo = mid\n        else:\n            hi = ...\n        steps += 1\n    return ..., steps\n```"
+   ],
+   "explain": "Число шагов зависит только от длины отрезка и допуска: $\\lceil \\log_2 (2 / 10^{-6}) \\rceil = 21$, какой бы ни была функция. Это и сила, и слабость метода. Сила — он предсказуем и не может разойтись. Слабость — он медленнее «умных» методов вроде `scipy.optimize.brentq`, и он умеет работать только с одной переменной. Проверка нарочно запускает вашу функцию и на убывающей функции `1 - t²`. Код вида «если `f(mid) > 0`, то `hi = mid`» работает только для возрастающих функций, а сравнение со знаком на левом краю — для любых."
+  },
+  "ch10/01b-numeric/promise-time": {
+   "chapter": "ch10",
+   "lesson": "01b-numeric",
+   "lesson_title": "Численные методы: цена формулы и деление пополам",
+   "id": "promise-time",
+   "title": "Обещание для каждого типа курьера",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimport pandas as pd\ndef bisect(f, lo, hi, tol=1e-6):\n    steps = 0\n    while hi - lo > tol:\n        mid = (lo + hi) / 2\n        if f(lo) * f(mid) > 0:\n            lo = mid\n        else:\n            hi = mid\n        steps += 1\n    return (lo + hi) / 2, steps",
+   "check": "import numpy as _np, pandas as _pd\nd0 = _pd.read_csv('deliveries.csv'); ok0 = d0[d0['actual_min'].between(1, 299)]\ndef _bis(f, lo, hi, tol):\n    while hi - lo > tol:\n        mid = (lo + hi) / 2\n        if f(lo) * f(mid) > 0: lo = mid\n        else: hi = mid\n    return (lo + hi) / 2, 0\nP, L, Q = {}, {}, {}\nfor c, g in ok0.groupby('courier'):\n    a = g['actual_min'].values\n    t, _ = _bis(lambda t: _np.mean(a > t) - 0.10, 0, 300, 0.01)\n    P[c] = round(t); L[c] = round(float(_np.mean(a > round(t))), 3); Q[c] = float(_np.quantile(a, 0.9))\npp = need('promise', dict)\nassert set(pp) == set(P), f'Ключи promise — типы курьеров {sorted(P)}, а сейчас {sorted(pp)}.'\nfor c in P:\n    assert abs(pp[c] - P[c]) != 1, f'promise[{c!r}] = {pp[c]}, а нужно {P[c]}. Ответ отличается на минуту — проверьте округление: нужен round(t), а не int(t).'\n    assert pp[c] == P[c], f'promise[{c!r}] = {pp[c]}, а нужно {P[c]}. Функция для bisect: доля доставок дольше t минус 0.10, только по курьерам этого типа.'\n    assert close(need('late_at_promise', dict)[c], L[c], 0.0011), f'late_at_promise[{c!r}] = {need(\"late_at_promise\", dict)[c]}, а нужно {L[c]}.'\n    assert close(need('q90', dict)[c], Q[c], 1e-9), f'q90[{c!r}] = {need(\"q90\", dict)[c]}, а нужно {Q[c]}.'\nassert need('slowest') == max(P, key=P.get), f'slowest = {need(\"slowest\")!r}.'",
+   "starter": "# уже есть: функция bisect(f, lo, hi, tol) из урока\nimport numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\n\npromise, late_at_promise, q90 = {}, {}, {}\nfor courier, g in ok.groupby(\"courier\"):\n    a = g[\"actual_min\"].values\n    t, _ = bisect(lambda t: np.mean(a > t) - 0.10, 0, 300, tol=0.01)\n    promise[courier] = round(t)\n    late_at_promise[courier] = round(float(np.mean(a > promise[courier])), 3)\n    q90[courier] = float(np.quantile(a, 0.9))\nslowest = max(promise, key=promise.get)\nprint(promise, late_at_promise, q90, slowest)",
+   "hints": [
+    "Для каждого типа курьера нужна своя функция «доля опозданий − 0.10», построенная по времени только его доставок. Удобно перебрать группы: `for courier, g in ok.groupby(\"courier\"):`.",
+    "Внутри цикла: `a = g[\"actual_min\"].values`, затем `t, _ = bisect(lambda t: np.mean(a > t) - 0.10, 0, 300, tol=0.01)` и `promise[courier] = round(t)`.",
+    "Доля опозданий при обещании: `round(float(np.mean(a > promise[courier])), 3)`. Самый медленный: `max(promise, key=promise.get)`."
+   ],
+   "explain": "Пешим курьерам честно обещать 60 минут, велосипедистам — 44, машинам — 47. Единое обещание в 48 минут (как в теории) пешие нарушали бы в 22 % доставок, вдвое чаще допустимого. У машин бисекция дала 47, а процентиль — 46.5. Это не ошибка: `np.quantile` по умолчанию берёт середину между двумя соседними значениями, а обещание бывает только в целых минутах. При 46 минутах машины опаздывали бы в 10.1 % доставок, чуть чаще допустимого, поэтому наименьшее подходящее целое — 47. Бисекция отвечает ровно на бизнес-вопрос «сколько обещать», а не на вопрос «чему равен процентиль». Если бы вы искали ноль по всем доставкам сразу, у всех типов получилось бы одно и то же число."
+  },
+  "ch10/02-gd-many/grad-vec": {
+   "chapter": "ch10",
+   "lesson": "02-gd-many",
+   "lesson_title": "Спуск для многих признаков",
+   "id": "grad-vec",
+   "title": "Градиент матрицей",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nX0 = _np.array([[1, 1.0], [1, 2.0], [1, 3.0]]); y0 = _np.array([5.0, 7.0, 9.0]); w0 = _np.array([0.0, 4.0])\ngg = 2 / 3 * X0.T @ (X0 @ w0 - y0)\nassert _np.allclose(need('g'), gg), f'g = {need(\"g\")}, а нужно {gg.round(3)}.'\nassert list(need('direction')) == ['вверх' if v < 0 else 'вниз' for v in gg], f'direction = {need(\"direction\")}.'",
+   "starter": "import numpy as np\nX1 = np.array([[1, 1.0], [1, 2.0], [1, 3.0]])\ny = np.array([5.0, 7.0, 9.0])\nw = np.array([0.0, 4.0])",
+   "solution": "import numpy as np\nX1 = np.array([[1, 1.0], [1, 2.0], [1, 3.0]])\ny = np.array([5.0, 7.0, 9.0])\nw = np.array([0.0, 4.0])\ng = 2 / len(y) * X1.T @ (X1 @ w - y)\ndirection = [\"вверх\" if v < 0 else \"вниз\" for v in g]",
+   "hints": [
+    "Ошибки — `X1 @ w - y` (вектор длины n); градиент — X1ᵀ, умноженное на ошибки, и множитель 2/n.",
+    "`g = 2 / len(y) * X1.T @ (X1 @ w - y)`."
+   ],
+   "explain": "Данные точно ложатся на y = 3 + 2x. При w = [0, 4] прогнозы 4, 8, 12, ошибки −1, 1, 3, и градиент g = (2, 6.67): обе координаты положительные, оба веса надо **уменьшать**. Наклон — понятно: 4 больше нужных 2. А свободный член? Истинный — 3, у нас 0, но градиент велит его тоже уменьшать. Из-за слишком большого наклона прогнозы в среднем выше фактов (средняя ошибка +1), и сдвиг всей прямой вниз сейчас уменьшает ошибку. Градиент показывает лучшее направление из текущей точки, а не путь к ответу. Спуск сначала опустит наклон, и только потом свободный член пойдёт вверх, к 3."
+  },
+  "ch10/02-gd-many/one-step": {
+   "chapter": "ch10",
+   "lesson": "02-gd-many",
+   "lesson_title": "Спуск для многих признаков",
+   "id": "one-step",
+   "title": "Один шаг руками",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nX1 = _np.array([[1, 1], [1, 2], [1, 3]], dtype=float); y = _np.array([3, 5, 7], dtype=float)\ng = 2 / 3 * X1.T @ (X1 @ _np.zeros(2) - y); wn = -0.1 * g\nassert _np.allclose(need('g'), g), f'g = {need(\"g\")}, а нужно {g.round(3)}.'\nassert _np.allclose(need('w_new'), wn), f'w_new = {need(\"w_new\")}, а нужно {wn.round(3)}.'\nassert close(need('mse_before'), ((y) ** 2).mean()) and close(need('mse_after'), ((X1 @ wn - y) ** 2).mean(), 1e-6), 'mse_before / mse_after не совпадают.'",
+   "starter": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 3]], dtype=float)\ny = np.array([3, 5, 7], dtype=float)\nw = np.zeros(2)\nlr = 0.1",
+   "solution": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 3]], dtype=float)\ny = np.array([3, 5, 7], dtype=float)\nw = np.zeros(2)\nlr = 0.1\nn = len(y)\ng = 2 / n * X1.T @ (X1 @ w - y)\nw_new = w - lr * g\nmse_before = ((X1 @ w - y) ** 2).mean()\nmse_after = ((X1 @ w_new - y) ** 2).mean()",
+   "hints": [
+    "Прогноз с нулевыми весами — нули, ошибки `X1 @ w - y` = `[-3, -5, -7]`. Градиент: `2 / 3 * X1.T @ ошибки`.",
+    "`w_new = w - lr * g`; MSE — `((X1 @ веса - y) ** 2).mean()`."
+   ],
+   "explain": "Руками: ошибки −3, −5, −7. Первая координата градиента — 2/3 × (−3 − 5 − 7) = −10, вторая — 2/3 × (−3 − 10 − 21) ≈ −22.67. Оба отрицательные — оба веса надо увеличить. После шага w ≈ [1.0, 2.27], MSE падает с 27.67 до примерно 0.33: один шаг уже почти нашёл прямую y = 1 + 2x."
+  },
+  "ch10/02-gd-many/p-batch": {
+   "chapter": "ch10",
+   "lesson": "02-gd-many",
+   "lesson_title": "Спуск для многих признаков",
+   "id": "p-batch",
+   "title": "Нарезка на батчи",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert _lines == ['[4, 4, 2]'], f'Сейчас: {_lines}.'",
+   "starter": "",
+   "solution": "import numpy as np\nrng = np.random.default_rng(0)\norder = rng.permutation(10)\nsizes = []\nfor start in range(0, 10, 4):\n    batch = order[start:start + 4]\n    sizes.append(len(batch))\nprint(sizes)",
+   "hints": [
+    "Последний батч короче — в нём остаток строк.",
+    "Начала батчей — `range(0, n, size)`; батч — срез `[start:start + size]`."
+   ],
+   "explain": ""
+  },
+  "ch10/02-gd-many/gd-fit": {
+   "chapter": "ch10",
+   "lesson": "02-gd-many",
+   "lesson_title": "Спуск для многих признаков",
+   "id": "gd-fit",
+   "title": "Спуск на доставках",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, pandas as _pd\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nXs0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); X10 = _np.column_stack([_np.ones(len(Xs0)), Xs0])\nw0 = _np.zeros(4)\nfor _ in range(200): w0 = w0 - 0.1 * 2 / len(y0) * X10.T @ (X10 @ w0 - y0)\nassert _np.allclose(need('w'), w0, atol=1e-6), f'w = {_np.round(need(\"w\"), 3)}, а нужно {w0.round(3)}. Столбец единиц — первым.'\nassert close(need('mse'), round(_np.mean((X10 @ w0 - y0) ** 2), 2)), f'mse = {need(\"mse\")}.'\nassert len(need('gd')(X10, y0, 0.1, 1)) == 4, 'gd должна возвращать вектор весов.'",
+   "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\n\ndef gd(X1, y, lr, steps):\n    w = np.zeros(X1.shape[1])\n    for _ in range(steps):\n        w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)\n    return w\n\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\nw = gd(X1, y, 0.1, 200)\nmse = round(np.mean((X1 @ w - y) ** 2), 2)",
+   "hints": [
+    "Масштабируйте признаки до спуска: `Xs = (X - X.mean(axis=0)) / X.std(axis=0)`.",
+    "Внутри функции: `w = np.zeros(X1.shape[1])`, цикл, `return w`. Столбец единиц: `np.column_stack([np.ones(len(Xs)), Xs])`."
+   ],
+   "explain": "Первый вес — свободный член, на масштабированных признаках он равен среднему времени доставки (около 34 минут): у «среднего» заказа все признаки после масштаба равны нулю."
+  },
+  "ch10/02-gd-many/max-lr": {
+   "chapter": "ch10",
+   "lesson": "02-gd-many",
+   "lesson_title": "Спуск для многих признаков",
+   "id": "max-lr",
+   "title": "Самый большой безопасный шаг",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, pandas as _pd\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nXs0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); X10 = _np.column_stack([_np.ones(len(Xs0)), Xs0])\nwant = {}\nwith _np.errstate(all='ignore'):\n    for lr in [0.1, 0.3, 0.5, 0.7, 0.9, 1.1]:\n        w = _np.zeros(4)\n        for _ in range(100): w = w - lr * 2 / len(y0) * X10.T @ (X10 @ w - y0)\n        want[lr] = _np.mean((X10 @ w - y0) ** 2)\nr = need('res', dict)\nfor lr, v in want.items():\n    got = r.get(lr)\n    assert got is not None, f'Нет шага {lr} в res.'\n    assert (not _np.isfinite(v) and not _np.isfinite(got)) or (_np.isfinite(v) and close(got, v, 0.01)) or (v > 1e6 and got > 1e6), f'res[{lr}] = {got}, а ожидалось {v:.4g}.'\nok_lrs = [lr for lr, v in want.items() if _np.isfinite(v) and v < 61]\nassert need('best_lr') == max(ok_lrs), f'best_lr = {need(\"best_lr\")}, а нужно {max(ok_lrs)}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\nres = {}\nwith np.errstate(all=\"ignore\"):              # не показывать предупреждения о переполнении\n    for lr in [0.1, 0.3, 0.5, 0.7, 0.9, 1.1]:\n        w = np.zeros(X1.shape[1])\n        for _ in range(100):\n            w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)\n        res[lr] = np.mean((X1 @ w - y) ** 2)\nbest_lr = max(lr for lr, v in res.items() if np.isfinite(v) and v < 61)",
+   "hints": [
+    "Перебор шагов в цикле; условие — `np.isfinite(mse) and mse < 61`.",
+    "Из разбора «Почему шаг ограничен сверху»: предельный шаг равен 2 / λ_max. У трёх признаков этой задачи он около 0.72 — посчитайте сами: `2 / np.linalg.eigvalsh(2 / len(y) * X1.T @ X1)[-1]`. Число 0.5 из разбора — для четырёх признаков, с суммой заказа."
+   ],
+   "explain": "Граница резкая: предельный шаг для этих трёх признаков ≈ 0.72. При 0.7 спуск сходится (MSE 60.04), при 0.9 взрывается. Положение границы зависит от данных (от «крутизны» самой крутой стенки ямы), поэтому универсального хорошего шага нет — его подбирают."
+  },
+  "ch10/02-gd-many/minibatch": {
+   "chapter": "ch10",
+   "lesson": "02-gd-many",
+   "lesson_title": "Спуск для многих признаков",
+   "id": "minibatch",
+   "title": "Мини-батчи",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, pandas as _pd\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nXs0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); X10 = _np.column_stack([_np.ones(len(Xs0)), Xs0])\nrng = _np.random.default_rng(1); w = _np.zeros(4); em = []; st = 0\nfor _ in range(3):\n    o = rng.permutation(len(y0))\n    for s in range(0, len(y0), 64):\n        b = o[s:s + 64]; w = w - 0.05 * 2 / len(b) * X10[b].T @ (X10[b] @ w - y0[b]); st += 1\n    em.append(_np.mean((X10 @ w - y0) ** 2))\nassert _np.allclose(need('epoch_mse'), em), f'epoch_mse = {need(\"epoch_mse\")}, а нужно {_np.round(em, 2)}.'\nassert need('steps') == st, f'steps = {need(\"steps\")}, а нужно {st}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\nrng = np.random.default_rng(1)\nw = np.zeros(X1.shape[1])\nepoch_mse, steps = [], 0\nfor _ in range(3):\n    order = rng.permutation(len(y))\n    for start in range(0, len(y), 64):\n        b = order[start:start + 64]\n        w = w - 0.05 * 2 / len(b) * X1[b].T @ (X1[b] @ w - y[b])\n        steps += 1\n    epoch_mse.append(np.mean((X1 @ w - y) ** 2))",
+   "hints": [
+    "Перемешивание — в начале каждой эпохи: `order = rng.permutation(len(y))`.",
+    "Градиент батча делите на размер батча `len(b)` — последний батч короче 64."
+   ],
+   "explain": "Одна эпоха — один проход по всем 1841 строкам батчами по 64: это 29 шагов (последний батч короче, 49 строк). За 3 эпохи — 87 обновлений весов, тогда как обычный спуск за те же 3 прохода сделал бы всего 3. Поэтому мини-батчи сходятся быстрее: MSE после эпох — 63.9, 60.4, 60.2. Перемешивание в начале каждой эпохи нужно, чтобы батчи не повторялись: если данные упорядочены (например, по дате), без перемешивания модель каждый раз видела бы одни и те же куски в одном порядке."
+  },
+  "ch10/02-gd-many/to-goal": {
+   "chapter": "ch10",
+   "lesson": "02-gd-many",
+   "lesson_title": "Спуск для многих признаков",
+   "id": "to-goal",
+   "title": "Сколько шагов до цели",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\", \"amount\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)",
+   "check": "import numpy as _np\ny0, X0, Xs0 = need('y'), need('X'), need('Xs')\ndef _st(A, lr, goal=61, ms=20000):\n    X1 = _np.column_stack([_np.ones(len(A)), A]); w = _np.zeros(X1.shape[1])\n    for i in range(1, ms + 1):\n        w = w - lr * 2 / len(y0) * X1.T @ (X1 @ w - y0)\n        if _np.mean((X1 @ w - y0) ** 2) < goal: return i\n    return None\nws = {lr: _st(Xs0, lr) for lr in [0.1, 0.5]}\ng = {float(k): v for k, v in need('scaled', dict).items()}\nassert g == ws, f'scaled = {g}, а нужно {ws}.'\ngr = {float(k): v for k, v in need('raw', dict).items()}\nassert gr == {1e-6: None, 2e-6: None}, f'raw = {gr}: без масштаба за 20 000 шагов цель не достигается.'",
+   "starter": "# уже есть: X — четыре признака (distance_km, items, walk, amount) без масштаба,\n# Xs — они же масштабированные, y — время доставки\nimport numpy as np\n\ndef steps_to(A, lr, goal=61, max_steps=20000):\n    X1 = np.column_stack([np.ones(len(A)), A])\n    w = np.zeros(X1.shape[1])\n    ...",
+   "solution": "import numpy as np\n\ndef steps_to(A, lr, goal=61, max_steps=20000):\n    X1 = np.column_stack([np.ones(len(A)), A])\n    w = np.zeros(X1.shape[1])\n    for i in range(1, max_steps + 1):\n        w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)\n        if np.mean((X1 @ w - y) ** 2) < goal:\n            return i\n    return None\n\nscaled = {lr: steps_to(Xs, lr) for lr in [0.1, 0.5]}\nraw = {lr: steps_to(X, lr) for lr in [1e-6, 2e-6]}\nprint(scaled, raw)",
+   "hints": [
+    "Цикл по шагам от 1 до `max_steps`: обновление весов, затем проверка `np.mean((X1 @ w - y) ** 2) < goal` — если да, `return i`.",
+    "Если цикл закончился, а цель не достигнута, верните `None` (просто `return None` после цикла)."
+   ],
+   "explain": "С масштабом цель достигается примерно за 20 шагов. Шаг 0.5 в пять раз больше, а шагов почти столько же (20 против 19): 0.5 близок к предельному 0.51 для этих четырёх признаков. По самому крутому направлению спуск каждый раз перескакивает дно и качается, поэтому выигрыша нет; шаг 0.3 дошёл бы за 5. Без масштаба — не достигается и за 20 000: шаг нельзя сделать больше 2·10⁻⁶ (иначе расходится), а с таким шагом веса у «пологих» признаков почти не двигаются. Это та самая вытянутость ямы в пять миллионов раз из разбора. Вывод для практики: если модель на спуске учится подозрительно долго — сначала масштаб, потом всё остальное."
+  },
+  "ch10/02-gd-many/decay": {
+   "chapter": "ch10",
+   "lesson": "02-gd-many",
+   "lesson_title": "Спуск для многих признаков",
+   "id": "decay",
+   "title": "Уменьшающийся шаг",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nX1 = np.column_stack([np.ones(len(y)), (X - X.mean(axis=0)) / X.std(axis=0)])",
+   "check": "import numpy as _np\nA, y0 = need('X1'), need('y')\ndef _s(decay):\n    rng = _np.random.default_rng(0); w = _np.zeros(A.shape[1]); t = 0; h = []\n    for _ in range(20):\n        order = rng.permutation(len(y0))\n        for st in range(0, len(y0), 32):\n            b = order[st:st + 32]; g = 2 / len(b) * A[b].T @ (A[b] @ w - y0[b])\n            lr = 0.05 / (1 + t / 200) if decay else 0.05; w = w - lr * g; t += 1\n        h.append(_np.mean((A @ w - y0) ** 2))\n    return [round(float(v), 3) for v in h[-5:]]\nc, dd = _s(False), _s(True)\nassert all(close(a, b, 0.002) for a, b in zip(need('last5_const'), c)), f'last5_const = {need(\"last5_const\")}, а нужно {c}.'\nassert all(close(a, b, 0.002) for a, b in zip(need('last5_decay'), dd)), f'last5_decay = {need(\"last5_decay\")}, а нужно {dd}.'\nj = need('jitter', dict)\nassert close(j['const'], round(max(c) - min(c), 3), 0.003) and close(j['decay'], round(max(dd) - min(dd), 3), 0.003), f'jitter = {j}.'",
+   "starter": "import numpy as np\n\ndef sgd(decay, epochs=20, lr0=0.05, size=32):\n    rng = np.random.default_rng(0)\n    w = np.zeros(X1.shape[1])\n    t = 0\n    history = []\n    ...\n    return history",
+   "solution": "import numpy as np\n\ndef sgd(decay, epochs=20, lr0=0.05, size=32):\n    rng = np.random.default_rng(0)\n    w = np.zeros(X1.shape[1])\n    t = 0\n    history = []\n    for _ in range(epochs):\n        order = rng.permutation(len(y))\n        for start in range(0, len(y), size):\n            b = order[start:start + size]\n            g = 2 / len(b) * X1[b].T @ (X1[b] @ w - y[b])\n            lr = lr0 / (1 + t / 200) if decay else lr0\n            w = w - lr * g\n            t += 1\n        history.append(np.mean((X1 @ w - y) ** 2))\n    return history\n\nlast5_const = [round(float(v), 3) for v in sgd(False)[-5:]]\nlast5_decay = [round(float(v), 3) for v in sgd(True)[-5:]]\njitter = {\"const\": round(max(last5_const) - min(last5_const), 3), \"decay\": round(max(last5_decay) - min(last5_decay), 3)}\nprint(last5_const, last5_decay, jitter)",
+   "hints": [
+    "Два вложенных цикла: эпохи и батчи. Шаг на каждом батче: `lr = lr0 / (1 + t / 200) if decay else lr0`, затем `t += 1`.",
+    "Перемешивание — `order = rng.permutation(len(y))` в начале каждой эпохи; MSE — после эпохи, по всем строкам: `np.mean((X1 @ w - y) ** 2)`.",
+    "Последние пять — `history[-5:]`; размах — `max(...) - min(...)`."
+   ],
+   "explain": "С постоянным шагом MSE в последних эпохах прыгает в пределах пары единиц (каждый батч тянет веса в свою сторону), а с уменьшающимся — почти не меняется и держится у минимума около 60.04. Это стандартная практика: в начале большие шаги, чтобы быстро дойти до дна, в конце — маленькие, чтобы не болтаться вокруг него. В PyTorch за это отвечают «планировщики шага» (`torch.optim.lr_scheduler`)."
+  },
+  "ch10/02-gd-many/sgd-sklearn": {
+   "chapter": "ch10",
+   "lesson": "02-gd-many",
+   "lesson_title": "Спуск для многих признаков",
+   "id": "sgd-sklearn",
+   "title": "SGDRegressor и порядок данных",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.linear_model import SGDRegressor as _SGD, LinearRegression as _LR\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']]; y0 = ok['actual_min']\nw = [round(_mae(y0, _mp(_SS(), _SGD(random_state=r)).fit(X0, y0).predict(X0)), 3) for r in range(5)]\ngot = [round(float(v), 3) for v in need('maes')]\nassert len(got) == 5 and all(close(a, b, 0.002) for a, b in zip(got, w)), f'maes = {got}, а нужно {w}.'\nassert close(need('spread'), round(max(w) - min(w), 3), 0.003), f'spread = {need(\"spread\")}.'\nassert close(need('mae_exact'), round(_mae(y0, _LR().fit(X0, y0).predict(X0)), 3)), f'mae_exact = {need(\"mae_exact\")}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import SGDRegressor, LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]]\ny = ok[\"actual_min\"]",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import SGDRegressor, LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]]\ny = ok[\"actual_min\"]\n\nmaes = []\nfor r in range(5):\n    m = make_pipeline(StandardScaler(), SGDRegressor(random_state=r)).fit(X, y)\n    maes.append(round(mean_absolute_error(y, m.predict(X)), 3))\nspread = round(max(maes) - min(maes), 3)\nmae_exact = round(mean_absolute_error(y, LinearRegression().fit(X, y).predict(X)), 3)",
+   "hints": [
+    "Цикл по `r` в `range(5)`; `random_state` у SGD отвечает за порядок перемешивания строк.",
+    "`spread = round(max(maes) - min(maes), 3)`; MAE — `mean_absolute_error(y, model.predict(X))`."
+   ],
+   "explain": "Результат SGD немного зависит от порядка строк — разброс — тысячные доли минуты, а точное решение лишь чуть лучше. Для таких данных это неважно, но в нейросетях (глава 11), где спуск — единственный способ обучения, `random_state` фиксируют всегда, иначе результат не повторить."
+  },
+  "ch10/02b-optimizers/momentum": {
+   "chapter": "ch10",
+   "lesson": "02b-optimizers",
+   "lesson_title": "Оптимизаторы: инерция, Adam и затухание весов",
+   "id": "momentum",
+   "title": "Спуск с инерцией",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n_c = np.polyfit(km, minutes, 1)\nbest_mse = float(np.mean((_c[0] * km + _c[1] - minutes) ** 2))",
+   "check": "import numpy as _np\nkm0, m0, bm = need('km'), need('minutes'), need('best_mse')\ndef _r(beta):\n    w, b, vw, vb, h = 0.0, 0.0, 0.0, 0.0, []\n    for _ in range(3000):\n        e = w * km0 + b - m0; dw, db = _np.mean(2 * e * km0), _np.mean(2 * e)\n        vw, vb = beta * vw + dw, beta * vb + db; w, b = w - 0.02 * vw, b - 0.02 * vb\n        h.append(_np.mean((w * km0 + b - m0) ** 2))\n    return w, b, next(i + 1 for i, v in enumerate(h) if v < bm + 0.01)\nw = {bt: _r(bt) for bt in [0, 0.5, 0.9]}\ng = {float(k): v for k, v in need('steps_by_beta', dict).items()}\nassert all(g[k] == w[k][2] for k in w), f'steps_by_beta = {g}, а нужно {({k: v[2] for k, v in w.items()})}.'\nfw = need('final_wb')\nassert close(fw[0], round(w[0.9][0], 3), 0.0011) and close(fw[1], round(w[0.9][1], 3), 0.0011), f'final_wb = {fw}.'",
+   "starter": "# уже есть: km, minutes (пять доставок) и best_mse — MSE точного решения np.polyfit\nimport numpy as np\n\ndef run(beta, lr=0.02, steps=3000):\n    w, b, vw, vb = 0.0, 0.0, 0.0, 0.0\n    history = []\n    ...\n    return w, b, history",
+   "solution": "import numpy as np\n\ndef run(beta, lr=0.02, steps=3000):\n    w, b, vw, vb = 0.0, 0.0, 0.0, 0.0\n    history = []\n    for _ in range(steps):\n        err = w * km + b - minutes\n        dw, db = np.mean(2 * err * km), np.mean(2 * err)\n        vw, vb = beta * vw + dw, beta * vb + db\n        w, b = w - lr * vw, b - lr * vb\n        history.append(np.mean((w * km + b - minutes) ** 2))\n    return w, b, history\n\nsteps_by_beta = {}\nfor beta in [0, 0.5, 0.9]:\n    w, b, h = run(beta)\n    steps_by_beta[beta] = next(i + 1 for i, v in enumerate(h) if v < best_mse + 0.01)\n    if beta == 0.9:\n        final_wb = (round(float(w), 3), round(float(b), 3))\nprint(steps_by_beta, final_wb)",
+   "hints": [
+    "Внутри цикла: ошибки, две производные, затем скорости `vw = beta * vw + dw`, `vb = beta * vb + db`, затем `w -= lr * vw`, `b -= lr * vb`; в конце — MSE в `history`.",
+    "Номер первого «достаточно хорошего» шага: `next(i + 1 for i, v in enumerate(history) if v < best_mse + 0.01)`."
+   ],
+   "explain": "С β = 0.9 спуск доходит до дна почти в 6 раз быстрее, чем обычный (около 75 шагов против 430). Причина — та самая медленная «тяга» свободного члена из урока «Градиентный спуск: шаг за шагом к минимуму»: его градиент маленький, но постоянный по знаку, и инерция его накапливает. Ответ при этом тот же — около 7.42 мин/км и 10.72 мин. Adam из следующего раздела использует ту же инерцию плюс свой шаг для каждого веса."
+  },
+  "ch10/02b-optimizers/adam-step": {
+   "chapter": "ch10",
+   "lesson": "02b-optimizers",
+   "lesson_title": "Оптимизаторы: инерция, Adam и затухание весов",
+   "id": "adam-step",
+   "title": "Шаг Adam руками",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nf = need('adam_step')\nr = f(_np.array([1.0, -2.0]), _np.array([4.0, -0.5]), _np.array([0.2, 0.1]), _np.array([0.5, 0.01]), 3, lr=0.01)\nassert isinstance(r, tuple) and len(r) == 3, 'adam_step возвращает тройку (w, m, s).'\n_m = 0.9 * _np.array([0.2, 0.1]) + 0.1 * _np.array([4.0, -0.5]); _s = 0.999 * _np.array([0.5, 0.01]) + 0.001 * _np.array([16.0, 0.25])\n_w = _np.array([1.0, -2.0]) - 0.01 * (_m / (1 - 0.9 ** 3)) / (_np.sqrt(_s / (1 - 0.999 ** 3)) + 1e-8)\nassert _np.allclose(r[1], _m) and _np.allclose(r[2], _s), 'm или s посчитаны не так: m = b1·m + (1 − b1)·g, s = b2·s + (1 − b2)·g².'\nassert _np.allclose(r[0], _w), 'Новые веса не сходятся. Проверьте поправку: m / (1 − b1**t), s / (1 − b2**t), и шаг lr · m̂ / (√ŝ + eps).'\nXt = _np.array([[1, 1], [1, 2], [1, 4.0]]); yt = _np.array([18, 25, 40.0])\nw, m, s, H = _np.array([0, 5.0]), _np.zeros(2), _np.zeros(2), []\nfor t in range(1, 4):\n    g = 2 / 3 * Xt.T @ (Xt @ w - yt); m = 0.9 * m + 0.1 * g; s = 0.999 * s + 0.001 * g * g\n    if t == 1: raw = -0.1 * m / (_np.sqrt(s) + 1e-8)\n    w = w - 0.1 * (m / (1 - 0.9 ** t)) / (_np.sqrt(s / (1 - 0.999 ** t)) + 1e-8); H.append(w.round(4))\nh = need('history', list)\nassert len(h) == 3, f'В history {len(h)} элементов, а шагов было 3.'\nfor i in range(3):\n    assert _np.allclose(h[i], H[i], atol=1e-4), f'После шага {i + 1} веса {_np.round(h[i], 4)}, а нужно {H[i]}. Градиент пересчитывайте на каждом шаге по новым весам.'\nassert _np.allclose(need('first_step'), (H[0] - _np.array([0, 5.0])).round(4), atol=1e-4), f'first_step = {need(\"first_step\")}.'\nassert _np.allclose(need('raw_first'), raw.round(4), atol=1e-4), f'raw_first = {need(\"raw_first\")}, а нужно {raw.round(4)}: m после первого шага делится на √s без поправок.'",
+   "starter": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 4.0]])    # столбец единиц и км\ny = np.array([18, 25, 40.0])\nn = len(y)\n\ndef adam_step(w, g, m, s, t, lr=0.1, b1=0.9, b2=0.999, eps=1e-8):\n    ...",
+   "solution": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 4.0]])    # столбец единиц и км\ny = np.array([18, 25, 40.0])\nn = len(y)\n\ndef adam_step(w, g, m, s, t, lr=0.1, b1=0.9, b2=0.999, eps=1e-8):\n    m = b1 * m + (1 - b1) * g\n    s = b2 * s + (1 - b2) * g ** 2\n    m_hat = m / (1 - b1 ** t)\n    s_hat = s / (1 - b2 ** t)\n    w = w - lr * m_hat / (np.sqrt(s_hat) + eps)\n    return w, m, s\n\nw, m, s = np.array([0, 5.0]), np.zeros(2), np.zeros(2)\nhistory = []\nfor t in range(1, 4):\n    g = 2 / n * X1.T @ (X1 @ w - y)\n    w_old = w\n    w, m, s = adam_step(w, g, m, s, t)\n    if t == 1:\n        first_step = (w - w_old).round(4)\n        raw_first = (-0.1 * m / (np.sqrt(s) + 1e-8)).round(4)\n    history.append(w.round(4))\nprint(history, first_step, raw_first)",
+   "hints": [
+    "Внутри функции четыре шага: обновить `m`, обновить `s`, посчитать поправленные `m_hat` и `s_hat`, сдвинуть `w`. Все операции поэлементные, numpy делает их сразу для обоих весов.",
+    "`m = b1 * m + (1 - b1) * g`, `s = b2 * s + (1 - b2) * g ** 2`, `m_hat = m / (1 - b1 ** t)`, `s_hat = s / (1 - b2 ** t)`, `w = w - lr * m_hat / (np.sqrt(s_hat) + eps)`.",
+    "```python\nw, m, s = np.array([0, 5.0]), np.zeros(2), np.zeros(2)\nhistory = []\nfor t in range(1, 4):\n    g = 2 / n * X1.T @ (X1 @ w - y)\n    w_old = w\n    w, m, s = adam_step(w, g, m, s, t)\n    if t == 1:\n        first_step = ...\n        raw_first = ...\n    history.append(w.round(4))\n```"
+   ],
+   "explain": "Первый шаг — ровно (0.1, 0.1), как в разборе урока: каждый вес сдвинулся на `lr`, хотя градиенты (−32 и −82) отличались в 2.5 раза. Следующие шаги чуть короче (0.0999, 0.0998): градиент немного уменьшился, а сглаженный размер `s_hat` ещё помнит прошлые большие значения. Без поправки первый сдвиг был бы 0.3162 — втрое больше задуманного `lr`. Поправка и нужна, чтобы первые шаги не зависели от того, что `m` и `s` стартуют с нуля. Если бы вы считали градиент один раз до цикла, все три шага были бы одинаковыми по 0.1. За три шага разница крошечная (0.3 против 0.2998), но на длинном спуске Adam шёл бы по устаревшему направлению и проскочил бы дно."
+  },
+  "ch10/02b-optimizers/l2-grad": {
+   "chapter": "ch10",
+   "lesson": "02b-optimizers",
+   "lesson_title": "Оптимизаторы: инерция, Adam и затухание весов",
+   "id": "l2-grad",
+   "title": "L2-штраф в спуске и Ridge",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import Ridge as _R\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy(); ok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values.astype(float); y0 = ok['actual_min'].values\nXs0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); n0 = len(y0)\nf = need('gd_l2')\nwt = _np.asarray(f(_np.column_stack([_np.ones(n0), Xs0]), y0, 0.5), dtype=float)\nrr = _R(alpha=0.5 * n0).fit(Xs0, y0)\nassert wt.shape == (4,), f'gd_l2 вернула форму {wt.shape}, а нужно 4 веса.'\nassert abs(wt[0] - y0.mean()) < 1e-4, f'Свободный член {wt[0]:.3f}, а при стандартизированных признаках он должен остаться средним y ({y0.mean():.3f}). Не штрафуйте w[0].'\nassert _np.allclose(wt, _np.r_[rr.intercept_, rr.coef_], atol=1e-5), 'gd_l2(X1, y, 0.5) не совпадает с Ridge(alpha=0.5·n). Штраф в градиенте — 2·lam·w (кроме w[0]).'\nW, N, M = {}, {}, {}\nX10 = _np.column_stack([_np.ones(n0), Xs0])\nfor lam in [0, 0.1, 1.0]:\n    w = _np.zeros(4)\n    for _ in range(1000):\n        g = 2 / n0 * X10.T @ (X10 @ w - y0); p = 2 * lam * w; p[0] = 0; w = w - 0.1 * (g + p)\n    W[lam] = w; N[lam] = round(float(_np.linalg.norm(w[1:])), 3); M[lam] = round(float(_np.mean((X10 @ w - y0) ** 2)), 2)\ngw, gn, gm = need('weights', dict), need('norms', dict), need('mse_train', dict)\nfor lam in W:\n    assert _np.allclose(gw[lam], W[lam], atol=1e-6), f'weights[{lam}] = {_np.round(gw[lam], 3)}, а нужно {W[lam].round(3)}.'\n    assert close(gn[lam], N[lam], 0.0011), f'norms[{lam}] = {gn[lam]}, а нужно {N[lam]}. Длина без свободного члена: w[1:].'\n    assert close(gm[lam], M[lam], 0.011), f'mse_train[{lam}] = {gm[lam]}, а нужно {M[lam]}.'\nassert close(need('alpha_ridge'), 1.0 * n0, 1e-6), f'alpha_ridge = {need(\"alpha_ridge\")}. У Ridge штраф к сумме квадратов ошибок, у нас к среднему: alpha = lam · n.'\nassert bool(need('same_as_ridge')) is True, 'same_as_ridge должно быть True. Сравните weights[1.0] с np.r_[ridge.intercept_, ridge.coef_].'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import Ridge\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\ndef gd_l2(X1, y, lam, lr=0.1, steps=1000):\n    ...",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import Ridge\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\ndef gd_l2(X1, y, lam, lr=0.1, steps=1000):\n    w = np.zeros(X1.shape[1])\n    for _ in range(steps):\n        g = 2 / len(y) * X1.T @ (X1 @ w - y)\n        penalty = 2 * lam * w\n        penalty[0] = 0\n        w = w - lr * (g + penalty)\n    return w\n\nweights, norms, mse_train = {}, {}, {}\nfor lam in [0, 0.1, 1.0]:\n    w = gd_l2(X1, y, lam)\n    weights[lam] = w\n    norms[lam] = round(float(np.linalg.norm(w[1:])), 3)\n    mse_train[lam] = round(float(np.mean((X1 @ w - y) ** 2)), 2)\n\nalpha_ridge = 1.0 * len(y)\nridge = Ridge(alpha=alpha_ridge).fit(Xs, y)\nsame_as_ridge = bool(np.allclose(weights[1.0], np.r_[ridge.intercept_, ridge.coef_], atol=1e-6))\nprint(norms, mse_train, alpha_ridge, same_as_ridge)",
+   "hints": [
+    "Это спуск из урока «Спуск для многих признаков», только к градиенту прибавляется штраф `2 * lam * w`, у которого первый элемент обнулён.",
+    "Внутри цикла: `g = 2 / len(y) * X1.T @ (X1 @ w - y)`, `penalty = 2 * lam * w`, `penalty[0] = 0`, `w = w - lr * (g + penalty)`. Не забудьте `return w`.",
+    "`alpha_ridge = 1.0 * len(y)`; `ridge = Ridge(alpha=alpha_ridge).fit(Xs, y)`; сравнение — с `np.r_[ridge.intercept_, ridge.coef_]`."
+   ],
+   "explain": "Длина вектора весов падает с 9.589 до 8.312 и 3.824, а ошибка на обучении растёт с 60.04 до 61.1 и 81.89. Свободный член во всех трёх случаях один и тот же, 34.48 — средняя длительность доставки. Так и должно быть: его не штрафуют, а при стандартизированных признаках он равен среднему ответу. Спуск со штрафом λ = 1 дал ровно веса `Ridge(alpha=1841)`: `Ridge` — это та же MSE со штрафом, только формула у sklearn записана через сумму. Если бы вы штрафовали и `w[0]`, свободный член тоже «усыхал» бы: при стандартизированных признаках он стал бы средним, делённым на $1 + \\lambda$. При λ = 0.1 все прогнозы занижены примерно на 3 минуты, при λ = 1 — вдвое, около 17 минут вместо 34.5."
+  },
+  "ch10/03-boosting/toy-boost": {
+   "chapter": "ch10",
+   "lesson": "03-boosting",
+   "lesson_title": "Бустинг: каждое дерево исправляет ошибки предыдущих",
+   "id": "toy-boost",
+   "title": "Бустинг на бумаге",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nwalk = np.array([0, 0, 1, 1])\ny = np.array([20.0, 24.0, 38.0, 42.0])",
+   "check": "import numpy as _np\nw0, y0 = need('walk'), need('y')\nf = _np.full(4, y0.mean()); h = [f.round(2).tolist()]\nfor _ in range(3):\n    r = y0 - f; step = _np.where(w0 == 1, r[w0 == 1].mean(), r[w0 == 0].mean()); f = f + 0.3 * step; h.append(f.round(2).tolist())\ng = need('history', list)\nassert len(g) == 4, 'history — старт и три шага: 4 списка.'\nassert all(_np.allclose(a, b, atol=0.006) for a, b in zip(g, h)), f'history = {g}, а нужно {h}.'\nassert close(need('gap_left'), round(40 - f[2], 2), 0.006), f'gap_left = {need(\"gap_left\")}.'",
+   "starter": "import numpy as np\n\nlr = 0.3\nf = np.full(4, y.mean())\nhistory = [f.round(2).tolist()]",
+   "solution": "import numpy as np\n\nlr = 0.3\nf = np.full(4, y.mean())\nhistory = [f.round(2).tolist()]\nfor _ in range(3):\n    r = y - f\n    stump = np.where(walk == 1, r[walk == 1].mean(), r[walk == 0].mean())\n    f = f + lr * stump\n    history.append(f.round(2).tolist())\ngap_left = round(40 - f[2], 2)\nprint(history, gap_left)",
+   "hints": [
+    "Прогноз «пня» для каждой доставки — средний остаток её группы: `np.where(walk == 1, r[walk == 1].mean(), r[walk == 0].mean())`.",
+    "В цикле на 3 шага: остатки `r = y - f`, прогноз пня, `f = f + lr * пень`, добавить `f.round(2).tolist()` в историю."
+   ],
+   "explain": "Каждый шаг закрывает 30 % оставшегося разрыва: от 9 минут (31 → 40) остаётся 9 · 0.7³ ≈ 3.1. С шагом 0.3 разрыв убывает в геометрической прогрессии и никогда не закрывается полностью за конечное число шагов — но на настоящих данных это и не нужно: «закрыть до конца» означало бы подогнать модель под шум обучающих строк."
+  },
+  "ch10/03-boosting/residuals": {
+   "chapter": "ch10",
+   "lesson": "03-boosting",
+   "lesson_title": "Бустинг: каждое дерево исправляет ошибки предыдущих",
+   "id": "residuals",
+   "title": "Остатки",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\ny0 = _np.array([22.0, 35.0, 41.0, 28.0, 54.0])\nassert _np.allclose(need('r'), y0 - y0.mean()), f'r = {need(\"r\")}.'\nassert close(need('mae0'), _np.abs(y0 - y0.mean()).mean()), f'mae0 = {need(\"mae0\")}.'",
+   "starter": "import numpy as np\ny = np.array([22.0, 35.0, 41.0, 28.0, 54.0])",
+   "solution": "import numpy as np\ny = np.array([22.0, 35.0, 41.0, 28.0, 54.0])\nf = np.full(len(y), y.mean())\nr = y - f\nmae0 = np.abs(r).mean()",
+   "hints": [
+    "Начальный прогноз одинаков для всех строк — среднее; остатки — факт минус прогноз.",
+    "`f = np.full(len(y), y.mean())`, `r = y - f`, `mae0 = np.abs(r).mean()`."
+   ],
+   "explain": ""
+  },
+  "ch10/03-boosting/one-step": {
+   "chapter": "ch10",
+   "lesson": "03-boosting",
+   "lesson_title": "Бустинг: каждое дерево исправляет ошибки предыдущих",
+   "id": "one-step",
+   "title": "Один шаг бустинга",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\ny0 = _np.array([22.0, 35.0, 41.0, 28.0, 54.0]); f0 = _np.full(5, y0.mean()) + 0.1 * _np.array([-12.0, -2.0, 4.0, -8.0, 16.0])\nassert _np.allclose(need('f1'), f0), f'f1 = {need(\"f1\")}, а нужно {f0}.'\nassert close(need('mae1'), _np.abs(y0 - f0).mean()), f'mae1 = {need(\"mae1\")}.'",
+   "starter": "import numpy as np\ny = np.array([22.0, 35.0, 41.0, 28.0, 54.0])\nf = np.full(5, y.mean())\ntree_pred = np.array([-12.0, -2.0, 4.0, -8.0, 16.0])",
+   "solution": "import numpy as np\ny = np.array([22.0, 35.0, 41.0, 28.0, 54.0])\nf = np.full(5, y.mean())\ntree_pred = np.array([-12.0, -2.0, 4.0, -8.0, 16.0])\nf1 = f + 0.1 * tree_pred\nmae1 = np.abs(y - f1).mean()",
+   "hints": [
+    "Новый прогноз — старый плюс шаг × поправка дерева.",
+    "`f1 = f + 0.1 * tree_pred`."
+   ],
+   "explain": ""
+  },
+  "ch10/03-boosting/p-boost": {
+   "chapter": "ch10",
+   "lesson": "03-boosting",
+   "lesson_title": "Бустинг: каждое дерево исправляет ошибки предыдущих",
+   "id": "p-boost",
+   "title": "Цикл бустинга",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nfrom sklearn.tree import DecisionTreeRegressor as _T\nX0 = _np.array([[1], [2], [3], [4], [5], [6]]); y0 = _np.array([10.0, 12.0, 20.0, 22.0, 40.0, 42.0]); f0 = _np.full(6, y0.mean())\nfor _ in range(5): f0 = f0 + 0.5 * _T(max_depth=1).fit(X0, y0 - f0).predict(X0)\nassert _lines == [str(round(float(_np.abs(y0 - f0).mean()), 2))], f'Сейчас: {_lines}.'",
+   "starter": "",
+   "solution": "import numpy as np\nfrom sklearn.tree import DecisionTreeRegressor\nX = np.array([[1], [2], [3], [4], [5], [6]])\ny = np.array([10.0, 12.0, 20.0, 22.0, 40.0, 42.0])\nf = np.full(len(y), y.mean())\nfor _ in range(5):\n    tree = DecisionTreeRegressor(max_depth=1).fit(X, y - f)\n    f = f + 0.5 * tree.predict(X)\nprint(round(float(np.abs(y - f).mean()), 2))",
+   "hints": [
+    "Дерево учится на остатках `y - f`, и только потом прогноз обновляется.",
+    "Порядок внутри цикла: остатки → дерево → обновление прогноза."
+   ],
+   "explain": ""
+  },
+  "ch10/03-boosting/manual-boost": {
+   "chapter": "ch10",
+   "lesson": "03-boosting",
+   "lesson_title": "Бустинг: каждое дерево исправляет ошибки предыдущих",
+   "id": "manual-boost",
+   "title": "Бустинг руками",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.tree import DecisionTreeRegressor as _T\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\ndef _b(lr):\n    ft = _np.full(len(c), c.mean()); fe = _np.full(len(dd), c.mean())\n    for _ in range(30):\n        t = _T(max_depth=3, random_state=0).fit(a, c - ft); ft += lr * t.predict(a); fe += lr * t.predict(b)\n    return round(_mae(dd, fe), 2)\nassert close(need('mae_01'), _b(0.1), 0.011), f'mae_01 = {need(\"mae_01\")}, а нужно {_b(0.1)}.'\nassert close(need('mae_03'), _b(0.3), 0.011), f'mae_03 = {need(\"mae_03\")}, а нужно {_b(0.3)}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ndef boost(X_tr, y_tr, X_te, n, lr, depth):\n    f_tr = np.full(len(y_tr), y_tr.mean())\n    f_te = np.full(len(X_te), y_tr.mean())\n    for _ in range(n):\n        tree = DecisionTreeRegressor(max_depth=depth, random_state=0).fit(X_tr, y_tr - f_tr)\n        f_tr = f_tr + lr * tree.predict(X_tr)\n        f_te = f_te + lr * tree.predict(X_te)\n    return f_te\n\nmae_01 = round(mean_absolute_error(y_test, boost(X_train, y_train, X_test, 30, 0.1, 3)), 2)\nmae_03 = round(mean_absolute_error(y_test, boost(X_train, y_train, X_test, 30, 0.3, 3)), 2)",
+   "hints": [
+    "Старт — среднее `y_tr` и для обучения, и для теста. В цикле дерево учится на `y_tr − f_tr`, а обновляются оба прогноза одним и тем же деревом. Вернуть нужно прогноз для `X_te`.",
+    "Скопируйте цикл из теории в функцию: два прогноза (`f_train`, `f_test`), старт — среднее `y_tr`."
+   ],
+   "explain": "При 30 деревьях больший шаг выигрывает: с шагом 0.1 модель ещё не успела «дойти». Но при большом числе деревьев маленький шаг обычно догоняет и обгоняет — это видно в следующем уроке."
+  },
+  "ch10/03-boosting/vs-sklearn": {
+   "chapter": "ch10",
+   "lesson": "03-boosting",
+   "lesson_title": "Бустинг: каждое дерево исправляет ошибки предыдущих",
+   "id": "vs-sklearn",
+   "title": "Сверка с sklearn",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.tree import DecisionTreeRegressor as _T\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\nft = _np.full(len(c), c.mean()); fe = _np.full(len(dd), c.mean())\nfor _ in range(50):\n    t = _T(max_depth=3, random_state=0).fit(a, c - ft); ft += 0.1 * t.predict(a); fe += 0.1 * t.predict(b)\nps = _GB(n_estimators=50, learning_rate=0.1, max_depth=3, random_state=0).fit(a, c).predict(b)\nassert close(need('mae_mine'), round(_mae(dd, fe), 2), 0.011), f'mae_mine = {need(\"mae_mine\")}.'\nassert close(need('mae_sk'), round(_mae(dd, ps), 2), 0.011), f'mae_sk = {need(\"mae_sk\")}.'\nassert close(need('corr'), round(_np.corrcoef(fe, ps)[0, 1], 4), 0.0011), f'corr = {need(\"corr\")}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ndef boost(X_tr, y_tr, X_te, n, lr, depth):\n    f_tr = np.full(len(y_tr), y_tr.mean())\n    f_te = np.full(len(X_te), y_tr.mean())\n    for _ in range(n):\n        tree = DecisionTreeRegressor(max_depth=depth, random_state=0).fit(X_tr, y_tr - f_tr)\n        f_tr = f_tr + lr * tree.predict(X_tr)\n        f_te = f_te + lr * tree.predict(X_te)\n    return f_te",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ndef boost(X_tr, y_tr, X_te, n, lr, depth):\n    f_tr = np.full(len(y_tr), y_tr.mean())\n    f_te = np.full(len(X_te), y_tr.mean())\n    for _ in range(n):\n        tree = DecisionTreeRegressor(max_depth=depth, random_state=0).fit(X_tr, y_tr - f_tr)\n        f_tr = f_tr + lr * tree.predict(X_tr)\n        f_te = f_te + lr * tree.predict(X_te)\n    return f_te\n\nmine = boost(X_train, y_train, X_test, 50, 0.1, 3)\nsk = GradientBoostingRegressor(n_estimators=50, learning_rate=0.1, max_depth=3, random_state=0).fit(X_train, y_train).predict(X_test)\nmae_mine = round(mean_absolute_error(y_test, mine), 2)\nmae_sk = round(mean_absolute_error(y_test, sk), 2)\ncorr = round(np.corrcoef(mine, sk)[0, 1], 4)",
+   "hints": [
+    "Обучите `GradientBoostingRegressor` с теми же параметрами, что ручной бустинг: число деревьев, шаг, глубина, `random_state=0`.",
+    "Корреляция двух массивов: `np.corrcoef(a, b)[0, 1]`."
+   ],
+   "explain": "Прогнозы почти совпадают (корреляция около 1): `GradientBoostingRegressor` с потерей MSE делает ровно то же, что наш цикл. Отличия — в мелочах вроде того, как дерево выбирает разбиение при равенстве."
+  },
+  "ch10/03-boosting/depth-one": {
+   "chapter": "ch10",
+   "lesson": "03-boosting",
+   "lesson_title": "Бустинг: каждое дерево исправляет ошибки предыдущих",
+   "id": "depth-one",
+   "title": "Пни против деревьев",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\nm = {k: round(_mae(dd, _GB(n_estimators=200, learning_rate=0.1, max_depth=k, random_state=0).fit(a, c).predict(b)), 2) for k in (1, 4)}\nassert close(need('mae_stumps'), m[1], 0.011) and close(need('mae_deep'), m[4], 0.011), f'mae_stumps, mae_deep = {need(\"mae_stumps\")}, {need(\"mae_deep\")}, а нужно {m[1]}, {m[4]}.'\nassert need('winner') == ('пни' if m[1] < m[4] else 'глубина 4'), f'winner = {need(\"winner\")!r}.'",
+   "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+   "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\nres = {}\nfor depth in (1, 4):\n    gb = GradientBoostingRegressor(n_estimators=200, learning_rate=0.1, max_depth=depth, random_state=0).fit(X_train, y_train)\n    res[depth] = round(mean_absolute_error(y_test, gb.predict(X_test)), 2)\nmae_stumps, mae_deep = res[1], res[4]\nwinner = \"пни\" if mae_stumps < mae_deep else \"глубина 4\"",
+   "hints": [
+    "Два вызова с разным `max_depth`.",
+    "Пень — дерево глубины 1: один вопрос и два листа. Ему нужно больше деревьев, чтобы описать то же, что дереву глубины 4."
+   ],
+   "explain": "Пень задаёт один вопрос и не может уловить **взаимодействие** признаков («пеший **и** снег», «авто **и** час пик»): сумма пней — это сумма отдельных эффектов признаков. Деревья глубины 4 видят сочетания, а на доставках они важны. Глубина дерева в бустинге — это «насколько сложные сочетания признаков модель может выучить»."
+  },
+  "ch10/03-boosting/lr-trees": {
+   "chapter": "ch10",
+   "lesson": "03-boosting",
+   "lesson_title": "Бустинг: каждое дерево исправляет ошибки предыдущих",
+   "id": "lr-trees",
+   "title": "Шаг и число деревьев",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+   "check": "from sklearn.ensemble import GradientBoostingRegressor as _G\nfrom sklearn.metrics import mean_absolute_error as _mae\na, b, c, d_ = need('X_train'), need('X_test'), need('y_train'), need('y_test')\nw = {f'{lr}x{n}': round(_mae(d_, _G(n_estimators=n, learning_rate=lr, max_depth=3, random_state=0).fit(a, c).predict(b)), 3) for lr, n in [(0.3, 100), (0.1, 300), (0.05, 600), (0.02, 300)]}\ng = need('mae', dict)\nassert set(g) == set(w), f'Ключи mae: {sorted(g)}, а нужно {sorted(w)}.'\nassert all(close(g[k], w[k], 0.002) for k in w), f'mae = {g}, а нужно {w}.'\nbest = min(w.values())\nassert need('undertrained') == [k for k in w if w[k] > best + 0.1][0], f'undertrained = {need(\"undertrained\")!r}.'",
+   "starter": "from sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\npairs = [(0.3, 100), (0.1, 300), (0.05, 600), (0.02, 300)]\nmae = {}",
+   "solution": "from sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\npairs = [(0.3, 100), (0.1, 300), (0.05, 600), (0.02, 300)]\nmae = {}\nfor lr, n in pairs:\n    gb = GradientBoostingRegressor(n_estimators=n, learning_rate=lr, max_depth=3, random_state=0).fit(X_train, y_train)\n    mae[f\"{lr}x{n}\"] = round(mean_absolute_error(y_test, gb.predict(X_test)), 3)\nbest = min(mae.values())\nundertrained = [k for k in mae if mae[k] > best + 0.1][0]\nprint(mae, undertrained)",
+   "hints": [
+    "Ключ из пары: `f\"{lr}x{n}\"` — например, `\"0.1x300\"`.",
+    "Цикл по `pairs`: обучить, предсказать тест, `mean_absolute_error`, округлить. «Недоученная» — та, у которой MAE больше лучшей более чем на 0.1."
+   ],
+   "explain": "Пары с одинаковым «шаг × число деревьев» (0.1 × 300 и 0.05 × 600) дают почти одинаковую ошибку — около 3.83. Большой шаг с малым числом деревьев (0.3 × 100) чуть хуже, а маленький шаг без добавки деревьев (0.02 × 300) заметно недоучен — около 4.12. Правило практики: зафиксировать умеренный шаг (0.05–0.1) и подбирать число деревьев ранней остановкой (урок «Настройка бустинга»), а не наоборот."
+  },
+  "ch10/03-boosting/mae-boost": {
+   "chapter": "ch10",
+   "lesson": "03-boosting",
+   "lesson_title": "Бустинг: каждое дерево исправляет ошибки предыдущих",
+   "id": "mae-boost",
+   "title": "Бустинг по MAE",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.tree import DecisionTreeRegressor as _T\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\nft = _np.full(len(c), c.median()); fe = _np.full(len(dd), c.median())\nfor _ in range(100):\n    t = _T(max_depth=3, random_state=0).fit(a, _np.sign(c - ft)); ft += t.predict(a); fe += t.predict(b)\nw1 = round(_mae(dd, fe), 2)\nw2 = round(_mae(dd, _GB(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=0).fit(a, c).predict(b)), 2)\nassert close(need('mae_l1'), w1, 0.011), f'mae_l1 = {need(\"mae_l1\")}, а нужно {w1}.'\nassert close(need('mae_l2'), w2, 0.011), f'mae_l2 = {need(\"mae_l2\")}, а нужно {w2}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\nf_tr = np.full(len(y_train), y_train.median())\nf_te = np.full(len(y_test), y_train.median())\nfor _ in range(100):\n    tree = DecisionTreeRegressor(max_depth=3, random_state=0).fit(X_train, np.sign(y_train - f_tr))\n    f_tr = f_tr + tree.predict(X_train)\n    f_te = f_te + tree.predict(X_test)\nmae_l1 = round(mean_absolute_error(y_test, f_te), 2)\ngb = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=0).fit(X_train, y_train)\nmae_l2 = round(mean_absolute_error(y_test, gb.predict(X_test)), 2)",
+   "hints": [
+    "Для MAE антиградиент — знак остатка: +1, если прогноз занижен, −1 — если завышен.",
+    "Та же схема, что в задаче «Бустинг руками», но `fit(X_train, np.sign(y_train - f_train))` и старт `y_train.median()`."
+   ],
+   "explain": "Бустинг по MAE шагает «по знаку» — не больше чем на минуту за дерево, — но за 100 деревьев приходит к той же точности, что бустинг по MSE (около 3.8 минуты). Разница в другом: по MAE модель почти не реагирует на выбросы, а мы их заранее отфильтровали; на сырых данных с «забытыми» заказами на 1000 минут бустинг по MSE пострадал бы сильнее. В sklearn такой бустинг включается параметром `loss=\"absolute_error\"`, и там шаг в листе подбирается точнее — медианой остатков."
+  },
+  "ch10/04-tuning/staged": {
+   "chapter": "ch10",
+   "lesson": "04-tuning",
+   "lesson_title": "Настройка бустинга",
+   "id": "staged",
+   "title": "Кривая по деревьям",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\ncv = [_mae(dd, p) for p in _GB(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=0).fit(a, c).staged_predict(b)]\ngot = need('curve')\nassert len(got) == 100 and _np.allclose(got, cv, atol=1e-6), 'curve — 100 значений MAE на тесте после каждого дерева.'\nassert need('best_n') == int(_np.argmin(cv)) + 1, f'best_n = {need(\"best_n\")}, а нужно {int(_np.argmin(cv)) + 1}. Число деревьев считается с 1.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ngb = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=0).fit(X_train, y_train)\ncurve = [mean_absolute_error(y_test, p) for p in gb.staged_predict(X_test)]\nbest_n = int(np.argmin(curve)) + 1",
+   "hints": [
+    "`staged_predict` возвращает прогнозы после каждого дерева — по ним можно посчитать MAE для каждого числа деревьев одним списковым выражением.",
+    "`[mean_absolute_error(y_test, p) for p in gb.staged_predict(X_test)]`; номер минимума — `np.argmin(curve) + 1`."
+   ],
+   "explain": "При 100 деревьях с шагом 0.1 минимум приходится на самый конец — модель ещё не переобучилась. Переобучение начнётся позже, как видно на кривой в теории."
+  },
+  "ch10/04-tuning/shrink": {
+   "chapter": "ch10",
+   "lesson": "04-tuning",
+   "lesson_title": "Настройка бустинга",
+   "id": "shrink",
+   "title": "Шаг обучения руками",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "p = 0; want = []\nfor _ in range(40):\n    p += 0.1 * (10 - p); want.append(p)\ngot = need('preds')\nassert len(got) == 40 and all(close(a, b, 1e-9) for a, b in zip(got, want)), 'preds не совпадает: на каждом шаге pred += lr * (y - pred).'\nassert need('n_needed') == next(i + 1 for i, v in enumerate(want) if v >= 9.5), f'n_needed = {need(\"n_needed\")}.'",
+   "starter": "y, lr = 10, 0.1\npred = 0\npreds = []",
+   "solution": "y, lr = 10, 0.1\npred = 0\npreds = []\nfor _ in range(40):\n    pred += lr * (y - pred)\n    preds.append(pred)\nn_needed = next(i + 1 for i, v in enumerate(preds) if v >= 9.5)",
+   "hints": [
+    "Один шаг: остаток `y - pred`, к прогнозу прибавляем `lr * остаток`. Повторить 40 раз, складывая прогнозы в список.",
+    "Первое число деревьев с прогнозом ≥ 9.5: `next(i + 1 for i, v in enumerate(preds) if v >= 9.5)` — или цикл с `break`."
+   ],
+   "explain": "После первого дерева прогноз — 1, после второго — 1.9, потом 2.71…: остаток каждый раз умножается на 0.9. До 9.5 нужно 29 деревьев (0.9²⁹ ≈ 0.047). С `lr = 1` хватило бы одного — но настоящие деревья ошибаются, и большой шаг повторяет их ошибки целиком. Маленький шаг — это «доверяй каждому дереву понемногу», за что платят числом деревьев."
+  },
+  "ch10/04-tuning/p-early": {
+   "chapter": "ch10",
+   "lesson": "04-tuning",
+   "lesson_title": "Настройка бустинга",
+   "id": "p-early",
+   "title": "Ранняя остановка",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert _lines == ['True'], f'Сейчас: {_lines}.'",
+   "starter": "",
+   "solution": "import numpy as np\nfrom sklearn.ensemble import GradientBoostingRegressor\nrng = np.random.default_rng(0)\nX = rng.normal(size=(500, 3))\ny = X[:, 0] * 3 + rng.normal(size=500)\ngb = GradientBoostingRegressor(n_estimators=1000, n_iter_no_change=10, validation_fraction=0.2, random_state=0)\ngb.fit(X, y)\nprint(gb.n_estimators_ < 1000)",
+   "hints": [
+    "Сначала данные, потом модель с параметрами остановки, обучение и печать.",
+    "Число построенных деревьев — атрибут с подчёркиванием в конце: `n_estimators_`."
+   ],
+   "explain": ""
+  },
+  "ch10/04-tuning/train-vs-test": {
+   "chapter": "ch10",
+   "lesson": "04-tuning",
+   "lesson_title": "Настройка бустинга",
+   "id": "train-vs-test",
+   "title": "Где начинается переобучение",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\ng = _GB(n_estimators=400, learning_rate=0.3, max_depth=3, random_state=0).fit(a, c)\nte = [_mae(dd, p) for p in g.staged_predict(b)]; tr = [_mae(c, p) for p in g.staged_predict(a)]\nk = int(_np.argmin(te)) + 1\nassert need('best_n') == k, f'best_n = {need(\"best_n\")}, а нужно {k}.'\nassert close(need('te_best'), round(te[k - 1], 3), 0.002) and close(need('te_last'), round(te[-1], 3), 0.002), f'te_best, te_last = {need(\"te_best\")}, {need(\"te_last\")}.'\nassert close(need('tr_last'), round(tr[-1], 3), 0.002), f'tr_last = {need(\"tr_last\")}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ngb = GradientBoostingRegressor(n_estimators=400, learning_rate=0.3, max_depth=3, random_state=0).fit(X_train, y_train)\ntr = [mean_absolute_error(y_train, p) for p in gb.staged_predict(X_train)]\nte = [mean_absolute_error(y_test, p) for p in gb.staged_predict(X_test)]\nbest_n = int(np.argmin(te)) + 1\nte_best, te_last = round(te[best_n - 1], 3), round(te[-1], 3)\ntr_last = round(tr[-1], 3)",
+   "hints": [
+    "Два списка через `staged_predict(X_train)` и `staged_predict(X_test)`.",
+    "Лучшее число деревьев — номер минимума тестовой кривой: `int(np.argmin(te)) + 1`; MAE при нём — `te[best_n - 1]`, при 400 — `te[-1]`."
+   ],
+   "explain": "С шагом 0.3 модель быстро доходит до минимума и потом переобучается: ошибка на обучении продолжает падать (до двух с небольшим минут), а на тесте растёт. Разрыв между ними — мера переобучения, как в главе 6."
+  },
+  "ch10/04-tuning/early-stop": {
+   "chapter": "ch10",
+   "lesson": "04-tuning",
+   "lesson_title": "Настройка бустинга",
+   "id": "early-stop",
+   "title": "Остановка по валидации",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\na1, v, c1, vy = _tts(a, c, test_size=0.2, random_state=0)\ng = _GB(n_estimators=600, learning_rate=0.1, max_depth=3, random_state=0).fit(a1, c1)\nk = int(_np.argmin([_mae(vy, p) for p in g.staged_predict(v)])) + 1\nassert need('best_n') == k, f'best_n = {need(\"best_n\")}, а нужно {k}. Выбирайте по валидации, а не по тесту.'\nt = round(_mae(dd, _GB(n_estimators=k, learning_rate=0.1, max_depth=3, random_state=0).fit(a, c).predict(b)), 2)\nassert close(need('test_mae'), t, 0.011), f'test_mae = {need(\"test_mae\")}, а нужно {t}.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\nX_fit, X_val, y_fit, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=0)\ngb = GradientBoostingRegressor(n_estimators=600, learning_rate=0.1, max_depth=3, random_state=0).fit(X_fit, y_fit)\nval_curve = [mean_absolute_error(y_val, p) for p in gb.staged_predict(X_val)]\nbest_n = int(np.argmin(val_curve)) + 1\nfinal = GradientBoostingRegressor(n_estimators=best_n, learning_rate=0.1, max_depth=3, random_state=0).fit(X_train, y_train)\ntest_mae = round(mean_absolute_error(y_test, final.predict(X_test)), 2)",
+   "hints": [
+    "Схема: обучающая часть делится ещё раз на «обучение» и «валидацию»; по валидации выбирают число деревьев, финальную модель проверяют на тесте.",
+    "Сначала второе разбиение — `X_fit, X_val, y_fit, y_val`. Тест в выборе числа деревьев не участвует."
+   ],
+   "explain": "Валидация выбрала около 220 деревьев, и на тесте получилось около 3.81 — почти как лучший результат «с подглядыванием». Так и выглядит честная процедура: тест видит только финальную модель."
+  },
+  "ch10/04-tuning/subsample": {
+   "chapter": "ch10",
+   "lesson": "04-tuning",
+   "lesson_title": "Настройка бустинга",
+   "id": "subsample",
+   "title": "Помогает ли подвыборка",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+   "check": "from sklearn.ensemble import GradientBoostingRegressor as _G\nfrom sklearn.metrics import mean_absolute_error as _mae\na, b, c, d_ = need('X_train'), need('X_test'), need('y_train'), need('y_test')\nw = {sb: round(_mae(d_, _G(n_estimators=300, learning_rate=0.1, max_depth=3, subsample=sb, random_state=0).fit(a, c).predict(b)), 3) for sb in [1.0, 0.7, 0.5]}\ng = {float(k): v for k, v in need('mae_by_sub', dict).items()}\nassert all(close(g[k], w[k], 0.002) for k in w), f'mae_by_sub = {g}, а нужно {w}.'\nassert bool(need('helps')) == any(w[1.0] - w[k] > 0.01 for k in [0.7, 0.5]), 'helps — улучшилась ли MAE больше чем на 0.01 хотя бы при одном subsample < 1.'",
+   "starter": "from sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error",
+   "solution": "from sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nmae_by_sub = {}\nfor sub in [1.0, 0.7, 0.5]:\n    gb = GradientBoostingRegressor(n_estimators=300, learning_rate=0.1, max_depth=3, subsample=sub, random_state=0)\n    mae_by_sub[sub] = round(mean_absolute_error(y_test, gb.fit(X_train, y_train).predict(X_test)), 3)\nhelps = any(mae_by_sub[1.0] - mae_by_sub[s] > 0.01 for s in [0.7, 0.5])\nprint(mae_by_sub, helps)",
+   "hints": [
+    "Словарное выражение по `subsample`; MAE — `mean_absolute_error(y_test, model.predict(X_test))`.",
+    "`helps = any(mae_by_sub[1.0] - mae_by_sub[s] > 0.01 for s in [0.7, 0.5])`."
+   ],
+   "explain": "Здесь подвыборка не помогает: 0.7 даёт ту же ошибку, а 0.5 — даже хуже. Это нормальный результат: «рецепты» из таблицы гиперпараметров — отправные точки, а не гарантии. Подвыборка помогает, когда бустинг переобучается (много деревьев, глубокие деревья, мало данных); у нас 300 неглубоких деревьев и шаг 0.1 — переобучения почти нет, и лечить нечего."
+  },
+  "ch10/04-tuning/native-cat": {
+   "chapter": "ch10",
+   "lesson": "04-tuning",
+   "lesson_title": "Настройка бустинга",
+   "id": "native-cat",
+   "title": "Категории без флагов",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ncols = [\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]\ny = ok[\"actual_min\"]",
+   "check": "from sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nfrom sklearn.metrics import mean_absolute_error as _mae\nok0, cols0, y0 = need('ok'), need('cols'), need('y')\nimport pandas as _pd\nXd = _pd.get_dummies(ok0[cols0], dtype=int)\nXc = ok0[cols0].copy()\nfor c in ['courier', 'weather', 'shop_id']: Xc[c] = Xc[c].astype('category')\nw = {}\nfor k, X_ in [('dummies', Xd), ('category', Xc)]:\n    a, b, c, d_ = _tts(X_, y0, test_size=0.25, random_state=42)\n    m = _H(max_iter=300, max_depth=3, categorical_features='from_dtype', random_state=0).fit(a, c)\n    w[k] = (X_.shape[1], round(_mae(d_, m.predict(b)), 3))\ng = {k: tuple(v) for k, v in need('res', dict).items()}\nassert all(g[k][0] == w[k][0] and close(g[k][1], w[k][1], 0.002) for k in w), f'res = {g}, а нужно {w}.'\nassert need('n_categories') == sum(ok0[c].nunique() for c in ['courier', 'weather', 'shop_id']), f'n_categories = {need(\"n_categories\")}.'",
+   "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nres = {}",
+   "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nX_dum = pd.get_dummies(ok[cols], dtype=int)\nX_cat = ok[cols].copy()\nfor c in [\"courier\", \"weather\", \"shop_id\"]:\n    X_cat[c] = X_cat[c].astype(\"category\")\nres = {}\nfor name, X in [(\"dummies\", X_dum), (\"category\", X_cat)]:\n    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n    m = HistGradientBoostingRegressor(max_iter=300, max_depth=3, categorical_features=\"from_dtype\", random_state=0).fit(X_tr, y_tr)\n    res[name] = (X.shape[1], round(mean_absolute_error(y_te, m.predict(X_te)), 3))\nn_categories = sum(ok[c].nunique() for c in [\"courier\", \"weather\", \"shop_id\"])\nprint(res, n_categories)",
+   "hints": [
+    "Категории: `X_cat = ok[cols].copy()`, затем для трёх столбцов `X_cat[c] = X_cat[c].astype(\"category\")`.",
+    "Число разных значений столбца — `.nunique()`; сложите по трём столбцам."
+   ],
+   "explain": "Ошибка одинаковая с точностью до сотых, а столбцов 6 вместо 16. Флаги для 13 категорий — не проблема; проблема начинается, когда категорий тысячи (артикулы, адреса): `get_dummies` раздувает таблицу до тысяч почти пустых столбцов. Тогда нативные категории HGB или CatBoost не только экономят память, но часто и точнее — им не нужно собирать «группу похожих значений» из отдельных флагов."
+  },
+  "ch10/04-tuning/hgb-nan": {
+   "chapter": "ch10",
+   "lesson": "04-tuning",
+   "lesson_title": "Настройка бустинга",
+   "id": "hgb-nan",
+   "title": "Бустинг без заполнения пропусков",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import HistGradientBoostingClassifier as _H, RandomForestClassifier as _RF\nfrom sklearn.metrics import roc_auc_score as _auc\ng = _pd.read_csv('guests_churn.csv'); y = g['churned']\nX0 = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int)\na, b, c, d = _tts(X0, y, test_size=0.25, random_state=42, stratify=y)\nh = round(_auc(d, _H(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0).fit(a, c).predict_proba(b)[:, 1]), 3)\nr = round(_auc(d, _RF(n_estimators=100, min_samples_leaf=5, random_state=0).fit(a.fillna(0), c).predict_proba(b.fillna(0))[:, 1]), 3)\nassert close(need('auc_hgb'), h, 0.002), f'auc_hgb = {need(\"auc_hgb\")}, а нужно {h}.'\nassert close(need('auc_rf'), r, 0.002), f'auc_rf = {need(\"auc_rf\")}, а нужно {r}.'\nassert need('nan_in_train') == int(a.isna().sum().sum()), f'nan_in_train = {need(\"nan_in_train\")}.'",
+   "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)",
+   "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nnan_in_train = int(X_train.isna().sum().sum())\nhgb = HistGradientBoostingClassifier(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0).fit(X_train, y_train)\nrf = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0).fit(X_train.fillna(0), y_train)\nauc_hgb = round(roc_auc_score(y_test, hgb.predict_proba(X_test)[:, 1]), 3)\nauc_rf = round(roc_auc_score(y_test, rf.predict_proba(X_test.fillna(0))[:, 1]), 3)",
+   "hints": [
+    "Число пропусков во всей таблице: `X_train.isna().sum().sum()`.",
+    "HGB обучается прямо на `X_train` с пропусками; лесу передайте `X_train.fillna(0)` и `X_test.fillna(0)`. AUC — по `predict_proba(...)[:, 1]`."
+   ],
+   "explain": "Для пропуска `HistGradientBoosting` в каждом узле сам решает, в какую ветку его отправить, — по тому, где ошибка меньше. Это часто лучше ручного заполнения: «пропуск» сам по себе может быть сигналом (здесь — «гость вообще не приходил»)."
+  },
+  "ch10/04-tuning/grid-boost": {
+   "chapter": "ch10",
+   "lesson": "04-tuning",
+   "lesson_title": "Настройка бустинга",
+   "id": "grid-boost",
+   "title": "Подбор глубины и шага",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts, GridSearchCV as _GS\nfrom sklearn.ensemble import HistGradientBoostingClassifier as _H\nfrom sklearn.metrics import roc_auc_score as _auc\n_bp, _cv, _ta = need('best_params'), need('cv_auc'), need('test_auc')   # сначала — есть ли ответы (эталон считается долго)\ng = _pd.read_csv('guests_churn.csv'); y = g['churned']\nX0 = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int)\na, b, c, d = _tts(X0, y, test_size=0.25, random_state=42, stratify=y)\ngs = _GS(_H(max_iter=200, random_state=0), {'learning_rate': [0.05, 0.1], 'max_depth': [2, 3, 5]}, cv=3, scoring='roc_auc').fit(a, c)\nassert dict(need('best_params')) == gs.best_params_, f'best_params = {need(\"best_params\")}, а нужно {gs.best_params_}.'\nassert close(need('cv_auc'), round(gs.best_score_, 3), 0.002), f'cv_auc = {need(\"cv_auc\")}.'\nassert close(need('test_auc'), round(_auc(d, gs.predict_proba(b)[:, 1]), 3), 0.002), f'test_auc = {need(\"test_auc\")}.'",
+   "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, GridSearchCV\nfrom sklearn.ensemble import HistGradientBoostingClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)",
+   "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, GridSearchCV\nfrom sklearn.ensemble import HistGradientBoostingClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\ngrid = GridSearchCV(HistGradientBoostingClassifier(max_iter=200, random_state=0),\n                    {\"learning_rate\": [0.05, 0.1], \"max_depth\": [2, 3, 5]}, cv=3, scoring=\"roc_auc\")\ngrid.fit(X_train, y_train)\nbest_params = grid.best_params_\ncv_auc = round(grid.best_score_, 3)\ntest_auc = round(roc_auc_score(y_test, grid.predict_proba(X_test)[:, 1]), 3)",
+   "hints": [
+    "Имена параметров в сетке — как у самой модели (`max_depth`, `learning_rate`), если `GridSearchCV` получает модель без конвейера.",
+    "После `fit` у `GridSearchCV` есть `best_params_`, `best_score_`, а `predict_proba` сам использует лучшую модель (глава 7)."
+   ],
+   "explain": "На оттоке побеждают неглубокие деревья с маленьким шагом: данных немного (1800 строк в обучении), и сложной модели легко переобучиться. На больших таблицах оптимальная глубина обычно больше."
+  },
+  "ch10/05-project/look": {
+   "chapter": "ch10",
+   "lesson": "05-project",
+   "lesson_title": "Проект: прогноз дневной выручки",
+   "id": "look",
+   "title": "Шаг 1. Формат и выходные",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "daily_sales.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\ns0 = _pd.read_csv('daily_sales.csv', parse_dates=['date']); s0['weekend'] = (s0['date'].dt.weekday >= 5).astype(int)\npv = s0.groupby(['format', 'weekend'])['revenue_k'].mean().unstack()\np = need('pivot', _pd.DataFrame)\nfor f in pv.index:\n    for w in (0, 1):\n        assert close(p.loc[f, w], round(pv.loc[f, w], 1), 0.06), f'pivot[{f}, {w}] = {p.loc[f, w]}, а нужно {round(pv.loc[f, w], 1)}.'\nr = (pv[1] / pv[0]).round(2)\nwr = need('weekend_ratio', _pd.Series)\nassert all(close(wr[f], r[f], 0.011) for f in r.index), f'weekend_ratio: ожидалось {r.to_dict()}.'\nassert need('most_weekday') == r.idxmin(), f'most_weekday = {need(\"most_weekday\")!r}.'",
+   "starter": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])\ns[\"weekend\"] = (s[\"date\"].dt.weekday >= 5).astype(int)",
+   "solution": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])\ns[\"weekend\"] = (s[\"date\"].dt.weekday >= 5).astype(int)\n\npivot = s.groupby([\"format\", \"weekend\"])[\"revenue_k\"].mean().unstack().round(1)\nweekend_ratio = (pivot[1] / pivot[0]).round(2)\nmost_weekday = weekend_ratio.idxmin()",
+   "hints": [
+    "Столбец `weekend` уже есть в заготовке. Таблица — `s.groupby([\"format\", \"weekend\"])[\"revenue_k\"].mean().unstack()`: формат в строках, выходной в столбцах.",
+    "Отношение — столбец `1`, делённый на столбец `0`: `pivot[1] / pivot[0]`. Формат с наименьшим отношением — `.idxmin()`."
+   ],
+   "explain": "Форматы ведут себя противоположно: кофейня в бизнес-центре в выходные теряет две трети выручки, в торговом центре — получает на треть больше, уличная — чуть больше. Средний «эффект выходного» по сети ничего не говорит ни об одной кофейне. Это и есть **взаимодействие** признаков — запомним его."
+  },
+  "ch10/05-project/split": {
+   "chapter": "ch10",
+   "lesson": "05-project",
+   "lesson_title": "Проект: прогноз дневной выручки",
+   "id": "split",
+   "title": "Шаг 2. Признаки и разбиение по времени",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "daily_sales.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\ns0 = _pd.read_csv('daily_sales.csv', parse_dates=['date'])\nX0 = need('X', _pd.DataFrame)\nassert len(X0) == len(s0), f'В X {len(X0)} строк, а в данных {len(s0)}.'\nneed_cols = {'temp', 'rain', 'holiday', 'promo', 'weekday', 'month', 'weekend', 'day_n'}\nassert need_cols <= set(X0.columns), f'Не хватает столбцов: {need_cols - set(X0.columns)}.'\nassert any(c.startswith('shop_id_') for c in X0.columns) and any(c.startswith('format_') for c in X0.columns), 'Нужны флаги shop_id_… и format_….'\nassert 'revenue_k' not in X0.columns and 'date' not in X0.columns and 'city' not in X0.columns, 'В признаках не должно быть revenue_k, date и city.'\nassert X0['day_n'].min() == 0 and X0['day_n'].max() == 730, 'day_n — дней от первой даты (от 0 до 730).'\nw = (s0['date'] < '2025-07-01')\nassert need('n_train') == int(w.sum()) and need('n_test') == int((~w).sum()), f'n_train, n_test = {need(\"n_train\")}, {need(\"n_test\")}.'",
+   "starter": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])",
+   "solution": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])\n\ndef prep(s):\n    s = s.copy()\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - s[\"date\"].min()).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    return pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\n\nX = prep(s)\ntr = s[\"date\"] < \"2025-07-01\"\nn_train, n_test = int(tr.sum()), int((~tr).sum())",
+   "hints": [
+    "Признаки — календарь, формат кофейни (через `get_dummies`) и номер дня от начала данных; разбиение — по дате, без перемешивания.",
+    "`day_n = (s[\"date\"] - s[\"date\"].min()).dt.days`. Маска — `s[\"date\"] < \"2025-07-01\"`."
+   ],
+   "explain": "Почему не `train_test_split`: при случайном разбиении в обучении оказались бы и 10, и 12 декабря 2025, а проверяли бы мы на 11-м — модель «знала бы» соседние дни из будущего. В жизни прогноз на декабрь делается в ноябре. Поэтому всё, что про время, проверяют только «прошлое → будущее»."
+  },
+  "ch10/05-project/baselines": {
+   "chapter": "ch10",
+   "lesson": "05-project",
+   "lesson_title": "Проект: прогноз дневной выручки",
+   "id": "baselines",
+   "title": "Шаг 3. Ориентиры",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "daily_sales.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])\ndef prep(s):\n    s = s.copy()\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - s[\"date\"].min()).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    return pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)",
+   "check": "import pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import mean_absolute_error as _mae\ns0 = _pd.read_csv('daily_sales.csv', parse_dates=['date']).sort_values(['shop_id', 'date']).reset_index(drop=True)\nX0 = prep(s0); y0 = s0['revenue_k']; t0 = s0['date'] < '2025-07-01'\nlag = s0.groupby('shop_id')['revenue_k'].shift(7)\nml = round(_mae(y0[~t0], lag[~t0]), 2)\nmn = round(_mae(y0[~t0], _LR().fit(X0[t0], y0[t0]).predict(X0[~t0])), 2)\nassert close(need('mae_lag7'), ml, 0.011), f'mae_lag7 = {need(\"mae_lag7\")}, а нужно {ml}.'\nassert close(need('mae_lin'), mn, 0.011), f'mae_lin = {need(\"mae_lin\")}, а нужно {mn}.'\nassert need('lin_better') == (mn < ml), f'lin_better = {need(\"lin_better\")}.'",
+   "starter": "# уже есть: s (таблица) и prep(s) из шага 2\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\ns = s.sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\nX = prep(s)\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-07-01\"",
+   "solution": "from sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\ns = s.sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\nX = prep(s)\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-07-01\"\n\nlag7 = s.groupby(\"shop_id\")[\"revenue_k\"].shift(7)\nmae_lag7 = round(mean_absolute_error(y[~tr], lag7[~tr]), 2)\nlin = LinearRegression().fit(X[tr], y[tr])\nmae_lin = round(mean_absolute_error(y[~tr], lin.predict(X[~tr])), 2)\nlin_better = mae_lin < mae_lag7",
+   "hints": [
+    "«Как неделю назад» — `shift(7)` внутри `groupby(\"shop_id\")`: таблица уже отсортирована по кофейне и дате, поэтому сдвиг на 7 строк — это тот же день неделю назад. Линейная модель — обучение на `X[tr]`, прогноз на `X[~tr]`.",
+    "`lag7 = s.groupby(\"shop_id\")[\"revenue_k\"].shift(7)`; тестовые строки — `~tr`."
+   ],
+   "explain": "Линейная модель (около 13 тыс. ₽ ошибки) **хуже** наивного «как неделю назад» (около 10). Причина — шаг 1: эффект выходного у форматов противоположный, а линейная модель умеет только «выходной: +X ко всем». Наивный прогноз этих сложностей не знает, но день недели и кофейня в нём «зашиты» автоматически."
+  },
+  "ch10/05-project/interactions": {
+   "chapter": "ch10",
+   "lesson": "05-project",
+   "lesson_title": "Проект: прогноз дневной выручки",
+   "id": "interactions",
+   "title": "Шаг 4. Взаимодействия руками",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "daily_sales.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"]).sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\ndef prep(s):\n    s = s.copy()\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - s[\"date\"].min()).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    return pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\nX = prep(s)\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-07-01\"\nmae_lin = mean_absolute_error(y[~tr], LinearRegression().fit(X[tr], y[tr]).predict(X[~tr]))",
+   "check": "from sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import mean_absolute_error as _mae\nX0 = prep(s); off0 = ((X0['weekend'] + X0['holiday']) > 0).astype(int)\nX0['bc_off'] = X0['format_бизнес-центр'] * off0; X0['mall_off'] = X0['format_ТЦ'] * off0; X0['street_rain'] = X0['format_улица'] * X0['rain']\nm = round(_mae(y[~tr], _LR().fit(X0[tr], y[tr]).predict(X0[~tr])), 2)\nassert close(need('mae_inter'), m, 0.011), f'mae_inter = {need(\"mae_inter\")}, а нужно {m}. Проверьте три новых признака.'\nassert close(need('gain'), round(mae_lin - m, 2), 0.02), f'gain = {need(\"gain\")}.'",
+   "starter": "# уже есть: s, X, y, tr и mae_lin — ошибка простой линейной модели\noff = ((X[\"weekend\"] + X[\"holiday\"]) > 0).astype(int)     # выходной или праздник",
+   "solution": "off = ((X[\"weekend\"] + X[\"holiday\"]) > 0).astype(int)\nX2 = X.copy()\nX2[\"bc_off\"] = X2[\"format_бизнес-центр\"] * off\nX2[\"mall_off\"] = X2[\"format_ТЦ\"] * off\nX2[\"street_rain\"] = X2[\"format_улица\"] * X2[\"rain\"]\nlin2 = LinearRegression().fit(X2[tr], y[tr])\nmae_inter = round(mean_absolute_error(y[~tr], lin2.predict(X2[~tr])), 2)\ngain = round(mae_lin - mae_inter, 2)",
+   "hints": [
+    "Взаимодействие — произведение двух признаков: оно равно 1, только когда оба условия выполнены (бизнес-центр и выходной).",
+    "`X2 = X.copy()`, `X2[\"bc_off\"] = X2[\"format_бизнес-центр\"] * off` и так далее."
+   ],
+   "explain": "Три признака, придуманные по результатам осмотра, вдвое уменьшили ошибку — до 6 тыс. ₽. Это мощный приём, но он требует знать, какие взаимодействия искать. Посмотрим, найдёт ли их бустинг сам."
+  },
+  "ch10/05-project/boosting": {
+   "chapter": "ch10",
+   "lesson": "05-project",
+   "lesson_title": "Проект: прогноз дневной выручки",
+   "id": "boosting",
+   "title": "Шаг 5. Бустинг и лес",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "daily_sales.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"]).sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\ndef prep(s):\n    s = s.copy()\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - s[\"date\"].min()).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    return pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\nX = prep(s)\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-07-01\"\n_off = ((X[\"weekend\"] + X[\"holiday\"]) > 0).astype(int)\n_X2 = X.copy(); _X2[\"bc_off\"] = _X2[\"format_бизнес-центр\"] * _off; _X2[\"mall_off\"] = _X2[\"format_ТЦ\"] * _off; _X2[\"street_rain\"] = _X2[\"format_улица\"] * _X2[\"rain\"]\nmae_inter = mean_absolute_error(y[~tr], LinearRegression().fit(_X2[tr], y[tr]).predict(_X2[~tr]))",
+   "check": "from sklearn.ensemble import HistGradientBoostingRegressor as _H, RandomForestRegressor as _RF\nfrom sklearn.metrics import mean_absolute_error as _mae\nh = round(_mae(y[~tr], _H(random_state=0).fit(X[tr], y[tr]).predict(X[~tr])), 2)\nr = round(_mae(y[~tr], _RF(n_estimators=100, min_samples_leaf=3, random_state=0).fit(X[tr], y[tr]).predict(X[~tr])), 2)\nassert close(need('mae_hgb'), h, 0.011), f'mae_hgb = {need(\"mae_hgb\")}, а нужно {h}.'\nassert close(need('mae_rf'), r, 0.011), f'mae_rf = {need(\"mae_rf\")}, а нужно {r}.'\nres = {'бустинг': h, 'лес': r, 'линейная с взаимодействиями': round(mae_inter, 2)}\nassert need('best_model') == min(res, key=res.get), f'best_model = {need(\"best_model\")!r}.'",
+   "starter": "# уже есть: s, X, y, tr и mae_inter — ошибка линейной модели с взаимодействиями\nfrom sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor",
+   "solution": "from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nhgb = HistGradientBoostingRegressor(random_state=0).fit(X[tr], y[tr])\nrf = RandomForestRegressor(n_estimators=100, min_samples_leaf=3, random_state=0).fit(X[tr], y[tr])\nmae_hgb = round(mean_absolute_error(y[~tr], hgb.predict(X[~tr])), 2)\nmae_rf = round(mean_absolute_error(y[~tr], rf.predict(X[~tr])), 2)\nres = {\"бустинг\": mae_hgb, \"лес\": mae_rf, \"линейная с взаимодействиями\": round(mae_inter, 2)}\nbest_model = min(res, key=res.get)",
+   "hints": [
+    "Обучение на `X[tr], y[tr]`, прогноз на `X[~tr]`.",
+    "Обе модели — с `random_state=0`; MAE — `mean_absolute_error(y[~tr], pred)`."
+   ],
+   "explain": "Бустинг без всякой ручной работы — около 5.3 тыс. ₽, лучше линейной модели с подсказками. Деревья сами нашли «бизнес-центр × выходной» и всё остальное. Лес почти так же хорош: на этих данных разница между ними невелика."
+  },
+  "ch10/05-project/tune": {
+   "chapter": "ch10",
+   "lesson": "05-project",
+   "lesson_title": "Проект: прогноз дневной выручки",
+   "id": "tune",
+   "title": "Шаг 6. Подбор на валидации",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "daily_sales.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"]).sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\ndef prep(s):\n    s = s.copy()\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - s[\"date\"].min()).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    return pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\nX = prep(s)\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-07-01\"",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nfrom sklearn.metrics import mean_absolute_error as _mae\nf0 = s['date'] < '2025-04-01'; v0 = tr & ~f0; rows = []\nfor lr in [0.05, 0.1]:\n    for md in [3, 6, None]:\n        m = _H(learning_rate=lr, max_depth=md, max_iter=500, early_stopping=False, random_state=0).fit(X[f0], y[f0])\n        cv = [_mae(y[v0], p) for p in m.staged_predict(X[v0])]; k = int(_np.argmin(cv)) + 1\n        rows.append((lr, md, k, cv[k - 1]))\ng = need('grid', _pd.DataFrame)\nassert len(g) == 6, f'В grid {len(g)} строк, нужно 6.'\nfor (lr, md, k, v), (_, row) in zip(rows, g.iterrows()):\n    assert row['n_iter'] == k and close(row['val_mae'], v, 0.01), f'lr={lr}, depth={md}: n_iter, val_mae = {row[\"n_iter\"]}, {row[\"val_mae\"]}, а нужно {k}, {round(v, 3)}.'\nb = min(rows, key=lambda r: r[3])\nfm = _H(learning_rate=b[0], max_depth=b[1], max_iter=b[2], early_stopping=False, random_state=0).fit(X[tr], y[tr])\nt = round(_mae(y[~tr], fm.predict(X[~tr])), 2)\nassert close(need('test_mae'), t, 0.011), f'test_mae = {need(\"test_mae\")}, а нужно {t}. Финальная модель — с лучшими параметрами, на всём обучении.'",
+   "starter": "# уже есть: s, X, y, tr\nimport numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nfit = s[\"date\"] < \"2025-04-01\"\nval = tr & ~fit",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nfit = s[\"date\"] < \"2025-04-01\"\nval = tr & ~fit\n\nrows = []\nfor lr in [0.05, 0.1]:\n    for depth in [3, 6, None]:\n        m = HistGradientBoostingRegressor(learning_rate=lr, max_depth=depth, max_iter=500,\n                                          early_stopping=False, random_state=0).fit(X[fit], y[fit])\n        curve = [mean_absolute_error(y[val], p) for p in m.staged_predict(X[val])]\n        k = int(np.argmin(curve)) + 1\n        rows.append({\"lr\": lr, \"depth\": depth, \"n_iter\": k, \"val_mae\": curve[k - 1]})\ngrid = pd.DataFrame(rows)\nbest = grid.loc[grid[\"val_mae\"].idxmin()]\ndepth = None if pd.isna(best[\"depth\"]) else int(best[\"depth\"])\nfinal = HistGradientBoostingRegressor(learning_rate=best[\"lr\"], max_depth=depth, max_iter=int(best[\"n_iter\"]),\n                                      early_stopping=False, random_state=0).fit(X[tr], y[tr])\ntest_mae = round(mean_absolute_error(y[~tr], final.predict(X[~tr])), 2)",
+   "hints": [
+    "`max_depth=None` — без ограничения глубины (ограничивает число листьев). Строки grid собирайте словарями в список в порядке: lr 0.05 (depth 3, 6, None), потом lr 0.1.",
+    "Лучшая строка: `grid.loc[grid[\"val_mae\"].idxmin()]`. Числа из неё приходят как `float`: `max_iter` переведите через `int(...)`, а глубину — как сказано в условии, через `pd.isna(...)`."
+   ],
+   "explain": "Подбор немного помог (около 5.2 против 5.3 по умолчанию). Варианты в сетке отличаются на валидации в пределах нескольких десятых — бустинг не слишком капризен, если остановить его вовремя."
+  },
+  "ch10/05-project/trend": {
+   "chapter": "ch10",
+   "lesson": "05-project",
+   "lesson_title": "Проект: прогноз дневной выручки",
+   "id": "trend",
+   "title": "Шаг 7. Ловушка тренда",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "daily_sales.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"]).sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\ndef prep(s):\n    s = s.copy()\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - s[\"date\"].min()).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    return pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\nX = prep(s)\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-07-01\"\ns[\"day_n\"] = X[\"day_n\"]",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nfrom sklearn.metrics import mean_absolute_error as _mae\np0 = _H(random_state=0).fit(X[tr], y[tr]).predict(X[~tr])\ntl = _LR().fit(s.loc[tr, ['day_n']], _np.log(y[tr])); trd = _np.exp(tl.predict(s[['day_n']]))\nXn = X.drop(columns=['day_n'])\np1 = _H(random_state=0).fit(Xn[tr], (y / trd)[tr]).predict(Xn[~tr]) * trd[~tr]\nbm = (y[~tr] - p0).groupby(s.loc[~tr, 'date'].dt.month).mean().round(2)\ngb = need('bias_by_month', _pd.Series)\nassert sorted(int(k) for k in gb.index) == list(range(7, 13)), f'Индекс bias_by_month — номера месяцев теста 7…12, а сейчас {[int(k) for k in gb.index]}.'\nassert all(close(gb[k], bm[k], 0.011) for k in bm.index), f'bias_by_month: ожидалось {({int(k): float(v) for k, v in bm.items()})}.'\nassert close(need('bias_before'), round((y[~tr] - p0).mean(), 2), 0.011), f'bias_before = {need(\"bias_before\")}.'\nassert close(need('bias_after'), round((y[~tr] - p1).mean(), 2), 0.011), f'bias_after = {need(\"bias_after\")}.'\nassert close(need('mae_after'), round(_mae(y[~tr], p1), 2), 0.011), f'mae_after = {need(\"mae_after\")}.'\nassert close(need('growth'), round(_np.exp(tl.coef_[0] * 365), 3), 0.0011), f'growth = {need(\"growth\")}.'",
+   "starter": "# уже есть: s (со столбцом day_n), X, y, tr\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error",
+   "solution": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\np_before = HistGradientBoostingRegressor(random_state=0).fit(X[tr], y[tr]).predict(X[~tr])\nbias_by_month = (y[~tr] - p_before).groupby(s.loc[~tr, \"date\"].dt.month).mean().round(2)\nbias_before = round((y[~tr] - p_before).mean(), 2)\nprint(bias_by_month)\n\ntl = LinearRegression().fit(s.loc[tr, [\"day_n\"]], np.log(y[tr]))\ntrend = np.exp(tl.predict(s[[\"day_n\"]]))\ngrowth = round(np.exp(tl.coef_[0] * 365), 3)\n\nXn = X.drop(columns=[\"day_n\"])\nm = HistGradientBoostingRegressor(random_state=0).fit(Xn[tr], (y / trend)[tr])\np_after = m.predict(Xn[~tr]) * trend[~tr]\nbias_after = round((y[~tr] - p_after).mean(), 2)\nmae_after = round(mean_absolute_error(y[~tr], p_after), 2)",
+   "hints": [
+    "Ошибки по месяцам: `(y[~tr] - p_before).groupby(s.loc[~tr, \"date\"].dt.month).mean().round(2)`. Деревья не продолжают тренд: за пределами обучения прогноз «застывает» на уровне последних листьев. Поэтому тренд снимают отдельно линейной моделью, а бустинг учат на остатке.",
+    "Тренд: `tl = LinearRegression().fit(s.loc[tr, [\"day_n\"]], np.log(y[tr]))`. Коэффициент — `tl.coef_[0]`.",
+    "`trend` — массив numpy, поэтому его часть для теста — `trend[~tr.values]` или просто `trend[~tr]`."
+   ],
+   "explain": "Тренд около +9 % в год. Без него бустинг занижал прогноз, и `bias_by_month` показывает где: в июле–ноябре средняя ошибка в пределах ±1.5 тыс. ₽, а в декабре — +5.27 тыс. ₽. Декабрь — пиковый месяц, где ошибка в процентах даёт больше всего рублей. После снятия тренда ошибка падает примерно до 5 тыс. ₽, а систематическое занижение сменилось небольшим завышением: тренд оценён по полутора годам и немного «перелетает». На практике тренд пересчитывают каждый месяц."
+  },
+  "ch10/05-project/compare": {
+   "chapter": "ch10",
+   "lesson": "05-project",
+   "lesson_title": "Проект: прогноз дневной выручки",
+   "id": "compare",
+   "title": "Шаг 8. Сравнение: качество и время",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "daily_sales.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"]).sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\ndef prep(s):\n    s = s.copy()\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - s[\"date\"].min()).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    return pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\nX = prep(s)\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-07-01\"",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB, HistGradientBoostingRegressor as _H, RandomForestRegressor as _RF\nfrom sklearn.metrics import mean_absolute_error as _mae, mean_squared_error as _mse\nref = {}\nfor k, m in {'линейная': _LR(), 'лес': _RF(n_estimators=100, min_samples_leaf=3, random_state=0),\n             'GradientBoosting': _GB(random_state=0), 'HistGradientBoosting': _H(random_state=0)}.items():\n    p = m.fit(X[tr], y[tr]).predict(X[~tr])\n    ref[k] = (round(float(_np.sqrt(_mse(y[~tr], p))), 2), round(float(_mae(y[~tr], p)), 2))\nt = need('table', _pd.DataFrame)\nassert set(t.index) == set(ref), f'Индекс table — названия моделей {sorted(ref)}, а сейчас {list(t.index)}.'\nassert {'rmse', 'mae', 'fit_s', 'predict_ms'} <= set(t.columns), f'Нужны столбцы rmse, mae, fit_s, predict_ms, а сейчас {list(t.columns)}.'\nfor k, (r, a) in ref.items():\n    assert close(t.loc[k, 'rmse'], r, 0.011), f'{k}: rmse = {t.loc[k, \"rmse\"]}, а нужно {r}. Обучение на tr, ошибка на ~tr.'\n    assert close(t.loc[k, 'mae'], a, 0.011), f'{k}: mae = {t.loc[k, \"mae\"]}, а нужно {a}.'\nassert (t['fit_s'] > 0).all() and (t['fit_s'] < 600).all(), f'fit_s = {t[\"fit_s\"].round(3).tolist()}: время обучения в секундах.'\nassert (t['predict_ms'] > 0).all() and t['predict_ms'].max() > 1, f'predict_ms = {t[\"predict_ms\"].round(4).tolist()}: похоже на секунды, умножьте на 1000.'\nassert list(t.index) == list(t.sort_values('rmse').index), 'Строки table должны идти по возрастанию rmse.'\nassert need('best') == t['rmse'].idxmin(), f'best = {need(\"best\")!r}.'\ng = round(float(t.loc['линейная', 'rmse'] - t['rmse'].min()), 2)\nassert close(need('gain_vs_linear'), g, 0.011), f'gain_vs_linear = {need(\"gain_vs_linear\")}, а по таблице {g}: RMSE линейной минус RMSE лучшей.'\nassert need('nightly_ok') == bool((t['fit_s'] < 60).all()), f'nightly_ok = {need(\"nightly_ok\")}: все ли fit_s меньше 60 секунд по вашей таблице?'",
+   "starter": "# уже есть: s, X, y, tr\nimport time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error\n\nmodels = {\n    \"линейная\": LinearRegression(),\n    \"лес\": RandomForestRegressor(n_estimators=100, min_samples_leaf=3, random_state=0),\n    \"GradientBoosting\": GradientBoostingRegressor(random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(random_state=0),\n}",
+   "solution": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error\n\nmodels = {\n    \"линейная\": LinearRegression(),\n    \"лес\": RandomForestRegressor(n_estimators=100, min_samples_leaf=3, random_state=0),\n    \"GradientBoosting\": GradientBoostingRegressor(random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(random_state=0),\n}\n\nrows = []\nfor name, model in models.items():\n    t0 = time.perf_counter()\n    model.fit(X[tr], y[tr])\n    fit_s = time.perf_counter() - t0\n\n    t0 = time.perf_counter()\n    pred = model.predict(X[~tr])\n    predict_ms = (time.perf_counter() - t0) * 1000\n\n    rows.append({\"model\": name,\n                 \"rmse\": round(float(np.sqrt(mean_squared_error(y[~tr], pred))), 2),\n                 \"mae\": round(float(mean_absolute_error(y[~tr], pred)), 2),\n                 \"fit_s\": fit_s, \"predict_ms\": predict_ms})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")\nbest = table.index[0]\ngain_vs_linear = round(float(table.loc[\"линейная\", \"rmse\"] - table[\"rmse\"].min()), 2)\nnightly_ok = bool((table[\"fit_s\"] < 60).all())\nprint(table.round(3))\nprint(best, gain_vs_linear, nightly_ok)",
+   "hints": [
+    "Один цикл по `models.items()`: засечь время, обучить, остановить секундомер; засечь, спрогнозировать, остановить. Строку таблицы — словарём в список, в конце `pd.DataFrame(rows).set_index(\"model\")`.",
+    "`fit_s = time.perf_counter() - t0` после `model.fit(X[tr], y[tr])`, `predict_ms = (time.perf_counter() - t0) * 1000` после `model.predict(X[~tr])`. RMSE — `np.sqrt(mean_squared_error(y[~tr], pred))`.",
+    "`table = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")`, `best = table.index[0]`, `gain_vs_linear = round(float(table.loc[\"линейная\", \"rmse\"] - table[\"rmse\"].min()), 2)`, `nightly_ok = bool((table[\"fit_s\"] < 60).all())`."
+   ],
+   "explain": "Лучший по RMSE — `HistGradientBoosting` (7.15), рядом лес (7.30), классический `GradientBoosting` со 100 неглубокими деревьями по умолчанию заметно хуже (8.61), линейная модель — вдвое хуже лучшей (15.91). Все модели обучаются за секунды, так что ночное переобучение не проблема ни для одной: на этих данных выбор делается по качеству. Время станет аргументом, когда кофеен будут сотни, а прогноз понадобится по часам. Тогда пригодится та же таблица, только с CatBoost и LightGBM. В нашем блокноте CatBoost с ранней остановкой по апрелю–июню дал RMSE 6.55 против 7.27 у HGB из того же блокнота. Там HGB тоже с ранней остановкой по апрелю–июню и с нативными категориями, поэтому его число не 7.15, как в вашей таблице. Подробно — в уроке «CatBoost и LightGBM в своём Jupyter» после проекта. Если бы вы замеряли время вместе с подсчётом метрик или печатью, `fit_s` включал бы лишнее. Секундомер ставят вплотную вокруг `fit` и `predict`.\n\n## Итог для операционного директора\n\n> **Точность.** Прогноз выручки кофейни на день ошибается в среднем примерно на 5 тыс. ₽ при средней дневной выручке во втором полугодии около 66 тыс. — меньше 8 %. Привычный ориентир «как неделю назад» ошибается вдвое сильнее (около 10 тыс. ₽).\n>\n> **Что важно для прогноза.** Формат кофейни определяет, как она реагирует на выходные и погоду: бизнес-центр в выходные теряет две трети выручки, торговый центр выигрывает треть, уличная кофейня проседает в дождь. Модель учитывает это сама.\n>\n> **Стоимость в работе.** Модель обучается на двух годах истории за секунды, поэтому её можно переобучать каждую ночь. Промышленная библиотека CatBoost в нашей проверке снизила ошибку ещё примерно на 0.3 тыс. ₽ в день — её стоит взять при переносе прогноза в рабочую систему.\n>\n> **Ограничения.** Модель учится на прошлом: рост сети, новые форматы или резкие изменения (ремонт рядом, новый конкурент) нужно учитывать отдельно. Тренд пересчитываем ежемесячно, качество проверяем по фактам каждую неделю (мониторинг из главы 8).\n>\n> **Рекомендация.** Перейти на прогноз для планирования смен и закупок, начав с двух кофеен на месяц и сравнив расходы на смены и списания с остальными."
+  },
+  "ch10/06-libraries/speed-table": {
+   "chapter": "ch10",
+   "lesson": "06-libraries",
+   "lesson_title": "CatBoost и LightGBM в своём Jupyter",
+   "id": "speed-table",
+   "title": "Таблица «качество и время»",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB, HistGradientBoostingRegressor as _H, RandomForestRegressor as _RF\nfrom sklearn.metrics import mean_squared_error as _mse\nref = {}\nfor k, m in {'GradientBoosting': _GB(n_estimators=200, max_depth=3, random_state=0), 'HistGradientBoosting': _H(max_iter=200, max_depth=3, random_state=0),\n             'RandomForest': _RF(n_estimators=100, min_samples_leaf=5, random_state=0)}.items():\n    ref[k] = round(float(_np.sqrt(_mse(y_te, m.fit(X_tr, y_tr).predict(X_te)))), 3)\nt = need('table', _pd.DataFrame)\nassert set(t.index) == set(ref), f'Индекс table — названия моделей {sorted(ref)}, а сейчас {list(t.index)}.'\nassert {'rmse', 'fit_s', 'predict_ms'} <= set(t.columns), f'Нужны столбцы rmse, fit_s, predict_ms, а сейчас {list(t.columns)}.'\nfor k in ref:\n    assert close(t.loc[k, 'rmse'], ref[k], 0.0011), f'{k}: rmse = {t.loc[k, \"rmse\"]}, а нужно {ref[k]}. RMSE — корень из mean_squared_error на тесте.'\nassert (t['fit_s'] > 0).all() and (t['fit_s'] < 600).all(), f'fit_s = {t[\"fit_s\"].tolist()}: время обучения в секундах — разность двух показаний perf_counter().'\nassert (t['predict_ms'] > 0).all(), 'predict_ms должно быть положительным.'\nassert t['predict_ms'].max() > 1, f'predict_ms = {t[\"predict_ms\"].round(4).tolist()}: похоже на секунды. Время прогноза в миллисекундах — разность perf_counter(), умноженная на 1000.'\nassert list(t.index) == list(t.sort_values('rmse').index), 'Строки table должны идти по возрастанию rmse: .sort_values(\"rmse\").'\nassert need('best') == t['rmse'].idxmin(), f'best = {need(\"best\")!r}, а меньше всего ошибка у {t[\"rmse\"].idxmin()!r}.'\nassert need('fastest_fit') == t['fit_s'].idxmin(), f'fastest_fit = {need(\"fastest_fit\")!r}, а по вашей же таблице быстрее всех обучилась {t[\"fit_s\"].idxmin()!r}.'",
+   "starter": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_squared_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmodels = {\n    \"GradientBoosting\": GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(max_iter=200, max_depth=3, random_state=0),\n    \"RandomForest\": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=0),\n}",
+   "solution": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_squared_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmodels = {\n    \"GradientBoosting\": GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(max_iter=200, max_depth=3, random_state=0),\n    \"RandomForest\": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=0),\n}\n\nrows = []\nfor name, model in models.items():\n    t0 = time.perf_counter()\n    model.fit(X_tr, y_tr)\n    fit_s = time.perf_counter() - t0\n\n    t0 = time.perf_counter()\n    pred = model.predict(X_te)\n    predict_ms = (time.perf_counter() - t0) * 1000\n\n    rmse = np.sqrt(mean_squared_error(y_te, pred))\n    rows.append({\"model\": name, \"rmse\": round(float(rmse), 3), \"fit_s\": fit_s, \"predict_ms\": predict_ms})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")\nbest = table.index[0]\nfastest_fit = table[\"fit_s\"].idxmin()\nprint(table.round(3))\nprint(\"лучший:\", best, \"| быстрее всех обучился:\", fastest_fit)",
+   "hints": [
+    "В цикле по `models.items()` для каждой модели: засечь время, обучить, остановить секундомер; затем так же с прогнозом. Строки таблицы удобно копить словарями в списке.",
+    "`t0 = time.perf_counter(); model.fit(X_tr, y_tr); fit_s = time.perf_counter() - t0`. Для прогноза — то же, умноженное на 1000. RMSE — `np.sqrt(mean_squared_error(y_te, pred))`.",
+    "```python\nrows = []\nfor name, model in models.items():\n    ...\n    rows.append({\"model\": name, \"rmse\": round(float(rmse), 3), \"fit_s\": fit_s, \"predict_ms\": predict_ms})\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")\nbest = table.index[0]\nfastest_fit = table[\"fit_s\"].idxmin()\n```"
+   ],
+   "explain": "Лучшая ошибка у классического `GradientBoosting` (RMSE 4.907), чуть хуже `HistGradientBoosting` (5.053) с теми же 200 деревьями глубины 3, у леса — 5.811. Время — ваше собственное, поэтому проверка сравнивает `fastest_fit` с вашей же таблицей. В браузере у нас быстрее всех обучился `HistGradientBoosting`, но на 1400 строках разница — секунда-другая. Его преимущество растёт с размером данных: он ищет пороги только между 255 интервалами каждого признака, а не перебирает все значения. Если в таблицу попали секунды вместо миллисекунд для прогноза, числа будут вида 0.03 вместо 30 — это видно сразу, поэтому единицы измерения пишут прямо в названии столбца."
+  }
+ }
+}
