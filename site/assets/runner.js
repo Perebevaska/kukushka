@@ -4,12 +4,21 @@
 // pandas подключает openpyxl лениво, внутри read_excel/to_excel — сами import-а в коде нет
 const withHidden = (code) => /read_excel|to_excel|ExcelFile|ExcelWriter/.test(code || '') ? code + '\nimport openpyxl' : code;
 let py = null;
+// openpyxl нет в официальной сборке Pyodide на CDN (на GitHub Pages): ставим из assets/wheels/
+let wheelsBase = '';
+async function ensureExcel(code) {
+  if (!/read_excel|to_excel|ExcelFile|ExcelWriter|openpyxl/.test(code || '')) return;
+  try { py.runPython('import openpyxl'); return; } catch (e) { /* не установлен — ставим */ }
+  await py.loadPackage([wheelsBase + 'et_xmlfile-2.0.0-py3-none-any.whl', wheelsBase + 'openpyxl-3.1.5-py2.py3-none-any.whl'],
+    { messageCallback() {}, errorCallback() {} });
+}
 let ready = null;
 let dataBase = '';
 const loadedFiles = new Set();
 
 async function init(indexURL, harnessURL, dataURL) {
   dataBase = dataURL;
+  wheelsBase = new URL('wheels/', harnessURL).href;
   const mod = await import(indexURL + 'pyodide.mjs');
   py = await mod.loadPyodide({ indexURL, env: { MPLBACKEND: 'agg', HOME: '/home/pyodide' } });
   const src = await (await fetch(harnessURL)).text();
@@ -40,6 +49,7 @@ self.onmessage = async (e) => {
     try {
       await ready;
       await py.loadPackagesFromImports(withHidden(m.code), { messageCallback() {}, errorCallback() {} });
+      await ensureExcel(m.code);
       py.runPython(m.code);
     } catch (err) { /* не страшно: загрузится при первом запуске */ }
     return;
@@ -49,6 +59,7 @@ self.onmessage = async (e) => {
       await ready;
       await putFiles(m.files);
       await py.loadPackagesFromImports(withHidden(m.code), { messageCallback() {}, errorCallback() {} });
+      await ensureExcel(m.code);
       const r = py.pyimport('_dsc_harness').trace(m.code);
       const result = r.toJs({ dict_converter: Object.fromEntries });
       r.destroy();
@@ -65,6 +76,7 @@ self.onmessage = async (e) => {
       const all = [m.setup || '', m.code, m.check || ''].join('\n');
       self.postMessage({ type: 'status', id: m.id, text: 'Загружаю библиотеки…' });
       await py.loadPackagesFromImports(withHidden(all), { messageCallback() {}, errorCallback() {} });
+      await ensureExcel(all);
       self.postMessage({ type: 'status', id: m.id, text: 'Выполняю…' });
       const fn = py.pyimport('_dsc_harness').run;
       const r = fn(m.code, m.check ?? null, m.setup ?? null, !!m.display);
