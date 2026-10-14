@@ -21,7 +21,7 @@ recap:
 Зачем: в аналитическом блокноте десятки ячеек. Добавить ячейку, превратить её в текст, удалить неудачную — мышью это три клика и поиск кнопки, с клавиатуры — одна клавиша.
 
 ::: tip Аналогия
-Режимы Jupyter — как в Excel. Когда ячейка Excel просто выделена, <kbd>Delete</kbd> стирает её целиком, а стрелки ходят по таблице. Когда вы нажали <kbd>F2</kbd> и редактируете содержимое, те же клавиши работают с текстом внутри. В Jupyter «выделена» — это **режим команд**, «редактирую» — **режим правки**. Где аналогия хромает: в Jupyter в режиме команд обычные буквы — это команды, поэтому <kbd>B</kbd> добавит ячейку, а не напечатает «b».
+Режимы Jupyter — как в Excel. Когда ячейка Excel просто выделена, <kbd>Delete</kbd> стирает её целиком, а стрелки ходят по таблице. Когда вы нажали <kbd>F2</kbd> и редактируете содержимое, те же клавиши работают с текстом внутри. В Jupyter «выделена» — это **режим команд**, «редактирую» — **режим правки**. Отличие в том, что в режиме команд Jupyter обычные буквы — это команды: <kbd>B</kbd> добавит ячейку, а не напечатает «b».
 :::
 
 | режим | как войти | как выглядит | что делают буквы |
@@ -118,7 +118,7 @@ print(cur, len(cells))
 4. Откройте оглавление в левой панели и перейдите по нему к любому разделу.
 :::
 
-{{practice: p-keys, keys-sim}}
+{{practice: p-keys}}
 
 ## Показать таблицу: display, print и настройки pandas
 
@@ -212,7 +212,7 @@ print(shown, s.iloc[0])
 3. Сравните с `print(df.head(3))` — та же таблица текстом.
 :::
 
-{{practice: float-fmt}}
+{{practice: float-fmt, rows-ctx}}
 
 ## Magic-команды: %time, %timeit, %pip, autoreload
 
@@ -231,7 +231,7 @@ print(shown, s.iloc[0])
 
 Сравним два способа посчитать цену одной чашки. Первый — построчно через `apply`, его мы ещё не встречали:
 
-- `df.apply(f, axis=1)` вызывает функцию `f` **для каждой строки** таблицы по очереди — как цикл `for` по строкам. `axis=1` значит «по строкам»; без него (`axis=0`) функция получала бы столбцы.
+- `df.apply(f, axis=1)` вызывает функцию `f` **для каждой строки** таблицы по очереди — как цикл `for` по строкам. `axis=1` здесь значит «функция получает строку целиком» — то же направление «вдоль строки», что у `sum(axis=1)` в уроке «Сводные таблицы: широкий и длинный формат»; без него (`axis=0`) функция получала бы столбцы.
 - `lambda r: r["amount"] / r["qty"]` — короткая функция без имени: получает строку `r` и делит её сумму на количество чашек.
 
 Игрушечный пример на трёх строках — результат тот же, что у деления столбцов:
@@ -579,6 +579,53 @@ with pd.option_context("display.float_format", "{:.1f}".format):
 ### explain
 Лучший средний чек — у PRM-1: на экране 355.3, а в `avg` по-прежнему 355.2729…, и все дальнейшие расчёты идут по точному числу. Если бы вы написали `avg = avg.round(1)`, проверка заметила бы потерю точности, а при `pd.set_option` формат остался бы включённым для всего блокнота. Блок `with` хорош тем, что сам возвращает настройку на место — даже если внутри блока случится ошибка.
 
+## task: rows-ctx | Шесть строк, все столбцы | base
+
+Напечатайте таблицу заказов `df` так, чтобы были видны **все девять столбцов**, но только 6 строк (первые и последние три). Обе настройки — `display.max_rows` и `display.max_columns` — задайте в **одном** `pd.option_context`: он принимает несколько пар «имя, значение» подряд. После блока настройки должны вернуться к прежним значениям.
+
+### starter
+```python
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+
+```
+
+### check
+```python
+import pandas as _pd
+_mr = _pd.get_option('display.max_rows')
+if _mr == 6:
+    _pd.set_option('display.max_rows', 60)        # чтобы настройка не утекла в другие задачи
+assert _mr != 6, 'После вашего кода display.max_rows осталась равной 6. Используйте with pd.option_context(...), а не set_option.'
+assert printed('[2089 rows x 9 columns]'), 'В выводе нет таблицы заказов: напечатайте df внутри блока with.'
+for _c in ['drink', 'size', 'qty', 'channel']:
+    assert printed(_c), f'В выводе не видно столбца {_c}: столбцы обрезаны. Нужно display.max_columns = None.'
+assert printed('O-00003') and printed('O-02087'), 'Нужны первые и последние строки таблицы.'
+assert not printed('O-00004') and not printed('O-02086'), 'Строк в выводе больше шести. Нужно display.max_rows = 6.'
+assert calls('option_context') >= 1, 'Нужен pd.option_context.'
+```
+
+### hint
+Пары идут подряд в одном вызове: `pd.option_context("display.max_rows", 6, "display.max_columns", None)`. `None` у `max_columns` значит «без ограничения».
+
+### hint
+```python
+with pd.option_context("display.max_rows", ..., "display.max_columns", ...):
+    print(df)
+```
+
+### solution
+```python
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+
+with pd.option_context("display.max_rows", 6, "display.max_columns", None):
+    print(df)
+```
+
+### explain
+Вместо многоточия посередине строки видны все столбцы, от `order_id` до `channel`. Если таблица не помещается по ширине, pandas переносит последние столбцы ниже — со значком `\` в конце первой части. Строк — шесть, а внизу подпись `[2089 rows x 9 columns]`: обрезан только показ, данные целы. Когда блок `with` закончится, обе настройки вернутся к тем значениям, что были до него.
+
 ## task: timeit-read | Кто быстрее: читаем %timeit | base
 
 Перед вами настоящий вывод `%timeit` для двух способов посчитать цену чашки. Напишите `to_us(text)` — функцию, которая достаёт из такой строки **среднее** время и переводит его в микросекунды (единицы бывают `ns`, `µs`, `μs`, `ms`, `s`). Посчитайте `speedup` — во сколько раз второй способ быстрее первого, округлив до целого.
@@ -735,94 +782,3 @@ by_shop
 ### explain
 Обе ошибки — `KeyError`, но сообщения разные: `groupby` пишет просто `'shop'`, а `agg` — `Label(s) ['amout'] do not exist`. Python останавливается на первой ошибке, поэтому вторая видна только после исправления первой — это нормально, чините по одной. Самый быстрый способ проверить имена — `df.columns.tolist()`: опечатки, лишние пробелы (`"amount "`) и регистр (`"Amount"`) видны сразу.
 
-## task: keys-sim | Режим команд в миниатюре | star
-
-Напишите `press(cells, cur, keys)` — упрощённую модель режима команд. `cells` — список ячеек `[тип, текст]`, `cur` — номер текущей ячейки, `keys` — список нажатий. Функция возвращает пару `(cells, cur)` после всех нажатий:
-
-- `"A"` — новая `["code", ""]` на место текущей (текущая сдвигается вниз), `cur` не меняется;
-- `"B"` — новая `["code", ""]` сразу под текущей, `cur` переходит на неё;
-- `"M"` / `"Y"` — тип текущей ячейки становится `"markdown"` / `"code"`, текст сохраняется;
-- `"DD"` — удалить текущую ячейку и запомнить её вместе с номером. Если ячеек не осталось, появляется одна пустая `["code", ""]`. `cur` указывает на ячейку, вставшую на место удалённой, а если удалили последнюю — на новую последнюю;
-- `"Z"` — вернуть последнюю удалённую ячейку на её прежний номер и сделать текущей; если возвращать нечего — ничего не делать.
-
-### starter
-```python
-def press(cells, cur, keys):
-    cells = [list(c) for c in cells]      # работаем с копией
-    ...
-    return cells, cur
-
-nb = [["code", "import pandas as pd"], ["code", "df = pd.read_csv('orders_3m.csv')"]]
-press(nb, 1, ["B", "M"])
-```
-
-### check
-```python
-def _p(cells, cur, keys):
-    cells = [list(c) for c in cells]; trash = []
-    for k in keys:
-        if k == 'A': cells.insert(cur, ['code', ''])
-        elif k == 'B': cells.insert(cur + 1, ['code', '']); cur += 1
-        elif k == 'M': cells[cur][0] = 'markdown'
-        elif k == 'Y': cells[cur][0] = 'code'
-        elif k == 'DD':
-            trash.append((cur, cells.pop(cur)))
-            if not cells: cells.append(['code', ''])
-            cur = min(cur, len(cells) - 1)
-        elif k == 'Z' and trash:
-            i, c = trash.pop(); cells.insert(i, c); cur = i
-    return cells, cur
-f = need('press')
-nb = [['code', 'import pandas as pd'], ['code', "df = pd.read_csv('orders_3m.csv')"], ['markdown', '## Итоги']]
-cases = [(nb, 1, ['B', 'M']), (nb, 0, ['A', 'A']), (nb, 2, ['DD']), (nb, 0, ['DD', 'DD', 'Z']),
-         (nb, 1, ['DD', 'Z', 'Y']), ([['code', 'x = 1']], 0, ['DD']), (nb, 2, ['Y', 'DD', 'DD', 'Z', 'Z']),
-         (nb, 0, ['Z']), (nb, 2, ['B', 'DD'])]
-for cells, cur, keys in cases:
-    before = [list(c) for c in cells]
-    got = f(cells, cur, keys)
-    want = _p(cells, cur, keys)
-    assert got is not None and (list(map(list, got[0])), got[1]) == want, f'press(..., cur={cur}, keys={keys}) вернула {got}, а нужно {want}.'
-    assert cells == before, 'Функция изменила исходный список ячеек — работайте с копией.'
-```
-
-### hint
-Все действия — операции со списком: `insert`, `pop` и замена `cells[cur][0]`. Для `"Z"` нужна «корзина» — список пар `(номер, ячейка)`, куда `"DD"` кладёт удалённое.
-
-### hint
-После `"DD"`: если список опустел — добавьте пустую ячейку; затем `cur = min(cur, len(cells) - 1)` — так курсор не выйдет за конец.
-
-### hint
-`"Z"`: `if trash: i, cell = trash.pop(); cells.insert(i, cell); cur = i`. `trash.pop()` берёт последнюю удалённую — как настоящая отмена.
-
-### solution
-```python
-def press(cells, cur, keys):
-    cells = [list(c) for c in cells]      # работаем с копией
-    trash = []                            # удалённые ячейки: (номер, ячейка)
-    for k in keys:
-        if k == "A":
-            cells.insert(cur, ["code", ""])
-        elif k == "B":
-            cells.insert(cur + 1, ["code", ""])
-            cur += 1
-        elif k == "M":
-            cells[cur][0] = "markdown"
-        elif k == "Y":
-            cells[cur][0] = "code"
-        elif k == "DD":
-            trash.append((cur, cells.pop(cur)))
-            if not cells:
-                cells.append(["code", ""])
-            cur = min(cur, len(cells) - 1)
-        elif k == "Z" and trash:
-            i, cell = trash.pop()
-            cells.insert(i, cell)
-            cur = i
-    return cells, cur
-
-nb = [["code", "import pandas as pd"], ["code", "df = pd.read_csv('orders_3m.csv')"]]
-press(nb, 1, ["B", "M"])
-```
-
-### explain
-Модель показывает, почему клавиши ведут себя так, как ведут: <kbd>A</kbd> не двигает курсор, потому что новая ячейка встаёт на его место; <kbd>Z</kbd> — это стопка: две отмены подряд возвращают ячейки в обратном порядке удаления. Тонкое место — удаление последней ячейки: без `min(cur, len(cells) - 1)` курсор укажет за конец списка, и следующее <kbd>M</kbd> упадёт с `IndexError`. Вторая ловушка — изменить исходный список: строка `cells = [list(c) for c in cells]` копирует и список, и каждую ячейку внутри.

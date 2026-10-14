@@ -139,7 +139,7 @@
     "ROI для порога t: `profit(p > t) / (200 * (p > t).sum())`.",
     "Дополнительные гости: `extra = (p > 0.35) & (p <= 0.5)`; их вклад — та же функция `profit(extra)`."
    ],
-   "explain": "Финансист прав про среднее: при 0.5 каждый вложенный рубль приносит 1.49 ₽ прибыли, при 0.35 — 1.07 ₽. Но решение принимают по **предельной** отдаче: 59 дополнительных бонусов попали к 26 уходящим и добавили 3 800 ₽. Пока очередная группа гостей приносит больше, чем стоит, её стоит включать, даже если средний ROI падает. Средний ROI имеет смысл максимизировать, только когда бюджет ограничен, — об этом урок «Когда бюджет ограничен»."
+   "explain": "Финансист прав про среднее: при 0.5 каждый вложенный рубль приносит 1.49 ₽ прибыли, при 0.35 — 1.07 ₽. Но решение принимают по **предельной** отдаче: 59 дополнительных бонусов попали к 26 уходящим и добавили 3 800 ₽. Пока очередная группа гостей приносит больше, чем стоит, её стоит включать, даже если средний ROI падает. Средний ROI имеет смысл максимизировать, только когда бюджет ограничен, — об этом урок «Когда бюджет ограничен» (через урок)."
   },
   "ch08/01-value/best-threshold": {
    "chapter": "ch08",
@@ -185,7 +185,7 @@
     "Внешний цикл по удержанию, внутри — перебор порогов. Для каждого удержания своя выгода `gain = r * 2400 - 200`.",
     "Внутри: `profits = [gain * ((p > t) & (y_test == 1)).sum() - 200 * ((p > t) & (y_test == 0)).sum() for t in ts]`, лучший — `np.argmax(profits)`."
    ],
-   "explain": "При удержании 15 % лучший порог 0.45 и прибыль около 10 800 ₽, при 35 % — порог 0.35 и около 62 000 ₽. Прибыль меняется вшестеро, а порог гораздо меньше. Вывод для отчёта: модель полезна при любом из вариантов, но сколько она принесёт, решает эффект бонуса — его стоит измерить экспериментом."
+   "explain": "При удержании 15 % лучший порог 0.45 и прибыль около 10 800 ₽, при 35 % — порог 0.35 и около 62 100 ₽. Прибыль меняется вшестеро, а порог гораздо меньше.\n\nФормула C / V из таблицы «Допущения решают» дала бы 0.56 и 0.24, а перебор — 0.45 и 0.35. Ошибки здесь нет, причина — калибровка (раздел «Калибровка»). У гостей с прогнозом 0.24–0.35 лес обещает в среднем 0.29, а уходят 20 %: при 35 % удержания бонус им в среднем приносит 0.20 × 840 ≈ 165 ₽ при цене 200, поэтому порог 0.25 даёт меньше (59 800), чем 0.35 (62 120). У гостей 0.45–0.56, наоборот, прогноз 0.50, а уходят 65 % — модель занижает риск, и при 15 % удержания им бонус ещё окупается (0.65 × 360 ≈ 235 ₽). Формула — ориентир, а точный порог подбирают перебором. Вывод для отчёта: модель полезна при любом из вариантов, но сколько она принесёт, решает эффект бонуса — его стоит измерить экспериментом."
   },
   "ch08/01-value/calib": {
    "chapter": "ch08",
@@ -231,7 +231,53 @@
     "Ценность считайте по `X_test`: `value = 0.3 * X_test[\"avg_check\"] * X_test[\"visits_90d\"] * 2`. Пропуски `avg_check` уже заменены нулём.",
     "Выгода по получателям, которые реально ушли: `(0.25 * value[send & (y_test == 1)]).sum()`."
    ],
-   "explain": "Бонусов получается всего несколько десятков, а прибыль — в разы меньше, чем при «2400 ₽ каждому». Причина в данных: уходящие гости и так ходили редко, и почти у всех из них ценность по прошлым визитам ниже 2400 ₽. «Ценные» и «уходящие» — во многом разные люди. Какое допущение о ценности верное, решает бизнес, а не модель: прошлые визиты недооценивают гостя, который ходил редко, но остался бы надолго."
+   "explain": "Бонусов получается около трёх десятков (29), а прибыль — в разы меньше, чем при «2400 ₽ каждому». Причина в данных: уходящие гости и так ходили редко, и почти у всех из них ценность по прошлым визитам ниже 2400 ₽. «Ценные» и «уходящие» — во многом разные люди. Какое допущение о ценности верное, решает бизнес, а не модель: прошлые визиты недооценивают гостя, который ходил редко, но остался бы надолго."
+  },
+  "ch08/01a-pilot/pilot-delta": {
+   "chapter": "ch08",
+   "lesson": "01a-pilot",
+   "lesson_title": "Пилот и P&L: что обещала модель и что вышло",
+   "id": "pilot-delta",
+   "title": "Эффект бонуса на один бонус",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "bonus_pilot.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_b = _pd.read_csv('bonus_pilot.csv')\n_c = _b.groupby('group')['churned'].mean()\n_d = _c['контроль'] - _c['бонус']\nassert not close(need('delta'), round(-_d, 3)), f'delta = {need(\"delta\")} — знак наоборот: из доли в контроле вычитают долю в группе «бонус».'\nassert close(need('delta'), round(_d, 3)), f'delta = {need(\"delta\")}, а нужно {round(float(_d), 3)}. Доли ушедших — среднее churned по группам.'\nassert not close(need('online'), round((1 - _c['бонус']) * 2400 - 200), 1), f'online = {need(\"online\")} — так считают маржу всех оставшихся с бонусом. Доход даёт только разница с контролем, delta.'\nassert close(need('online'), round(_d * 2400 - 200), 1), f'online = {need(\"online\")}, а нужно {round(float(_d * 2400 - 200))}: delta × 2400 − 200.'",
+   "starter": "import pandas as pd\n\nb = pd.read_csv(\"bonus_pilot.csv\")",
+   "solution": "import pandas as pd\n\nb = pd.read_csv(\"bonus_pilot.csv\")\nchurn = b.groupby(\"group\")[\"churned\"].mean()\nd = churn[\"контроль\"] - churn[\"бонус\"]\ndelta = round(d, 3)\nonline = round(d * 2400 - 200)",
+   "hints": [
+    "Доли ушедших по группам — `b.groupby(\"group\")[\"churned\"].mean()`: получится Series с индексом `\"бонус\"` и `\"контроль\"`.",
+    "```python\nchurn = b.groupby(\"group\")[\"churned\"].mean()\nd = churn[\"контроль\"] - churn[\"бонус\"]\ndelta = round(d, 3)\nonline = round(...)\n```"
+   ],
+   "explain": "`delta` = 0.673 − 0.536 = 0.137: на каждые 1000 бонусов бонус удерживает 137 гостей, которые иначе ушли бы. Один бонус приносит 0.137 × 2400 − 200 ≈ 129 ₽. Это и есть онлайн-прибыль — с ней дальше сравнивают офлайн-обещание и собирают P&L."
+  },
+  "ch08/01a-pilot/pilot-extra": {
+   "chapter": "ch08",
+   "lesson": "01a-pilot",
+   "lesson_title": "Пилот и P&L: что обещала модель и что вышло",
+   "id": "pilot-extra",
+   "title": "Кого на самом деле удержал бонус",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "bonus_pilot.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_b = _pd.read_csv('bonus_pilot.csv')\n_bon, _con = _b[_b['group'] == 'бонус'], _b[_b['group'] == 'контроль']\n_sb = int((_bon['churned'] == 0).sum())\n_sa = round((_con['churned'] == 0).mean() * len(_bon))\nassert int(need('stayed_bonus')) == _sb, f'stayed_bonus = {need(\"stayed_bonus\")}, а нужно {_sb}: строки группы «бонус» с churned == 0.'\nassert int(need('stayed_anyway')) == _sa, f'stayed_anyway = {need(\"stayed_anyway\")}, а нужно {_sa}: доля оставшихся в контроле × {len(_bon)}.'\nassert int(need('extra')) == _sb - _sa, f'extra = {need(\"extra\")}, а нужно {_sb - _sa}.'",
+   "starter": "import pandas as pd\n\nb = pd.read_csv(\"bonus_pilot.csv\")",
+   "solution": "import pandas as pd\n\nb = pd.read_csv(\"bonus_pilot.csv\")\nbon = b[b[\"group\"] == \"бонус\"]\ncon = b[b[\"group\"] == \"контроль\"]\nstayed_bonus = int((bon[\"churned\"] == 0).sum())\nstayed_anyway = round((con[\"churned\"] == 0).mean() * len(bon))\nextra = stayed_bonus - stayed_anyway",
+   "hints": [
+    "Разделите таблицу на две: `bon = b[b[\"group\"] == \"бонус\"]` и `con = b[b[\"group\"] == \"контроль\"]`. Доля оставшихся — `(con[\"churned\"] == 0).mean()`.",
+    "```python\nstayed_bonus = int((bon[\"churned\"] == 0).sum())\nstayed_anyway = round((con[\"churned\"] == 0).mean() * len(bon))\nextra = ...\n```"
+   ],
+   "explain": "С бонусом остались 464 гостя из 1000, но в контроле без всякого бонуса остались 32.7 % — значит, около 327 из этих 464 остались бы и так. Деньги приносят только 137 удержанных сверх контроля: 137 × 2400 = 328 800 ₽ маржи против 200 000 ₽ за все 1000 бонусов. Если записать в доход всех 464, маржа выросла бы в 3.4 раза (464 гостя вместо 137), а итог — с 128 800 до 913 600 ₽: та самая ошибка 914 из predict выше."
   },
   "ch08/01a-pilot/pilot-pnl": {
    "chapter": "ch08",
@@ -247,15 +293,15 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\n_b = _pd.read_csv('bonus_pilot.csv')\nc = _b.groupby('group')['churned'].mean()\nd = c['контроль'] - c['бонус']\nassert close(need('delta'), round(d, 3)), f'delta = {need(\"delta\")}. Доля ушедших в контроле минус доля ушедших с бонусом.'\nassert close(need('online'), round(d * 2400 - 200), 1), f'online = {need(\"online\")}. Удержано на один бонус × 2400 − 200.'\noff = _b[_b['group'] == 'бонус']['p_model'].mean() * 600 - 200\nassert close(need('offline'), round(off), 1), f'offline = {need(\"offline\")}. Средний p_model в группе «бонус» × 0.25 × 2400 − 200.'\np = need('pnl', dict)\nassert set(p) == {'маржа', 'бонусы', 'итог'}, f'Ключи pnl: {sorted(p)}, нужны «маржа», «бонусы», «итог».'\nassert close(p['маржа'], 8000 * d * 2400, 1), f'pnl[\"маржа\"] = {p[\"маржа\"]}. 8000 × delta × 2400.'\nassert close(p['бонусы'], -8000 * 200, 1), f'pnl[\"бонусы\"] = {p[\"бонусы\"]}. Расход — по всем получателям, со знаком минус.'\nassert close(p['итог'], p['маржа'] + p['бонусы'], 1), 'Итог — сумма маржи и расходов.'",
+   "check": "import pandas as _pd\n_b = _pd.read_csv('bonus_pilot.csv')\nc = _b.groupby('group')['churned'].mean()\nd = c['контроль'] - c['бонус']\noff = _b[_b['group'] == 'бонус']['p_model'].mean() * 600 - 200\nassert close(need('offline'), round(off), 1), f'offline = {need(\"offline\")}. Средний p_model в группе «бонус» × 0.25 × 2400 − 200.'\np = need('pnl', dict)\nassert set(p) == {'маржа', 'бонусы', 'итог'}, f'Ключи pnl: {sorted(p)}, нужны «маржа», «бонусы», «итог».'\nassert close(p['маржа'], 8000 * d * 2400, 1), f'pnl[\"маржа\"] = {p[\"маржа\"]}. 8000 × delta × 2400.'\nassert close(p['бонусы'], -8000 * 200, 1), f'pnl[\"бонусы\"] = {p[\"бонусы\"]}. Расход — по всем получателям, со знаком минус.'\nassert close(p['итог'], p['маржа'] + p['бонусы'], 1), 'Итог — сумма маржи и расходов.'",
    "starter": "import pandas as pd\n\nb = pd.read_csv(\"bonus_pilot.csv\")",
-   "solution": "import pandas as pd\n\nb = pd.read_csv(\"bonus_pilot.csv\")\nchurn = b.groupby(\"group\")[\"churned\"].mean()\nd = churn[\"контроль\"] - churn[\"бонус\"]\ndelta = round(d, 3)\nonline = round(d * 2400 - 200)\noffline = round(b[b[\"group\"] == \"бонус\"][\"p_model\"].mean() * 0.25 * 2400 - 200)\nmargin = round(8000 * d * 2400)\ncost = -8000 * 200\npnl = {\"маржа\": margin, \"бонусы\": cost, \"итог\": margin + cost}",
+   "solution": "import pandas as pd\n\nb = pd.read_csv(\"bonus_pilot.csv\")\nchurn = b.groupby(\"group\")[\"churned\"].mean()\nd = churn[\"контроль\"] - churn[\"бонус\"]\noffline = round(b[b[\"group\"] == \"бонус\"][\"p_model\"].mean() * 0.25 * 2400 - 200)\nmargin = round(8000 * d * 2400)\ncost = -8000 * 200\npnl = {\"маржа\": margin, \"бонусы\": cost, \"итог\": margin + cost}",
    "hints": [
-    "Доли ушедших по группам — `b.groupby(\"group\")[\"churned\"].mean()`; дальше нужны два значения из этой Series по меткам `\"контроль\"` и `\"бонус\"`.",
+    "Разность долей — как в разминке: `churn = b.groupby(\"group\")[\"churned\"].mean()`, `d = churn[\"контроль\"] - churn[\"бонус\"]`.",
     "`offline` считается только по группе «бонус»: `b[b[\"group\"] == \"бонус\"][\"p_model\"].mean()`. В `pnl` маржа = `8000 * d * 2400`, расход = `-8000 * 200`.",
-    "```python\nchurn = b.groupby(\"group\")[\"churned\"].mean()\nd = churn[\"контроль\"] - churn[\"бонус\"]\ndelta = round(d, 3)\nonline = round(d * 2400 - 200)\noffline = round(... * 0.25 * 2400 - 200)\npnl = {\"маржа\": round(8000 * d * 2400), \"бонусы\": ..., \"итог\": ...}\n```"
+    "```python\nchurn = b.groupby(\"group\")[\"churned\"].mean()\nd = churn[\"контроль\"] - churn[\"бонус\"]\noffline = round(... * 0.25 * 2400 - 200)\npnl = {\"маржа\": round(8000 * d * 2400), \"бонусы\": ..., \"итог\": ...}\n```"
    ],
-   "explain": "Бонус снизил отток на 13.7 п. п. — это 129 ₽ на бонус против обещанных 230 ₽. Для 8 000 бонусов: маржа 2.63 млн ₽, расход 1.6 млн ₽, итог около +1.03 млн ₽ за полгода. Частая ошибка — взять в «маржу» всех оставшихся с бонусом (46 %): большинство из них остались бы и так, их видно по контрольной группе."
+   "explain": "Офлайн-расчёт обещал 230 ₽ на бонус, пилот дал 129 ₽. Для 8 000 бонусов: маржа 2.63 млн ₽, расход 1.6 млн ₽, итог около +1.03 млн ₽ за полгода. Частая ошибка — взять в «маржу» всех оставшихся с бонусом (46 %): большинство из них остались бы и так, их видно по контрольной группе."
   },
   "ch08/01a-pilot/pnl-range": {
    "chapter": "ch08",
@@ -394,11 +440,57 @@
    "starter": "import pandas as pd\n\nf = pd.read_csv(\"shop_funnel.csv\")",
    "solution": "import pandas as pd\n\nf = pd.read_csv(\"shop_funnel.csv\")\nnet = f.groupby(\"month\")[[\"visitors\", \"checks\", \"revenue\"]].sum()\nnet[\"conv\"] = net[\"checks\"] / net[\"visitors\"]\nnet[\"avg_check\"] = net[\"revenue\"] / net[\"checks\"]\na, s = net.loc[\"2026-08\"], net.loc[\"2026-09\"]\nr0 = a[\"visitors\"] * a[\"conv\"] * a[\"avg_check\"]\nr1 = s[\"visitors\"] * a[\"conv\"] * a[\"avg_check\"]\nr2 = s[\"visitors\"] * s[\"conv\"] * a[\"avg_check\"]\nr3 = s[\"visitors\"] * s[\"conv\"] * s[\"avg_check\"]\nparts = pd.Series({\"гости\": r1 - r0, \"конверсия\": r2 - r1, \"чек\": r3 - r2}).round()\n\nf[\"conv\"] = f[\"checks\"] / f[\"visitors\"]\nconv = f.pivot(index=\"shop_id\", columns=\"month\", values=\"conv\")\ndrop = conv[\"2026-09\"] - conv[\"2026-08\"]\nworst_shop = drop.idxmin()\nworst_drop = round(drop.min(), 3)",
    "hints": [
-    "Сначала сложите `visitors`, `checks`, `revenue` по месяцам (`groupby(\"month\").sum()`), потом считайте конверсию и чек сети. Дальше — те же четыре выручки, что в задаче выше.",
+    "Сначала сложите `visitors`, `checks`, `revenue` по месяцам (`groupby(\"month\").sum()`), потом считайте конверсию и чек сети. Дальше — те же четыре выручки, что в «Разберём вместе», в порядке «гости → конверсия → чек» (не в обратном, как в задаче «Другой порядок подстановок»).",
     "Для кофеен: столбец `conv = checks / visitors`, затем `pivot(index=\"shop_id\", columns=\"month\", values=\"conv\")` и разность столбцов `\"2026-09\"` и `\"2026-08\"`. Минимум — `.idxmin()` и `.min()`.",
     "```python\nnet = f.groupby(\"month\")[[\"visitors\", \"checks\", \"revenue\"]].sum()\nnet[\"conv\"] = net[\"checks\"] / net[\"visitors\"]\nnet[\"avg_check\"] = net[\"revenue\"] / net[\"checks\"]\na, s = net.loc[\"2026-08\"], net.loc[\"2026-09\"]\nr0 = a[\"visitors\"] * a[\"conv\"] * a[\"avg_check\"]\n...\nparts = pd.Series({\"гости\": r1 - r0, \"конверсия\": ..., \"чек\": ...}).round()\n```"
    ],
-   "explain": "Гости дали +1.39 млн ₽, конверсия −1.06 млн, чек −0.70 млн. Почти вся потеря конверсии — одна кофейня, KZN-1 (−0.157). Если пересчитать дерево без неё, конверсия сети почти не изменилась бы. Типичная ошибка — взять `mean()` конверсий кофеен вместо отношения сумм: тогда маленькая UFA-1 весит столько же, сколько большая KZN-1, и вклады не сходятся с изменением выручки."
+   "explain": "Гости дали +1.39 млн ₽, конверсия −1.06 млн, чек −0.70 млн. Почти вся потеря конверсии — одна кофейня, KZN-1 (−0.157). Если пересчитать дерево без неё, конверсия сети почти не изменилась бы — это проверим в задаче «Сеть без KZN-1». Типичная ошибка — взять `mean()` конверсий кофеен вместо отношения сумм: тогда маленькая UFA-1 весит столько же, сколько большая KZN-1, и вклады не сходятся с изменением выручки."
+  },
+  "ch08/01b-metric-tree/check-pct": {
+   "chapter": "ch08",
+   "lesson": "01b-metric-tree",
+   "lesson_title": "Дерево метрик: откуда взялось изменение выручки",
+   "id": "check-pct",
+   "title": "Ветка «чек» по кофейням",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "shop_funnel.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_f = _pd.read_csv('shop_funnel.csv')\n_f['ak'] = _f['revenue'] / _f['checks']\n_a = _f.pivot(index='shop_id', columns='month', values='ak')\n_w = ((_a['2026-09'] / _a['2026-08'] - 1) * 100).round(1)\np = need('check_pct', _pd.Series)\nassert sorted(p.index) == sorted(_w.index), f'Индекс check_pct: {list(p.index)} — нужны shop_id всех шести кофеен.'\nfor k in _w.index:\n    assert not close(p[k], -_w[k], 0.06) or close(_w[k], 0), f'{k}: {p[k]} — знак наоборот: сентябрь делите на август.'\n    assert close(p[k], _w[k], 0.06), f'{k}: check_pct = {p[k]}, а нужно {float(_w[k])}. Чек = revenue / checks, изменение = (сентябрь / август − 1) × 100.'\nassert need('worst_check') == _w.idxmin(), f'worst_check = {need(\"worst_check\")!r}, а нужно {_w.idxmin()!r}: самое отрицательное изменение.'",
+   "starter": "import pandas as pd\n\nf = pd.read_csv(\"shop_funnel.csv\")",
+   "solution": "import pandas as pd\n\nf = pd.read_csv(\"shop_funnel.csv\")\nf[\"avg_check\"] = f[\"revenue\"] / f[\"checks\"]\nac = f.pivot(index=\"shop_id\", columns=\"month\", values=\"avg_check\")\ncheck_pct = ((ac[\"2026-09\"] / ac[\"2026-08\"] - 1) * 100).round(1)\nworst_check = check_pct.idxmin()",
+   "hints": [
+    "Как с конверсией в теории: новый столбец `f[\"avg_check\"] = f[\"revenue\"] / f[\"checks\"]`, затем `pivot(index=\"shop_id\", columns=\"month\", values=\"avg_check\")`.",
+    "```python\nac = f.pivot(index=\"shop_id\", columns=\"month\", values=\"avg_check\")\ncheck_pct = ((ac[\"2026-09\"] / ac[\"2026-08\"] - 1) * 100).round(1)\nworst_check = ...\n```"
+   ],
+   "explain": "Чек упал везде — от −3.4 % в KZN-1 до −6.0 % в UFA-1. Когда множитель меняется во всех кофейнях одинаково, причину ищут на уровне сети (здесь — акция «кофе дня»), а не у управляющих. Конверсия ведёт себя иначе: пять кофеен почти на месте, а одна провалилась — это локальная поломка. Две ветки дерева, два разных разговора."
+  },
+  "ch08/01b-metric-tree/tree-no-kzn": {
+   "chapter": "ch08",
+   "lesson": "01b-metric-tree",
+   "lesson_title": "Дерево метрик: откуда взялось изменение выручки",
+   "id": "tree-no-kzn",
+   "title": "Сеть без KZN-1",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "shop_funnel.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_f = _pd.read_csv('shop_funnel.csv')\n_f = _f[_f['shop_id'] != 'KZN-1']\nn = _f.groupby('month')[['visitors', 'checks', 'revenue']].sum()\na, s = n.loc['2026-08'], n.loc['2026-09']\nca, cs = a.checks / a.visitors, s.checks / s.visitors\nka, ks = a.revenue / a.checks, s.revenue / s.checks\nr0, r1, r2, r3 = a.visitors * ca * ka, s.visitors * ca * ka, s.visitors * cs * ka, s.visitors * cs * ks\np = need('parts_wo', _pd.Series)\nassert list(p.index) == ['гости', 'конверсия', 'чек'], f'Индекс parts_wo: {list(p.index)}, нужен [\"гости\", \"конверсия\", \"чек\"].'\nassert not close(p['конверсия'], -1056321, 5), 'Вклад конверсии как у всей сети — KZN-1 не убрана. Отфильтруйте строки shop_id != \"KZN-1\" до groupby.'\nfor k, v in zip(p.index, [r1 - r0, r2 - r1, r3 - r2]):\n    assert close(p[k], v, 2), f'Вклад «{k}» = {p[k]}, ожидалось около {round(float(v))}. Конверсию и чек считайте из сумм пяти кофеен.'\nassert close(need('total_wo'), r3 - r0, 2), f'total_wo = {need(\"total_wo\")}, а нужно {round(float(r3 - r0))}.'",
+   "starter": "import pandas as pd\n\nf = pd.read_csv(\"shop_funnel.csv\")",
+   "solution": "import pandas as pd\n\nf = pd.read_csv(\"shop_funnel.csv\")\nf = f[f[\"shop_id\"] != \"KZN-1\"]\nnet = f.groupby(\"month\")[[\"visitors\", \"checks\", \"revenue\"]].sum()\nnet[\"conv\"] = net[\"checks\"] / net[\"visitors\"]\nnet[\"avg_check\"] = net[\"revenue\"] / net[\"checks\"]\na, s = net.loc[\"2026-08\"], net.loc[\"2026-09\"]\nr0 = a[\"visitors\"] * a[\"conv\"] * a[\"avg_check\"]\nr1 = s[\"visitors\"] * a[\"conv\"] * a[\"avg_check\"]\nr2 = s[\"visitors\"] * s[\"conv\"] * a[\"avg_check\"]\nr3 = s[\"visitors\"] * s[\"conv\"] * s[\"avg_check\"]\nparts_wo = pd.Series({\"гости\": r1 - r0, \"конверсия\": r2 - r1, \"чек\": r3 - r2}).round()\ntotal_wo = round(r3 - r0)",
+   "hints": [
+    "Сначала фильтр `f = f[f[\"shop_id\"] != \"KZN-1\"]`, а дальше — ровно код дерева сети из теории.",
+    "```python\nf = f[f[\"shop_id\"] != \"KZN-1\"]\nnet = f.groupby(\"month\")[[\"visitors\", \"checks\", \"revenue\"]].sum()\nnet[\"conv\"] = net[\"checks\"] / net[\"visitors\"]\nnet[\"avg_check\"] = net[\"revenue\"] / net[\"checks\"]\na, s = net.loc[\"2026-08\"], net.loc[\"2026-09\"]\n# r0 … r3 как в теории\nparts_wo = pd.Series({\"гости\": r1 - r0, \"конверсия\": ..., \"чек\": ...}).round()\ntotal_wo = round(r3 - r0)\n```"
+   ],
+   "explain": "Без KZN-1 конверсия пяти кофеен почти не сдвинулась (0.682 → 0.677), и её вклад — всего −76 тыс. ₽ вместо −1.06 млн по всей сети. Гости дают +1.04 млн, чек −0.53 млн, и выручка пяти кофеен **выросла** на 433 тыс. ₽. Значит, «выручка сети упала» — это почти целиком одна кофейня с очередями плюс сетевая акция по чеку. Такой пересчёт «без одного сегмента» — быстрый способ проверить, локальная ли проблема."
   },
   "ch08/02-budget/top-mask": {
    "chapter": "ch08",
@@ -491,7 +583,7 @@
     "Для каждого k: `yy = y_test[risk.nlargest(k).index]`, прибыль `400 * yy.sum() - 200 * (k - yy.sum())`.",
     "`best_k = int(by_k.loc[by_k[\"profit\"].idxmax(), \"k\"])` — `idxmax` при равенстве берёт первую строку, то есть меньший k."
    ],
-   "explain": "Максимум 35 600 ₽ при k = 140. Дальше прибыль падает: при 300 бонусах — 15 000 ₽, меньше половины. Около вершины кривая плоская (120–180 бонусов дают 33–36 тыс.), поэтому точное k не критично, а вот «раздать всем подозрительным» — дорогая ошибка."
+   "explain": "Максимум 35 600 ₽ при k = 140 (если перебрать каждое k, а не шагом 20, — 35 800 ₽ при k = 139). Дальше прибыль падает: при 300 бонусах — 15 000 ₽, меньше половины. Около вершины кривая плоская (120–180 бонусов дают 33–36 тыс.), поэтому точное k не критично, а вот «раздать всем подозрительным» — дорогая ошибка."
   },
   "ch08/02-budget/random-base": {
    "chapter": "ch08",
@@ -511,8 +603,8 @@
    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\n# готово, как в теории: g, y, X, X_train, X_test, y_train, y_test, model, risk",
    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nmodel = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0).fit(X_train, y_train)\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\n\nrate = y_test.mean()\nrnd = 60 * (rate * 400 - (1 - rate) * 200)\nrnd_60 = round(rnd)\nyy = y_test[risk.nlargest(60).index]\nmodel_60 = 400 * yy.sum() - 200 * (60 - yy.sum())\ngain_60 = round(model_60 - rnd)",
    "hints": [
-    "`rate = y_test.mean()`. Прибыль модели при k = 60 считайте как в прошлой задаче.",
-    "Случайная раздача попадает в уходящих с той же долей, что и в целом по тесту: из k бонусов в среднем `k × rate` достанутся уходящим (+400 каждому), остальные — остающимся (−200). Подставьте `rate = y_test.mean()` в формулу и округлите в самом конце. Прибыль модели — как в прошлой задаче: `nlargest(60)` по риску, затем +400 за уходящего и −200 за остальных."
+    "`rate = y_test.mean()`. Прибыль модели при k = 60 — как в первом примере урока: 60 гостей из `risk.nlargest(60)`.",
+    "Случайная раздача попадает в уходящих с той же долей, что и в целом по тесту: из k бонусов в среднем `k × rate` достанутся уходящим (+400 каждому), остальные — остающимся (−200). Подставьте `rate = y_test.mean()` в формулу и округлите в самом конце. Прибыль модели — как в первом примере урока: `nlargest(60)` по риску, затем +400 за уходящего и −200 за остальных."
    ],
    "explain": "Случайная раздача 60 бонусов теряет около 4 000 ₽, модель зарабатывает 22 200 ₽: польза модели — больше 26 тыс. ₽ на 600 гостей. Именно эту разницу, а не прибыль кампании, честно записывать в заслуги модели."
   },
@@ -584,7 +676,7 @@
     "`n_above = int((risk > 1 / 3).sum())`, `k_use = min(budget, n_above)`.",
     "Функция `profit_top(k)` уже в заготовке: `profit_all = profit_top(budget)`, `profit_cap = profit_top(k_use)`."
    ],
-   "explain": "Выше порога безубыточности 168 гостей. Если отправить им — 34 200 ₽, если раздать все 250 — 24 400 ₽: последние 82 бонуса уничтожили почти 10 тысяч. Остаток бюджета — не «недоосвоение», а сэкономленные деньги. Учтите: оптимум по задаче «Прибыль по бюджетам» (k = 140) чуть левее 168 — из-за калибровки, о которой шла речь в прошлом уроке."
+   "explain": "Выше порога безубыточности 168 гостей. Если отправить им — 34 200 ₽, если раздать все 250 — 24 400 ₽: последние 82 бонуса уничтожили почти 10 тысяч. Остаток бюджета — не «недоосвоение», а сэкономленные деньги. Учтите: оптимум по задаче «Прибыль по бюджетам» (k = 140) чуть левее 168 — из-за калибровки у порога (урок «Из прогноза — в деньги», раздел «Калибровка»)."
   },
   "ch08/02-budget/two-offers": {
    "chapter": "ch08",
@@ -834,7 +926,7 @@
    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\n# готово, как в теории: g, y, X, X_train, X_test, y_train, y_test, model, send, yv",
    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nmodel = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0).fit(X_train, y_train)\nsend = model.predict_proba(X_test)[:, 1] > 1 / 3\nyv = y_test.values\n\nrng = np.random.default_rng(4)\nprofits = []\nfor _ in range(2000):\n    r = rng.uniform(0.15, 0.35)\n    i = rng.integers(0, len(yv), len(yv))\n    s, yy = send[i], yv[i]\n    tp = (s & (yy == 1)).sum()\n    profits.append(2400 * rng.binomial(tp, r) - 200 * s.sum())\np_loss = round((np.array(profits) < 0).mean(), 3)\nlaunch = bool(p_loss < 0.025)",
    "hints": [
-    "Порядок вызовов генератора важен: от него зависят случайные числа. В каждом повторе — `uniform`, потом `integers`, потом `binomial`.",
+    "Для проверки порядок вызовов не важен — она сравнивает с допуском. Но чтобы совпасть с разбором до знака, вызывайте в каждом повторе `uniform`, потом `integers`, потом `binomial` — как в примере раздела «Если допущение неточно».",
     "`launch = bool(p_loss < 0.025)` — сравнивайте неокруглённую или округлённую долю, результат тот же."
    ],
    "explain": "Вероятность убытка около 2 % — на грани правила 2.5 %. Небольшое ухудшение допущений (например, удержание от 10 %) перевело бы кампанию в «не запускать». Самый дешёвый способ снизить риск — не другая модель, а A/B-тест, который сузит диапазон удержания."
@@ -1141,6 +1233,75 @@
    ],
    "explain": "По всем заявкам: AUC 0.846, интервал 0.819–0.866. По соцсетям: 0.852, интервал 0.79–0.92 — почти втрое шире: 22 договора против 230. Точечные AUC почти равны, но второе число знает о мире гораздо меньше. А строки `pred` и `fact` в отчёте по соцсетям (0.025 против 0.068) — главная находка: функция-отчёт выводит её автоматически, без отдельного поиска. Такую функцию стоит держать в своём модуле и вызывать для каждой метрики, которую вы показываете людям."
   },
+  "ch08/04b-segments/seg-toy": {
+   "chapter": "ch08",
+   "lesson": "04b-segments",
+   "lesson_title": "Качество по сегментам и отчёт о метрике",
+   "id": "seg-toy",
+   "title": "Игрушечный пример своими руками",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "catering_leads.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom sklearn.metrics import roc_auc_score as _auc\n_t = _pd.DataFrame({\"channel\": [\"рекомендация\"] * 4 + [\"соцсети\"] * 4,\n                    \"p\": [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1], \"deal\": [1, 1, 0, 1, 0, 1, 0, 0]})\n_a = _auc(_t['deal'], _t['p'])\nassert close(need('auc_all'), _a, 0.006), f'auc_all = {need(\"auc_all\")}, а нужно около {round(_a, 2)}: roc_auc_score(t[\"deal\"], t[\"p\"]).'\ns = need('auc_seg', _pd.Series)\nassert sorted(s.index) == ['рекомендация', 'соцсети'], f'Индекс auc_seg: {list(s.index)} — нужны два канала.'\nfor ch, g in _t.groupby('channel'):\n    _v = _auc(g['deal'], g['p'])\n    assert close(s[ch], _v, 0.006), f'{ch}: {s[ch]}, а нужно около {round(_v, 2)} — AUC только по заявкам этого канала.'\nassert need('higher') == True, 'higher: общий AUC 0.81 выше, чем 0.67 в каждом канале, — нужно True.'",
+   "starter": "import pandas as pd\nfrom sklearn.metrics import roc_auc_score\n\nt = pd.DataFrame({\n    \"channel\": [\"рекомендация\"] * 4 + [\"соцсети\"] * 4,\n    \"p\": [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],\n    \"deal\": [1, 1, 0, 1, 0, 1, 0, 0],\n})",
+   "solution": "import pandas as pd\nfrom sklearn.metrics import roc_auc_score\n\nt = pd.DataFrame({\n    \"channel\": [\"рекомендация\"] * 4 + [\"соцсети\"] * 4,\n    \"p\": [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],\n    \"deal\": [1, 1, 0, 1, 0, 1, 0, 0],\n})\nauc_all = round(roc_auc_score(t[\"deal\"], t[\"p\"]), 2)\nauc_seg = t.groupby(\"channel\")[[\"deal\", \"p\"]].apply(lambda g: roc_auc_score(g[\"deal\"], g[\"p\"])).round(2)\nhigher = bool(auc_all > auc_seg.max())",
+   "hints": [
+    "AUC внутри канала — та же функция, применённая к куску таблицы: `t.groupby(\"channel\")[[\"deal\", \"p\"]].apply(...)`, как функция `seg` в теории.",
+    "```python\nauc_all = round(roc_auc_score(t[\"deal\"], t[\"p\"]), 2)\nauc_seg = t.groupby(\"channel\")[[\"deal\", \"p\"]].apply(lambda g: roc_auc_score(g[\"deal\"], g[\"p\"])).round(2)\nhigher = bool(auc_all > auc_seg.max())\n```"
+   ],
+   "explain": "Внутри каждого канала AUC 0.67 (из трёх пар верно упорядочены две), а по всем заявкам — 0.81 (13 пар из 16). Все прогнозы рекомендаций выше всех прогнозов соцсетей, а договоров в рекомендациях три из четырёх против одного из четырёх. Пары «договор из рекомендаций — отказ из соцсетей» модель упорядочивает верно всегда, и они поднимают общий AUC. `lambda g: ...` — короткая функция в одну строку, то же, что `def seg(g): return ...`."
+  },
+  "ch08/04b-segments/rule-base": {
+   "chapter": "ch08",
+   "lesson": "04b-segments",
+   "lesson_title": "Качество по сегментам и отчёт о метрике",
+   "id": "rule-base",
+   "title": "Модель против простого правила по каналам",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "catering_leads.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.compose import make_column_transformer\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import roc_auc_score\nd = pd.read_csv(\"catering_leads.csv\", parse_dates=[\"created\"])\nd[\"month\"] = d[\"created\"].dt.month\nnum = [\"guests\", \"budget_pp\", \"days_to_event\", \"response_hours\", \"repeat_client\", \"tasting\"]\ncat = [\"channel\", \"event_type\", \"city\", \"company_size\", \"manager\"]\nprep = make_column_transformer(\n    (make_pipeline(SimpleImputer(strategy=\"median\", add_indicator=True), StandardScaler()), num),\n    (make_pipeline(SimpleImputer(strategy=\"constant\", fill_value=\"не указан\"),\n                   OneHotEncoder(handle_unknown=\"ignore\")), cat),\n)\nmodel = make_pipeline(prep, LogisticRegression(max_iter=1000))\ntrain = d[d[\"month\"] <= 4]\nmodel.fit(train[num + cat], train[\"converted\"])\nlive = d[d[\"month\"] >= 5].copy()\nlive[\"p\"] = model.predict_proba(live[num + cat])[:, 1]",
+   "check": "from sklearn.metrics import roc_auc_score as _auc\nimport pandas as _pd\nL = live\n_r = _auc(L['converted'], L['repeat_client'])\nassert close(need('rule_auc'), _r, 0.0015), f'rule_auc = {need(\"rule_auc\")}, а нужно около {round(_r, 3)}: roc_auc_score(live[\"converted\"], live[\"repeat_client\"]).'\n_m = L.groupby('channel')[['converted', 'p']].apply(lambda g: _auc(g['converted'], g['p']))\n_q = L.groupby('channel')[['converted', 'repeat_client']].apply(lambda g: _auc(g['converted'], g['repeat_client']))\n_g = _m - _q\ns = need('gain', _pd.Series)\nassert sorted(s.index) == sorted(_g.index), f'Индекс gain: {list(s.index)} — нужны все шесть каналов.'\nfor ch in _g.index:\n    assert not close(s[ch], -_g[ch], 0.0015), f'{ch}: {s[ch]} — знак наоборот: из AUC модели вычитают AUC правила.'\n    assert close(s[ch], _g[ch], 0.0015), f'{ch}: gain = {s[ch]}, а нужно около {round(float(_g[ch]), 3)}.'\nassert need('least') == _g.idxmin(), f'least = {need(\"least\")!r}, а нужно {_g.idxmin()!r}: наименьший gain.'",
+   "starter": "import pandas as pd\nfrom sklearn.metrics import roc_auc_score\n# готово, как в теории: d, model, live (заявки мая–сентября, столбец p — прогноз)",
+   "solution": "import pandas as pd\nfrom sklearn.metrics import roc_auc_score\n\nrule_auc = round(roc_auc_score(live[\"converted\"], live[\"repeat_client\"]), 3)\nm = live.groupby(\"channel\")[[\"converted\", \"p\"]].apply(lambda g: roc_auc_score(g[\"converted\"], g[\"p\"]))\nr = live.groupby(\"channel\")[[\"converted\", \"repeat_client\"]].apply(lambda g: roc_auc_score(g[\"converted\"], g[\"repeat_client\"]))\ngain = (m - r).round(3)\nleast = gain.idxmin()",
+   "hints": [
+    "AUC внутри канала — как в функции `seg` из теории, только отдельно для `p` и для `repeat_client`: `live.groupby(\"channel\")[[\"converted\", \"p\"]].apply(lambda g: roc_auc_score(g[\"converted\"], g[\"p\"]))`.",
+    "```python\nm = live.groupby(\"channel\")[[\"converted\", \"p\"]].apply(lambda g: roc_auc_score(g[\"converted\"], g[\"p\"]))\nr = live.groupby(\"channel\")[[\"converted\", \"repeat_client\"]].apply(lambda g: roc_auc_score(g[\"converted\"], g[\"repeat_client\"]))\ngain = (m - r).round(3)\nleast = ...\n```"
+   ],
+   "explain": "По всем заявкам правило даёт 0.671, модель — 0.846. Внутри каналов модель выше правила везде: на 0.16–0.22 в пяти каналах и только на 0.085 в рекомендациях. Там 37 % заявок — от повторных клиентов (в остальных каналах 10–15 %), и правило само по себе неплохо сортирует. Для отчёта это строка «С чем сравнить»: в рекомендациях выигрыш от модели скромный, и если модель там сломается, менеджеры почти не потеряют, переключившись на правило."
+  },
+  "ch08/04b-segments/report-text": {
+   "chapter": "ch08",
+   "lesson": "04b-segments",
+   "lesson_title": "Качество по сегментам и отчёт о метрике",
+   "id": "report-text",
+   "title": "Отчёт словами",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "catering_leads.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.compose import make_column_transformer\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import roc_auc_score\nd = pd.read_csv(\"catering_leads.csv\", parse_dates=[\"created\"])\nd[\"month\"] = d[\"created\"].dt.month\nnum = [\"guests\", \"budget_pp\", \"days_to_event\", \"response_hours\", \"repeat_client\", \"tasting\"]\ncat = [\"channel\", \"event_type\", \"city\", \"company_size\", \"manager\"]\nprep = make_column_transformer(\n    (make_pipeline(SimpleImputer(strategy=\"median\", add_indicator=True), StandardScaler()), num),\n    (make_pipeline(SimpleImputer(strategy=\"constant\", fill_value=\"не указан\"),\n                   OneHotEncoder(handle_unknown=\"ignore\")), cat),\n)\nmodel = make_pipeline(prep, LogisticRegression(max_iter=1000))\ntrain = d[d[\"month\"] <= 4]\nmodel.fit(train[num + cat], train[\"converted\"])\nlive = d[d[\"month\"] >= 5].copy()\nlive[\"p\"] = model.predict_proba(live[num + cat])[:, 1]",
+   "check": "from sklearn.metrics import roc_auc_score as _auc\nL = live[live['channel'] == 'соцсети']\nr = need('report', str)\n_must = {\n    'число заявок': str(len(L)),\n    'число договоров': str(int(L['converted'].sum())),\n    'AUC': f\"{_auc(L['converted'], L['p']):.3f}\",\n    'средний прогноз': f\"{L['p'].mean():.3f}\",\n    'конверсия': f\"{L['converted'].mean():.3f}\",\n    'нижняя граница ДИ': '0.79',\n    'верхняя граница ДИ': '0.92',\n}\nfor what, val in _must.items():\n    assert val in r, f'В отчёте не нашёл {what} ({val}). Сейчас report = {r!r}'\nassert '{' not in r, f'В строке остались фигурные скобки — не забыли букву f перед кавычками? report = {r!r}'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.metrics import roc_auc_score\n# готово, как в теории: d, model, live (заявки мая–сентября, столбец p — прогноз)\n\ndef auc_ci(y, p, n_boot=200, seed=0):\n    y, p = np.asarray(y), np.asarray(p)\n    rng = np.random.default_rng(seed)\n    aucs = []\n    for _ in range(n_boot):\n        i = rng.integers(0, len(y), len(y))\n        if y[i].min() == y[i].max():\n            continue\n        aucs.append(roc_auc_score(y[i], p[i]))\n    return np.percentile(aucs, [2.5, 97.5])\n\nsoc = live[live[\"channel\"] == \"соцсети\"]",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.metrics import roc_auc_score\n\ndef auc_ci(y, p, n_boot=200, seed=0):\n    y, p = np.asarray(y), np.asarray(p)\n    rng = np.random.default_rng(seed)\n    aucs = []\n    for _ in range(n_boot):\n        i = rng.integers(0, len(y), len(y))\n        if y[i].min() == y[i].max():\n            continue\n        aucs.append(roc_auc_score(y[i], p[i]))\n    return np.percentile(aucs, [2.5, 97.5])\n\nsoc = live[live[\"channel\"] == \"соцсети\"]\nlo, hi = auc_ci(soc[\"converted\"], soc[\"p\"])\nauc = roc_auc_score(soc[\"converted\"], soc[\"p\"])\nreport = (f\"Соцсети: AUC {auc:.3f} (95 % ДИ {lo:.2f}–{hi:.2f}) на {len(soc)} заявках, \"\n          f\"{soc['converted'].sum()} договора. Прогноз {soc['p'].mean():.3f} при факте {soc['converted'].mean():.3f}.\")\nprint(report)",
+   "hints": [
+    "Все числа уже есть: `len(soc)`, `soc[\"converted\"].sum()`, `roc_auc_score(soc[\"converted\"], soc[\"p\"])`, `soc[\"p\"].mean()`, `soc[\"converted\"].mean()` и `lo, hi = auc_ci(soc[\"converted\"], soc[\"p\"])`. Формат «3 знака» в f-строке — `{x:.3f}`.",
+    "```python\nlo, hi = auc_ci(soc[\"converted\"], soc[\"p\"])\nauc = roc_auc_score(soc[\"converted\"], soc[\"p\"])\nreport = (f\"Соцсети: AUC {auc:.3f} (95 % ДИ {lo:.2f}–{hi:.2f}) на {len(soc)} заявках, \"\n          f\"{...} договора. Прогноз {...:.3f} при факте {...:.3f}.\")\n```"
+   ],
+   "explain": "Получилось: «Соцсети: AUC 0.852 (95 % ДИ 0.79–0.92) на 324 заявках, 22 договора. Прогноз 0.025 при факте 0.068.» Одна строка закрывает три вопроса читателя: на скольких данных (22 договора — мало), насколько число может прыгать (интервал шириной 0.13) и можно ли верить вероятностям (нет: занижены почти втрое). Строку собирают кодом, а не переписывают руками: при следующем пересчёте все числа обновятся сами, и опечатка в отчёте не появится."
+  },
   "ch08/05-explain/pd-one": {
    "chapter": "ch08",
    "lesson": "05-explain",
@@ -1178,14 +1339,14 @@
    ],
    "display": true,
    "setup": "",
-   "check": "assert close(need('z'), round((12 - 6.36) / 5.09, 2), 0.011), f'z = {need(\"z\")}. z = (значение − среднее) / разброс.'\nassert close(need('contrib'), round((12 - 6.36) / 5.09 * -0.75, 2), 0.011), f'contrib = {need(\"contrib\")}. Вклад = z × вес.'\nassert need('direction') == 'снижает', f'direction = {need(\"direction\")!r}. Вклад отрицательный — риск ниже среднего.'",
-   "starter": "value, mean, scale, coef = 12, 6.36, 5.09, -0.75",
-   "solution": "value, mean, scale, coef = 12, 6.36, 5.09, -0.75\nz = round((value - mean) / scale, 2)\ncontrib = round((value - mean) / scale * coef, 2)\ndirection = \"повышает\" if contrib > 0 else \"снижает\"",
+   "check": "assert close(need('z'), round((12 - 6.36) / 5.09, 2), 0.011), f'z = {need(\"z\")}. z = (значение − среднее) / разброс.'\nassert close(need('contrib'), round((12 - 6.36) / 5.09 * -0.74, 2), 0.011), f'contrib = {need(\"contrib\")}. Вклад = z × вес.'\nassert need('direction') == 'снижает', f'direction = {need(\"direction\")!r}. Вклад отрицательный — риск ниже среднего.'",
+   "starter": "value, mean, scale, coef = 12, 6.36, 5.09, -0.74",
+   "solution": "value, mean, scale, coef = 12, 6.36, 5.09, -0.74\nz = round((value - mean) / scale, 2)\ncontrib = round((value - mean) / scale * coef, 2)\ndirection = \"повышает\" if contrib > 0 else \"снижает\"",
    "hints": [
     "z = (12 − 6.36) / 5.09 — гость на сколько разбросов выше среднего.",
     "`contrib = round(z * coef, 2)`; если вклад меньше нуля — признак снижает риск."
    ],
-   "explain": "z ≈ 1.11: визитов больше среднего на один разброс. Вес отрицательный, значит, вклад −0.83 — частые визиты снижают риск. У G-11606 тот же признак давал +0.49: знак вклада зависит не только от веса, но и от того, по какую сторону от среднего гость."
+   "explain": "z ≈ 1.11: визитов больше среднего на один разброс. Вес отрицательный, значит, вклад −0.82 — частые визиты снижают риск. У G-11606 тот же признак давал +0.49: знак вклада зависит не только от веса, но и от того, по какую сторону от среднего гость."
   },
   "ch08/05-explain/p-pd": {
    "chapter": "ch08",
@@ -1345,7 +1506,7 @@
    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nforest = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0).fit(X_train, y_train)\np = pd.Series(forest.predict_proba(X_test)[:, 1], index=X_test.index)\n\ngroup = X_test[(X_test[\"app\"] == 0) & (p > 0.3)]\nfixed = group.copy()\nfixed[\"app\"] = 1\nn_group = len(group)\nbefore = round(forest.predict_proba(group)[:, 1].mean(), 3)\nafter = round(forest.predict_proba(fixed)[:, 1].mean(), 3)\ndrop_pp = round((before - after) * 100, 1)",
    "hints": [
     "Маска по двум условиям: `(X_test[\"app\"] == 0) & (p > 0.3)`. Для «после» — копия с `app = 1`.",
-    "`group = X_test[mask]`, `after = group.copy()`, `after[\"app\"] = 1`; средние прогнозы — `forest.predict_proba(...)[:, 1].mean()`."
+    "`group = X_test[mask]`, `changed = group.copy()`, `changed[\"app\"] = 1`; средние прогнозы — `forest.predict_proba(...)[:, 1].mean()` для `group` и для `changed`. Имя `after` оставьте для числа — среднего прогноза после изменения."
    ],
    "explain": "Модель обещает снижение всего на несколько пунктов — у рискованных гостей приложение мало что меняет. И даже это не обещание: гости с приложением могут уходить реже, потому что они и так лояльнее (поэтому и поставили приложение). Если идея всё же важна бизнесу — её проверяют A/B-тестом."
   },
@@ -1387,15 +1548,15 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\nG = need('g', _pd.DataFrame)\nP = need('p')\ns = _pd.Series(P > 0.25, index=G.index)\nsel = s.groupby(G['age_group']).mean().round(3)\nrec = s[G['churned'] == 1].groupby(G.loc[G['churned'] == 1, 'age_group']).mean().round(3)\nt = need('fair25', _pd.DataFrame)\nassert {'selected', 'recall'} <= set(t.columns), f'Столбцы fair25: {list(t.columns)}, нужны selected и recall.'\nassert sorted(t.index) == sorted(sel.index), f'Индекс fair25: {list(t.index)} — нужны возрастные группы.'\nfor a in sel.index:\n    assert close(t.loc[a, 'selected'], sel[a]), f'{a}: selected = {t.loc[a, \"selected\"]}, ожидалось {sel[a]}. Доля получивших среди всех гостей группы.'\n    assert close(t.loc[a, 'recall'], rec[a]), f'{a}: recall = {t.loc[a, \"recall\"]}, ожидалось {rec[a]}. Считайте только среди уходящих (churned == 1).'\nassert close(need('gap25'), round(rec.max() - rec.min(), 3), 0.0015), f'gap25 = {need(\"gap25\")}: наибольшая полнота минус наименьшая.'\nassert need('extra_bonuses') == int((P > 0.25).sum() - (P > 1 / 3).sum()), f'extra_bonuses = {need(\"extra_bonuses\")}: сравните число бонусов при 0.25 и при 1/3.'",
+   "check": "import pandas as _pd\nG = need('g', _pd.DataFrame)\nP = need('p')\ns = _pd.Series(P > 0.25, index=G.index)\nsel = s.groupby(G['age_group']).mean().round(3)\nrec = s[G['churned'] == 1].groupby(G.loc[G['churned'] == 1, 'age_group']).mean().round(3)\nt = need('fair25', _pd.DataFrame)\nassert {'selected', 'recall'} <= set(t.columns), f'Столбцы fair25: {list(t.columns)}, нужны selected и recall.'\nassert sorted(t.index) == sorted(sel.index), f'Индекс fair25: {list(t.index)} — нужны возрастные группы.'\nfor a in sel.index:\n    assert close(t.loc[a, 'selected'], sel[a]), f'{a}: selected = {t.loc[a, \"selected\"]}, ожидалось {sel[a]}. Доля получивших среди всех гостей группы.'\n    assert close(t.loc[a, 'recall'], rec[a]), f'{a}: recall = {t.loc[a, \"recall\"]}, ожидалось {rec[a]}. Считайте только среди уходящих (churned == 1).'\nassert close(need('gap25'), round(rec.max() - rec.min(), 3), 0.0015), f'gap25 = {need(\"gap25\")}: наибольшая полнота минус наименьшая.'\nassert need('extra_bonuses') == int((P > 0.25).sum() - (P > 1 / 3).sum()), f'extra_bonuses = {need(\"extra_bonuses\")}: сравните число бонусов при 0.25 и при 1/3.'\nassert need('fixes_gap') == bool(rec.max() - rec.min() < 0.1), f'fixes_gap = {need(\"fixes_gap\")}. Сравните gap25 с 0.1.'",
    "starter": "import pandas as pd\nfrom sklearn.model_selection import cross_val_predict, StratifiedKFold\nfrom sklearn.ensemble import RandomForestClassifier\n\ng = pd.read_csv(\"guests_churn.csv\").merge(pd.read_csv(\"guests_age.csv\"), on=\"guest_id\", validate=\"one_to_one\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\", \"age_group\"]), dtype=int).fillna({\"avg_check\": 0})\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)\nforest = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0)\np = cross_val_predict(forest, X, y, cv=cv, method=\"predict_proba\")[:, 1]",
-   "solution": "import pandas as pd\nfrom sklearn.model_selection import cross_val_predict, StratifiedKFold\nfrom sklearn.ensemble import RandomForestClassifier\n\ng = pd.read_csv(\"guests_churn.csv\").merge(pd.read_csv(\"guests_age.csv\"), on=\"guest_id\", validate=\"one_to_one\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\", \"age_group\"]), dtype=int).fillna({\"avg_check\": 0})\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)\nforest = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0)\np = cross_val_predict(forest, X, y, cv=cv, method=\"predict_proba\")[:, 1]\n\ng[\"send\"] = p > 0.25\nfair25 = pd.DataFrame({\n    \"selected\": g.groupby(\"age_group\")[\"send\"].mean(),\n    \"recall\": g[g[\"churned\"] == 1].groupby(\"age_group\")[\"send\"].mean(),\n}).round(3)\ngap25 = round(fair25[\"recall\"].max() - fair25[\"recall\"].min(), 3)\nextra_bonuses = int((p > 0.25).sum() - (p > 1 / 3).sum())",
+   "solution": "import pandas as pd\nfrom sklearn.model_selection import cross_val_predict, StratifiedKFold\nfrom sklearn.ensemble import RandomForestClassifier\n\ng = pd.read_csv(\"guests_churn.csv\").merge(pd.read_csv(\"guests_age.csv\"), on=\"guest_id\", validate=\"one_to_one\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\", \"age_group\"]), dtype=int).fillna({\"avg_check\": 0})\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)\nforest = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0)\np = cross_val_predict(forest, X, y, cv=cv, method=\"predict_proba\")[:, 1]\n\ng[\"send\"] = p > 0.25\nfair25 = pd.DataFrame({\n    \"selected\": g.groupby(\"age_group\")[\"send\"].mean(),\n    \"recall\": g[g[\"churned\"] == 1].groupby(\"age_group\")[\"send\"].mean(),\n}).round(3)\ngap25 = round(fair25[\"recall\"].max() - fair25[\"recall\"].min(), 3)\nextra_bonuses = int((p > 0.25).sum() - (p > 1 / 3).sum())\nfixes_gap = bool(gap25 < 0.1)",
    "hints": [
     "Добавьте в `g` столбец `send = p > 0.25` и примените функцию `fair` из теории (или посчитайте два столбца отдельно через `groupby`).",
     "Полнота — среднее `send` только по уходящим: `g[g[\"churned\"] == 1].groupby(\"age_group\")[\"send\"].mean()`. Разница — `recall.max() - recall.min()`.",
-    "```python\ng[\"send\"] = p > 0.25\nfair25 = pd.DataFrame({\n    \"selected\": g.groupby(\"age_group\")[\"send\"].mean(),\n    \"recall\": g[g[\"churned\"] == 1].groupby(\"age_group\")[\"send\"].mean(),\n}).round(3)\ngap25 = round(fair25[\"recall\"].max() - ..., 3)\nextra_bonuses = int((p > 0.25).sum() - ...)\n```"
+    "```python\ng[\"send\"] = p > 0.25\nfair25 = pd.DataFrame({\n    \"selected\": g.groupby(\"age_group\")[\"send\"].mean(),\n    \"recall\": g[g[\"churned\"] == 1].groupby(\"age_group\")[\"send\"].mean(),\n}).round(3)\ngap25 = round(fair25[\"recall\"].max() - ..., 3)\nextra_bonuses = int((p > 0.25).sum() - ...)\nfixes_gap = bool(gap25 < 0.1)\n```"
    ],
-   "explain": "Полнота выросла у всех: у старших с 0.64 до 0.71, у остальных до 0.87–0.89. Разрыв почти не изменился — 0.18 против 0.20 при пороге 1/3, а бонусов стало больше на 127, и только 25 из них достались старшим гостям. Общий порог — плохой инструмент против перекоса: он двигает все группы сразу. Разрыв закрывают другие шаги — признаки «тихого ухода», другой канал удержания или, по решению бизнеса и юриста, отдельный порог."
+   "explain": "Полнота выросла у всех: у старших с 0.64 до 0.71, у остальных до 0.87–0.89. Разрыв почти не изменился — 0.18 против 0.20 при пороге 1/3, а бонусов стало больше на 127, и только 25 из них достались старшим гостям. Поэтому `fixes_gap = False`: ответ маркетингу — «снижение порога перекос не лечит, а бонусов стало больше». Общий порог — плохой инструмент против перекоса: он двигает все группы сразу. Разрыв закрывают другие шаги — признаки «тихого ухода», другой канал удержания или, по решению бизнеса и юриста, отдельный порог."
   },
   "ch08/05b-fairness/proxy-check": {
    "chapter": "ch08",
@@ -1421,6 +1582,78 @@
     "```python\nsingle = pd.Series({c: max(roc_auc_score(old, X[c]), 1 - roc_auc_score(old, X[c])) for c in X.columns}).round(3)\ntop_proxy = single.idxmax()\nX_age = X.join(pd.get_dummies(g[\"age_group\"], prefix=\"age\", dtype=int))\nauc_without = round(cross_val_score(forest, X, y, cv=cv, scoring=\"roc_auc\").mean(), 3)\nauc_with = round(cross_val_score(forest, ..., y, cv=cv, scoring=\"roc_auc\").mean(), 3)\n```"
    ],
    "explain": "Сильнее всего возраст выдаёт приложение (0.66), за ним доля доставки (0.63) и стаж в программе (0.59): старшие реже ставят приложение и реже заказывают доставку. Возраст добавляет к ROC-AUC модели около 0.01 (0.908 → 0.918) — и, как можно проверить тем же `fair`, поднимает полноту старших гостей примерно с 0.64 до 0.70. Получается неудобная развилка: чувствительный признак немного помогает именно той группе, которую модель обделяет. Механического ответа нет: это решение бизнеса и юриста, а задача аналитика — положить на стол оба числа и описать риски."
+  },
+  "ch08/05b-fairness/fair-toy": {
+   "chapter": "ch08",
+   "lesson": "05b-fairness",
+   "lesson_title": "Этика данных и справедливость модели",
+   "id": "fair-toy",
+   "title": "Три метрики на двенадцати гостях",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "guests_churn.csv",
+    "guests_age.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_t = _pd.DataFrame({\"group\": [\"A\"] * 6 + [\"B\"] * 6,\n                    \"churned\": [1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0],\n                    \"send\": [1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0]})\n_w = {'selected': _t.groupby('group')['send'].mean(),\n      'recall': _t[_t['churned'] == 1].groupby('group')['send'].mean(),\n      'precision': _t[_t['send'] == 1].groupby('group')['churned'].mean()}\n_how = {'selected': 'среднее send по всем гостям группы',\n        'recall': 'среднее send только по уходящим (churned == 1)',\n        'precision': 'среднее churned только по получившим (send == 1)'}\nfor name, ref in _w.items():\n    got = need(name, _pd.Series)\n    assert sorted(got.index) == ['A', 'B'], f'Индекс {name}: {list(got.index)} — нужны группы A и B.'\n    for k in ['A', 'B']:\n        assert close(got[k], ref[k], 0.006), f'{name}[{k!r}] = {got[k]}, а нужно {round(float(ref[k]), 2)}: {_how[name]}.'",
+   "starter": "import pandas as pd\n\nt = pd.DataFrame({\n    \"group\":   [\"A\"] * 6 + [\"B\"] * 6,\n    \"churned\": [1, 1, 1, 0, 0, 0,   1, 1, 1, 0, 0, 0],\n    \"send\":    [1, 1, 1, 0, 0, 0,   1, 0, 0, 1, 1, 0],\n})",
+   "solution": "import pandas as pd\n\nt = pd.DataFrame({\n    \"group\":   [\"A\"] * 6 + [\"B\"] * 6,\n    \"churned\": [1, 1, 1, 0, 0, 0,   1, 1, 1, 0, 0, 0],\n    \"send\":    [1, 1, 1, 0, 0, 0,   1, 0, 0, 1, 1, 0],\n})\nselected = t.groupby(\"group\")[\"send\"].mean().round(2)\nrecall = t[t[\"churned\"] == 1].groupby(\"group\")[\"send\"].mean().round(2)\nprecision = t[t[\"send\"] == 1].groupby(\"group\")[\"churned\"].mean().round(2)",
+   "hints": [
+    "Все три метрики — среднее одного столбца 0/1, но по разным строкам: `selected` — по всем, `recall` — по строкам `t[\"churned\"] == 1`, `precision` — по строкам `t[\"send\"] == 1`.",
+    "```python\nselected = t.groupby(\"group\")[\"send\"].mean().round(2)\nrecall = t[t[\"churned\"] == 1].groupby(\"group\")[\"send\"].mean().round(2)\nprecision = ...\n```"
+   ],
+   "explain": "Обе группы получили бонус поровну — половина гостей (0.5 и 0.5). Но в группе A бонус достался всем трём уходящим (полнота 1.0, точность 1.0), а в группе B — одному из трёх (0.33 и 0.33): два бонуса ушли тем, кто и так остался бы. По одной доле отобранных модель выглядит справедливой, по полноте — нет. Поэтому в отчёте по группам всегда три числа, а не одно."
+  },
+  "ch08/05b-fairness/missed": {
+   "chapter": "ch08",
+   "lesson": "05b-fairness",
+   "lesson_title": "Этика данных и справедливость модели",
+   "id": "missed",
+   "title": "Кого модель пропускает",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "guests_churn.csv",
+    "guests_age.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\nfrom sklearn.model_selection import cross_val_predict, StratifiedKFold\nfrom sklearn.ensemble import RandomForestClassifier\ng = pd.read_csv(\"guests_churn.csv\").merge(pd.read_csv(\"guests_age.csv\"), on=\"guest_id\", validate=\"one_to_one\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\", \"age_group\"]), dtype=int).fillna({\"avg_check\": 0})\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)\nforest = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0)\np = cross_val_predict(forest, X, y, cv=cv, method=\"predict_proba\")[:, 1]\ng[\"send\"] = p > 1 / 3",
+   "check": "import pandas as _pd\n_m = g[(g['churned'] == 1) & (~g['send'])]\nassert need('missed_n') == len(_m), f'missed_n = {need(\"missed_n\")}, а нужно {len(_m)}: уходящие (churned == 1), которым send == False.'\n_s = _m['age_group'].value_counts(normalize=True)\ns = need('missed_share', _pd.Series)\nassert sorted(s.index) == sorted(_s.index), f'Индекс missed_share: {list(s.index)} — нужны три возрастные группы.'\nfor k in _s.index:\n    assert close(s[k], _s[k], 0.0015), f'{k}: {s[k]}, а нужно {round(float(_s[k]), 3)} — доля группы среди пропущенных уходящих.'\n_b = (g['age_group'] == '50+').mean()\nassert close(need('base_old'), _b, 0.0015), f'base_old = {need(\"base_old\")}, а нужно {round(float(_b), 3)}: доля 50+ среди всех 2 400 гостей.'",
+   "starter": "import pandas as pd\n# готово, как в теории: g (с age_group и send), p — прогнозы вне выборки",
+   "solution": "import pandas as pd\n\nmissed = g[(g[\"churned\"] == 1) & (~g[\"send\"])]\nmissed_n = len(missed)\nmissed_share = missed[\"age_group\"].value_counts(normalize=True).round(3)\nbase_old = round((g[\"age_group\"] == \"50+\").mean(), 3)",
+   "hints": [
+    "Пропущенные — строки, где одновременно `g[\"churned\"] == 1` и `~g[\"send\"]` (знак `~` — «не»). Доли групп — `value_counts(normalize=True)`.",
+    "```python\nmissed = g[(g[\"churned\"] == 1) & (~g[\"send\"])]\nmissed_n = len(missed)\nmissed_share = missed[\"age_group\"].value_counts(normalize=True).round(3)\nbase_old = round(..., 3)\n```"
+   ],
+   "explain": "Модель пропускает 120 уходящих, и 40 % из них — гости 50+ (48 человек), хотя в базе их 18 %. Доля старших среди пропущенных вдвое с лишним больше их доли в базе. Такое сравнение «доля среди пропущенных против доли в базе» понятно без слова «полнота» — его удобно показывать бизнесу."
+  },
+  "ch08/05b-fairness/quiet-churn": {
+   "chapter": "ch08",
+   "lesson": "05b-fairness",
+   "lesson_title": "Этика данных и справедливость модели",
+   "id": "quiet-churn",
+   "title": "Тихий уход",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "guests_churn.csv",
+    "guests_age.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_g = _pd.read_csv('guests_churn.csv').merge(_pd.read_csv('guests_age.csv'), on='guest_id')\n_c = _g[_g['churned'] == 1]\n_md = _c.groupby('age_group')['days_since_last'].median()\n_cp = (_c['complaints'] > 0).groupby(_c['age_group']).mean()\nq = need('quiet', _pd.DataFrame)\nassert {'med_days', 'complained'} <= set(q.columns), f'Столбцы quiet: {list(q.columns)}, нужны med_days и complained.'\nassert sorted(q.index) == sorted(_md.index), f'Индекс quiet: {list(q.index)} — нужны три возрастные группы.'\nfor k in _md.index:\n    assert close(q.loc[k, 'med_days'], _md[k], 0.01), f'{k}: med_days = {q.loc[k, \"med_days\"]}, а нужно {float(_md[k])}. Медиана только по уходящим гостям группы.'\n    assert close(q.loc[k, 'complained'], _cp[k], 0.0015), f'{k}: complained = {q.loc[k, \"complained\"]}, а нужно {round(float(_cp[k]), 3)}: доля complaints > 0 среди уходящих.'\nassert need('quietest') == _cp.idxmin(), f'quietest = {need(\"quietest\")!r}, а нужно {_cp.idxmin()!r}.'",
+   "starter": "import pandas as pd\n\ng = pd.read_csv(\"guests_churn.csv\").merge(pd.read_csv(\"guests_age.csv\"), on=\"guest_id\", validate=\"one_to_one\")",
+   "solution": "import pandas as pd\n\ng = pd.read_csv(\"guests_churn.csv\").merge(pd.read_csv(\"guests_age.csv\"), on=\"guest_id\", validate=\"one_to_one\")\nc = g[g[\"churned\"] == 1].copy()\nc[\"complained\"] = c[\"complaints\"] > 0\nquiet = c.groupby(\"age_group\").agg(med_days=(\"days_since_last\", \"median\"),\n                                   complained=(\"complained\", \"mean\")).round(3)\nquietest = quiet[\"complained\"].idxmin()",
+   "hints": [
+    "Сначала отфильтруйте уходящих: `c = g[g[\"churned\"] == 1]`. Флаг жалобы — `c[\"complaints\"] > 0`; его среднее по группе — доля.",
+    "```python\nc = g[g[\"churned\"] == 1].copy()\nc[\"complained\"] = c[\"complaints\"] > 0\nquiet = c.groupby(\"age_group\").agg(med_days=(\"days_since_last\", \"median\"),\n                                   complained=(\"complained\", \"mean\")).round(3)\nquietest = ...\n```"
+   ],
+   "explain": "Медианная пауза у уходящих гостей 50+ — 22 дня (у 30–49 лет — 32, у младших — 24), и жалобу оставили только 9.8 % из них против 29–37 % у остальных. Два самых сильных сигнала модели — давность и жалоба — у старших слабее, поэтому лес их и пропускает. Вывод для бизнеса: нужен признак, который ловит тихий уход, — например, падение частоты визитов относительно прошлого квартала."
   },
   "ch08/06-project/look": {
    "chapter": "ch08",
@@ -1843,6 +2076,29 @@
     "```python\nrest = data[~data[\"guest_id\"].isin(pilot[\"guest_id\"]) & (data[\"orders_n\"] > 0)].copy()\nrest[\"p\"] = final.predict_proba(rest[num + cat])[:, 1]\nrest[\"send\"] = rest[\"p\"] > best_t\nn_rest, n_send = len(rest), int(rest[\"send\"].sum())\nportrait = ...\napp_share = round((rest.loc[rest[\"send\"], \"source\"] == \"приложение\").mean(), 3)\n```"
    ],
    "explain": "Из 1 987 кандидатов модель отбирает 792. У них 58 % заказов — в будни до 10 утра (у остальных 21 %), ходят чаще (0.67 заказа в неделю против 0.44), почти не берут доставку (5 % против 17 %) и были у нас недавно (14 дней против 32). Больше половины зарегистрировались через приложение. Это и есть портрет «утренних постоянных». Обратите внимание, чего в портрете нет: средний чек у групп почти одинаковый (286 ₽ против 281 ₽), а доля кофе различается умеренно (59 % против 52 %). Абонемент продаёт привычку, а не любовь к дорогим напиткам."
+  },
+  "ch08/07-final-project/fp-groups": {
+   "chapter": "ch08",
+   "lesson": "07-final-project",
+   "lesson_title": "Итоговый проект: от базы данных до рекомендаций",
+   "id": "fp-groups",
+   "title": "Проверка по группам",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "final1.db"
+   ],
+   "display": true,
+   "setup": "import sqlite3 as _sq\nimport pandas as _pd0\n\ndef _fp_build(cutoff=\"2026-07-01\"):\n    con = _sq.connect(\"final1.db\")\n    def q(sql):\n        return _pd0.read_sql_query(sql, con, params={\"cutoff\": cutoff})\n    guests = _pd0.read_sql_query(\n        \"SELECT g.guest_id, g.reg_date, g.source, g.birth_year, s.city \"\n        \"FROM guests g JOIN shops s ON s.shop_id = g.home_shop_id\", con)\n    orders = q(\"\"\"\n        SELECT guest_id, COUNT(*) AS orders_n,\n               julianday(:cutoff) - julianday(MAX(ordered_at)) AS recency_days,\n               AVG(amount) AS avg_check,\n               AVG(channel = 'доставка') AS delivery_share,\n               AVG(CAST(strftime('%H', ordered_at) AS INTEGER) < 10\n                   AND strftime('%w', ordered_at) NOT IN ('0', '6')) AS morning_share,\n               COUNT(DISTINCT shop_id) AS shops_n\n        FROM orders WHERE ordered_at < :cutoff GROUP BY guest_id\"\"\")\n    coffee = q(\"\"\"\n        SELECT o.guest_id, AVG(m.category = 'кофе') AS coffee_share\n        FROM orders o JOIN order_items i ON i.order_id = o.order_id\n        JOIN menu m ON m.item_id = i.item_id\n        WHERE o.ordered_at < :cutoff GROUP BY o.guest_id\"\"\")\n    app = q(\"SELECT guest_id, SUM(sessions) AS app_sessions FROM app_sessions \"\n            \"WHERE month < substr(:cutoff, 1, 7) GROUP BY guest_id\")\n    comp = q(\"SELECT guest_id, COUNT(*) AS complaints_n FROM complaints \"\n             \"WHERE created_at < :cutoff GROUP BY guest_id\")\n    con.close()\n    df = guests\n    for part in (orders, coffee, app, comp):\n        df = df.merge(part, on=\"guest_id\", how=\"left\", validate=\"one_to_one\")\n    df[[\"orders_n\", \"app_sessions\", \"complaints_n\"]] = df[[\"orders_n\", \"app_sessions\", \"complaints_n\"]].fillna(0)\n    df[\"tenure_days\"] = (_pd0.Timestamp(cutoff) - _pd0.to_datetime(df[\"reg_date\"])).dt.days\n    df[\"orders_per_week\"] = df[\"orders_n\"] / (df[\"tenure_days\"].clip(upper=122) / 7)\n    return df\n\n_con0 = _sq.connect(\"final1.db\")\npilot = _pd0.read_sql_query(\"SELECT guest_id, group_name, bought FROM pilot\", _con0)\n_con0.close()\ndata = _fp_build()",
+   "check": "import pandas as _pd\nfrom sklearn.model_selection import cross_val_predict as _cvp\nfrom sklearn.model_selection import StratifiedKFold as _SKF\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.compose import make_column_transformer as _mct\nfrom sklearn.impute import SimpleImputer as _SI\nfrom sklearn.preprocessing import OneHotEncoder as _OHE, StandardScaler as _SS\nfrom sklearn.linear_model import LogisticRegression as _LR\n_d = _fp_build()\n_o = pilot[pilot[\"group_name\"] == \"предложение\"].merge(_d, on=\"guest_id\")\n_num = [\"orders_n\", \"orders_per_week\", \"recency_days\", \"avg_check\", \"delivery_share\", \"morning_share\",\n        \"shops_n\", \"tenure_days\", \"coffee_share\", \"app_sessions\", \"complaints_n\"]\n_cat = [\"source\", \"city\"]\n_m = _mp(_mct((_mp(_SI(strategy=\"median\"), _SS()), _num), (_OHE(handle_unknown=\"ignore\"), _cat)), _LR(max_iter=1000))\n_o[\"p\"] = _cvp(_m, _o[_num + _cat], _o[\"bought\"], cv=_SKF(n_splits=5, shuffle=True, random_state=42), method=\"predict_proba\")[:, 1]\n_o[\"send\"] = _o[\"p\"] > 0.08\n_sel = _o.groupby(\"city\")[\"send\"].mean()\n_rec = _o[_o[\"bought\"] == 1].groupby(\"city\")[\"send\"].mean()\nfor name, ref, how in [(\"sel_by_city\", _sel, \"доля send среди всех гостей города\"),\n                       (\"recall_by_city\", _rec, \"доля send среди купивших (bought == 1)\")]:\n    got = need(name, _pd.Series)\n    assert sorted(got.index) == sorted(ref.index), f'Индекс {name}: {list(got.index)} — нужны все города.'\n    for c in ref.index:\n        assert close(got[c], ref[c], 0.0015), f'{name}[{c!r}] = {got[c]}, а нужно {round(float(ref[c]), 3)}: {how}.'\nassert need('weak_city') == _rec.idxmin(), f'weak_city = {need(\"weak_city\")!r}, а нужно {_rec.idxmin()!r}.'\n_age = 2026 - _o[\"birth_year\"].where(_o[\"birth_year\"] != 1900)\n_o[\"age_group\"] = _pd.cut(_age, [0, 29, 49, 200], labels=[\"до 30\", \"30–49\", \"50+\"])\n_ra = _o[_o[\"bought\"] == 1].groupby(\"age_group\", observed=True)[\"send\"].mean()\nra = need('recall_by_age', _pd.Series)\nassert sorted(map(str, ra.index)) == sorted(map(str, _ra.index)), f'Индекс recall_by_age: {list(ra.index)} — нужны группы до 30, 30–49, 50+.'\nfor a in _ra.index:\n    assert close(ra[a], _ra[a], 0.0015), f'recall_by_age[{a!r}] = {ra[a]}, а нужно {round(float(_ra[a]), 3)}. Границы pd.cut: [0, 29, 49, 200]; 1900 — заменить на пропуск.'",
+   "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, StratifiedKFold\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.compose import make_column_transformer\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\n\n# data (признаки всех гостей на 1 июля) и pilot уже загружены\noff = pilot[pilot[\"group_name\"] == \"предложение\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\nnum = [\"orders_n\", \"orders_per_week\", \"recency_days\", \"avg_check\", \"delivery_share\", \"morning_share\",\n       \"shops_n\", \"tenure_days\", \"coffee_share\", \"app_sessions\", \"complaints_n\"]\ncat = [\"source\", \"city\"]\nX, y = off[num + cat], off[\"bought\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\nscaled = make_column_transformer(\n    (make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nplain = make_column_transformer(\n    (SimpleImputer(strategy=\"median\"), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nfrom sklearn.linear_model import LogisticRegression\n\nbest = make_pipeline(scaled, LogisticRegression(max_iter=1000))   # модель, выбранная в шаге 4\nbest_t = 0.08\n\nfrom sklearn.model_selection import cross_val_predict",
+   "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, StratifiedKFold\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.compose import make_column_transformer\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\n\n# data (признаки всех гостей на 1 июля) и pilot уже загружены\noff = pilot[pilot[\"group_name\"] == \"предложение\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\nnum = [\"orders_n\", \"orders_per_week\", \"recency_days\", \"avg_check\", \"delivery_share\", \"morning_share\",\n       \"shops_n\", \"tenure_days\", \"coffee_share\", \"app_sessions\", \"complaints_n\"]\ncat = [\"source\", \"city\"]\nX, y = off[num + cat], off[\"bought\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\nscaled = make_column_transformer(\n    (make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nplain = make_column_transformer(\n    (SimpleImputer(strategy=\"median\"), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nfrom sklearn.linear_model import LogisticRegression\n\nbest = make_pipeline(scaled, LogisticRegression(max_iter=1000))   # модель, выбранная в шаге 4\nbest_t = 0.08\n\nfrom sklearn.model_selection import cross_val_predict\n\noff[\"p\"] = cross_val_predict(best, X, y, cv=cv, method=\"predict_proba\")[:, 1]\noff[\"send\"] = off[\"p\"] > best_t\nsel_by_city = off.groupby(\"city\")[\"send\"].mean().round(3)\nrecall_by_city = off[off[\"bought\"] == 1].groupby(\"city\")[\"send\"].mean().round(3)\nweak_city = recall_by_city.idxmin()\n\nage = 2026 - off[\"birth_year\"].where(off[\"birth_year\"] != 1900)\noff[\"age_group\"] = pd.cut(age, [0, 29, 49, 200], labels=[\"до 30\", \"30–49\", \"50+\"])\nrecall_by_age = off[off[\"bought\"] == 1].groupby(\"age_group\", observed=True)[\"send\"].mean().round(3)",
+   "hints": [
+    "Прогнозы положите столбцом в `off`: `off[\"p\"] = cross_val_predict(...)`, `off[\"send\"] = off[\"p\"] > best_t`. Полнота по городам — `off[off[\"bought\"] == 1].groupby(\"city\")[\"send\"].mean()`.",
+    "```python\nage = 2026 - off[\"birth_year\"].where(off[\"birth_year\"] != 1900)   # 1900 → пропуск\noff[\"age_group\"] = pd.cut(age, [0, 29, 49, 200], labels=[\"до 30\", \"30–49\", \"50+\"])\nrecall_by_age = off[off[\"bought\"] == 1].groupby(\"age_group\", observed=True)[\"send\"].mean().round(3)\n```"
+   ],
+   "explain": "По городам: в Тюмени модель отбирает 21 % гостей и ловит 65 % покупателей, в остальных городах — 39–44 % и 84–96 %. По возрасту перекоса нет: полнота 0.84–0.90, но у гостей 50+ всего 20 покупателей, и одна покупка двигает их полноту на 5 п. п. `where(условие)` оставляет значения, где условие верно, и ставит пропуск в остальных — так заглушка 1900 не превращается в «126 лет». `observed=True` в `groupby` по категориям из `pd.cut` убирает пустые группы и предупреждение pandas."
   },
   "ch08/07-final-project/fp-honest": {
    "chapter": "ch08",

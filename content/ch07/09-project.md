@@ -474,7 +474,7 @@ print(evening_share, evening_rate, day_rate, evening_wait, day_wait)
 
 - `y` — `converted`; `X` — все столбцы `d`, кроме `lead_id`, `created`, `contract_rub` и `converted` (без `get_dummies` — подготовку сделает конвейер);
 - `X_train`, `X_test`, `y_train`, `y_test` — `train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)`;
-- `pre` — `ColumnTransformer` (урок «Pipeline: предобработка и модель вместе»): числовые столбцы `num` — `SimpleImputer(strategy="median")`, затем `StandardScaler()`; категориальные `cat` — `SimpleImputer(strategy="constant", fill_value="не указан")`, затем `OneHotEncoder(handle_unknown="ignore")`;
+- `pre` — `ColumnTransformer` (урок «Pipeline: предобработка и модель вместе»): числовые столбцы `num` — `SimpleImputer(strategy="median")`, затем `StandardScaler()`; категориальные `cat` — `SimpleImputer(strategy="constant", fill_value="не указан")` (`SimpleImputer` умеет заполнять и текст — константой: пропуск станет отдельной категорией «не указан»), затем `OneHotEncoder(handle_unknown="ignore")`;
 - `pipe` — `Pipeline([("prep", pre), ("model", LogisticRegression(max_iter=2000))])`.
 
 Сохраните `n_features` — сколько столбцов получается после `pre` на обучающей части, и `cv_auc` — средний ROC-AUC конвейера на фолдах `kf` по обучающей части (3 знака).
@@ -710,10 +710,10 @@ print(dummy_acc, forest_acc, forest_f1, balanced_f1)
 2. возьмите `int(len(...) * share)` заявок с наибольшей оценкой (`nlargest`);
 3. верните сумму `y_true` по ним, делённую на сумму `y_true` по всем.
 
-Проверьте её на правиле директора по **обучающей** части: правило отмечает заявку, если клиент повторный **или** пришёл по рекомендации. Сохраните:
+Затем посчитайте точку сравнения — правило директора на **обучающей** части: правило отмечает заявку, если клиент повторный **или** пришёл по рекомендации. Правило — не оценка, а отметка 0/1, и отмечает оно не 30 % заявок, поэтому `catch_rate` к нему не применяйте. Сохраните:
 
 - `rule_share` — какую долю заявок `X_train` отмечает правило (3 знака);
-- `rule_catch` — какую долю договоров `y_train` оно ловит (3 знака);
+- `rule_catch` — какую долю договоров `y_train` оно ловит: договоры среди отмеченных правилом заявок, делённые на все договоры `y_train` (3 знака);
 - `random_catch` — `catch_rate` для случайных оценок `np.random.default_rng(0).random(len(y_train))` (3 знака).
 
 ### setup

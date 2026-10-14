@@ -1,6 +1,6 @@
 ---
 title: "Групповое разбиение и цена модели"
-lead: "Две проверки, без которых сравнение моделей нечестно. Если один гость встречается во многих строках, модель может запомнить его, а не выучить закономерность, — и обычная кросс-валидация этого не заметит. А если лучшая модель учится в сто раз дольше, это тоже часть её цены."
+lead: "Две проверки, без которых сравнение моделей нечестно. Если один гость встречается во многих строках, модель может запомнить его, а не выучить закономерность, — и обычная кросс-валидация этого не заметит. А если лучшая модель учится в десятки раз дольше, это тоже часть её цены."
 files: [guest_orders.csv, deliveries.csv]
 recap:
   - "Если объект повторяется в строках (гость, кофейня, курьер), а модель будут применять к новым таким объектам, — групповое разбиение: `GroupKFold(5)` с `groups=` в `cross_val_score`, `GroupShuffleSplit` для одного теста. Обычное разбиение тогда завышает оценку за счёт «памяти» об объектах."
@@ -27,11 +27,11 @@ from sklearn.model_selection import KFold, GroupKFold
 
 toy = pd.DataFrame({"guest": list("AAAABBBCCC")})
 print("KFold — строки вперемешку:")
-for tr, te in KFold(3, shuffle=True, random_state=0).split(toy):
-    print("  проверка:", "".join(toy["guest"].iloc[te]), "| обучение:", "".join(toy["guest"].iloc[tr]))
+for tr, va in KFold(3, shuffle=True, random_state=0).split(toy):
+    print("  проверка:", "".join(toy["guest"].iloc[va]), "| обучение:", "".join(toy["guest"].iloc[tr]))
 print("GroupKFold — гость целиком:")
-for tr, te in GroupKFold(3).split(toy, groups=toy["guest"]):
-    print("  проверка:", "".join(toy["guest"].iloc[te]), "| обучение:", "".join(toy["guest"].iloc[tr]))
+for tr, va in GroupKFold(3).split(toy, groups=toy["guest"]):
+    print("  проверка:", "".join(toy["guest"].iloc[va]), "| обучение:", "".join(toy["guest"].iloc[tr]))
 ```
 
 Что здесь происходит:
@@ -80,9 +80,9 @@ pd.DataFrame(rows, index=["KFold", "GroupKFold", "разница"]).T.round(3)
 - `cross_val_score(..., cv=GroupKFold(5), groups=groups)` — та же кросс-валидация, но фолды режутся по гостям; `groups=` передаётся в `cross_val_score`, а он отдаёт его разбиению;
 - `rows[name]` — среднее по фолдам при обычном и групповом разбиении и их разница.
 
-Как читать результат: при обычном разбиении лучше всех выглядят дерево и лес — около 0.59 против 0.507 у «всегда да». При групповом их качество падает почти до базового (дерево и лес — около 0.51; точные цифры немного зависят от версии sklearn): то, что они «умели», было памятью о конкретных гостях. Логистическая регрессия не умеет запоминать отдельные адреса и почти не теряет (0.569 → около 0.56) — по честной проверке она лучшая. **Победитель сменился** от одного только способа разбиения.
+Как читать результат: при обычном разбиении лучше всех выглядят дерево и лес — около 0.59 против 0.507 у «всегда да». При групповом их качество падает почти до базового (дерево и лес — около 0.50–0.52; точные цифры немного зависят от версии sklearn): то, что они «умели», было памятью о конкретных гостях. Логистическая регрессия не умеет запоминать отдельные адреса и почти не теряет (0.569 → 0.55–0.56) — по честной проверке она лучшая. **Победитель сменился** от одного только способа разбиения.
 
-Бизнес-вывод тоже меняется: по свойствам одного заказа десерт у незнакомого гостя предсказывается слабо — на 5–6 п.п. лучше ответа «всегда да». Если запускать функцию для новых гостей, хватит простой модели или правила; для постоянных гостей полезнее явный признак «доля десертов в его прошлых заказах».
+Бизнес-вывод тоже меняется: по свойствам одного заказа десерт у незнакомого гостя предсказывается слабо — примерно на 5 п.п. лучше ответа «всегда да». Если запускать функцию для новых гостей, хватит простой модели или правила; для постоянных гостей полезнее явный признак «доля десертов в его прошлых заказах».
 
 ### Одно разбиение: `GroupShuffleSplit`
 
@@ -143,15 +143,11 @@ print(f"обычный train_test_split: гостей в тесте {gr_te.nuniq
 - **Группа в признаках.** Если в `X` остался `guest_id` закодированным числом или почти уникальный признак гостя (точный адрес), обычное разбиение даёт «память», а групповое — честную, но низкую оценку. Разница двух оценок — хороший детектор такой утечки.
 :::
 
-{{practice: group-split, group-cv}}
+{{practice: toy-folds, group-split, group-cv, no-distance}}
 
 ## Сколько времени учится и предсказывает модель
 
-**Зачем.** Модель выбирают не только по качеству. Предсказание в приложении должно приходить за доли секунды, а переобучение каждую ночь — укладываться в отведённое окно. Если лес лучше логистической регрессии на 0.5 п.п., но учится в сто раз дольше, это аргумент в обсуждении. Поэтому в таблицу сравнения моделей добавляют два столбца: время `fit` и время `predict`.
-
-::: tip Аналогия
-Выбирая кофемашину, смотрят не только на вкус эспрессо, но и на то, сколько она греется утром и сколько секунд готовит одну чашку. Вкус — качество модели, прогрев — `fit`, чашка — `predict`.
-:::
+**Зачем.** Модель выбирают не только по качеству. Предсказание в приложении должно приходить за доли секунды, а переобучение каждую ночь — укладываться в отведённое окно. Если одна модель лучше другой на 0.5 п.п., но учится в десятки раз дольше, это аргумент в обсуждении. Поэтому в таблицу сравнения моделей добавляют два столбца: время `fit` и время `predict`.
 
 ### Секундомер в коде: `time.perf_counter()`
 
@@ -246,6 +242,57 @@ print(t1 >= t0, t1 - t0 < 1)
 {{practice: p-timer, speed-table}}
 
 ## Практика
+
+## task: toy-folds | Знакомые гости в проверке | warmup
+
+Повторите игрушечный пример из теории и посчитайте, сколько раз гость из проверочной части уже встречался модели в обучении. Для каждого фолда возьмите множество гостей проверки и множество гостей обучения и сложите размеры их пересечений по всем фолдам: `shared_plain` — для `KFold(3, shuffle=True, random_state=0)`, `shared_group` — для `GroupKFold(3)` с `groups=toy["guest"]`.
+
+### starter
+```python
+import pandas as pd
+from sklearn.model_selection import KFold, GroupKFold
+
+toy = pd.DataFrame({"guest": list("AAAABBBCCC")})
+
+```
+
+### check
+```python
+import pandas as _pd
+from sklearn.model_selection import KFold as _KF, GroupKFold as _GKF
+_t = _pd.DataFrame({'guest': list('AAAABBBCCC')})
+_g = _t['guest']
+_sp = sum(len(set(_g.iloc[va]) & set(_g.iloc[tr])) for tr, va in _KF(3, shuffle=True, random_state=0).split(_t))
+assert need('shared_group') == 0, f'shared_group = {need("shared_group")}. В GroupKFold все заказы гостя уходят в один фолд — пересечений быть не должно. Передали groups=toy["guest"]?'
+assert need('shared_plain') == _sp, f'shared_plain = {need("shared_plain")}, а нужно {_sp}. Для каждого фолда: len(set(гости проверки) & set(гости обучения)), затем сумма по фолдам.'
+```
+
+### hint
+Цикл как в теории: `for tr, va in KFold(3, shuffle=True, random_state=0).split(toy):` — гости проверки `set(toy["guest"].iloc[va])`, гости обучения `set(toy["guest"].iloc[tr])`.
+
+### hint
+Пересечение множеств — `&`, его размер — `len(...)`. Заведите счётчик `shared_plain = 0` и прибавляйте в цикле. Для `GroupKFold(3)` в `split` передайте `groups=toy["guest"]`.
+
+### solution
+```python
+import pandas as pd
+from sklearn.model_selection import KFold, GroupKFold
+
+toy = pd.DataFrame({"guest": list("AAAABBBCCC")})
+g = toy["guest"]
+
+shared_plain = 0
+for tr, va in KFold(3, shuffle=True, random_state=0).split(toy):
+    shared_plain += len(set(g.iloc[va]) & set(g.iloc[tr]))
+
+shared_group = 0
+for tr, va in GroupKFold(3).split(toy, groups=g):
+    shared_group += len(set(g.iloc[va]) & set(g.iloc[tr]))
+print(shared_plain, shared_group)
+```
+
+### explain
+При `KFold` каждый гость проверки уже знаком модели: в трёх фолдах 3 + 3 + 2 = 8 «знакомых» встреч — по числу разных гостей в каждой проверке. При `GroupKFold` — ноль: проверка всегда идёт на госте, которого модель не видела. На реальных данных тот же подсчёт — быстрый способ убедиться, что групповое разбиение настроено правильно.
 
 ## task: group-split | Новые гости в тесте | base
 
@@ -382,7 +429,66 @@ print(plain, group)
 ```
 
 ### explain
-Лес при обычном разбиении теряет при переходе к групповому около 7 п.п. (0.589 → 0.522), логистическая регрессия — меньше 2 п.п. (0.569 → 0.554). Победитель меняется: по обычной проверке лучше лес, по честной для новых гостей — регрессия. Лес запоминает точные адреса гостей и их привычки; регрессия рисует одну плавную зависимость и запоминать отдельных гостей не умеет — поэтому ей нечего терять. Большой разрыв между обычной и групповой оценкой — сигнал: модель выезжает на «памяти» об объектах. Если бы мы выбрали лес по обычной кросс-валидации, в приложении для новых гостей он работал бы почти как ответ «всегда да».
+Лес при переходе от обычного разбиения к групповому теряет 7–8 п.п. (0.589 → около 0.51–0.52), логистическая регрессия — меньше 2 п.п. (0.569 → около 0.55–0.56); точные цифры чуть зависят от версии sklearn. Победитель меняется: по обычной проверке лучше лес, по честной для новых гостей — регрессия. Лес запоминает точные адреса гостей и их привычки; регрессия рисует одну плавную зависимость и запоминать отдельных гостей не умеет — поэтому ей нечего терять. Большой разрыв между обычной и групповой оценкой — сигнал: модель выезжает на «памяти» об объектах. Если бы мы выбрали лес по обычной кросс-валидации, в приложении для новых гостей он работал бы почти как ответ «всегда да».
+
+## task: no-distance | Детектор памяти | plus
+
+В типичных ошибках сказано: разница обычной и групповой оценки — детектор признака, по которому модель «узнаёт» гостя. Проверьте это на `guest_orders.csv`: уберите из признаков `distance_km` (останутся `weekday`, `hour`, `items`, `amount`) и для леса `RandomForestClassifier(n_estimators=50, random_state=0)` посчитайте средние accuracy при `KFold(5, shuffle=True, random_state=42)` и при `GroupKFold(5)` с группами `guest_id`. Сохраните `plain_nod` и `group_nod` — эти средние (3 знака) и `gap_nod` — их разницу «обычное минус групповое» (3 знака, по неокруглённым средним).
+
+### starter
+```python
+import pandas as pd
+from sklearn.model_selection import KFold, GroupKFold, cross_val_score
+from sklearn.ensemble import RandomForestClassifier
+o = pd.read_csv("guest_orders.csv")
+y, groups = o["dessert"], o["guest_id"]
+
+```
+
+### check
+```python
+import pandas as _pd
+from sklearn.model_selection import KFold as _KF, GroupKFold as _GKF, cross_val_score as _cvs
+from sklearn.ensemble import RandomForestClassifier as _RF
+_o = _pd.read_csv('guest_orders.csv')
+_X = _o[['weekday', 'hour', 'items', 'amount']]
+_y, _g = _o['dessert'], _o['guest_id']
+_p = _cvs(_RF(n_estimators=50, random_state=0), _X, _y, cv=_KF(5, shuffle=True, random_state=42)).mean()
+_q = _cvs(_RF(n_estimators=50, random_state=0), _X, _y, cv=_GKF(5), groups=_g).mean()
+_full = _cvs(_RF(n_estimators=50, random_state=0), _o[['weekday', 'hour', 'items', 'amount', 'distance_km']], _y, cv=_KF(5, shuffle=True, random_state=42)).mean()
+pn = need('plain_nod')
+if close(pn, round(_full, 3), 0.0011):
+    raise AssertionError(f'plain_nod = {pn} — это результат с distance_km. Уберите его из признаков.')
+assert close(pn, round(_p, 3), 0.0011), f'plain_nod = {pn}, а ожидалось {round(_p, 3)}: KFold(5, shuffle=True, random_state=42) на четырёх признаках.'
+assert close(need('group_nod'), round(_q, 3), 0.0011), f'group_nod = {need("group_nod")}, а ожидалось {round(_q, 3)}: GroupKFold(5) с groups=o["guest_id"].'
+assert close(need('gap_nod'), round(_p - _q, 3), 0.0011), f'gap_nod = {need("gap_nod")}, а ожидалось {round(_p - _q, 3)}: обычное минус групповое, по неокруглённым средним.'
+```
+
+### hint
+Признаки без расстояния: `X = o[["weekday", "hour", "items", "amount"]]`. Дальше — два вызова `cross_val_score`, как в теории, с `.mean()`.
+
+### hint
+`gap_nod = round(plain - group, 3)`, где `plain` и `group` — неокруглённые средние; округляйте только при сохранении в `plain_nod` и `group_nod`.
+
+### solution
+```python
+import pandas as pd
+from sklearn.model_selection import KFold, GroupKFold, cross_val_score
+from sklearn.ensemble import RandomForestClassifier
+o = pd.read_csv("guest_orders.csv")
+y, groups = o["dessert"], o["guest_id"]
+
+X = o[["weekday", "hour", "items", "amount"]]
+forest = RandomForestClassifier(n_estimators=50, random_state=0)
+plain = cross_val_score(forest, X, y, cv=KFold(5, shuffle=True, random_state=42)).mean()
+group = cross_val_score(forest, X, y, cv=GroupKFold(5), groups=groups).mean()
+plain_nod, group_nod = round(plain, 3), round(group, 3)
+gap_nod = round(plain - group, 3)
+print(plain_nod, group_nod, gap_nod)
+```
+
+### explain
+Без расстояния обычная кросс-валидация леса падает с 0.589 до около 0.52, а разрыв с групповой сжимается с 7–8 п.п. до меньше 1 п.п. (точные цифры чуть зависят от версии sklearn). Значит, почти весь «выигрыш» леса при обычном разбиении давал один признак — `distance_km`, то есть адрес гостя. Групповая оценка при этом почти не изменилась: на незнакомых гостях расстояние и раньше ничего не давало. Вывод для практики: если обычная и групповая оценки сильно расходятся, ищите признак, который однозначно указывает на объект, — и решайте, законен ли он в работе модели.
 
 ## task: p-timer | Секундомер для fit | warmup
 
@@ -429,7 +535,7 @@ assert fs < 60, f'fit_s = {fs} — подозрительно много: в з�
 
 ## task: speed-table | Качество и скорость | base
 
-`X_train`, `X_test`, `y_train`, `y_test` уже готовы. Сравните дерево `DecisionTreeClassifier(max_depth=3, random_state=0)` и лес `RandomForestClassifier(n_estimators=100, random_state=0)`. Соберите таблицу `speed`: индекс — `"дерево"` и `"лес"`, столбцы `accuracy` (доля правильных на тесте, 3 знака), `fit_s` и `predict_s` (секунды, замер `time.perf_counter()`). В `fit_ratio` сохраните, во сколько раз лес учится дольше дерева.
+`X_train`, `X_test`, `y_train`, `y_test` уже готовы. Сравните дерево `DecisionTreeClassifier(max_depth=3, random_state=0)`, лес `RandomForestClassifier(n_estimators=100, random_state=0)` и логистическую регрессию `LogisticRegression(max_iter=2000)`. Соберите таблицу `speed`: индекс — `"дерево"`, `"лес"` и `"логрегрессия"`, столбцы `accuracy` (доля правильных на тесте, 3 знака), `fit_s` и `predict_s` (секунды, замер `time.perf_counter()`). В `fit_ratio` сохраните, во сколько раз лес учится дольше дерева.
 
 ### setup
 ```python
@@ -450,6 +556,8 @@ import time
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+# готово, как в теории: X_train, X_test, y_train, y_test
 
 ```
 
@@ -458,6 +566,7 @@ from sklearn.ensemble import RandomForestClassifier
 import pandas as _pd
 from sklearn.tree import DecisionTreeClassifier as _T
 from sklearn.ensemble import RandomForestClassifier as _RF
+from sklearn.linear_model import LogisticRegression as _LR
 _d = _pd.read_csv('deliveries.csv', parse_dates=['created'])
 from sklearn.model_selection import train_test_split as _tts
 _o = _d[_d['actual_min'].between(1, 299)].copy()
@@ -466,9 +575,10 @@ _y = _o['actual_min'] > _o['promised_min']
 _X = _pd.get_dummies(_o[['distance_km', 'items', 'promised_min', 'hour', 'courier', 'weather', 'shop_id']], dtype=int)
 _a, _b, _c, _e = _tts(_X, _y, test_size=0.2, random_state=42)
 _acc = {'дерево': round((_T(max_depth=3, random_state=0).fit(_a, _c).predict(_b) == _e).mean(), 3),
-        'лес': round((_RF(n_estimators=100, random_state=0).fit(_a, _c).predict(_b) == _e).mean(), 3)}
+        'лес': round((_RF(n_estimators=100, random_state=0).fit(_a, _c).predict(_b) == _e).mean(), 3),
+        'логрегрессия': round((_LR(max_iter=2000).fit(_a, _c).predict(_b) == _e).mean(), 3)}
 t = need('speed', _pd.DataFrame)
-assert set(t.index) == {'дерево', 'лес'}, f'Индекс speed: {list(t.index)}, а нужны «дерево» и «лес».'
+assert set(t.index) == {'дерево', 'лес', 'логрегрессия'}, f'Индекс speed: {list(t.index)}, а нужны «дерево», «лес» и «логрегрессия».'
 assert {'accuracy', 'fit_s', 'predict_s'} <= set(t.columns), f'Столбцы speed: {list(t.columns)}, нужны accuracy, fit_s, predict_s.'
 for n in _acc:
     assert close(t.loc[n, 'accuracy'], _acc[n], 0.0011), f'{n}: accuracy = {t.loc[n, "accuracy"]}, а ожидалось {_acc[n]}. Доля совпадений predict(X_test) и y_test.'
@@ -493,10 +603,12 @@ import time
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 
 models = {
     "дерево": DecisionTreeClassifier(max_depth=3, random_state=0),
     "лес": RandomForestClassifier(n_estimators=100, random_state=0),
+    "логрегрессия": LogisticRegression(max_iter=2000),
 }
 rows = []
 for name, model in models.items():
@@ -514,4 +626,4 @@ speed
 ```
 
 ### explain
-Качество на этом тесте почти одинаковое (0.892 у дерева и 0.905 у леса), а время отличается в десятки раз: лес строит сто деревьев, и каждое из них ещё и отвечает при `predict`. Точное число у вас своё — оно зависит от компьютера и его загрузки, поэтому проверка смотрит только на то, что лес медленнее. Вывод для отчёта: «лес лучше на 1 п.п. и в N раз медленнее» — и решение зависит от того, что дороже в этой задаче. Частая ошибка — засечь `t0` один раз перед циклом: тогда время каждой следующей модели включает время всех предыдущих.
+Качество на этом тесте почти одинаковое (0.892 у дерева, 0.905 у леса, около 0.88 у логистической регрессии), а время отличается в десятки раз: лес строит сто деревьев, и каждое из них ещё и отвечает при `predict`. Точное число у вас своё — оно зависит от компьютера и его загрузки, поэтому проверка смотрит только на то, что лес медленнее дерева. Логистическая регрессия предсказывает почти так же быстро, как дерево (одна взвешенная сумма на строку), а вот `fit` у неё может оказаться заметно дольше дерева и даже сравниться с лесом: на немасштабированных признаках алгоритму подбора весов нужны сотни шагов (у нас — больше двухсот). Масштабирование из главы 7 ускоряет и это. Вывод для отчёта: «лес лучше на 1 п.п. и в N раз медленнее» — и решение зависит от того, что дороже в этой задаче. Частая ошибка — засечь `t0` один раз перед циклом: тогда время каждой следующей модели включает время всех предыдущих.

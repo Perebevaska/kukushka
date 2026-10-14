@@ -58,7 +58,7 @@ recap:
 Главная ловушка этого проекта — время. Предложение ушло **1 июля**. Решать, кому отправлять, мы будем по тому, что знаем о госте **на этот момент**. Значит, все признаки считаются только по событиям **до 1 июля**, а ответ (`bought`) — по событиям после. Дата, которая их разделяет, называется **точкой среза** (cutoff).
 
 ::: tip Аналогия
-Прогноз счёта футбольного матча имеет смысл только до стартового свистка. Тот, кто «предсказывает» результат по записи второго тайма, угадывает всегда — но такой прогноз ничего не стоит. Признак, посчитанный по июльским заказам, — это запись второго тайма: в жизни, в момент решения, её ещё нет. Где аналогия хромает: в футболе граница очевидна, а в базе июльские заказы лежат в той же таблице, что и мартовские, и ничем не помечены — границу ставите вы, условием `WHERE`.
+Прогноз счёта футбольного матча имеет смысл только до стартового свистка. Тот, кто «предсказывает» результат по записи второго тайма, угадывает всегда — но такой прогноз ничего не стоит. Признак, посчитанный по июльским заказам, — это запись второго тайма: в жизни, в момент решения, её ещё нет. Но в футболе граница очевидна, а в базе июльские заказы лежат в той же таблице, что и мартовские, и ничем не помечены — границу ставите вы, условием `WHERE`.
 :::
 
 Почему это важно именно здесь: купившие абонемент в июле платят им — в `orders` у них появляется `payment = 'абонемент'`, они чаще ходят и чаще открывают приложение. Если посчитать «долю заказов по абонементу» или «число заказов» по всей таблице, модель найдёт эти следы покупки и покажет великолепное качество. А осенью, на гостях, которые абонемента ещё не покупали, этих следов не будет.
@@ -221,7 +221,7 @@ print(round((0.110 - 0.025) * V - C, 1))
 **Бизнес-метрика проекта** — ожидаемая прибыль кампании: V × (покупатели среди получателей) − C × (получатели). ROC-AUC — вспомогательная метрика для выбора модели, решение принимается в рублях.
 
 ::: tip Аналогия
-Рассылка «всем» — как раздавать листовки на всей улице: кто-то зайдёт, но листовки дороже результата. Модель — как раздавать их только у входа в бизнес-центр в 8 утра: людей меньше, но каждый второй — ваш гость. Где аналогия хромает: и у бизнес-центра часть людей зашла бы и без листовки — это и есть поправка на «купили бы сами» из шага 7.
+Рассылка «всем» — как раздавать листовки на всей улице: кто-то зайдёт, но листовки дороже результата. Модель — как раздавать их только у входа в бизнес-центр в 8 утра: людей меньше, но каждый второй — ваш гость. Правда, и у бизнес-центра часть людей зашла бы и без листовки — это и есть поправка на «купили бы сами» из шага 7.
 :::
 
 {{practice: fp-metric}}
@@ -262,7 +262,7 @@ print(round((0.110 - 0.025) * V - C, 1))
 
 Порог выбираем по прибыли — но на чём? Если подобрать порог на тесте и там же посчитать прибыль, оценка выйдет оптимистичной. Честный порядок:
 
-1. Получить прогнозы **вне выборки** для обучающей части: `cross_val_predict(model, X_train, y_train, cv=cv, method="predict_proba")[:, 1]` — каждый гость получает прогноз модели, которая его не видела (так же, как в проверке справедливости в уроке «Объяснить модель бизнесу» этой главы).
+1. Получить прогнозы **вне выборки** для обучающей части: `cross_val_predict(model, X_train, y_train, cv=cv, method="predict_proba")[:, 1]` — каждый гость получает прогноз модели, которая его не видела (так же, как в проверке справедливости в уроке «Этика данных и справедливость модели» этой главы).
 2. Построить кривую «порог → прибыль» на этих прогнозах и выбрать лучший порог.
 3. Обучить модель на всей обучающей части, применить к тесту **один раз** и посчитать прибыль при выбранном пороге.
 
@@ -318,7 +318,7 @@ def profit_curve(p, y, value=1600, cost=150):
 
 **Прогнозы для проверки.** Заново выполните `cross_val_predict(best, X, y, cv=cv, method="predict_proba")[:, 1]` на всех 1 800 гостях группы «предложение»: модель и порог уже выбраны, тест здесь больше не нужен, а прогноз вне выборки нужен каждому гостю.
 
-**Проверка по группам** (урок «Этика данных и справедливость модели» этой главы; таблица качества по сегментам подробнее — в уроке «Качество по сегментам и отчёт о метрике»): на прогнозах вне выборки для группы «предложение» посчитайте по городам и возрастным группам долю отобранных, полноту (долю пойманных покупателей) и ROC-AUC. Возраст в модель не берём — только для проверки: возраст = 2026 − `birth_year`, заглушка 1900 и пропуски — вне групп (их 187), группы те же, что в уроке «Объяснить модель бизнесу»: до 30, 30–49, 50+. По возрасту перекоса нет: полнота 0.84–0.90, хотя у гостей 50+ всего 20 покупателей и эта оценка шаткая. А в Тюмени модель отбирает 21 % гостей против 39–44 % в других городах и ловит 65 % покупателей против 84–96 %: город с низкой конверсией модель «приглушает» целиком. Это стоит вынести в рекомендации как отдельный вопрос, а не прятать.
+**Проверка по группам** (урок «Этика данных и справедливость модели» этой главы; таблица качества по сегментам подробнее — в уроке «Качество по сегментам и отчёт о метрике»): на прогнозах вне выборки для группы «предложение» посчитайте по городам и возрастным группам долю отобранных, полноту (долю пойманных покупателей) и ROC-AUC. Возраст в модель не берём — только для проверки: возраст = 2026 − `birth_year`, заглушка 1900 и пропуски — вне групп (их 187). Группы те же, что в уроке «Этика данных и справедливость модели»: до 30, 30–49, 50+. Там они пришли готовыми в `guests_age.csv`, здесь их строят из возраста: `pd.cut(age, [0, 29, 49, 200], labels=["до 30", "30–49", "50+"])` — интервалы закрыты справа, поэтому 30 лет попадает в «30–49», а 50 — в «50+». Пропуск в `age` даёт пропуск и в группе: такие гости в `groupby` не попадут. По возрасту перекоса нет: полнота 0.84–0.90, хотя у гостей 50+ всего 20 покупателей и эта оценка шаткая. А в Тюмени модель отбирает 21 % гостей против 39–44 % в других городах и ловит 65 % покупателей против 84–96 %: город с низкой конверсией модель «приглушает» целиком. Это стоит вынести в рекомендации как отдельный вопрос, а не прятать.
 
 ::: warn Типичные ошибки
 - **Портрет столбцами.** «`morning_share` 0.58» маркетингу ничего не скажет. «Шесть из десяти их заказов — в будни до 10 утра» — скажет.
@@ -326,7 +326,7 @@ def profit_curve(p, y, value=1600, cost=150):
 - **Сегмент по всей базе.** Портрет строят на кандидатах осенней рассылки, а не на участниках пилота: решение принимается про них.
 :::
 
-{{practice: fp-portrait}}
+{{practice: fp-portrait, fp-groups}}
 
 ## Шаг 7. Рекомендации
 
@@ -1538,6 +1538,177 @@ portrait.T
 
 ### explain
 Из 1 987 кандидатов модель отбирает 792. У них 58 % заказов — в будни до 10 утра (у остальных 21 %), ходят чаще (0.67 заказа в неделю против 0.44), почти не берут доставку (5 % против 17 %) и были у нас недавно (14 дней против 32). Больше половины зарегистрировались через приложение. Это и есть портрет «утренних постоянных». Обратите внимание, чего в портрете нет: средний чек у групп почти одинаковый (286 ₽ против 281 ₽), а доля кофе различается умеренно (59 % против 52 %). Абонемент продаёт привычку, а не любовь к дорогим напиткам.
+
+## task: fp-groups | Проверка по группам | star
+
+Повторите ориентиры «Проверки по группам» шага 6. В заготовке готовы данные группы «предложение» (`off`, `X`, `y`), `cv`, модель `best` и порог `best_t`. Получите прогнозы вне выборки для всех 1 800 гостей (`cross_val_predict(best, X, y, cv=cv, method="predict_proba")[:, 1]`) и отбор `p > best_t`. Сохраните Series по городам `sel_by_city` (доля отобранных) и `recall_by_city` (доля отобранных среди купивших), 3 знака, и `weak_city` — город с наименьшей полнотой. Затем постройте возрастные группы, как в тексте шага (заглушка 1900 и пропуски — вне групп), и сохраните `recall_by_age` (индекс — группа, 3 знака).
+
+### setup
+```python
+import sqlite3 as _sq
+import pandas as _pd0
+
+def _fp_build(cutoff="2026-07-01"):
+    con = _sq.connect("final1.db")
+    def q(sql):
+        return _pd0.read_sql_query(sql, con, params={"cutoff": cutoff})
+    guests = _pd0.read_sql_query(
+        "SELECT g.guest_id, g.reg_date, g.source, g.birth_year, s.city "
+        "FROM guests g JOIN shops s ON s.shop_id = g.home_shop_id", con)
+    orders = q("""
+        SELECT guest_id, COUNT(*) AS orders_n,
+               julianday(:cutoff) - julianday(MAX(ordered_at)) AS recency_days,
+               AVG(amount) AS avg_check,
+               AVG(channel = 'доставка') AS delivery_share,
+               AVG(CAST(strftime('%H', ordered_at) AS INTEGER) < 10
+                   AND strftime('%w', ordered_at) NOT IN ('0', '6')) AS morning_share,
+               COUNT(DISTINCT shop_id) AS shops_n
+        FROM orders WHERE ordered_at < :cutoff GROUP BY guest_id""")
+    coffee = q("""
+        SELECT o.guest_id, AVG(m.category = 'кофе') AS coffee_share
+        FROM orders o JOIN order_items i ON i.order_id = o.order_id
+        JOIN menu m ON m.item_id = i.item_id
+        WHERE o.ordered_at < :cutoff GROUP BY o.guest_id""")
+    app = q("SELECT guest_id, SUM(sessions) AS app_sessions FROM app_sessions "
+            "WHERE month < substr(:cutoff, 1, 7) GROUP BY guest_id")
+    comp = q("SELECT guest_id, COUNT(*) AS complaints_n FROM complaints "
+             "WHERE created_at < :cutoff GROUP BY guest_id")
+    con.close()
+    df = guests
+    for part in (orders, coffee, app, comp):
+        df = df.merge(part, on="guest_id", how="left", validate="one_to_one")
+    df[["orders_n", "app_sessions", "complaints_n"]] = df[["orders_n", "app_sessions", "complaints_n"]].fillna(0)
+    df["tenure_days"] = (_pd0.Timestamp(cutoff) - _pd0.to_datetime(df["reg_date"])).dt.days
+    df["orders_per_week"] = df["orders_n"] / (df["tenure_days"].clip(upper=122) / 7)
+    return df
+
+_con0 = _sq.connect("final1.db")
+pilot = _pd0.read_sql_query("SELECT guest_id, group_name, bought FROM pilot", _con0)
+_con0.close()
+data = _fp_build()
+```
+
+### starter
+```python
+import pandas as pd
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.pipeline import make_pipeline
+from sklearn.compose import make_column_transformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+# data (признаки всех гостей на 1 июля) и pilot уже загружены
+off = pilot[pilot["group_name"] == "предложение"].merge(data, on="guest_id", validate="one_to_one")
+num = ["orders_n", "orders_per_week", "recency_days", "avg_check", "delivery_share", "morning_share",
+       "shops_n", "tenure_days", "coffee_share", "app_sessions", "complaints_n"]
+cat = ["source", "city"]
+X, y = off[num + cat], off["bought"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+scaled = make_column_transformer(
+    (make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
+    (OneHotEncoder(handle_unknown="ignore"), cat))
+plain = make_column_transformer(
+    (SimpleImputer(strategy="median"), num),
+    (OneHotEncoder(handle_unknown="ignore"), cat))
+from sklearn.linear_model import LogisticRegression
+
+best = make_pipeline(scaled, LogisticRegression(max_iter=1000))   # модель, выбранная в шаге 4
+best_t = 0.08
+
+from sklearn.model_selection import cross_val_predict
+
+```
+
+### check
+```python
+import pandas as _pd
+from sklearn.model_selection import cross_val_predict as _cvp
+from sklearn.model_selection import StratifiedKFold as _SKF
+from sklearn.pipeline import make_pipeline as _mp
+from sklearn.compose import make_column_transformer as _mct
+from sklearn.impute import SimpleImputer as _SI
+from sklearn.preprocessing import OneHotEncoder as _OHE, StandardScaler as _SS
+from sklearn.linear_model import LogisticRegression as _LR
+_d = _fp_build()
+_o = pilot[pilot["group_name"] == "предложение"].merge(_d, on="guest_id")
+_num = ["orders_n", "orders_per_week", "recency_days", "avg_check", "delivery_share", "morning_share",
+        "shops_n", "tenure_days", "coffee_share", "app_sessions", "complaints_n"]
+_cat = ["source", "city"]
+_m = _mp(_mct((_mp(_SI(strategy="median"), _SS()), _num), (_OHE(handle_unknown="ignore"), _cat)), _LR(max_iter=1000))
+_o["p"] = _cvp(_m, _o[_num + _cat], _o["bought"], cv=_SKF(n_splits=5, shuffle=True, random_state=42), method="predict_proba")[:, 1]
+_o["send"] = _o["p"] > 0.08
+_sel = _o.groupby("city")["send"].mean()
+_rec = _o[_o["bought"] == 1].groupby("city")["send"].mean()
+for name, ref, how in [("sel_by_city", _sel, "доля send среди всех гостей города"),
+                       ("recall_by_city", _rec, "доля send среди купивших (bought == 1)")]:
+    got = need(name, _pd.Series)
+    assert sorted(got.index) == sorted(ref.index), f'Индекс {name}: {list(got.index)} — нужны все города.'
+    for c in ref.index:
+        assert close(got[c], ref[c], 0.0015), f'{name}[{c!r}] = {got[c]}, а нужно {round(float(ref[c]), 3)}: {how}.'
+assert need('weak_city') == _rec.idxmin(), f'weak_city = {need("weak_city")!r}, а нужно {_rec.idxmin()!r}.'
+_age = 2026 - _o["birth_year"].where(_o["birth_year"] != 1900)
+_o["age_group"] = _pd.cut(_age, [0, 29, 49, 200], labels=["до 30", "30–49", "50+"])
+_ra = _o[_o["bought"] == 1].groupby("age_group", observed=True)["send"].mean()
+ra = need('recall_by_age', _pd.Series)
+assert sorted(map(str, ra.index)) == sorted(map(str, _ra.index)), f'Индекс recall_by_age: {list(ra.index)} — нужны группы до 30, 30–49, 50+.'
+for a in _ra.index:
+    assert close(ra[a], _ra[a], 0.0015), f'recall_by_age[{a!r}] = {ra[a]}, а нужно {round(float(_ra[a]), 3)}. Границы pd.cut: [0, 29, 49, 200]; 1900 — заменить на пропуск.'
+```
+
+### hint
+Прогнозы положите столбцом в `off`: `off["p"] = cross_val_predict(...)`, `off["send"] = off["p"] > best_t`. Полнота по городам — `off[off["bought"] == 1].groupby("city")["send"].mean()`.
+
+### hint
+```python
+age = 2026 - off["birth_year"].where(off["birth_year"] != 1900)   # 1900 → пропуск
+off["age_group"] = pd.cut(age, [0, 29, 49, 200], labels=["до 30", "30–49", "50+"])
+recall_by_age = off[off["bought"] == 1].groupby("age_group", observed=True)["send"].mean().round(3)
+```
+
+### solution
+```python
+import pandas as pd
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.pipeline import make_pipeline
+from sklearn.compose import make_column_transformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+# data (признаки всех гостей на 1 июля) и pilot уже загружены
+off = pilot[pilot["group_name"] == "предложение"].merge(data, on="guest_id", validate="one_to_one")
+num = ["orders_n", "orders_per_week", "recency_days", "avg_check", "delivery_share", "morning_share",
+       "shops_n", "tenure_days", "coffee_share", "app_sessions", "complaints_n"]
+cat = ["source", "city"]
+X, y = off[num + cat], off["bought"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+scaled = make_column_transformer(
+    (make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
+    (OneHotEncoder(handle_unknown="ignore"), cat))
+plain = make_column_transformer(
+    (SimpleImputer(strategy="median"), num),
+    (OneHotEncoder(handle_unknown="ignore"), cat))
+from sklearn.linear_model import LogisticRegression
+
+best = make_pipeline(scaled, LogisticRegression(max_iter=1000))   # модель, выбранная в шаге 4
+best_t = 0.08
+
+from sklearn.model_selection import cross_val_predict
+
+off["p"] = cross_val_predict(best, X, y, cv=cv, method="predict_proba")[:, 1]
+off["send"] = off["p"] > best_t
+sel_by_city = off.groupby("city")["send"].mean().round(3)
+recall_by_city = off[off["bought"] == 1].groupby("city")["send"].mean().round(3)
+weak_city = recall_by_city.idxmin()
+
+age = 2026 - off["birth_year"].where(off["birth_year"] != 1900)
+off["age_group"] = pd.cut(age, [0, 29, 49, 200], labels=["до 30", "30–49", "50+"])
+recall_by_age = off[off["bought"] == 1].groupby("age_group", observed=True)["send"].mean().round(3)
+```
+
+### explain
+По городам: в Тюмени модель отбирает 21 % гостей и ловит 65 % покупателей, в остальных городах — 39–44 % и 84–96 %. По возрасту перекоса нет: полнота 0.84–0.90, но у гостей 50+ всего 20 покупателей, и одна покупка двигает их полноту на 5 п. п. `where(условие)` оставляет значения, где условие верно, и ставит пропуск в остальных — так заглушка 1900 не превращается в «126 лет». `observed=True` в `groupby` по категориям из `pd.cut` убирает пустые группы и предупреждение pandas.
 
 ## task: fp-honest | Честные деньги рекомендации | star
 

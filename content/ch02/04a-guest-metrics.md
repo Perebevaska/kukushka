@@ -68,7 +68,19 @@ print("заказов на гостя:", round(per_guest["orders"].mean(), 2))
 print("доля повторных:", round((per_guest["orders"] >= 2).mean(), 3))
 ```
 
-Как читать: 260 гостей с картой принесли в среднем по 1 645.96 ₽ за три месяца, 4.8 заказа на человека. Доля повторных — 97.3 %, но не обольщайтесь: за длинный период почти любой владелец карты успеет зайти дважды. Доля повторных зависит от окна: внутри одного сентября она уже 57.6 % (118 из 205 гостей). Поэтому в отчёте всегда пишут период: «доля повторных за месяц».
+Как читать: 260 гостей с картой принесли в среднем по 1 645.96 ₽ за три месяца, 4.8 заказа на человека. Доля повторных — 97.3 %, но не обольщайтесь: за длинный период почти любой владелец карты успеет зайти дважды. Доля повторных зависит от окна. Возьмём только сентябрь:
+
+```python
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+
+loyal = df[df["client_id"].notna()]
+sep = loyal[loyal["datetime"].str.startswith("2026-09")].groupby("client_id").size()
+print("гостей в сентябре:", len(sep), "из них повторных:", (sep >= 2).sum())
+print("доля повторных за сентябрь:", round((sep >= 2).mean() * 100, 1))
+```
+
+Внутри одного сентября доля повторных уже 59.2 % (119 из 201 гостя). Поэтому в отчёте всегда пишут период: «доля повторных за месяц».
 
 ### Конверсия
 
@@ -153,9 +165,60 @@ print("на гостя с картой:", round(df.loc[df["client_id"].notna(), 
   > Тогда получится средняя выручка кофейни — третья, другая метрика.
 :::
 
-{{practice: per-guest, repeat, conversion}}
+{{practice: toy-guest, per-guest, repeat, arpu-month, conversion}}
 
 ## Практика
+
+## task: toy-guest | Три метрики на игрушечных данных | warmup
+
+Семь заказов трёх гостей уже в таблице `t`. Посчитайте:
+
+- `check` — средний чек (на заказ);
+- `arpu` — выручку на гостя;
+- `repeat` — долю гостей с двумя заказами и больше (доля от 0 до 1).
+
+Округлять не нужно.
+
+### starter
+```python
+import pandas as pd
+t = pd.DataFrame({"client_id": ["X", "X", "Y", "Z", "Z", "Z", "Z"],
+                  "amount": [200, 300, 500, 100, 150, 150, 200]})
+
+```
+
+### check
+```python
+assert close(need('check'), 1600 / 7, 0.01), f'check = {need("check")}. Средний чек — сумма всех заказов, делённая на число заказов.'
+assert not close(need('arpu'), 1600 / 7, 0.01), 'arpu совпадает со средним чеком: сначала сгруппируйте заказы по гостю.'
+assert close(need('arpu'), 1600 / 3, 0.01), f'arpu = {need("arpu")}. Выручка на гостя — сумма, делённая на число гостей.'
+assert close(need('repeat'), 2 / 3, 0.001), f'repeat = {need("repeat")}. Повторные — гости с orders >= 2; нужна доля, а не число.'
+```
+
+### hint
+Сначала таблица «гость → заказов, сумма»: `t.groupby("client_id").agg(...)`. Средний чек считается по `t`, остальное — по ней.
+
+### hint
+```python
+pg = t.groupby("client_id").agg(orders=("amount", "size"), revenue=("amount", "sum"))
+check = t["amount"].mean()
+arpu = pg[...].mean()
+repeat = (pg["orders"] >= ...).mean()
+```
+
+### solution
+```python
+import pandas as pd
+t = pd.DataFrame({"client_id": ["X", "X", "Y", "Z", "Z", "Z", "Z"],
+                  "amount": [200, 300, 500, 100, 150, 150, 200]})
+pg = t.groupby("client_id").agg(orders=("amount", "size"), revenue=("amount", "sum"))
+check = t["amount"].mean()
+arpu = pg["revenue"].mean()
+repeat = (pg["orders"] >= 2).mean()
+```
+
+### explain
+Выручка 1 600 ₽ одна, а знаменатели разные: 7 заказов дают средний чек 228.57 ₽, 3 гостя — 533.33 ₽ на гостя. Повторные — X и Z, 2 из 3, доля 0.667. Гость Y за один заказ принёс 500 ₽ — почти как Z за четыре (600 ₽): у Z чек ниже, зато он заходит чаще.
 
 ## task: per-guest | Выручка на гостя | base
 
@@ -262,6 +325,57 @@ repeat_oct = round((oct_counts >= 2).mean() * 100, 1)
 
 ### explain
 В октябре заходили 208 гостей с картой, и 58.2 % из них — хотя бы дважды. В сентябре было 59.2 %, в ноябре — 61.2 %: октябрь чуть ниже соседей, но разница в 1–3 пункта на двух сотнях гостей — это несколько человек, а не тренд. Если считать по всем трём месяцам, получится 97.3 % — красивое, но бесполезное для сравнения число: чем длиннее окно, тем больше гостей успевают вернуться. Поэтому доля повторных всегда пишется с периодом.
+
+## task: arpu-month | Выручка на гостя по месяцам | base
+
+Посчитайте выручку на гостя с картой **отдельно за каждый месяц**: выручку гостей с картой за месяц разделите на число разных гостей, заходивших в этом месяце. Сохраните `arpu_m` — словарь «месяц → выручка на гостя», где месяц — строка вида `"2026-09"`, значения округлены до двух знаков.
+
+### starter
+```python
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+
+```
+
+### check
+```python
+import pandas as _pd
+_d = _pd.read_csv('orders_3m.csv')
+_l = _d[_d['client_id'].notna()].copy()
+_l['_m'] = _l['datetime'].str[:7]
+_g = _l.groupby('_m').agg(r=('amount', 'sum'), n=('client_id', 'nunique'))
+_want = {k: round(float(v), 2) for k, v in (_g['r'] / _g['n']).items()}
+_got = {str(k)[:7]: float(v) for k, v in dict(need('arpu_m')).items()}
+assert set(_got) == set(_want), f'Ключи: {sorted(_got)}, а нужны месяцы {sorted(_want)} — строки вида "2026-09".'
+_chk = (_l.groupby('_m')['amount'].mean()).round(2).to_dict()
+for _k in _want:
+    assert not close(_got[_k], _chk[_k], 0.01), f'Для {_k} получилось {_got[_k]} — это средний чек месяца. Делите на число гостей (nunique), а не заказов.'
+    assert close(_got[_k], _want[_k], 0.01), f'Для {_k} получилось {_got[_k]}, а нужно {_want[_k]}. Знаменатель — разные гости этого месяца.'
+```
+
+### hint
+Месяц достаньте из текста даты: `loyal["datetime"].str[:7]` даёт `"2026-09"`. Затем одна группировка по месяцу с двумя агрегатами — суммой `amount` и `nunique` по `client_id`.
+
+### hint
+```python
+loyal = df[df["client_id"].notna()].copy()
+loyal["month"] = loyal["datetime"].str[:7]
+m = loyal.groupby("month").agg(revenue=("amount", "sum"), guests=("client_id", ...))
+arpu_m = (m["revenue"] / m["guests"]).round(2).to_dict()
+```
+
+### solution
+```python
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+loyal = df[df["client_id"].notna()].copy()
+loyal["month"] = loyal["datetime"].str[:7]
+m = loyal.groupby("month").agg(revenue=("amount", "sum"), guests=("client_id", "nunique"))
+arpu_m = (m["revenue"] / m["guests"]).round(2).to_dict()
+```
+
+### explain
+Сентябрь — 702.65 ₽ на гостя, октябрь — 652.64 ₽, ноябрь — 705.46 ₽. Октябрьский провал — от частоты, а не от чека: заказов на гостя 1.92 против 2.04 в сентябре и ноябре, средний чек гостей с картой почти тот же (340 против 344–345 ₽). Заметьте: три месячных значения в сумме дают 2 060.75 ₽, а выручка на гостя за три месяца — 1 645.96 ₽. Выручка та же, но знаменатель другой: за квартал 260 разных гостей, а в каждом месяце — 201–214, и многие из них одни и те же люди.
 
 ## task: conversion | Конверсия по источникам | plus
 

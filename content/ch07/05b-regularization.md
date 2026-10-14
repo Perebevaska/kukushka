@@ -3,7 +3,7 @@ title: "Регуляризация: штраф за большие веса"
 lead: "Линейная модель может раздуть вес признака, который на обучающих данных случайно хорошо работает. Регуляризация штрафует большие веса: разбираемся, как параметр C держит веса в узде, почему он работает «наоборот» и как штраф L1 сам отбирает признаки."
 files: [guests_churn.csv]
 recap:
-  - "Регуляризация штрафует большие веса. `C` — обратная сила штрафа: меньше `C` — веса меньше. L2 (по умолчанию) сжимает все веса, L1 (`l1_ratio=1, solver=\"liblinear\"`) обнуляет лишние."
+  - "Регуляризация штрафует большие веса. `C` — обратная сила штрафа, «сколько свободы дать модели»: меньше `C` — сильнее штраф и меньше веса."
   - "L1 (`l1_ratio=1, solver=\"liblinear\"`) обнуляет слабые признаки и сам отбирает признаки; L2 (по умолчанию) сжимает все веса понемногу."
 ---
 
@@ -66,13 +66,35 @@ for C in [0.001, 0.01, 0.1, 1, 10]:
   > Действует всегда: веса при `C=0.001` в пять раз меньше по сумме. Слабо меняются лишь метрики при `C` от 0.1 и выше.
 :::
 
-{{practice: c-sweep}}
+{{practice: c-two, c-sweep}}
 
 ## L1: регуляризация, которая отбирает признаки
 
 Штраф по умолчанию называется **L2**: он считается по квадратам весов и сжимает их все понемногу, но почти никогда не делает ровно нулём. Другой вид штрафа — **L1** — считается по модулям весов. У него полезное свойство: слабые признаки он обнуляет совсем. Получается модель, которая сама отбирает признаки.
 
-В sklearn 1.8 вид штрафа задаёт параметр `l1_ratio`: 0 — L2, 1 — L1. `solver` — алгоритм, которым sklearn подбирает веса. Алгоритм по умолчанию (`lbfgs`) рассчитан на гладкий штраф по квадратам и штраф по модулям не берёт, поэтому для L1 указываем другой — `solver="liblinear"`:
+В sklearn 1.8 вид штрафа задаёт параметр `l1_ratio`: 0 — L2, 1 — L1. `solver` — алгоритм, которым sklearn подбирает веса. Алгоритм по умолчанию (`lbfgs`) рассчитан на гладкий штраф по квадратам и штраф по модулям не берёт, поэтому для L1 указываем другой — `solver="liblinear"`.
+
+::: predict
+```python static
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+rng = np.random.default_rng(0)
+X = rng.normal(size=(200, 5))
+y = (X[:, 0] + 0.5 * X[:, 1] + rng.normal(size=200) > 0).astype(int)
+for r in [0, 1]:
+    m = LogisticRegression(C=0.05, l1_ratio=r, solver="liblinear").fit(X, y)
+    print(r, (m.coef_ == 0).any())
+```
+
+- `0 False | 1 False`
+- [x] `0 False | 1 True`
+- `0 True | 1 True`
+- `0 True | 1 False`
+
+Почему: ответ зависит только от двух первых столбцов, остальные три — шум. L2 (`l1_ratio=0`) сжимает веса шума, но оставляет их ненулевыми (−0.01, 0.06, 0.09). L1 (`l1_ratio=1`) при сильном штрафе обнуляет все три.
+:::
+
+Теперь на наших гостях:
 
 ```python
 import pandas as pd
@@ -103,7 +125,7 @@ for C in [0.005, 0.01, 0.03, 0.1]:
 :::
 
 ::: warn Старое написание
-В статьях и старом коде вы встретите `LogisticRegression(penalty="l1", solver="liblinear")`. В sklearn 1.8 параметр `penalty` объявлен устаревшим и выдаёт предупреждение `FutureWarning`, а в будущих версиях его уберут. Смысл тот же: `penalty="l1"` → `l1_ratio=1`, `penalty="l2"` → `l1_ratio=0`.
+В статьях и старом коде вы встретите `LogisticRegression(penalty="l1", solver="liblinear")`. В sklearn 1.8 параметр `penalty` объявлен устаревшим, а в будущих версиях его уберут. Такой код выдаёт два предупреждения: `FutureWarning` об устаревшем `penalty` и `UserWarning: Inconsistent values: penalty=l1 with l1_ratio=0.0` — о том, что `penalty` и `l1_ratio` не согласованы. Второе не значит, что модель учится с L2: веса обнуляются так же, как с `l1_ratio=1`. Смысл тот же: `penalty="l1"` → `l1_ratio=1`, `penalty="l2"` → `l1_ratio=0`.
 :::
 
 ::: deep Ridge и Lasso
@@ -118,6 +140,79 @@ for C in [0.005, 0.01, 0.03, 0.1]:
 {{practice: lasso}}
 
 ## Практика
+
+## task: c-two | Куда крутить C | warmup
+
+Обучите на стандартизированных признаках две модели: `LogisticRegression(C=0.01)` и `LogisticRegression(C=10)`. Сохраните суммы модулей их весов (`np.abs(model.coef_).sum()`, 2 знака) в `sum_small` (для `C=0.01`) и `sum_big` (для `C=10`). В `bigger` запишите число `C` той модели, у которой сумма больше: `0.01` или `10`.
+
+Сначала предскажите ответ, потом проверьте кодом.
+
+### starter
+```python
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+g = pd.read_csv("guests_churn.csv")
+y = g["churned"]
+X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+scaler = StandardScaler().fit(X_train)
+Xs_train = scaler.transform(X_train)
+
+```
+
+### check
+```python
+import numpy as _np
+import pandas as _pd
+from sklearn.model_selection import train_test_split as _tts
+from sklearn.preprocessing import StandardScaler as _SS
+from sklearn.linear_model import LogisticRegression as _LR
+_g = _pd.read_csv('guests_churn.csv')
+_y = _g['churned']
+_X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})
+_a, _b, _c, _d = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+_tr = _SS().fit(_a).transform(_a)
+_s1 = round(float(_np.abs(_LR(C=0.01).fit(_tr, _c).coef_).sum()), 2)
+_s2 = round(float(_np.abs(_LR(C=10).fit(_tr, _c).coef_).sum()), 2)
+assert close(need('sum_small'), _s1, 0.006), f'sum_small = {need("sum_small")}, а ожидалось {_s1}. Модель LogisticRegression(C=0.01) на Xs_train, сумма np.abs(coef_).sum().'
+assert close(need('sum_big'), _s2, 0.006), f'sum_big = {need("sum_big")}, а ожидалось {_s2}. Модель LogisticRegression(C=10) на Xs_train.'
+assert close(float(need('bigger')), 10), f'bigger = {need("bigger")}. Сумма весов больше у модели с C=10: большой C — слабый штраф, больше свободы.'
+```
+
+### hint
+`small = LogisticRegression(C=0.01).fit(Xs_train, y_train)`, так же `big` с `C=10`.
+
+### hint
+`sum_small = round(np.abs(small.coef_).sum(), 2)`; `bigger = 10 if sum_big > sum_small else 0.01`.
+
+### solution
+```python
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+g = pd.read_csv("guests_churn.csv")
+y = g["churned"]
+X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+scaler = StandardScaler().fit(X_train)
+Xs_train = scaler.transform(X_train)
+
+small = LogisticRegression(C=0.01).fit(Xs_train, y_train)
+big = LogisticRegression(C=10).fit(Xs_train, y_train)
+sum_small = round(np.abs(small.coef_).sum(), 2)
+sum_big = round(np.abs(big.coef_).sum(), 2)
+bigger = 10 if sum_big > sum_small else 0.01
+```
+
+### explain
+При `C=0.01` сумма весов 2.67, при `C=10` — 4.71. `C` — это свобода: чем он больше, тем слабее штраф и тем крупнее веса. Если перепутать направление, легко «усилить регуляризацию», увеличив `C`, и получить обратное.
 
 ## task: c-sweep | Сила регуляризации | base
 

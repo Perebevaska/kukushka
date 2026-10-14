@@ -152,6 +152,8 @@ print(f"лес:    обучение {forest.score(X_train, y_train):.3f}, тес
 
 Обе модели почти без ошибок на обучении — каждое дерево леса тоже глубокое. Но на тесте лес выигрывает у одного дерева около 5 п.п.: переобучение отдельных деревьев усреднилось.
 
+Оговорка: это выигрыш у дерева **без ограничений**. Неглубокое дерево глубины 3 из урока «Категориальные признаки и утечки» на тех же 17 признаках и том же разбиении даёт те же 0.898 — здесь лес его не обгоняет. Преимущество леса в другом: ему не нужно угадывать глубину, и его результат меньше скачет от разбиения к разбиению. Насколько выигрыш устойчив, проверим в конце урока на пяти разбиениях и в уроке «Честное сравнение моделей».
+
 `predict_proba` у леса — среднее вероятностей всех деревьев. Класс выбирается по этому среднему, а не простым подсчётом голосов, поэтому результат может отличаться от голосования «большинством»:
 
 ::: predict
@@ -223,7 +225,7 @@ for leaf in [1, 5, 20]:
     print(f"min_samples_leaf={leaf:>2}: обучение {f.score(X_train, y_train):.3f}, тест {f.score(X_test, y_test):.3f}")
 ```
 
-С ростом `min_samples_leaf` разрыв между обучением и тестом сокращается, а тест держится около 90 %. Ограничения у леса полезны другим: модель становится меньше и быстрее, а её вероятности — осторожнее.
+С ростом `min_samples_leaf` доля правильных на обучении падает (0.999 → 0.888 → 0.861), а тест держится около 90 %. При `min_samples_leaf=20` на обучении даже ниже, чем на тесте: модель уже не запоминает отдельные доставки, а 90 % — примерно потолок того, что можно выжать из этих признаков. Ограничения у леса полезны другим: модель становится меньше и быстрее, а её вероятности — осторожнее.
 
 ::: quiz
 Что обычно происходит, если увеличить число деревьев в лесу с 50 до 500?
@@ -562,6 +564,7 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 # данные подготовлены, как в теории: d, ok, y, X, X_train, X_test, y_train, y_test
+# sizes = [1, 3, 10, 30, 60] — список чисел деревьев
 
 ```
 
@@ -697,7 +700,7 @@ courier_share = round(imp[["courier_авто", "courier_вело", "courier_пе
 
 - `tree_accs` — список долей правильных ответов каждого дерева на тесте;
 - `acc_vote` — долю правильных ответов голосования большинством (3 знака);
-- `acc_forest7` — долю правильных ответов настоящего леса из тех же семи деревьев: `RandomForestClassifier(n_estimators=7, random_state=0)` (3 знака).
+- `acc_forest7` — долю правильных ответов настоящего леса из семи деревьев: `RandomForestClassifier(n_estimators=7, random_state=0)` (3 знака). Деревья у него другие, не ваши: лес сам делает свои бутстрэп-выборки и на каждом вопросе выбирает случайные признаки, поэтому результат не обязан совпасть с `acc_vote`.
 
 ### setup
 ```python
@@ -718,6 +721,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random
 import numpy as np
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 # данные подготовлены, как в теории: d, ok, y, X, X_train, X_test, y_train, y_test
 
@@ -981,7 +985,8 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-# данные подготовлены, как в теории: d, ok, y, X, X_train, X_test, y_train, y_test, forest
+# данные подготовлены, как в теории: d, ok, y, X, X_train, X_test, y_train, y_test
+# forest — обученный лес из 30 деревьев (n_estimators=30)
 
 ```
 

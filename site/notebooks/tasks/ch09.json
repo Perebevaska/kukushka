@@ -164,10 +164,10 @@
    "setup": "import numpy as np\nimport pandas as pd\n_g = pd.read_csv(\"guests_churn.csv\")\ncols = [\"visits_90d\", \"days_since_last\", \"tenure_months\"]\nG = _g[cols].values.astype(float)",
    "check": "import numpy as _np\nG0, c0 = need('G'), need('cols')\ndef _d(A, i=0):\n    d = _np.linalg.norm(A - A[i], axis=1); d[i] = _np.inf\n    return d\ndef _ok(name, A, k=5):\n    got = [int(x) for x in need(name, list)]\n    d = _d(A)\n    want = [int(x) for x in _np.argsort(d, kind='stable')[:k]]\n    assert len(got) == k and 0 not in got and len(set(got)) == k, f'{name} = {got}: нужно {k} разных номеров, без самого гостя 0.'\n    # при равных расстояниях порядок любой: сверяем сами расстояния\n    assert _np.allclose(d[got], _np.sort(d)[:k]), f'{name} = {got}, а нужно, например, {want} (при равных расстояниях порядок не важен).'\n    return got\nnr = _ok('near_raw', G0)\nns = _ok('near_scaled', (G0 - G0.mean(axis=0)) / G0.std(axis=0))\nassert need('common') == len(set(nr) & set(ns)), f'common = {need(\"common\")}: сколько номеров есть в обоих списках.'\nassert need('dominant') == c0[int(G0.std(axis=0).argmax())], f'dominant = {need(\"dominant\")!r}.'",
    "starter": "import numpy as np\n\ndef nearest(A, i, k=5):\n    ...",
-   "solution": "import numpy as np\n\ndef nearest(A, i, k=5):\n    d = np.linalg.norm(A - A[i], axis=1)\n    d[i] = np.inf\n    return list(np.argsort(d, kind=\"stable\")[:k])\n\nnear_raw = nearest(G, 0)\nS = (G - G.mean(axis=0)) / G.std(axis=0)\nnear_scaled = nearest(S, 0)\ncommon = len(set(near_raw) & set(near_scaled))\ndominant = cols[int(G.std(axis=0).argmax())]\nprint(near_raw, near_scaled, common, dominant)",
+   "solution": "import numpy as np\n\ndef nearest(A, i, k=5):\n    d = np.linalg.norm(A - A[i], axis=1)\n    d[i] = np.inf\n    return [int(j) for j in np.argsort(d, kind=\"stable\")[:k]]\n\nnear_raw = nearest(G, 0)\nS = (G - G.mean(axis=0)) / G.std(axis=0)\nnear_scaled = nearest(S, 0)\ncommon = len(set(near_raw) & set(near_scaled))\ndominant = cols[int(G.std(axis=0).argmax())]\nprint(near_raw, near_scaled, common, dominant)",
    "hints": [
     "Расстояния от гостя i до всех — `np.linalg.norm(A - A[i], axis=1)`; чтобы не выбрать самого себя, поставьте `d[i] = np.inf`.",
-    "Номера ближайших — `np.argsort(d)[:k]` (с `kind=\"stable\"` при равных расстояниях первым идёт меньший номер). Масштаб — `(G - G.mean(axis=0)) / G.std(axis=0)`.",
+    "Номера ближайших — `[int(j) for j in np.argsort(d)[:k]]` (`int` — чтобы печатались обычные числа; с `kind=\"stable\"` при равных расстояниях первым идёт меньший номер). Масштаб — `(G - G.mean(axis=0)) / G.std(axis=0)`.",
     "Совпадения — `len(set(near_raw) & set(near_scaled))`; признак с наибольшим разбросом — `cols[G.std(axis=0).argmax()]`."
    ],
    "explain": "Из пяти «соседей» совпали только двое. В сырых данных разброс давности визита (около 36 дней) в разы больше разброса визитов (около 5) и стажа (около 14), и расстояние почти полностью определяется давностью. После масштабирования все три признака весят одинаково, и соседи — другие гости. Для kNN (глава 7) это значит: без масштаба модель фактически работает на одном признаке, даже если вы дали ей три."
@@ -449,7 +449,99 @@
     "Столбец единиц: `np.ones(len(X))`. Склеить столбцы: `np.column_stack([np.ones(len(X)), X.values])`.",
     "Веса: `np.r_[model.intercept_, model.coef_]` — склеивает число и вектор."
    ],
-   "explain": "Этот трюк — столбец единиц для свободного члена — понадобится в следующем уроке: с ним формула весов линейной регрессии записывается одной строкой."
+   "explain": "Этот трюк — столбец единиц для свободного члена — понадобится в уроке «Как обучается линейная регрессия»: с ним формула весов линейной регрессии записывается одной строкой."
+  },
+  "ch09/02b-vectorize/disc": {
+   "chapter": "ch09",
+   "lesson": "02b-vectorize",
+   "lesson_title": "Без циклов: векторизация и замер времени",
+   "id": "disc",
+   "title": "Скидка на крупные чеки",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\n_a = _np.array([320, 540, 500, 1250, 80, 760, 499, 501])\n_p = _np.where(_a > 500, _a * 0.9, _a)\ngot = _np.asarray(need('to_pay'), dtype=float)\nassert got.shape == _p.shape, f'to_pay — массив из {len(_a)} сумм, по одной на чек, а у вас форма {got.shape}.'\nassert not _np.allclose(got, _np.where(_a >= 500, _a * 0.9, _a)) or _np.allclose(got, _p), 'Чек ровно на 500 ₽ получил скидку, а скидка — только дороже 500: условие amount > 500.'\nassert _np.allclose(got, _p), f'to_pay = {[float(x) for x in got]}, а нужно {[float(x) for x in _p]}.'\nassert close(need('saved'), round(float(_a.sum() - _p.sum()), 1), 0.051), f'saved = {need(\"saved\")}: сумма чеков минус сумма к оплате.'\nassert 'for ' not in _code and 'while ' not in _code, 'Решите без цикла: условие проверяет np.where сразу для всех чеков.'",
+   "starter": "import numpy as np\n\namount = np.array([320, 540, 500, 1250, 80, 760, 499, 501])",
+   "solution": "import numpy as np\n\namount = np.array([320, 540, 500, 1250, 80, 760, 499, 501])\nto_pay = np.where(amount > 500, amount * 0.9, amount)\nsaved = round(float(amount.sum() - to_pay.sum()), 1)\nprint(to_pay, saved)",
+   "hints": [
+    "Условие для всех чеков сразу — `amount > 500`. В `np.where` три аргумента: условие, значение «если да», значение «если нет».",
+    "`to_pay = np.where(amount > 500, amount * 0.9, amount)`; экономия — `amount.sum() - to_pay.sum()`."
+   ],
+   "explain": "Скидку получили четыре чека: 540, 1250, 760 и 501 ₽. Чек ровно на 500 ₽ и чек на 499 ₽ остались без скидки — граница «дороже 500» строгая, как и `>` в условии. Всего гости сэкономили 305.1 ₽. Тот же код без изменений сработает и для восьми миллионов чеков."
+  },
+  "ch09/02b-vectorize/best-of": {
+   "chapter": "ch09",
+   "lesson": "02b-vectorize",
+   "lesson_title": "Без циклов: векторизация и замер времени",
+   "id": "best-of",
+   "title": "Секундомер с повторами",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import time as _t\nf = need('best_time')\n_calls = []\ndef _work():\n    _calls.append(1)\n    if len(_calls) == 1:                       # первый вызов медленный, остальные — мгновенные\n        s = 0\n        for i in range(300_000):\n            s += i\nr = f(_work, 4)\nassert len(_calls) == 4, f'best_time(f, 4) вызвала f {len(_calls)} раз, а нужно 4: по разу на каждый повтор.'\nassert isinstance(r, float) and r > 0, f'best_time вернула {r!r}: нужно одно число — время в секундах.'\n_t0 = _t.perf_counter(); s = 0\nfor i in range(300_000):\n    s += i\n_heavy = _t.perf_counter() - _t0\nassert r < _heavy / 5, f'Вернулось {r:.4f} с — это похоже на время медленного первого вызова или на среднее. Нужно наименьшее из повторов: min(...).'\n_calls.clear(); f(_work)\nassert len(_calls) == 5, f'Без второго аргумента best_time вызвала f {len(_calls)} раз, а по умолчанию повторов 5.'\nts = need('t_sum')\nassert isinstance(ts, float) and 0 < ts < 60, f't_sum = {ts!r}: время в секундах от best_time(lambda: sum(range(1_000_000))).'",
+   "starter": "import time\n\ndef best_time(f, repeats=5):\n    ...",
+   "solution": "import time\n\ndef best_time(f, repeats=5):\n    times = []\n    for _ in range(repeats):\n        t0 = time.perf_counter()\n        f()\n        times.append(time.perf_counter() - t0)\n    return min(times)\n\nt_sum = best_time(lambda: sum(range(1_000_000)))\nprint(f\"{t_sum:.4f} с\")",
+   "hints": [
+    "Внутри — цикл `for _ in range(repeats):`, в нём шаблон замера: `t0 = time.perf_counter()`, вызов `f()`, разность `time.perf_counter() - t0` в список.",
+    "После цикла верните `min(times)`. Значение по умолчанию задаётся прямо в заголовке: `def best_time(f, repeats=5):`."
+   ],
+   "explain": "Проверка подсунула функцию, у которой первый вызов медленный, а остальные мгновенные, — так ведёт себя и настоящий код при «прогреве». Среднее из повторов утянуло бы этот выброс в ответ, а наименьшее — нет. Цикл `for` здесь уместен: он идёт по пяти повторам, а не по строкам данных. Это тот же приём, что делает `%timeit` в Jupyter, только `%timeit` ещё сам подбирает число повторов."
+  },
+  "ch09/02b-vectorize/tiers": {
+   "chapter": "ch09",
+   "lesson": "02b-vectorize",
+   "lesson_title": "Без циклов: векторизация и замер времени",
+   "id": "tiers",
+   "title": "Надбавка курьеру по дальности",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimport pandas as pd\nkm = pd.read_csv(\"deliveries.csv\")[\"distance_km\"].values",
+   "check": "import numpy as _np\nk0 = need('km')\n_b = _np.where(k0 > 5, 90, _np.where(k0 > 2, 40, 0))\ngot = _np.asarray(need('bonus'), dtype=float)\nassert got.shape == _b.shape, f'bonus — по числу на доставку ({len(k0)}), а у вас форма {got.shape}.'\n_wrong = _np.where(k0 >= 5, 90, _np.where(k0 >= 2, 40, 0))\nassert _np.allclose(got, _b) or not _np.allclose(got, _wrong), 'Ровно 2 и ровно 5 км попали в следующую ступень. «До 2 км включительно» — это km > 2 для надбавки 40.'\n_flip = _np.where(k0 > 2, 40, _np.where(k0 > 5, 90, 0))\nassert _np.allclose(got, _b) or not _np.allclose(got, _flip), 'Надбавки 90 ₽ нет ни у кого: первым проверяется условие km > 2, и оно «съедает» дальние доставки. Начните с самого строгого условия km > 5.'\nassert _np.allclose(got, _b), f'bonus не совпадает у {int((~_np.isclose(got, _b)).sum())} доставок.'\nassert need('total_bonus') == int(_b.sum()), f'total_bonus = {need(\"total_bonus\")}.'\nassert need('n_mid') == int((_b == 40).sum()), f'n_mid = {need(\"n_mid\")}.'\nassert need('n_far') == int((_b == 90).sum()), f'n_far = {need(\"n_far\")}.'\nassert 'for ' not in _code and 'while ' not in _code, 'Решите без цикла: вложенный np.where.'",
+   "starter": "import numpy as np",
+   "solution": "import numpy as np\n\nbonus = np.where(km > 5, 90, np.where(km > 2, 40, 0))\ntotal_bonus = int(bonus.sum())\nn_mid = int((bonus == 40).sum())\nn_far = int((bonus == 90).sum())\nprint(total_bonus, n_mid, n_far)",
+   "hints": [
+    "Три ступени — это `if … elif … else`, а в numpy — вложенный `np.where`: снаружи самое строгое условие, внутри — следующее.",
+    "`bonus = np.where(km > 5, 90, np.where(km > 2, 40, 0))`. Количество — `(bonus == 40).sum()`."
+   ],
+   "explain": "Из 1877 доставок 955 получили по 40 ₽, 225 — по 90 ₽, остальные 697 — без надбавки; всего 58 450 ₽, около 31 ₽ на доставку. Порядок условий решает так же, как в цепочке `if … elif`: если первым проверить `km > 2`, дальние доставки получат 40 ₽ и до проверки `km > 5` дело не дойдёт."
+  },
+  "ch09/02b-vectorize/apply-col": {
+   "chapter": "ch09",
+   "lesson": "02b-vectorize",
+   "lesson_title": "Без циклов: векторизация и замер времени",
+   "id": "apply-col",
+   "title": "apply или столбцы",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import time\nimport numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\n\ndef best_time(f, repeats=3):\n    times = []\n    for _ in range(repeats):\n        t0 = time.perf_counter()\n        f()\n        times.append(time.perf_counter() - t0)\n    return min(times)",
+   "check": "import numpy as _np\nd0 = need('d')\n_f = _np.where(d0['amount'] > 1500, 0, _np.where(d0['items'] >= 4, 60, 15 * d0['items']))\ngot = _np.asarray(need('fee_col')(d0), dtype=float)\nassert got.shape == _f.shape, f'fee_col вернула форму {got.shape}, а нужно {_f.shape}: по сбору на доставку.'\nassert _np.allclose(got, _f), f'fee_col не совпадает с fee_apply у {int((~_np.isclose(got, _f)).sum())} доставок. Сравните на первых строках: d.head().apply(fee_apply, axis=1).'\n_names = need('fee_col').__code__.co_names\nassert not {'apply', 'iterrows', 'itertuples'} & set(_names), 'Внутри fee_col не должно быть apply и перебора строк — только столбцы и np.where.'\nta, tc = need('t_apply'), need('t_col')\nassert ta > 0 and tc > 0, 't_apply и t_col — положительные времена в секундах от best_time.'\nassert close(need('speedup'), ta / tc, max(0.02 * ta / tc, 0.6)), f'speedup = {need(\"speedup\")}, а t_apply / t_col = {ta / tc:.1f}.'\nassert ta / tc > 2, f'Версия через столбцы быстрее всего в {ta / tc:.1f} раза. Замеряете ли вы именно fee_col(d) и d.apply(fee_apply, axis=1)?'\nassert need('total') == int(_f.sum()), f'total = {need(\"total\")}.'",
+   "starter": "import numpy as np\n\ndef fee_apply(r):\n    if r[\"amount\"] > 1500:\n        return 0\n    if r[\"items\"] >= 4:\n        return 60\n    return 15 * r[\"items\"]\n\ndef fee_col(d):\n    ...\n\n# готово, как в теории: d, best_time",
+   "solution": "import numpy as np\n\ndef fee_apply(r):\n    if r[\"amount\"] > 1500:\n        return 0\n    if r[\"items\"] >= 4:\n        return 60\n    return 15 * r[\"items\"]\n\ndef fee_col(d):\n    return np.where(d[\"amount\"] > 1500, 0,\n                    np.where(d[\"items\"] >= 4, 60, 15 * d[\"items\"]))\n\nt_apply = best_time(lambda: d.apply(fee_apply, axis=1))\nt_col = best_time(lambda: fee_col(d))\nspeedup = t_apply / t_col\ntotal = int(fee_col(d).sum())\nprint(f\"apply {t_apply:.4f} с, столбцы {t_col:.5f} с, быстрее в {speedup:.0f} раз; сборов {total} ₽\")",
+   "hints": [
+    "Условия те же, что в `fee_apply`, только для целых столбцов: `d[\"amount\"] > 1500`, `d[\"items\"] >= 4`. Цепочка `if … return` — это вложенный `np.where`, самое первое условие — снаружи.",
+    "`np.where(d[\"amount\"] > 1500, 0, np.where(d[\"items\"] >= 4, 60, 15 * d[\"items\"]))`. Замер: `t_apply = best_time(lambda: d.apply(fee_apply, axis=1))`, `t_col = best_time(lambda: fee_col(d))`."
+   ],
+   "explain": "Сборов набирается 63 090 ₽: 37 заказов дороже 1500 ₽ упакованы бесплатно, у 391 — по 60 ₽. Таблица всего на 1877 строк, а разница уже в десятки раз: `apply(axis=1)` на каждой строке создаёт объект-строку и вызывает функцию Python, а `np.where` проходит столбцы один раз. Код через столбцы ещё и короче проверять: условия видны в одной строке."
   },
   "ch09/02b-vectorize/vectorize": {
    "chapter": "ch09",
@@ -460,7 +552,9 @@
    "level": "base",
    "exam": false,
    "parsons": false,
-   "files": [],
+   "files": [
+    "deliveries.csv"
+   ],
    "display": true,
    "setup": "",
    "check": "import numpy as _np\n_r = _np.random.default_rng(1); _km = _r.uniform(0.5, 12, 100_000).round(1); _rain = _r.random(100_000) < 0.2\n_p = 60 + 14 * _km + _np.where(_km > 8, 100, 0); _p = _np.where(_rain, _p * 1.3, _p)\nf = need('pay_vec')\ngot = _np.asarray(f(_km, _rain), dtype=float)\nassert got.shape == _p.shape, f'pay_vec вернула массив формы {got.shape}, а нужно {_p.shape}: по одной сумме на доставку.'\nassert _np.allclose(got[_km > 8], _p[_km > 8]) or not _np.allclose(got[_km <= 8], _p[_km <= 8]), 'Для доставок дальше 8 км сумма не сходится: не забыли надбавку 100 ₽ до умножения на 1.3?'\nassert _np.allclose(got, _p), 'pay_vec считает не так, как pay_loop. Сравните на первых строках: pay_loop(km[:5], rain[:5]) и pay_vec(km[:5], rain[:5]).'\nassert need('same') is True or need('same') == True, 'same должно быть True: сравните ответы двух функций через np.allclose.'\ntl, tv = need('t_loop'), need('t_vec')\nassert tl > 0 and tv > 0, 't_loop и t_vec — положительные длительности в секундах: perf_counter() после минус perf_counter() до.'\nassert tl < 600 and tv < 600, 'Время похоже не на секунды. Это разность двух показаний time.perf_counter().'\nassert close(need('speedup'), tl / tv, max(0.02 * tl / tv, 0.6)), f'speedup = {need(\"speedup\")}, а t_loop / t_vec = {tl / tv:.1f}.'\nassert tl / tv > 2, f'Векторный вариант быстрее всего в {tl / tv:.1f} раза. Похоже, внутри pay_vec остался цикл по доставкам.'\nassert need('total') == int(round(_p.sum())), f'total = {need(\"total\")}. Сумма всех выплат pay_vec(km, rain), округлённая до рубля.'",
@@ -482,7 +576,9 @@
    "level": "plus",
    "exam": false,
    "parsons": false,
-   "files": [],
+   "files": [
+    "deliveries.csv"
+   ],
    "display": true,
    "setup": "",
    "check": "import numpy as _np\n_o = _np.random.default_rng(2).uniform(0, 20, size=(30_000, 2))\n_s = _np.array([[3, 4], [15, 5], [10, 12], [4, 16], [17, 17], [9, 2]], dtype=float)\n_D = _np.column_stack([_np.abs(_o - s).sum(axis=1) for s in _s]); _w = _D.argmin(axis=1)\ngot = _np.asarray(need('nearest_vec')(_o, _s))\nassert got.shape == _w.shape, f'nearest_vec вернула форму {got.shape}, а нужно {_w.shape}: по номеру кофейни на заказ.'\n_De = _np.column_stack([_np.linalg.norm(_o - s, axis=1) for s in _s])\nassert (got == _w).all() or not (got == _De.argmin(axis=1)).all(), 'Номера совпадают с ближайшими по прямой. Нужно манхэттенское расстояние: сумма модулей разностей.'\nassert (got == _w).all(), f'Не совпало у {int((got != _w).sum())} заказов из 30 000. Сравните с nearest_loop на первых 10 заказах.'\ntl, tv = need('t_loop'), need('t_vec')\nassert tl > 0 and tv > 0, 't_loop и t_vec — положительные длительности в секундах.'\nassert close(need('speedup'), tl / tv, max(0.02 * tl / tv, 0.6)), f'speedup = {need(\"speedup\")}, а t_loop / t_vec = {tl / tv:.1f}.'\nassert tl / tv > 2, f'Ускорение всего {tl / tv:.1f} раза. Похоже, в nearest_vec остался цикл по заказам.'\nld = _np.bincount(_w, minlength=6)\nassert _np.array_equal(_np.asarray(need('load')), ld), f'load = {need(\"load\")}, а нужно {ld.tolist()}: число заказов у каждой из 6 кофеен.'\nassert need('busiest') == int(ld.argmax()), f'busiest = {need(\"busiest\")}.'",
@@ -632,7 +728,7 @@
     "Без единиц: `np.linalg.solve(X.T @ X, X.T @ y)`. С единицами — сначала `X1 = np.column_stack([np.ones(len(X)), X])`.",
     "Прогнозы — `X @ w_no` и `X1 @ w_with`. Для `bias_no` модуль не берите: нужна средняя ошибка со знаком."
    ],
-   "explain": "Без свободного члена MAE 7.56 вместо 5.87, а средняя ошибка 2.1 — модель систематически занижает время. Базовые 16 минут, которые нужны любой доставке, ей некуда положить, и она «размазывает» их по другим весам: километр стоит уже 4.0 минуты вместо 3.9, а надбавка пешему — 19.9 вместо 13.6. Веса стали больше и при этом хуже описывают реальность."
+   "explain": "Без свободного члена MAE 7.56 вместо 5.87, а средняя ошибка 2.1 — модель систематически занижает время. Базовые 16 минут, которые нужны любой доставке, ей некуда положить, и она «размазывает» их по другим весам: километр стоит уже 6.1 минуты вместо 3.9, позиция — 4.0 вместо 1.6, а надбавка пешему — 19.9 вместо 13.6 (в `w_no` порядок тот же, что в `X`: `distance_km`, `items`, `walk`; в `w_with` первым стоит свободный член). Веса стали больше и при этом хуже описывают реальность."
   },
   "ch09/03-normal-equation/rank": {
    "chapter": "ch09",
@@ -709,7 +805,7 @@
    "lesson": "03-normal-equation",
    "lesson_title": "Как обучается линейная регрессия",
    "id": "gd-preview",
-   "title": "Сколько стоит сантиметр",
+   "title": "Почти-копия признака",
    "level": "star",
    "exam": false,
    "parsons": false,
@@ -750,6 +846,29 @@
    ],
    "explain": "Это полноценная модель в смысле sklearn: `fit` учится (запоминает одно число, 80 / 10 = 8 минут на км), `predict` применяет выученное. Правила, которыми уже пользуется бизнес, удобно оформлять так же: тогда их можно поставить в одну таблицу сравнения с настоящими моделями. Если модель не обыгрывает правило диспетчера, она не нужна. Для самого простого ориентира — «всем одно среднее» — в sklearn есть готовый `DummyRegressor`."
   },
+  "ch09/03b-own-model/fix-class": {
+   "chapter": "ch09",
+   "lesson": "03b-own-model",
+   "lesson_title": "Своя модель: класс с fit и predict",
+   "id": "fix-class",
+   "title": "Почините модель",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nC = need('PerKmModel')\n_m = C()\n_r = _m.fit([1, 1], [5, 7])\nassert _r is _m, 'fit должен возвращать сам объект: последняя строка fit — return self. Иначе цепочка PerKmModel().fit(...).predict(...) получает None.'\nassert hasattr(_m, 'rate_') and close(_m.rate_, 6.0), 'После fit у объекта должен появиться атрибут rate_: self.rate_ = ...'\nassert _np.allclose(need('pred'), [32.0, 80.0]), f'pred = {need(\"pred\")}, а нужно [32.0, 80.0].'",
+   "starter": "import numpy as np\n\nclass PerKmModel:\n    def fit(km, minutes):\n        rate_ = float(np.sum(minutes) / np.sum(km))\n\n    def predict(self, km):\n        return np.asarray(km) * self.rate_\n\nmodel = PerKmModel().fit([2, 3, 5], [16, 21, 43])\npred = model.predict([4, 10])\nprint(pred)",
+   "solution": "import numpy as np\n\nclass PerKmModel:\n    def fit(self, km, minutes):\n        self.rate_ = float(np.sum(minutes) / np.sum(km))\n        return self\n\n    def predict(self, km):\n        return np.asarray(km) * self.rate_\n\nmodel = PerKmModel().fit([2, 3, 5], [16, 21, 43])\npred = model.predict([4, 10])\nprint(pred)",
+   "hints": [
+    "Первая ошибка — в заголовке `fit`: Python передаёт объект первым аргументом, а места для него нет. Вторая — выученное число записано в обычную переменную, которая исчезнет после `fit`.",
+    "`def fit(self, km, minutes):`, внутри `self.rate_ = ...`, последней строкой — `return self`."
+   ],
+   "explain": "Ошибки чинятся по очереди, и каждая даёт своё сообщение: без `self` — `TypeError: PerKmModel.fit() takes 2 positional arguments but 3 were given`, без `return self` — `AttributeError: 'NoneType' object has no attribute 'predict'`, без `self.` перед `rate_` — `AttributeError: 'PerKmModel' object has no attribute 'rate_'`. Прогнозы 32 и 80 минут: 80 минут на 10 км — 8 минут на километр."
+  },
   "ch09/03b-own-model/my-class": {
    "chapter": "ch09",
    "lesson": "03b-own-model",
@@ -773,6 +892,52 @@
     "После класса: `model = MyLinearRegression().fit(X, y)`, `w_all = np.r_[model.intercept_, model.coef_].round(3)`, `pred_new = model.predict(new).round(1)`."
    ],
    "explain": "Проверка сначала обучает ваш класс на игрушке из урока, где ответ известен заранее (0.5 и 2.2), а потом сверяет его с `LinearRegression` на доставках. Так тестируют любую свою модель: маленький пример с ответом, посчитанным руками, ловит ошибки, которые на большой таблице не видны. Прогнозы: 46.4 минуты для пешего курьера на 3.5 км и 53.4 минуты для 8 км на машине или велосипеде. Если бы вы забыли `return self`, цепочка `MyLinearRegression().fit(X, y)` вернула бы `None`, и в `model` оказался бы не объект, а пустое значение."
+  },
+  "ch09/03b-own-model/mean-model": {
+   "chapter": "ch09",
+   "lesson": "03b-own-model",
+   "lesson_title": "Своя модель: класс с fit и predict",
+   "id": "mean-model",
+   "title": "Обыгрывает ли модель среднее",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]]\ny = ok[\"actual_min\"]",
+   "check": "import numpy as _np\nfrom sklearn.base import BaseEstimator as _BE\nfrom sklearn.dummy import DummyRegressor as _DR\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.model_selection import cross_val_score as _cvs\nC = need('MeanModel')\nassert issubclass(C, _BE), 'Добавьте родителей: class MeanModel(RegressorMixin, BaseEstimator).'\n_m = C().fit(_np.zeros((4, 1)), _np.array([3.0, 4.0, 8.0, 9.0]))\nassert _np.allclose(_m.predict(_np.zeros((3, 1))), 6.0), 'На игрушке y = 3, 4, 8, 9 predict должен вернуть по 6.0 на каждую строку: np.full(len(X), self.mean_).'\nX0, y0 = need('X'), need('y')\nrm = -_cvs(_DR(), X0, y0, cv=5, scoring='neg_mean_absolute_error')\nrl = -_cvs(_LR(), X0, y0, cv=5, scoring='neg_mean_absolute_error')\ncm = _np.asarray(need('cv_mean'), dtype=float)\nassert cm.shape == (5,) and (cm > 0).all(), f'cv_mean — пять положительных MAE: минус перед cross_val_score, cv=5. Сейчас {cm.round(2).tolist()}.'\nassert _np.allclose(cm, rm), f'cv_mean = {cm.round(2).tolist()}, а нужно {rm.round(2).tolist()}.'\nassert _np.allclose(need('cv_lin'), rl), f'cv_lin = {_np.round(need(\"cv_lin\"), 2).tolist()}, а нужно {rl.round(2).tolist()}.'\nassert close(need('gain'), round(float(rm.mean() - rl.mean()), 2), 0.0051), f'gain = {need(\"gain\")}: cv_mean.mean() - cv_lin.mean().'",
+   "starter": "import numpy as np\nfrom sklearn.base import BaseEstimator, RegressorMixin\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.model_selection import cross_val_score\n\n# готово, как в теории: X, y (доставки)\n\nclass MeanModel(RegressorMixin, BaseEstimator):\n    ...",
+   "solution": "import numpy as np\nfrom sklearn.base import BaseEstimator, RegressorMixin\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.model_selection import cross_val_score\n\nclass MeanModel(RegressorMixin, BaseEstimator):\n    def fit(self, X, y):\n        self.mean_ = float(np.mean(y))\n        return self\n\n    def predict(self, X):\n        return np.full(len(X), self.mean_)\n\ncv_mean = -cross_val_score(MeanModel(), X, y, cv=5, scoring=\"neg_mean_absolute_error\")\ncv_lin = -cross_val_score(LinearRegression(), X, y, cv=5, scoring=\"neg_mean_absolute_error\")\ngain = round(float(cv_mean.mean() - cv_lin.mean()), 2)\nprint(cv_mean.round(2), cv_lin.round(2), gain)",
+   "hints": [
+    "Класс — тот же, что в разделе «Правило бизнеса — тоже модель»: в `fit` — `self.mean_ = float(np.mean(y))` и `return self`, в `predict` — `np.full(len(X), self.mean_)`.",
+    "`cv_mean = -cross_val_score(MeanModel(), X, y, cv=5, scoring=\"neg_mean_absolute_error\")`, то же для `LinearRegression()`; `gain = round(float(cv_mean.mean() - cv_lin.mean()), 2)`."
+   ],
+   "explain": "Правило «всем среднее» ошибается в среднем на 8.24 минуты, линейная регрессия — на 5.91: модель точнее на 2.33 минуты, и так на каждом из пяти фолдов. Проверка сверяет ваш класс с готовым `DummyRegressor` из sklearn — он делает ровно то же самое. Своя версия нужна, когда правило сложнее среднего, — как в следующей задаче."
+  },
+  "ch09/03b-own-model/group-mean": {
+   "chapter": "ch09",
+   "lesson": "03b-own-model",
+   "lesson_title": "Своя модель: класс с fit и predict",
+   "id": "group-mean",
+   "title": "Правило «как обычно у этого курьера»",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nXc = ok[[\"courier\"]]\ny = ok[\"actual_min\"]",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.base import BaseEstimator as _BE\nfrom sklearn.model_selection import cross_val_score as _cvs\nC = need('CourierMean')\nassert issubclass(C, _BE), 'Добавьте родителей: class CourierMean(RegressorMixin, BaseEstimator).'\n_tx = _pd.DataFrame({'courier': ['а', 'б', 'а', 'б']}); _ty = _pd.Series([10.0, 30.0, 20.0, 50.0])\n_m = C().fit(_tx, _ty)\nassert hasattr(_m, 'means_'), 'После fit должен появиться атрибут means_: self.means_ = ...'\n_p = _np.asarray(_m.predict(_pd.DataFrame({'courier': ['б', 'а']})), dtype=float)\nassert _np.allclose(_p, [40.0, 15.0]), f'На игрушке (а: 10 и 20, б: 30 и 50) predict для [б, а] должен дать [40.0, 15.0], а дал {_p.tolist()}.'\nX0, y0 = need('Xc'), need('y')\ndef _ref_cv():\n    out = []\n    from sklearn.model_selection import KFold as _KF\n    for tr, te in _KF(5).split(X0):\n        mm = _pd.Series(y0.values[tr]).groupby(X0['courier'].values[tr]).mean()\n        out.append(_np.abs(X0['courier'].iloc[te].map(mm).values - y0.values[te]).mean())\n    return _np.array(out)\nref = _ref_cv()\ncc = _np.asarray(need('cv_courier'), dtype=float)\nassert cc.shape == (5,) and (cc > 0).all(), f'cv_courier — пять положительных MAE, сейчас {cc.round(2).tolist()}.'\nassert _np.allclose(cc, ref), f'cv_courier = {cc.round(2).tolist()}, а нужно {ref.round(2).tolist()}.'\nassert close(need('cv_courier_mean'), round(float(ref.mean()), 2), 0.0051), f'cv_courier_mean = {need(\"cv_courier_mean\")}.'\nwm = round(float(y0[X0['courier'] == 'пеший'].mean()), 1)\nassert close(need('walk_mean'), wm, 0.051), f'walk_mean = {need(\"walk_mean\")}: среднее время пеших, которое модель выучила на всех данных.'\nassert bool(need('beats_mean')) == bool(ref.mean() < 8.24), 'beats_mean: меньше ли средняя MAE правила, чем 8.24 у «всем среднее»?'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.base import BaseEstimator, RegressorMixin\nfrom sklearn.model_selection import cross_val_score\n\n# готово, как в теории: Xc (столбец courier), y (минуты)\n\nclass CourierMean(RegressorMixin, BaseEstimator):\n    ...",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.base import BaseEstimator, RegressorMixin\nfrom sklearn.model_selection import cross_val_score\n\nclass CourierMean(RegressorMixin, BaseEstimator):\n    def fit(self, X, y):\n        y = pd.Series(np.asarray(y, dtype=float), index=X.index)\n        self.means_ = y.groupby(X[\"courier\"]).mean()\n        return self\n\n    def predict(self, X):\n        return X[\"courier\"].map(self.means_).to_numpy(dtype=float)\n\ncv_courier = -cross_val_score(CourierMean(), Xc, y, cv=5, scoring=\"neg_mean_absolute_error\")\ncv_courier_mean = round(float(cv_courier.mean()), 2)\nwalk_mean = round(float(CourierMean().fit(Xc, y).means_[\"пеший\"]), 1)\nbeats_mean = bool(cv_courier_mean < 8.24)\nprint(cv_courier.round(2), cv_courier_mean, walk_mean, beats_mean)",
+   "hints": [
+    "В `fit`: `self.means_ = pd.Series(np.asarray(y, dtype=float), index=X.index).groupby(X[\"courier\"]).mean()` — среднее `y` по группам курьера (Series с ключами «авто», «вело», «пеший»). `return self`.",
+    "В `predict`: `X[\"courier\"].map(self.means_).to_numpy(dtype=float)` — каждому заказу его среднее. Затем `cv_courier = -cross_val_score(CourierMean(), Xc, y, cv=5, scoring=\"neg_mean_absolute_error\")`, `walk_mean = round(float(CourierMean().fit(Xc, y).means_[\"пеший\"]), 1)`."
+   ],
+   "explain": "Правило выучило три числа: около 32.7 минуты у авто, 33.1 у вело и 39.9 у пеших. Среднее MAE по фолдам — 8.07 минуты: «всем среднее» (8.24) оно обыгрывает, но совсем немного, а линейная регрессия с расстоянием (5.91) — заметно точнее. Вывод для «Зерна»: тип курьера сам по себе почти ничего не объясняет, главное — расстояние. `pd.Series(..., index=X.index)` в `fit` нужен, чтобы `groupby` сопоставил минуты и курьеров по строкам: на каждом фолде `cross_val_score` подаёт свой кусок таблицы."
   },
   "ch09/03b-own-model/class-cv": {
    "chapter": "ch09",
@@ -1165,7 +1330,7 @@
     "`bad = P.copy()` — без `copy` вы испортите и исходный ключ.",
     "`bad[:, 3]` — весь последний столбец. Ранг — `np.linalg.matrix_rank(bad)`; модель обучайте на `X_train @ bad`, проверяйте на `X_test @ bad`."
    ],
-   "explain": "Четвёртый столбец спрятанных данных теперь повторяет сумму первых двух — по сути у подрядчика осталось три признака вместо четырёх. Часть информации стёрта навсегда, и модель стала хуже. Поэтому ключ всегда проверяют на ранг."
+   "explain": "Четвёртый столбец спрятанных данных теперь повторяет сумму первых двух — по сути у подрядчика осталось три независимых признака вместо четырёх. R² упал с 0.3713 до 0.3336, то есть на 0.04. Немного, но эту потерю уже ничем не вернуть: из четырёх независимых направлений в данных одно пропало, и никакая модель подрядчика его не восстановит. Насколько это больно, зависит от того, какое направление пропало: если бы, например, выпал доход целиком, R² на тех же данных упал бы до 0.19. Поэтому ключ всегда проверяют на ранг до отправки."
   },
   "ch09/05-project/tree-hidden": {
    "chapter": "ch09",

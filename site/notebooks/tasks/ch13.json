@@ -91,7 +91,7 @@
    "solution": "import re\nstop = {\"и\", \"в\", \"с\", \"но\", \"не\", \"на\"}\nkeep = {\"не\", \"но\"}\ntext = \"Кофе не горячий, но с горечью\"\ntokens = [w for w in re.findall(r\"[а-яё]+\", text.lower()) if w not in stop - keep]\nprint(tokens)",
    "hints": [
     "`stop - keep` — разность множеств: стоп-слова без «не» и «но».",
-    "Фильтр токенов — списковое выражение с условием `if w not in stop_clean`."
+    "Фильтр токенов — списковое выражение с условием `if w not in stop - keep`."
    ],
    "explain": ""
   },
@@ -213,6 +213,30 @@
    ],
    "explain": "Правило из двух слов уже даёт около 80 % правильных ответов. Добавление «но» ловит смешанные отзывы («вкусно, но дорого»). Это ориентир, который модель в следующих уроках должна уверенно побить."
   },
+  "ch13/01b-lemmas/stem-pairs": {
+   "chapter": "ch13",
+   "lesson": "01b-lemmas",
+   "lesson_title": "Леммы и словарь исключений",
+   "id": "stem-pairs",
+   "title": "Где стемминг ошибается",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "reviews_text.csv",
+    "review_lemmas.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "f = need('stem')\nassert f('кофейня', 4) == 'кофе' and f('кофе', 5) == 'кофе', f'stem(\"кофейня\", 4) = {f(\"кофейня\", 4)!r}, stem(\"кофе\", 5) = {f(\"кофе\", 5)!r}: длинное слово обрезается, короткое остаётся как есть.'\nws = [\"сырники\", \"сырников\", \"сырником\", \"приветливые\", \"привезли\", \"привёз\", \"холодный\", \"холодная\"]\nst = lambda w, n: w[:n] if len(w) > n else w\nassert need('n5') == len({st(w, 5) for w in ws}), f'n5 = {need(\"n5\")}: число разных основ — длина множества.'\nassert need('n6') == len({st(w, 6) for w in ws}), f'n6 = {need(\"n6\")}.'\nassert need('glued5') == True, 'glued5: сравните stem(\"приветливые\", 5) и stem(\"привезли\", 5).'",
+   "starter": "words = [\"сырники\", \"сырников\", \"сырником\", \"приветливые\", \"привезли\", \"привёз\", \"холодный\", \"холодная\"]",
+   "solution": "words = [\"сырники\", \"сырников\", \"сырником\", \"приветливые\", \"привезли\", \"привёз\", \"холодный\", \"холодная\"]\n\ndef stem(word, n):\n    return word[:n] if len(word) > n else word\n\nn5 = len({stem(w, 5) for w in words})\nn6 = len({stem(w, 6) for w in words})\nglued5 = stem(\"приветливые\", 5) == stem(\"привезли\", 5)\nprint(n5, n6, glued5)",
+   "hints": [
+    "Разные основы — множество: `{stem(w, 5) for w in words}`, его размер — `len(...)`.",
+    "`glued5 = stem(\"приветливые\", 5) == stem(\"привезли\", 5)`."
+   ],
+   "explain": "При пяти буквах восемь слов дают 4 основы: три «сырника» и два «холодных» слились правильно, а «приветливые» и «привезли» — ошибочно. При шести буквах основ 5: «привет» и «привез» разошлись, формы «сырника» и «холодного» по-прежнему вместе. «Привёз» отдельно в обоих случаях — из-за «ё». Длина обрезания — компромисс: короче — больше чужих слов слипается, длиннее — больше форм одного слова расходится."
+  },
   "ch13/01b-lemmas/stem": {
    "chapter": "ch13",
    "lesson": "01b-lemmas",
@@ -236,6 +260,30 @@
     "Обрезанное слово — `w[:5]`. Сколько разных «основ» — длина множества `{w[:5] for w in all_words}`."
    ],
    "explain": "Обрезание до 5 букв склеивает «курьер» с опечаткой «курье» — это полезно. Но заодно в ту же группу попал «курьервежливый» — два слова, склеенные опечаткой без пробела, — и могли бы попасть разные слова с общим началом. Для настоящей работы с русским текстом лучше лемматизация."
+  },
+  "ch13/01b-lemmas/lemma-text": {
+   "chapter": "ch13",
+   "lesson": "01b-lemmas",
+   "lesson_title": "Леммы и словарь исключений",
+   "id": "lemma-text",
+   "title": "Отзыв в леммах",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "reviews_text.csv",
+    "review_lemmas.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "f = need('lemmatize')\ngot = f('Бариста были приветливые')\nassert got == 'барист быть приветливый', f'lemmatize(\"Бариста были приветливые\") = {got!r}, а нужно \\'барист быть приветливый\\'.'\nassert need('first') == 'приготовить быстро даже в очередь но дороговатый для такой кофе', f'first = {need(\"first\")!r}.'",
+   "starter": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+   "solution": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\nto_lemma = dict(zip(lem[\"word\"], lem[\"lemma\"]))\n\ndef lemmatize(text):\n    return \" \".join(to_lemma[w] for w in tokenize(text))\n\nfirst = lemmatize(r.loc[0, \"text\"])\nprint(first)",
+   "hints": [
+    "Словарь — `dict(zip(lem[\"word\"], lem[\"lemma\"]))`. В таблице есть все слова отзывов, поэтому `to_lemma[w]` не упадёт.",
+    "`\" \".join(to_lemma[w] for w in tokenize(text))`."
+   ],
+   "explain": "Грамматика ушла («дороговато для такого кофе» → «дороговатый для такой кофе»), смысл для модели остался. В проверочной фразе видно и ошибку: «бариста» стала «барист» — это лемма-догадка незнакомого слова, её чинят словарём исключений (задача «Исключения для слов меню»)."
   },
   "ch13/01b-lemmas/lemmas": {
    "chapter": "ch13",
@@ -261,6 +309,30 @@
     "```python\nknown = dict(zip(lem[\"word\"], lem[\"known\"]))\nshare_known = round(sum(known[w] for w in tokens) / len(tokens), 3)\n```"
    ],
    "explain": "Лемматизатор изменил 269 из 491 разного слова — больше половины словаря стоит не в начальной форме. Но склеились из них немногие: 491 слово дало 450 лемм. При этом почти половина **разных** слов незнакома словарю, а среди **словоупотреблений** незнакомых меньше 5 % (`share_known` около 0.954): незнакомые слова — в основном редкие опечатки. Если бы вы посчитали долю по разным словам, получили бы около 0.51 и решили, что лемматизатор бесполезен, — это частая ошибка «уникальные против всех»."
+  },
+  "ch13/01b-lemmas/lemma-top": {
+   "chapter": "ch13",
+   "lesson": "01b-lemmas",
+   "lesson_title": "Леммы и словарь исключений",
+   "id": "lemma-top",
+   "title": "Частые леммы плохих отзывов",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "reviews_text.csv",
+    "review_lemmas.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import re as _re, pandas as _pd\nfrom collections import Counter as _C\nr0 = _pd.read_csv('reviews_text.csv'); l0 = _pd.read_csv('review_lemmas.csv')\nm = dict(zip(l0['word'], l0['lemma']))\ntk = [w for t in r0.loc[r0['rating'] <= 3, 'text'] for w in _re.findall(r'[а-яё]+', t.lower())]\nc = _C(m[w] for w in tk)\nassert list(need('top10')) == [k for k, _ in c.most_common(10)], f'top10 = {need(\"top10\")}. Считайте леммы только плохих отзывов (rating <= 3).'\nassert need('n_byt') == c['быть'], f'n_byt = {need(\"n_byt\")}, а нужно {c[\"быть\"]}.'\nfb = sorted({w for w in tk if m[w] == 'быть'})\nassert list(need('forms_byt')) == fb, f'forms_byt = {need(\"forms_byt\")}, а нужно {fb}.'",
+   "starter": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\nto_lemma = dict(zip(lem[\"word\"], lem[\"lemma\"]))\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+   "solution": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\nto_lemma = dict(zip(lem[\"word\"], lem[\"lemma\"]))\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\ntokens = [w for t in r.loc[r[\"rating\"] <= 3, \"text\"] for w in tokenize(t)]\nc = Counter(to_lemma[w] for w in tokens)\ntop10 = [l for l, _ in c.most_common(10)]\nn_byt = c[\"быть\"]\nforms_byt = sorted({w for w in tokens if to_lemma[w] == \"быть\"})\nprint(top10, n_byt, forms_byt)",
+   "hints": [
+    "Токены плохих отзывов: `[w for t in r.loc[r[\"rating\"] <= 3, \"text\"] for w in tokenize(t)]`. Леммы — `to_lemma[w]` для каждого токена, счётчик — `Counter(...)`.",
+    "Формы «быть»: `sorted({w for w in tokens if to_lemma[w] == \"быть\"})` — множество, чтобы каждое слово попало один раз."
+   ],
+   "explain": "После лемматизации «быть» поднимается на четвёртое место (216 употреблений): по отдельности «были», «был» и «было» стояли ниже, а вместе обогнали предлоги. Так же «приложение» и «приложении» вместе дают лемму «приложение» (147) — она попадает в десятку, хотя по словам её там нет. Среди форм «быть» есть и ошибка: одинокое «е» — опечатка в «Больше е приду» (пропущена буква «н»), которую лемматизатор принял за форму «быть». Отрицание при этом потерялось: опечатки бьют не только по словарю, но и по тональности."
   },
   "ch13/01b-lemmas/lemma-fix": {
    "chapter": "ch13",
@@ -636,7 +708,7 @@
     "Доля верных в группе — среднее маски верности по нужным строкам: `ok[unsure].mean()` и `ok[~unsure].mean()`.",
     "Ближайшие к 0.5: `idx = np.argsort(np.abs(p - 0.5), kind=\"stable\")[:3]`, тексты — `X_test.values[idx]`."
    ],
-   "explain": "Неожиданный результат: среди «уверенных» ответов модель ошибается не реже, чем среди сомнительных (около 94 % и 95 % верных). Причина — шум разметки: если гость промахнулся звёздочкой, текст однозначно хороший, модель уверенно говорит «доволен», а метка — «недоволен». Такие уверенные «ошибки» на самом деле ошибки данных (задача «Ошибки или неверные метки»). А сомнительные отзывы — это смешанные тексты вроде «Хорошие скидки по карте, но бариста грубил»: их стоит отдавать человеку. В работе часто делают именно так: уверенные ответы — автоматически, сомнительные (здесь каждый пятый) — на ручной разбор."
+   "explain": "Неожиданный результат: среди «уверенных» ответов модель ошибается не реже, чем среди сомнительных (около 94 % и 95 % верных). Причина — шум разметки: если гость промахнулся звёздочкой, текст однозначно хороший, модель уверенно говорит «доволен», а метка — «недоволен». Такие уверенные «ошибки» на самом деле ошибки данных (задача «Ошибки или неверные метки»). А сомнительные отзывы — это короткие тексты без сильных слов («Чисто исветло.», «Зашёл утром перед работой. Красивый интерьер.») и смешанные, где «но» потерялось в опечатке («Хорошие скидки по карте, о бариста грубил»): их стоит отдавать человеку. В работе часто делают именно так: уверенные ответы — автоматически, сомнительные (здесь каждый пятый) — на ручной разбор."
   },
   "ch13/03-classify/recall95": {
    "chapter": "ch13",
@@ -721,7 +793,8 @@
    "parsons": true,
    "files": [
     "review_labels.csv",
-    "review_gold.csv"
+    "review_gold.csv",
+    "reviews_text.csv"
    ],
    "display": true,
    "setup": "",
@@ -745,7 +818,8 @@
    "parsons": false,
    "files": [
     "review_labels.csv",
-    "review_gold.csv"
+    "review_gold.csv",
+    "reviews_text.csv"
    ],
    "display": true,
    "setup": "",
@@ -770,7 +844,8 @@
    "parsons": false,
    "files": [
     "review_labels.csv",
-    "review_gold.csv"
+    "review_gold.csv",
+    "reviews_text.csv"
    ],
    "display": true,
    "setup": "",
@@ -795,7 +870,8 @@
    "parsons": false,
    "files": [
     "review_labels.csv",
-    "review_gold.csv"
+    "review_gold.csv",
+    "reviews_text.csv"
    ],
    "display": true,
    "setup": "",
@@ -808,6 +884,56 @@
     "```python\ngold_acc = {a: round(float((wide.loc[gold.index, a] == gold).mean()), 3) for a in wide.columns}\nworst = min(gold_acc, key=gold_acc.get)\nrest = [a for a in wide.columns if a != worst]\nn_recheck = int((wide[rest[0]] != wide[rest[1]]).sum())\n```"
    ],
    "explain": "Аня — 0.92, Борис — 0.78, Вика — 0.54. Голосование трёх даёт 0.88 — **хуже Ани в одиночку**: в спорных случаях голос Вики перевешивает то Аню, то Бориса, причём часто в сторону «атмосферы». «Мудрость толпы» работает, когда разметчики сопоставимы по качеству, а их ошибки случайны и независимы. У Вики ошибок почти половина, и они систематические — любимая «атмосфера», — поэтому её голос чаще портит итог, чем исправляет. Без Вики итог есть там, где Аня и Борис согласны, а 88 отзывов (около 20 %) уходят на перепроверку. Это честнее, чем доверять большинству с ненадёжным голосом. Если бы вы считали точность по всем 450 отзывам, сравнивая с голосованием, Вика выглядела бы лучше (0.60 вместо 0.54): голосование само содержит её голоса."
+  },
+  "ch13/03b-labels/topic-check": {
+   "chapter": "ch13",
+   "lesson": "03b-labels",
+   "lesson_title": "Качество разметки: голосование, каппа, золотой набор",
+   "id": "topic-check",
+   "title": "Откуда взялся `topic`",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "review_labels.csv",
+    "review_gold.csv",
+    "reviews_text.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\nr = pd.read_csv(\"reviews_text.csv\").set_index(\"review_id\")\nwide = pd.read_csv(\"review_labels.csv\").pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")\n\ndef majority(row):\n    counts = row.value_counts()\n    return counts.index[0] if counts.iloc[0] >= 2 else None",
+   "check": "import pandas as _pd\nw = _pd.read_csv('review_labels.csv').pivot(index='review_id', columns='annotator', values='label')\nt = _pd.read_csv('reviews_text.csv').set_index('review_id').loc[w.index, 'topic']\nag = w['аня'] == w['борис']\nassert need('n_ab_agree') == int(ag.sum()), f'n_ab_agree = {need(\"n_ab_agree\")}, а нужно {int(ag.sum())}.'\nm = round(float((w.loc[ag, 'аня'] == t[ag]).mean()), 3)\nassert close(need('match_ab'), m, 0.0015), f'match_ab = {need(\"match_ab\")}, а нужно {m}. Сравнивайте только отзывы, где Аня и Борис согласны.'\ndef _m(row):\n    c = row.value_counts()\n    return c.index[0] if c.iloc[0] >= 2 else None\nv = round(float((w.apply(_m, axis=1) == t).mean()), 3)\nassert close(need('match_vote'), v, 0.0015), f'match_vote = {need(\"match_vote\")}, а нужно {v}.'",
+   "starter": "topic = r.loc[wide.index, \"topic\"]",
+   "solution": "topic = r.loc[wide.index, \"topic\"]\nagree = wide[\"аня\"] == wide[\"борис\"]\nn_ab_agree = int(agree.sum())\nmatch_ab = round(float((wide.loc[agree, \"аня\"] == topic[agree]).mean()), 3)\nmatch_vote = round(float((wide.apply(majority, axis=1) == topic).mean()), 3)\nprint(n_ab_agree, match_ab, match_vote)",
+   "hints": [
+    "Маска согласия: `agree = wide[\"аня\"] == wide[\"борис\"]`; число — `int(agree.sum())`. Индексы `wide` и `topic` одинаковые, поэтому их можно сравнивать напрямую.",
+    "`match_ab = round(float((wide.loc[agree, \"аня\"] == topic[agree]).mean()), 3)`; голосование — `wide.apply(majority, axis=1)`, сравнение `== topic` для `None` даёт `False`."
+   ],
+   "explain": "Аня и Борис согласны в 362 отзывах из 450, и там `topic` почти всегда совпадает с их темой (0.992). С голосованием трёх `topic` совпадает реже — в 90 % отзывов: где Вика перетянула голосование, в `topic` стоит не её тема. Это подтверждает историю из урока: итоговую тему брали там, где согласны два надёжных разметчика, остальное перепроверяли."
+  },
+  "ch13/03b-labels/train-labels": {
+   "chapter": "ch13",
+   "lesson": "03b-labels",
+   "lesson_title": "Качество разметки: голосование, каппа, золотой набор",
+   "id": "train-labels",
+   "title": "Модель на разной разметке",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "review_labels.csv",
+    "review_gold.csv",
+    "reviews_text.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\").set_index(\"review_id\")\nwide = pd.read_csv(\"review_labels.csv\").pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")",
+   "check": "import pandas as _pd\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _T\nfrom sklearn.linear_model import LogisticRegression as _LR\nr0 = _pd.read_csv('reviews_text.csv').set_index('review_id')\nw = _pd.read_csv('review_labels.csv').pivot(index='review_id', columns='annotator', values='label')\nrs = r0.drop(w.index)\nlabs = {'topic': r0.loc[w.index, 'topic'], 'аня': w['аня'], 'вика': w['вика']}\nwant = {k: round(float((_mp(_T(), _LR(max_iter=1000)).fit(r0.loc[w.index, 'text'], v).predict(rs['text']) == rs['topic']).mean()), 3) for k, v in labs.items()}\ngot = need('acc', dict)\nassert set(got) == set(want), f'Ключи acc: {sorted(got)}, а нужны {sorted(want)}.'\nfor k in want:\n    assert close(got[k], want[k], 0.004), f'acc[{k!r}] = {got[k]}, а нужно около {want[k]}. Обучение — на 450 размеченных, проверка — на остальных 1950 по topic.'",
+   "starter": "train_text = r.loc[wide.index, \"text\"]\nrest = r.drop(wide.index)                 # 1950 отзывов для проверки",
+   "solution": "train_text = r.loc[wide.index, \"text\"]\nrest = r.drop(wide.index)\n\nlabels = {\"topic\": r.loc[wide.index, \"topic\"], \"аня\": wide[\"аня\"], \"вика\": wide[\"вика\"]}\nacc = {}\nfor name, y in labels.items():\n    model = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(train_text, y)\n    acc[name] = round(float((model.predict(rest[\"text\"]) == rest[\"topic\"]).mean()), 3)\nprint(acc)",
+   "hints": [
+    "Метки для обучения — три Series с индексом `wide.index`: `r.loc[wide.index, \"topic\"]`, `wide[\"аня\"]`, `wide[\"вика\"]`. Тексты для всех трёх одни — `train_text`.",
+    "```python\nlabels = {\"topic\": r.loc[wide.index, \"topic\"], \"аня\": wide[\"аня\"], \"вика\": wide[\"вика\"]}\nfor name, y in labels.items():\n    model = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(train_text, y)\n    ...\n```"
+   ],
+   "explain": "На чистой разметке модель даёт около 0.76, на метках Ани — почти столько же (0.74): её 7 % ошибок модель отчасти сглаживает. На метках Вики — около 0.35: модель честно выучила «любимую кнопку» и ставит «атмосферу» там, где её нет. Точность модели упирается в точность разметки — и проверять разметку нужно до обучения, а не после. (Здесь обучение всего на 450 отзывах, поэтому даже на `topic` точность ниже 79 % из урока «Классификация текстов», где модель видела 1800.)"
   },
   "ch13/04-embeddings/cos": {
    "chapter": "ch13",
@@ -1005,7 +1131,9 @@
    "level": "warmup",
    "exam": false,
    "parsons": true,
-   "files": [],
+   "files": [
+    "reviews_text.csv"
+   ],
    "display": true,
    "setup": "",
    "check": "assert _lines == ['[4 3 5]'], f'Сейчас вывод: {_lines}. Сначала длина L, потом дополнение, потом маска.'",
@@ -1026,7 +1154,9 @@
    "level": "base",
    "exam": false,
    "parsons": false,
-   "files": [],
+   "files": [
+    "reviews_text.csv"
+   ],
    "display": true,
    "setup": "",
    "check": "f = need('wordpiece')\nV = [\"[PAD]\", \"[UNK]\", \"[CLS]\", \"[SEP]\", \"кофе\", \"курьер\", \"##ом\", \"##а\", \"при\", \"##вез\", \"##ли\",\n     \"холод\", \"##ный\", \"##ным\", \"кап\", \"##учино\", \"бар\", \"##иста\", \"не\", \"##вкус\", \"вкус\", \"##но\", \"раф\"]\nI = {t: i for i, t in enumerate(V)}\ndef _wp(w):\n    out, s = [], 0\n    while s < len(w):\n        e = len(w)\n        while e > s:\n            p = w[s:e] if s == 0 else '##' + w[s:e]\n            if p in I:\n                break\n            e -= 1\n        if e == s:\n            return ['[UNK]']\n        out.append(p); s = e\n    return out\nfor w in ['курьера', 'вкусно', 'кап', 'раф', 'небариста', 'холодныйкофе', 'л']:\n    assert list(f(w)) == _wp(w), f'wordpiece({w!r}) = {f(w)}, а нужно {_wp(w)}.'\nws = [\"курьером\", \"привезли\", \"холодным\", \"невкусно\", \"бариста\", \"латте\", \"кофейня\"]\ngot = need('pieces', dict)\nassert all(list(got.get(w, [])) == _wp(w) for w in ws), f'pieces = {got}.'\nwant = [I['[CLS]']] + [I[p] for w in 'курьер привезли холодный кофе'.split() for p in _wp(w)] + [I['[SEP]']]\nassert list(need('ids')) == want, f'ids = {need(\"ids\")}, а нужно {want}. Не забудьте [CLS] и [SEP].'",
@@ -1039,6 +1169,29 @@
    ],
    "explain": "«Бариста» собирается из «бар» + «##иста», «невкусно» — из трёх кусочков, а «кофейня» целиком становится `[UNK]`: начало «кофе» нашлось, но для хвоста «##йня» куска нет, и алгоритм не оставляет полслова. Настоящие словари в десятки тысяч кусочков и содержат все одиночные буквы, поэтому `[UNK]` там почти не встречается — редкое слово просто рассыпается на много мелких кусочков. Типичная ошибка — искать кусок в середине слова без `##`: тогда «привезли» разберётся иначе, чем при обучении модели, и id не совпадут с теми, что она видела."
   },
+  "ch13/04b-transformers/attention": {
+   "chapter": "ch13",
+   "lesson": "04b-transformers",
+   "lesson_title": "Внутри трансформера: токены, маска, пулинг",
+   "id": "attention",
+   "title": "Внимание с маской",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "reviews_text.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nX0 = _np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]])\nm0 = _np.array([1, 1, 1, 0, 0])\ns0 = X0 @ X0.T; sm = s0.copy(); sm[:, m0 == 0] = -_np.inf\nW0 = _np.exp(sm) / _np.exp(sm).sum(axis=1, keepdims=True)\nWg = _np.asarray(need('W'), dtype=float)\nassert Wg.shape == (5, 5), f'W — матрица 5 × 5, а сейчас форма {Wg.shape}.'\nassert _np.allclose(Wg.sum(axis=1), 1), 'Веса в каждой строке W должны давать в сумме 1: делите экспоненты на их сумму по строке (axis=1).'\nassert _np.allclose(Wg[:, 3:], 0), 'Вес заполнителей (столбцы 3 и 4) должен быть 0: поставьте им оценку -np.inf до softmax.'\nassert _np.allclose(Wg, W0, atol=1e-6), f'W не совпадает с ожидаемой. Первая строка сейчас {[round(float(v), 3) for v in Wg[0]]}, а нужно {[round(float(v), 3) for v in W0[0]]}.'\nassert _np.allclose(need('out'), W0 @ X0, atol=1e-6), 'out = W @ X.'\nW1 = _np.exp(s0) / _np.exp(s0).sum(axis=1, keepdims=True)\npw = round(float(W1[0, 3:].sum()), 3)\nassert close(need('pad_weight'), pw, 0.0015), f'pad_weight = {need(\"pad_weight\")}, а нужно {pw}: softmax без маски, первая строка, сумма весов двух последних столбцов.'",
+   "starter": "import numpy as np\nX = np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]])\nmask = np.array([1, 1, 1, 0, 0])",
+   "solution": "import numpy as np\nX = np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]])\nmask = np.array([1, 1, 1, 0, 0])\n\nscores = X @ X.T\nmasked = scores.copy()\nmasked[:, mask == 0] = -np.inf\nW = np.exp(masked) / np.exp(masked).sum(axis=1, keepdims=True)\nout = W @ X\nW_raw = np.exp(scores) / np.exp(scores).sum(axis=1, keepdims=True)\npad_weight = round(float(W_raw[0, 3:].sum()), 3)\nprint(W.round(3), out.round(3), pad_weight, sep=\"\\n\")",
+   "hints": [
+    "Сначала `scores = X @ X.T`, затем копия для маски: `masked = scores.copy(); masked[:, mask == 0] = -np.inf`. Softmax — `np.exp(masked) / np.exp(masked).sum(axis=1, keepdims=True)`.",
+    "Для `pad_weight` повторите softmax на `scores` без маски и сложите веса первой строки в столбцах 3 и 4: `W_raw[0, 3:].sum()`."
+   ],
+   "explain": "С маской первый токен отдаёт себе 0.665 веса, остальное — двум соседям, и его новый вектор (0.91, 0.335, 0.665) — смесь настоящих токенов. Без маски он отдал бы заполнителям 0.908 веса: их векторы длиннее, скалярное произведение с ними больше, и softmax отдаёт им почти всё. Заполнители — не нули, а «громкий мусор», поэтому маска нужна и внутри модели, и в пулинге. Если `scores` поменять на месте, без `copy()`, то для `pad_weight` вы возьмёте уже замаскированные оценки и получите 0."
+  },
   "ch13/04b-transformers/masked-pool": {
    "chapter": "ch13",
    "lesson": "04b-transformers",
@@ -1048,7 +1201,9 @@
    "level": "base",
    "exam": false,
    "parsons": false,
-   "files": [],
+   "files": [
+    "reviews_text.csv"
+   ],
    "display": true,
    "setup": "import numpy as np\n_rng = np.random.default_rng(13)\n_lens = [8, 5, 3]\nH = _rng.normal(size=(3, 8, 5)).round(2)\nattention_mask = np.array([[1] * n + [0] * (8 - n) for n in _lens])\nH[attention_mask == 0] = _rng.normal(2.0, 1.0, size=((attention_mask == 0).sum(), 5)).round(2)\nH_long = np.concatenate([H, _rng.normal(2.0, 1.0, size=(3, 4, 5)).round(2)], axis=1)\nmask_long = np.concatenate([attention_mask, np.zeros((3, 4), dtype=int)], axis=1)",
    "check": "import numpy as _np\nf = need('mean_pool')\nT = _np.array([[[1.0, 3.0], [3.0, 1.0], [0.5, -2.0], [0.5, -2.0]]]); M = _np.array([[1, 1, 0, 0]])\nr = _np.asarray(f(T, M))\nassert r.shape == (1, 2) and _np.allclose(r, [[2.0, 2.0]]), f'mean_pool на примере из урока = {r.tolist()}, а нужно [[2.0, 2.0]]. Форма результата — (тексты, признаки).'\nref = (H * attention_mask[:, :, None]).sum(1) / attention_mask.sum(1, keepdims=True)\nassert _np.allclose(need('pooled'), ref), 'pooled не совпадает со средним по настоящим токенам.'\nassert _np.allclose(need('naive'), H.mean(axis=1)), 'naive — простое среднее по всем 8 позициям: H.mean(axis=1).'\nnv = H.mean(axis=1)\nc = round(float(ref[2] @ nv[2] / (_np.linalg.norm(ref[2]) * _np.linalg.norm(nv[2]))), 3)\nassert close(need('cos_short'), c, 0.0015), f'cos_short = {need(\"cos_short\")}, а нужно {c}.'\nassert need('same') is True or need('same') == True, 'same: mean_pool(H_long, mask_long) должен совпасть с pooled — заполнители не должны влиять.'",
@@ -1061,6 +1216,76 @@
    ],
    "explain": "У короткого отзыва (3 настоящих токена из 8) вектор «в лоб» совсем не похож на правильный: косинус около −0.21 — векторы почти перпендикулярны и даже смотрят немного в разные стороны, это фактически другой текст. У отзыва из 5 токенов — около 0.69, у полного (8 из 8) — ровно 1. Пулинг с маской не меняется, сколько бы заполнителей ни добавили (`same = True`), а простое среднее менялось бы с каждым новым соседом по пакету. Заметить ошибку на практике можно так: закодировать один отзыв отдельно и в пакете с длинным — векторы должны совпасть до 5–6 знака."
   },
+  "ch13/04b-transformers/truncate": {
+   "chapter": "ch13",
+   "lesson": "04b-transformers",
+   "lesson_title": "Внутри трансформера: токены, маска, пулинг",
+   "id": "truncate",
+   "title": "Обрезка по max_length",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "reviews_text.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "f = need('truncate')\nassert list(f([2, 4, 5, 6, 7, 3], 4)) == [2, 4, 5, 3], f'truncate([2, 4, 5, 6, 7, 3], 4) = {f([2, 4, 5, 6, 7, 3], 4)}, а нужно [2, 4, 5, 3]: [SEP] остаётся в конце, длина — ровно max_len.'\nassert list(f([2, 4, 3], 4)) == [2, 4, 3], 'Короткий список возвращается без изменений.'\nwant = [[2, 5, 8, 9, 10, 3], [2, 22, 18, 19, 21, 3], [2, 4, 3]]\nassert [list(x) for x in need('cut')] == want, f'cut = {need(\"cut\")}, а нужно {want}.'\nassert need('lost') == 4, f'lost = {need(\"lost\")}: сравните длины до и после обрезки.'",
+   "starter": "SEP = 3\nbatch = [[2, 5, 8, 9, 10, 11, 12, 14, 15, 3],    # «курьер привезли холодный капучино»\n         [2, 22, 18, 19, 21, 3],                  # «раф невкусно»\n         [2, 4, 3]]                               # «кофе»",
+   "solution": "SEP = 3\nbatch = [[2, 5, 8, 9, 10, 11, 12, 14, 15, 3],\n         [2, 22, 18, 19, 21, 3],\n         [2, 4, 3]]\n\ndef truncate(ids, max_len):\n    return ids if len(ids) <= max_len else ids[:max_len - 1] + [SEP]\n\ncut = [truncate(ids, 6) for ids in batch]\nlost = sum(len(a) - len(b) for a, b in zip(batch, cut))\nprint(cut, lost)",
+   "hints": [
+    "Длинный список: `ids[:max_len - 1] + [SEP]` — так длина будет ровно `max_len`, а последний id — `[SEP]`.",
+    "`lost = sum(len(a) - len(b) for a, b in zip(batch, cut))`."
+   ],
+   "explain": "Из первого текста осталось «курьер привезли» — «холодный капучино» модель уже не увидит. Если жалоба стоит в конце длинного отзыва, обрезка её выбросит молча, без ошибки. Поэтому перед кодированием смотрят на распределение длин в токенах и выбирают `max_length` с запасом, а очень длинные тексты режут на куски и усредняют их векторы."
+  },
+  "ch13/04b-transformers/pad-waste": {
+   "chapter": "ch13",
+   "lesson": "04b-transformers",
+   "lesson_title": "Внутри трансформера: токены, маска, пулинг",
+   "id": "pad-waste",
+   "title": "Сколько считаем впустую",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "reviews_text.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlens = (r[\"text\"].str.split().str.len() + 2).tolist()",
+   "check": "import pandas as _pd\nL = (_pd.read_csv('reviews_text.csv')['text'].str.split().str.len() + 2).tolist()\ndef _pc(l, b=8):\n    return sum(max(l[i:i + b]) * len(l[i:i + b]) - sum(l[i:i + b]) for i in range(0, len(l), b))\nf = need('pad_count')\nassert f([3, 5, 4], 2) == 2 + 0, f'pad_count([3, 5, 4], 2) = {f([3, 5, 4], 2)}, а нужно 2: пакет [3, 5] даёт 2 заполнителя, пакет [4] — ни одного.'\nassert need('pad_plain') == _pc(L), f'pad_plain = {need(\"pad_plain\")}, а нужно {_pc(L)}.'\nassert need('pad_sorted') == _pc(sorted(L)), f'pad_sorted = {need(\"pad_sorted\")}, а нужно {_pc(sorted(L))}.'\nassert close(need('saved'), round(1 - _pc(sorted(L)) / _pc(L), 3), 0.0015), f'saved = {need(\"saved\")}.'",
+   "starter": "# уже есть: lens — длины 2400 отзывов в токенах",
+   "solution": "def pad_count(lens, size=8):\n    total = 0\n    for i in range(0, len(lens), size):\n        chunk = lens[i:i + size]\n        total += max(chunk) * len(chunk) - sum(chunk)\n    return total\n\npad_plain = pad_count(lens)\npad_sorted = pad_count(sorted(lens))\nsaved = round(1 - pad_sorted / pad_plain, 3)\nprint(pad_plain, pad_sorted, saved)",
+   "hints": [
+    "Пакеты — срезы `lens[i:i + size]` для `i` в `range(0, len(lens), size)`. Последний пакет может быть короче — берите его реальную длину `len(chunk)`.",
+    "Заполнителей в пакете: `max(chunk) * len(chunk) - sum(chunk)`. Отсортированный вариант — `pad_count(sorted(lens))`."
+   ],
+   "explain": "В исходном порядке добавляется 9722 заполнителя при 24 470 настоящих токенах — больше четверти позиций (28 %), которые обработает модель, пустые. После сортировки заполнителей 66: соседи по пакету почти одной длины, экономия 99.3 %. С маской векторы от этого не меняются, только время. Порядок результатов потом надо вернуть исходный — запомните индексы до сортировки (`np.argsort(lens)`), иначе векторы окажутся у чужих отзывов."
+  },
+  "ch13/04c-llm/parse-one": {
+   "chapter": "ch13",
+   "lesson": "04c-llm",
+   "lesson_title": "Разметка текстов языковой моделью",
+   "id": "parse-one",
+   "title": "Вырезать JSON из ответа",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "reviews_text.csv",
+    "reviews_new.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "d = need('d', dict)\nassert d == {'sentiment': 'negative', 'topic': 'доставка'}, f'd = {d}.'\nassert need('topic') == 'доставка', f'topic = {need(\"topic\")!r}.'",
+   "starter": "import json\nanswer = 'Конечно! Вот разметка: {\"sentiment\": \"negative\", \"topic\": \"доставка\"} Надеюсь, помог.'",
+   "solution": "import json\nanswer = 'Конечно! Вот разметка: {\"sentiment\": \"negative\", \"topic\": \"доставка\"} Надеюсь, помог.'\n\nd = json.loads(answer[answer.index(\"{\"): answer.rindex(\"}\") + 1])\ntopic = d[\"topic\"]\nprint(d, topic)",
+   "hints": [
+    "Границы куска — `answer.index(\"{\")` и `answer.rindex(\"}\")`; правая граница среза не включается, поэтому к ней прибавляют 1.",
+    "`d = json.loads(answer[answer.index(\"{\"): answer.rindex(\"}\") + 1])`, тема — `d[\"topic\"]`."
+   ],
+   "explain": "`json.loads` на всей строке упал бы с `JSONDecodeError`: «Конечно! Вот…» — не JSON. Вырезание от первой `{` до последней `}` спасает от вступлений и подписей — самой частой «болезни» ответов. От оборванного JSON или темы вне списка оно не спасает: это ловит проверка в задаче «Разбор ответов LLM»."
+  },
   "ch13/04c-llm/parse-llm": {
    "chapter": "ch13",
    "lesson": "04c-llm",
@@ -1071,7 +1296,8 @@
    "exam": false,
    "parsons": false,
    "files": [
-    "reviews_text.csv"
+    "reviews_text.csv",
+    "reviews_new.csv"
    ],
    "display": true,
    "setup": "TOPICS = [\"кофе\", \"еда\", \"обслуживание\", \"доставка\", \"цена\", \"атмосфера\"]\nraw = [\n    '{\"sentiment\": \"negative\", \"topic\": \"доставка\"}',\n    '```json\\n{\"sentiment\": \"positive\", \"topic\": \"кофе\"}\\n```',\n    'Конечно! Вот разметка: {\"sentiment\": \"positive\", \"topic\": \"атмосфера\"}',\n    '{\"sentiment\": \"negative\", \"topic\": \"цена\"',\n    '{\"sentiment\": \"neutral\", \"topic\": \"еда\"}',\n    '{\"sentiment\": \"negative\", \"topic\": \"парковка\"}',\n    '{\"sentiment\": \"positive\", \"topic\": \"обслуживание\"}',\n    'Не могу определить тему этого отзыва.',\n]",
@@ -1084,6 +1310,30 @@
    ],
    "explain": "Половина ответов негодна, и у каждого своя причина: оборванный JSON, метка «neutral» вне списка, выдуманная тема, отказ. Обёртки вида «```json» и «Конечно! Вот…» разбор переживает. В реальной разметке негодных обычно единицы процентов — но их надо считать, а не терять."
   },
+  "ch13/04c-llm/llm-cost": {
+   "chapter": "ch13",
+   "lesson": "04c-llm",
+   "lesson_title": "Разметка текстов языковой моделью",
+   "id": "llm-cost",
+   "title": "Сколько стоит разметить новые отзывы",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "reviews_text.csv",
+    "reviews_new.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\nnew = pd.read_csv(\"reviews_new.csv\")\nPROMPT = \"\"\"Ты размечаешь отзывы о кофейнях.\nВерни ТОЛЬКО JSON вида {\"sentiment\": ..., \"topic\": ...}, без пояснений.\nsentiment: \"positive\" или \"negative\".\ntopic: одно из \"кофе\", \"еда\", \"обслуживание\", \"доставка\", \"цена\", \"атмосфера\".\n\nОтзыв: \"\"\"",
+   "check": "import pandas as _pd\nn0 = _pd.read_csv('reviews_new.csv'); P = need('PROMPT')\nti = sum((len(P) + len(t)) / 3 for t in n0['text'])\nassert need('tokens_in') == round(ti), f'tokens_in = {need(\"tokens_in\")}, а нужно {round(ti)}: сумма (len(PROMPT) + len(text)) / 3 по всем отзывам.'\nassert need('tokens_out') == 20 * len(n0), f'tokens_out = {need(\"tokens_out\")}.'\nc = round(ti / 1000 * 0.3 + 20 * len(n0) / 1000 * 1.5, 1)\nassert close(need('cost'), c, 0.11), f'cost = {need(\"cost\")}, а нужно {c}. Цены — за 1000 токенов.'\nsp = round(len(P) * len(n0) / 3 / ti, 3)\nassert close(need('share_prompt'), sp, 0.0015), f'share_prompt = {need(\"share_prompt\")}, а нужно {sp}.'",
+   "starter": "# уже есть: new (4800 отзывов), PROMPT",
+   "solution": "total_in = sum((len(PROMPT) + len(t)) / 3 for t in new[\"text\"])\ntokens_in = round(total_in)\ntokens_out = 20 * len(new)\ncost = round(tokens_in / 1000 * 0.3 + tokens_out / 1000 * 1.5, 1)\nshare_prompt = round(len(PROMPT) * len(new) / 3 / total_in, 3)\nprint(tokens_in, tokens_out, cost, share_prompt)",
+   "hints": [
+    "Входные токены: `sum((len(PROMPT) + len(t)) / 3 for t in new[\"text\"])`, затем `round(...)`. Выходные — `20 * len(new)`.",
+    "`cost = round(tokens_in / 1000 * 0.3 + tokens_out / 1000 * 1.5, 1)`. На инструкцию приходится `len(PROMPT) * len(new) / 3` токенов — поделите на неокруглённую сумму входных."
+   ],
+   "explain": "Около 456 тысяч входных и 96 тысяч выходных токенов — по условным ценам около 281 ₽. Главное в другом: 81 % входа — одна и та же инструкция, повторённая 4800 раз, потому что отзывы короткие. Если отправлять отзывы пачками (например, по 20 в запросе с просьбой вернуть список JSON), вход сократится в разы, — но тогда разбор ответа сложнее, и проверка на разметке нужна заново. Числа здесь — прикидка: настоящее число токенов и цены берут у провайдера и сверяют со счётом за пробный прогон на сотне отзывов."
+  },
   "ch13/04c-llm/llm-check": {
    "chapter": "ch13",
    "lesson": "04c-llm",
@@ -1094,19 +1344,44 @@
    "exam": false,
    "parsons": false,
    "files": [
-    "reviews_text.csv"
+    "reviews_text.csv",
+    "reviews_new.csv"
    ],
    "display": true,
    "setup": "import random\nimport pandas as pd\n_r = pd.read_csv(\"reviews_text.csv\")\ncheck = _r.sample(200, random_state=5).reset_index(drop=True)\nTOPICS = [\"кофе\", \"еда\", \"обслуживание\", \"доставка\", \"цена\", \"атмосфера\"]\n_rnd = random.Random(15)\nllm_topic = []\nfor _t in check[\"topic\"]:\n    _u = _rnd.random()\n    if _u < 0.04:\n        llm_topic.append(None)\n    elif _u < 0.06:\n        llm_topic.append(\"сервис\")\n    elif _u < (0.30 if _t == \"атмосфера\" else 0.16):\n        llm_topic.append(_rnd.choice([x for x in TOPICS if x != _t]))\n    else:\n        llm_topic.append(_t)",
-   "check": "import pandas as _pd\nc0, L, T = need('check'), _pd.Series(need('llm_topic')), need('TOPICS')\nvalid = L.isin(T)\nassert need('n_invalid') == int((~valid).sum()), f'n_invalid = {need(\"n_invalid\")}.'\nok = (L == c0['topic']) & valid\nassert close(need('acc_llm'), round(float(ok.mean()), 3), 0.0011), f'acc_llm = {need(\"acc_llm\")}.'\nrec = ok.groupby(c0['topic']).mean().round(3)\ng = need('recall_by_topic', _pd.Series)\nassert all(close(g[k], rec[k], 0.0011) for k in rec.index), f'recall_by_topic:\\n{g}\\nа нужно\\n{rec}'\nassert need('worst') == rec.idxmin(), f'worst = {need(\"worst\")!r}.'\nassert bool(need('better_than_model')) == bool(ok.mean() > 0.79), 'better_than_model = acc_llm > 0.79.'",
+   "check": "import pandas as _pd\nc0, L, T = need('check'), _pd.Series(need('llm_topic')), need('TOPICS')\nvalid = L.isin(T)\nassert need('n_invalid') == int((~valid).sum()), f'n_invalid = {need(\"n_invalid\")}.'\nok = (L == c0['topic']) & valid\nassert close(need('acc_llm'), round(float(ok.mean()), 3), 0.0011), f'acc_llm = {need(\"acc_llm\")}.'\nrec = ok.groupby(c0['topic']).mean().round(3)\ng = need('recall_by_topic', _pd.Series)\nassert all(close(g[k], rec[k], 0.0011) for k in rec.index), f'recall_by_topic:\\n{g}\\nа нужно\\n{rec}'\nassert need('worst') == rec.idxmin(), f'worst = {need(\"worst\")!r}.'\nimport math as _m\na = float(ok.mean()); se = _m.sqrt(a * (1 - a) / len(c0))\nassert close(need('low'), round(a - 2 * se, 3), 0.0015) and close(need('high'), round(a + 2 * se, 3), 0.0015), f'low, high = {need(\"low\")}, {need(\"high\")}, а нужно {round(a - 2 * se, 3)}, {round(a + 2 * se, 3)}.'\nassert bool(need('clearly_better')) == bool(a - 2 * se > 0.79), 'clearly_better: сравните с 0.79 нижнюю границу low, а не саму долю.'",
    "starter": "import pandas as pd\n\nans = pd.Series(llm_topic)\ntrue = check[\"topic\"]",
-   "solution": "import pandas as pd\n\nans = pd.Series(llm_topic)\ntrue = check[\"topic\"]\nvalid = ans.isin(TOPICS)\nn_invalid = int((~valid).sum())\nok = valid & (ans == true)\nacc_llm = round(float(ok.mean()), 3)\nrecall_by_topic = ok.groupby(true).mean().round(3)\nworst = recall_by_topic.idxmin()\nbetter_than_model = acc_llm > 0.79\nprint(n_invalid, acc_llm, worst, better_than_model)\nprint(recall_by_topic)",
+   "solution": "import math\nimport pandas as pd\n\nans = pd.Series(llm_topic)\ntrue = check[\"topic\"]\nvalid = ans.isin(TOPICS)\nn_invalid = int((~valid).sum())\nok = valid & (ans == true)\nacc_llm = round(float(ok.mean()), 3)\nrecall_by_topic = ok.groupby(true).mean().round(3)\nworst = recall_by_topic.idxmin()\nacc = float(ok.mean())\nse = math.sqrt(acc * (1 - acc) / len(true))\nlow, high = round(acc - 2 * se, 3), round(acc + 2 * se, 3)\nclearly_better = low > 0.79\nprint(n_invalid, acc_llm, worst, low, high, clearly_better)\nprint(recall_by_topic)",
    "hints": [
     "Годные ответы — те, что входят в список тем: `ans.isin(TOPICS)`; `None` туда не входит, так что одна маска покрывает оба случая.",
     "Верный ответ — годный и совпадающий с настоящей темой: `ok = ans.isin(TOPICS) & (ans == true)`. Его среднее — доля верных среди всех.",
-    "Полнота по темам — среднее `ok` в группах настоящей темы: `ok.groupby(true).mean()`."
+    "Полнота по темам — среднее `ok` в группах настоящей темы: `ok.groupby(true).mean()`. Погрешность — `se = math.sqrt(acc * (1 - acc) / len(true))` по неокруглённой доле."
    ],
-   "explain": "Условная модель верна в 82–83 % случаев — немного лучше обученного TF-IDF (0.79), без единого обучающего примера. Но 14 ответов из 200 негодны (пустые или «сервис» — темы нет в списке), и они в расчёте честно считаются ошибками. Хуже всего — «атмосфера» (около 2/3), как и у обученной модели: тема размытая. Такой разбор и есть решение «можно ли доверять разметке»: где модель слаба, там нужна ручная проверка. Важно: ответы в задаче условные (сгенерированы для упражнения); на живой модели числа будут свои — и проверять их нужно точно так же."
+   "explain": "Условная модель верна в 82.5 % случаев без единого обучающего примера. Но погрешность на 200 отзывах — около 2.7 п. п., и диапазон 0.771–0.879 захватывает 0.79: честный вывод — «не хуже обученной модели», а не «лучше» (`clearly_better = False`). К тому же 0.79 посчитано на других отзывах; на одних и тех же их сравнивает следующая задача. Но 14 ответов из 200 негодны (пустые или «сервис» — темы нет в списке), и они в расчёте честно считаются ошибками. Хуже всего — «атмосфера» (около 2/3), как и у обученной модели: тема размытая. Такой разбор и есть решение «можно ли доверять разметке»: где модель слаба, там нужна ручная проверка. Важно: ответы в задаче условные (сгенерированы для упражнения); на живой модели числа будут свои — и проверять их нужно точно так же."
+  },
+  "ch13/04c-llm/llm-same": {
+   "chapter": "ch13",
+   "lesson": "04c-llm",
+   "lesson_title": "Разметка текстов языковой моделью",
+   "id": "llm-same",
+   "title": "LLM и TF-IDF на одних отзывах",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "reviews_text.csv",
+    "reviews_new.csv"
+   ],
+   "display": true,
+   "setup": "import random\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\")\ncheck = r.sample(200, random_state=5).reset_index(drop=True)\nTOPICS = [\"кофе\", \"еда\", \"обслуживание\", \"доставка\", \"цена\", \"атмосфера\"]\n_rnd = random.Random(15)\nllm_topic = []\nfor _t in check[\"topic\"]:\n    _u = _rnd.random()\n    if _u < 0.04:\n        llm_topic.append(None)\n    elif _u < 0.06:\n        llm_topic.append(\"сервис\")\n    elif _u < (0.30 if _t == \"атмосфера\" else 0.16):\n        llm_topic.append(_rnd.choice([x for x in TOPICS if x != _t]))\n    else:\n        llm_topic.append(_t)\nok_llm = pd.Series(llm_topic).isin(TOPICS) & (pd.Series(llm_topic) == check[\"topic\"])",
+   "check": "from sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _T\nfrom sklearn.linear_model import LogisticRegression as _LR\nr0, c0, ol = need('r'), need('check'), need('ok_llm')\nrest = r0[~r0['review_id'].isin(c0['review_id'])]\nokm = _mp(_T(), _LR(max_iter=1000)).fit(rest['text'], rest['topic']).predict(c0['text']) == c0['topic'].values\nam = round(float(okm.mean()), 3)\nassert close(need('acc_model'), am, 0.004), f'acc_model = {need(\"acc_model\")}, а нужно около {am}. Обучайте на 2200 отзывах без проверочных (по review_id).'\nlo, mo = int((ol.values & ~okm).sum()), int((okm & ~ol.values).sum())\nassert abs(need('llm_only') - lo) <= 1 and abs(need('model_only') - mo) <= 1, f'llm_only, model_only = {need(\"llm_only\")}, {need(\"model_only\")}, а нужно около {lo}, {mo}.'",
+   "starter": "# уже есть: r, check, ok_llm — верна ли LLM на каждом из 200 отзывов",
+   "solution": "rest = r[~r[\"review_id\"].isin(check[\"review_id\"])]\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(rest[\"text\"], rest[\"topic\"])\nok_model = pd.Series(model.predict(check[\"text\"])) == check[\"topic\"]\nacc_model = round(float(ok_model.mean()), 3)\nllm_only = int((ok_llm & ~ok_model).sum())\nmodel_only = int((ok_model & ~ok_llm).sum())\nprint(acc_model, llm_only, model_only)",
+   "hints": [
+    "Обучающая часть — отзывы, которых нет среди проверочных: `rest = r[~r[\"review_id\"].isin(check[\"review_id\"])]`.",
+    "Верность модели — `ok_model = pd.Series(model.predict(check[\"text\"])) == check[\"topic\"]`; «только LLM» — `(ok_llm & ~ok_model).sum()`."
+   ],
+   "explain": "На этих 200 отзывах модель тем верна в 75.5 % случаев — ниже своих 79 % на тесте из урока «Классификация текстов»: на 200 отзывах доля колеблется на несколько пунктов. LLM здесь впереди на 7 п. п., но разницу решают только отзывы, где модели разошлись: 38 в пользу LLM против 24 в пользу TF-IDF, на остальных обе правы или обе ошиблись. 38 против 24 — перевес, но на 62 спорных отзывах он ещё может оказаться случайным; для уверенного вывода нужна выборка побольше. Главный урок: сравнивать модели надо на одних и тех же отзывах и смотреть на расхождения, а не на две доли с разных выборок."
   },
   "ch13/05-project/models": {
    "chapter": "ch13",
@@ -1130,7 +1405,7 @@
     "Функция `new_model()` возвращает каждый раз новый, необученный конвейер — используйте её для всех четырёх моделей (две оценочные и две финальные).",
     "Два разбиения: для тональности `stratify=y`, для темы `stratify=r[\"topic\"]`. Финальные модели: `new_model().fit(r[\"text\"], y)` и `new_model().fit(r[\"text\"], r[\"topic\"])`."
    ],
-   "explain": "Тональность — около 94 %, тема — около 82 %. Темы хуже, и это надо помнить при выводах: каждый пятый отзыв попадёт не в свою тему. Финальные модели обучены на всех данных — оценка на отложенной части остаётся честной оценкой их качества (чуть пессимистичной: данных при обучении стало больше)."
+   "explain": "Тональность — около 94 %, тема — около 82 %. В уроке «Классификация текстов» модель тем давала 79 %: здесь к словам добавлены биграммы (`ngram_range=(1, 2)`), и это подняло тему на 3 п. п.; тональность почти не изменилась. Темы хуже, и это надо помнить при выводах: каждый пятый отзыв попадёт не в свою тему. Финальные модели обучены на всех данных — оценка на отложенной части остаётся честной оценкой их качества (чуть пессимистичной: данных при обучении стало больше)."
   },
   "ch13/05-project/rare": {
    "chapter": "ch13",
@@ -1275,7 +1550,7 @@
     "TPR и FPR считаются на **старых размеченных** отзывах: обучите модель на обучающей части и предскажите отложенную.",
     "`tn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()`; `tpr = tp / (tp + fn)`, `fpr = fp / (fp + tn)`."
    ],
-   "explain": "Модель ловит около 92 % недовольных и ошибочно метит около 3 % довольных. Поправка поднимает долю «до» примерно на 1 п. п., а «после» — на 4: модель недосчитывает недовольных, и сильнее там, где их больше. Рост в KZN-2 после поправки — около 26 п. п. вместо 23. Вывод от поправки не меняется, но в отчёт идут исправленные цифры. Оговорка: TPR и FPR оценены на старых отзывах; если новый источник отличается, поправка тоже будет неточной.\n\n## Итог для управляющей сетью\n\n> **Отзывы с карт, сентябрь–октябрь 2026, ~4800 отзывов, разметка моделью (тональность — 94 % верных, тема — 82 %).**\n>\n> 1. **KZN-2: резкий рост недовольства с недели 5 октября.** Доля недовольных гостей — около 38 % до 5 октября и около 64 % после (с поправкой на ошибки модели; по модели без поправки — 37 % и 60 %). Рост — ступенькой, не возвращается.\n> 2. **Причина — доставка.** Жалобы на доставку в KZN-2 выросли с четверти до больше чем половины всех жалоб точки; в остальных кофейнях их доля не изменилась. Типичные отзывы: курьер не может найти адрес, кофе пролился, привезли не тот заказ (цитаты приложены).\n> 3. **TMN-1 — самая недовольная точка, но стабильно:** больше половины недовольных весь период. Это хроническая проблема, а не новая; разбирать стоит отдельно, по темам жалоб.\n> 4. В остальных точках изменения до 6 п. п. — на грани случайности; наблюдаем.\n>\n> **Рекомендация:** выяснить, что изменилось в доставке KZN-2 в начале октября (подрядчик, курьеры, зона), и следить за долей жалоб на доставку по неделям. Отчёт можно пересчитывать каждую неделю тем же кодом.\n\n::: tip\nЧтобы отчёт был еженедельным, модели сохраняют (`joblib.dump(sent, \"sent.joblib\")`, глава 15) и раз в неделю прогоняют через них свежую выгрузку. Раз в квартал модель проверяют на свежей ручной разметке пары сотен отзывов — гости могут начать писать иначе.\n:::"
+   "explain": "Модель ловит около 92 % недовольных и ошибочно метит около 3 % довольных. Поправка поднимает долю «до» примерно на 1 п. п., а «после» — на 4: модель недосчитывает недовольных, и сильнее там, где их больше. Рост в KZN-2 после поправки — около 26 п. п. вместо 23. Вывод от поправки не меняется, но в отчёт идут исправленные цифры. Оговорка: TPR и FPR оценены на старых отзывах; если новый источник отличается, поправка тоже будет неточной. И ещё одна: TPR и FPR посчитаны для модели, обученной на 75 % данных, а размечала отзывы финальная модель на всех данных — она, скорее всего, чуть точнее (данных при обучении больше), поэтому поправка может быть слегка завышена. На вывод о KZN-2 это не влияет: рост больше 20 п. п. и без поправки.\n\n## Итог для управляющей сетью\n\n> **Отзывы с карт, сентябрь–октябрь 2026, ~4800 отзывов, разметка моделью (тональность — 94 % верных, тема — 82 %).**\n>\n> 1. **KZN-2: резкий рост недовольства с недели 5 октября.** Доля недовольных гостей — около 38 % до 5 октября и около 64 % после (с поправкой на ошибки модели; по модели без поправки — 37 % и 60 %). Рост — ступенькой, не возвращается.\n> 2. **Причина — доставка.** Жалобы на доставку в KZN-2 выросли с четверти до больше чем половины всех жалоб точки; в остальных кофейнях их доля не изменилась. Типичные отзывы: курьер не может найти адрес, кофе пролился, привезли не тот заказ (цитаты приложены).\n> 3. **TMN-1 — самая недовольная точка весь период:** 56 % недовольных до и 62 % после, рост на 6–7 п. п. — на грани случайности. Это хроническая проблема, а не новая; разбирать стоит отдельно, по темам жалоб, и следить, не продолжится ли рост.\n> 4. В остальных точках изменения до 6–7 п. п. — на грани случайности; наблюдаем.\n>\n> **Рекомендация:** выяснить, что изменилось в доставке KZN-2 в начале октября (подрядчик, курьеры, зона), и следить за долей жалоб на доставку по неделям. Отчёт можно пересчитывать каждую неделю тем же кодом.\n\n::: tip\nЧтобы отчёт был еженедельным, модели сохраняют (`joblib.dump(sent, \"sent.joblib\")`, глава 15) и раз в неделю прогоняют через них свежую выгрузку. Раз в квартал модель проверяют на свежей ручной разметке пары сотен отзывов — гости могут начать писать иначе.\n:::"
   }
  }
 }

@@ -17,7 +17,7 @@ Unix-время — как номер кадра в общем видеопот�
 
 ### Unix-время → дата
 
-**Пример руками.** В сутках 86 400 секунд. Число `86400` — ровно сутки после начала отсчёта: `1970-01-02 00:00`. Число `1791100800`: делим на 86 400 — получается 20 730 полных суток и остаток 28 800 секунд, то есть 8 часов. 20 730 суток после 1 января 1970 года — 4 октября 2026, значит, момент — `2026-10-04 08:00` по UTC. Руками так никто не считает — для этого есть `unit`:
+**Пример.** В сутках 86 400 секунд, поэтому `86400` — это `1970-01-02 00:00`, ровно сутки после начала отсчёта. А `1791100800` — `2026-10-04 08:00` по UTC. Проверим кодом — для перевода есть параметр `unit`:
 
 ```python
 import pandas as pd
@@ -34,7 +34,17 @@ print(pd.to_datetime(1791100800000, unit="ms"))    # то же в миллисе
 
 Как отличить секунды от миллисекунд: у современных дат unix-время в секундах — 10 цифр (`1791100800`), в миллисекундах — 13 (`1791167205892`).
 
+{{practice: unix-range}}
+
 ### UTC → местное время
+
+В данных урока — события приложения за неделю, `app_events.csv`: номер события, время `ts`, кофейня, гость и тип события (`вход`, `корзина`, `заказ`):
+
+```python
+import pandas as pd
+ev = pd.read_csv("app_events.csv")
+ev.head(3)
+```
 
 У даты может быть **пояс**. `tz_localize("UTC")` говорит pandas «это время по UTC» (ничего не сдвигая), `tz_convert(...)` переводит в другой пояс — меняет часы, но не момент:
 
@@ -112,9 +122,77 @@ print("то же по местному времени:", round((ev["local"].dt.h
   > Округление не меняет пояс: 8 утра по UTC останутся 8 утра.
 :::
 
-{{practice: unix, local-time}}
+{{practice: p-tz, unix, tmn-fix, local-time}}
 
 ## Практика
+
+## task: unix-range | Неделя событий | warmup
+
+В `app_events.csv` время `ts` — unix-время в **миллисекундах**. Сохраните в `first_utc` и `last_utc` дату-время самого раннего и самого позднего события (по UTC, без пояса).
+
+### starter
+```python
+import pandas as pd
+ev = pd.read_csv("app_events.csv")
+
+```
+
+### check
+```python
+import pandas as _pd
+_e = _pd.read_csv('app_events.csv')
+_f, _l = _pd.to_datetime(_e['ts'].min(), unit='ms'), _pd.to_datetime(_e['ts'].max(), unit='ms')
+_a = _pd.Timestamp(need('first_utc')); _b = _pd.Timestamp(need('last_utc'))
+assert _a.year == 2026 and _b.year == 2026, f'first_utc = {_a}, last_utc = {_b}. Проверьте единицу: 13 цифр — миллисекунды, unit="ms".'
+assert _a == _f, f'first_utc = {_a} — это не самое раннее событие. Нужен минимум ts.'
+assert _b == _l, f'last_utc = {_b} — это не самое позднее событие. Нужен максимум ts.'
+```
+
+### hint
+Сначала найдите наименьшее и наибольшее число в `ts` (`min()`, `max()`), потом переведите каждое в дату.
+
+### hint
+`pd.to_datetime(ev["ts"].min(), unit="ms")` — и так же для `max()`. Можно и наоборот: перевести весь столбец, потом взять `min()` и `max()`.
+
+### solution
+```python
+import pandas as pd
+ev = pd.read_csv("app_events.csv")
+first_utc = pd.to_datetime(ev["ts"].min(), unit="ms")
+last_utc = pd.to_datetime(ev["ts"].max(), unit="ms")
+```
+
+### explain
+События — с `2026-10-05 02:26` до `2026-10-11 17:24` по UTC, ровно неделя с понедельника по воскресенье. 02:26 ночи по UTC — это 07:26 по Перми: первое событие недели — утренний кофе, а не ночной заказ.
+
+## task: p-tz | Соберите час пик Казани | warmup
+
+Соберите программу: она переводит события казанских кофеен в местное время (UTC+3) и выводит самый частый час по местному времени.
+
+### parsons
+```python
+import pandas as pd
+ev = pd.read_csv("app_events.csv")
+kzn = ev[ev["shop_id"].str.startswith("KZN")].copy()
+kzn["utc"] = pd.to_datetime(kzn["ts"], unit="ms")
+kzn["local"] = kzn["utc"].dt.tz_localize("UTC").dt.tz_convert("+03:00")
+print(kzn["local"].dt.hour.value_counts().idxmax())
+```
+
+### check
+```python
+import pandas as _pd
+_e = _pd.read_csv('app_events.csv')
+_k = _pd.to_datetime(_e.loc[_e['shop_id'].str.startswith('KZN'), 'ts'], unit='ms') + _pd.Timedelta(hours=3)
+_h = int(_k.dt.hour.value_counts().idxmax())
+assert _lines == [str(_h)], f'Должно вывестись {_h}. Сейчас: {_lines}'
+```
+
+### hint
+Порядок такой же, как в теории: отобрать город → число в дату → приписать UTC → перевести в местный пояс → посчитать.
+
+### hint
+Сначала `tz_localize("UTC")`, потом `tz_convert("+03:00")`: переводить можно только время, у которого уже есть пояс.
 
 ## task: unix | Время приложения — по Перми | base
 
@@ -177,6 +255,55 @@ perm_peak = int(perm["local"].dt.hour.value_counts().idxmax())
 
 ### explain
 По пермским часам пик приложения — 13:00, обед. По UTC пик пришёлся бы на 8 утра — ровно на 5 часов раньше, и выглядел бы правдоподобно, поэтому такую ошибку легко не заметить. Если перепутать `tz_localize` и `tz_convert` и написать `tz_localize("+05:00")`, часы останутся прежними, а у них появится неверная подпись «+05:00» — момент сдвинется на 5 часов в другую сторону.
+
+## task: tmn-fix | Почините перевод времени | base
+
+Коллега считал, какая доля событий тюменской кофейни приходится на утро — до 10:00 по местному времени (UTC+5). Ответ у него вышел больше половины, и это подозрительно. Найдите ошибку в заготовке и почините её: `tmn["local"]` — тюменское время, `tmn_morning` — доля событий до 10:00 в процентах с одним знаком.
+
+### starter
+```python
+import pandas as pd
+ev = pd.read_csv("app_events.csv")
+tmn = ev[ev["shop_id"].str.startswith("TMN")].copy()
+tmn["utc"] = pd.to_datetime(tmn["ts"], unit="ms")
+tmn["local"] = tmn["utc"].dt.tz_localize("+05:00")
+tmn_morning = round((tmn["local"].dt.hour < 10).mean() * 100, 1)
+print(tmn_morning)
+```
+
+### check
+```python
+import pandas as _pd
+_e = _pd.read_csv('app_events.csv')
+_t = _pd.to_datetime(_e.loc[_e['shop_id'].str.startswith('TMN'), 'ts'], unit='ms')
+_want = round(((_t + _pd.Timedelta(hours=5)).dt.hour < 10).mean() * 100, 1)
+_bad = round((_t.dt.hour < 10).mean() * 100, 1)
+tm = need('tmn', _pd.DataFrame)
+assert 'local' in tm.columns, 'В tmn нужен столбец local.'
+assert int(_pd.Timestamp(tm['local'].iloc[0]).hour) == (int(_t.iloc[0].hour) + 5) % 24, 'Часы в local не сдвинулись: tz_localize только подписывает пояс. Сначала tz_localize("UTC"), потом tz_convert("+05:00").'
+assert not close(need('tmn_morning'), _bad, 0.05), f'tmn_morning = {need("tmn_morning")} — это доля по часам UTC.'
+assert close(need('tmn_morning'), _want, 0.05), f'tmn_morning = {need("tmn_morning")}, а нужно {_want}.'
+```
+
+### hint
+Посмотрите на первую строку: `tmn[["utc", "local"]].head(1)`. Часы в `utc` и `local` одинаковые — значит, время не перевели, а только подписали.
+
+### hint
+`tz_localize` говорит, в каком поясе время **записано**, — это UTC. Переводит в другой пояс `tz_convert`: `tmn["utc"].dt.tz_localize("UTC").dt.tz_convert("+05:00")`.
+
+### solution
+```python
+import pandas as pd
+ev = pd.read_csv("app_events.csv")
+tmn = ev[ev["shop_id"].str.startswith("TMN")].copy()
+tmn["utc"] = pd.to_datetime(tmn["ts"], unit="ms")
+tmn["local"] = tmn["utc"].dt.tz_localize("UTC").dt.tz_convert("+05:00")
+tmn_morning = round((tmn["local"].dt.hour < 10).mean() * 100, 1)
+print(tmn_morning)
+```
+
+### explain
+До 10 утра по тюменскому времени — 24.9 % событий, а не 60.6 %, как вышло у коллеги. `tz_localize("+05:00")` не сдвинул часы, а объявил время UTC тюменским: первое событие `08:18` по Тюмени превратилось в `03:18+05:00`. Подпись стала правильной, а момент — на 5 часов раньше настоящего.
 
 ## task: local-time | Утренние заказы по местному времени | plus
 

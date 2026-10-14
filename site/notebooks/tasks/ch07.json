@@ -206,7 +206,7 @@
     "Скопируйте `X_test` и добавьте столбец прогноза: `t = X_test.copy(); t[\"pred\"] = forest.predict(X_test)`. Ушедшие: `t[y_test == 1]`.",
     "Внутри ушедших найденные — `pred == 1`, пропущенные — `pred == 0`. Доля новичков: `(group[\"tenure_months\"] <= 3).mean()`."
    ],
-   "explain": "Найденные уходящие — те, кто уже почти пропал: давно не был, мало визитов. Пропущенные выглядят как обычные гости — были недавно, ходят часто, — и среди них заметно больше новичков. Это «тихий» отток, о котором шла речь в проекте главы 6. Разбор FN подсказывает, куда двигаться: искать признаки, которые отличают таких гостей (урок «Новые признаки» — конструирование признаков), или снижать порог тревоги (урок «Порог, PR- и ROC-кривые»)."
+   "explain": "Найденные уходящие — те, кто уже почти пропал: давно не был, мало визитов (медиана давности 60 дней, 1.5 визита за 90 дней). Пропущенные выглядят как обычные гости — были недавно, ходят часто (медиана 14.5 дня и 4.5 визита), — и новичков среди них вдвое больше: 26 % против 13 %. Это «тихий» отток, о котором шла речь в проекте главы 6. Разбор FN подсказывает, куда двигаться: искать признаки, которые отличают таких гостей (урок «Новые признаки» — конструирование признаков), или снижать порог тревоги (урок «Порог, PR- и ROC-кривые»)."
   },
   "ch07/02-precision-recall/by-hand": {
    "chapter": "ch07",
@@ -597,6 +597,29 @@
    ],
    "explain": "Числа совпали до третьего знака: площадь под ROC-кривой и доля верно упорядоченных пар — одно и то же. Без ничьих вышло бы чуть меньше: у леса из 100 деревьев одинаковые оценки встречаются часто."
   },
+  "ch07/03b-money-threshold/warm-profit": {
+   "chapter": "ch07",
+   "lesson": "03b-money-threshold",
+   "lesson_title": "Порог по деньгам",
+   "id": "warm-profit",
+   "title": "Прибыль при одном пороге",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert int(need('profit')) == 91 * 1000 - 116 * 200, f'profit = {need(\"profit\")}, а нужно 67800. Выгода — только с TP, стоимость — за все 116 бонусов.'\nassert int(need('loss')) == 116 * 200 + (134 - 91) * 1000, f'loss = {need(\"loss\")}, а нужно 66200. FN = 134 − 91 = 43; бонусы оплачиваем все 116.'",
+   "starter": "tp = 91\nbonuses = 116\nchurned = 134\nCOST, GAIN = 200, 1000",
+   "solution": "tp = 91\nbonuses = 116\nchurned = 134\nCOST, GAIN = 200, 1000\n\nprofit = tp * GAIN - bonuses * COST\nloss = bonuses * COST + (churned - tp) * GAIN",
+   "hints": [
+    "FN — уходящие, которым бонус не достался: `churned - tp`.",
+    "`profit = tp * GAIN - bonuses * COST`, `loss = bonuses * COST + (churned - tp) * GAIN`."
+   ],
+   "explain": "Прибыль 67 800 ₽ — то же число, что даёт кривая прибыли при пороге 0.5. Потери — 66 200 ₽. Сложите: 67 800 + 66 200 = 134 000 = 134 × 1000. Сумма от порога не зависит, поэтому рост прибыли на рубль — это ровно рубль меньших потерь."
+  },
   "ch07/03b-money-threshold/profit": {
    "chapter": "ch07",
    "lesson": "03b-money-threshold",
@@ -870,7 +893,7 @@
     "`scoring=\"f1\"` — метрика для каждого фолда (см. условие). Функция `upsample(df)` из задачи про утечку пригодится и здесь.",
     "Внутри цикла: `u = upsample(train.iloc[tr])`, лес на `u.drop(columns=\"churned\"), u[\"churned\"]`, затем `f1_score(y_train.iloc[va], model.predict(X_train.iloc[va]))`. Список F1 усредните через `np.mean`."
    ],
-   "explain": "Неправильная кросс-валидация обещает F1 около 0.94, честная — около 0.68: в первом случае копии уходящих гостей попадают и в обучающие, и в проверочные фолды. Ручной цикл громоздкий, а `class_weight=\"balanced\"` можно передать прямо в `cross_val_score` без всяких циклов: веса считаются заново на каждом обучающем фолде. Похожим образом в уроке «Pipeline: предобработка и модель вместе» `Pipeline` встроит в модель заполнение пропусков и масштабирование."
+   "explain": "Неправильная кросс-валидация обещает F1 около 0.94, честная — около 0.68: в первом случае копии уходящих гостей попадают и в обучающие, и в проверочные фолды. Ручной цикл громоздкий, а с весами цикл не нужен: задайте модели `RandomForestClassifier(class_weight=\"balanced\")` и передайте её в `cross_val_score` как есть — веса посчитаются заново на каждом обучающем фолде. Похожим образом в уроке «Pipeline: предобработка и модель вместе» `Pipeline` встроит в модель заполнение пропусков и масштабирование."
   },
   "ch07/05-scaling/scale-fit": {
    "chapter": "ch07",
@@ -984,7 +1007,7 @@
     "`model.n_iter_` — массив из одного числа; `int(model.n_iter_[0])`.",
     "`diff_auc = round(abs(auc1 - auc2), 3)`, где AUC считается по `predict_proba(...)[:, 1]` на тесте в том же виде, на каком училась модель."
    ],
-   "explain": "Шагов — в сотню раз меньше, а AUC совпадает до третьего знака. Масштаб не делает логистическую регрессию умнее, он делает её обучение быстрым и надёжным. На больших таблицах это разница между секундами и минутами."
+   "explain": "Шагов — в сотню раз меньше (1242 против 11), а AUC отличается лишь на 0.001. Масштаб не делает логистическую регрессию умнее, он делает её обучение быстрым и надёжным. На больших таблицах это разница между секундами и минутами."
   },
   "ch07/05-scaling/coef-rank": {
    "chapter": "ch07",
@@ -1054,6 +1077,29 @@
     "`np.argsort(d)[:15]` — позиции 15 самых маленьких расстояний. Доля ушедших среди них — `y_train.iloc[...].mean()`: позиции, а не метки индекса, поэтому `.iloc`."
    ],
    "explain": "Вся «модель» kNN — это таблица обучающих гостей и правило голосования: при `fit` она ничего не вычисляет, а всю работу делает при прогнозе. Поэтому на больших таблицах kNN медленно предсказывает, а масштаб признаков определяет в нём буквально всё."
+  },
+  "ch07/05b-regularization/c-two": {
+   "chapter": "ch07",
+   "lesson": "05b-regularization",
+   "lesson_title": "Регуляризация: штраф за большие веса",
+   "id": "c-two",
+   "title": "Куда крутить C",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nimport pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.linear_model import LogisticRegression as _LR\n_g = _pd.read_csv('guests_churn.csv')\n_y = _g['churned']\n_X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\n_a, _b, _c, _d = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)\n_tr = _SS().fit(_a).transform(_a)\n_s1 = round(float(_np.abs(_LR(C=0.01).fit(_tr, _c).coef_).sum()), 2)\n_s2 = round(float(_np.abs(_LR(C=10).fit(_tr, _c).coef_).sum()), 2)\nassert close(need('sum_small'), _s1, 0.006), f'sum_small = {need(\"sum_small\")}, а ожидалось {_s1}. Модель LogisticRegression(C=0.01) на Xs_train, сумма np.abs(coef_).sum().'\nassert close(need('sum_big'), _s2, 0.006), f'sum_big = {need(\"sum_big\")}, а ожидалось {_s2}. Модель LogisticRegression(C=10) на Xs_train.'\nassert close(float(need('bigger')), 10), f'bigger = {need(\"bigger\")}. Сумма весов больше у модели с C=10: большой C — слабый штраф, больше свободы.'",
+   "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nscaler = StandardScaler().fit(X_train)\nXs_train = scaler.transform(X_train)",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nscaler = StandardScaler().fit(X_train)\nXs_train = scaler.transform(X_train)\n\nsmall = LogisticRegression(C=0.01).fit(Xs_train, y_train)\nbig = LogisticRegression(C=10).fit(Xs_train, y_train)\nsum_small = round(np.abs(small.coef_).sum(), 2)\nsum_big = round(np.abs(big.coef_).sum(), 2)\nbigger = 10 if sum_big > sum_small else 0.01",
+   "hints": [
+    "`small = LogisticRegression(C=0.01).fit(Xs_train, y_train)`, так же `big` с `C=10`.",
+    "`sum_small = round(np.abs(small.coef_).sum(), 2)`; `bigger = 10 if sum_big > sum_small else 0.01`."
+   ],
+   "explain": "При `C=0.01` сумма весов 2.67, при `C=10` — 4.71. `C` — это свобода: чем он больше, тем слабее штраф и тем крупнее веса. Если перепутать направление, легко «усилить регуляризацию», увеличив `C`, и получить обратное."
   },
   "ch07/05b-regularization/c-sweep": {
    "chapter": "ch07",
@@ -1169,6 +1215,29 @@
     "Флаг новичка — во второй копии: `n = g.copy()`, `n[\"is_new\"] = (n[\"tenure_months\"] <= 3).astype(int)`."
    ],
    "explain": "Визиты в месяц ничего не добавили — это тот же столбец в других единицах. Флаг новичка добавил почти 0.02: он описывает ступеньку, которую линейная модель сама не видит."
+  },
+  "ch07/06-features/both": {
+   "chapter": "ch07",
+   "lesson": "06-features",
+   "lesson_title": "Новые признаки",
+   "id": "both",
+   "title": "Два признака: CV, потом тест",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts, KFold as _KF, cross_val_score as _cvs\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.linear_model import LogisticRegression as _LR\nfrom sklearn.metrics import roc_auc_score as _auc, f1_score as _f1\n_g = _pd.read_csv('guests_churn.csv')\n_y = _g['churned']\n_kf = _KF(n_splits=5, shuffle=True, random_state=42)\ndef _split(df):\n    X = _pd.get_dummies(df.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\n    return _tts(X, _y, test_size=0.25, random_state=42, stratify=_y)\ndef _cv(df, sc):\n    a, b, c, d = _split(df)\n    return round(_cvs(_LR(max_iter=2000), _SS().fit_transform(a), c, cv=_kf, scoring=sc).mean(), 3)\n_f = _g.copy()\n_f['is_new'] = (_f['tenure_months'] <= 3).astype(int)\n_f['compl_x_deliv'] = _f['complaints'] * _f['delivery_share']\n_w = {'auc_base': _cv(_g, 'roc_auc'), 'f1_base': _cv(_g, 'f1'), 'auc_both': _cv(_f, 'roc_auc'), 'f1_both': _cv(_f, 'f1')}\nfor _k, _v in _w.items():\n    _how = 'исходной таблице g' if _k.endswith('base') else 'копии f с is_new и compl_x_deliv'\n    assert close(need(_k), _v), f'{_k} = {need(_k)}, а ожидалось {_v}. Это cv_auc на {_how}; для F1 — scoring=\"f1\".'\n_a, _b, _c, _d = _split(_f)\n_s = _SS().fit(_a)\n_m = _LR(max_iter=2000).fit(_s.transform(_a), _c)\n_ta = round(_auc(_d, _m.predict_proba(_s.transform(_b))[:, 1]), 3)\n_tf = round(_f1(_d, _m.predict(_s.transform(_b))), 3)\nassert close(need('test_auc'), _ta), f'test_auc = {need(\"test_auc\")}, а ожидалось {_ta}. Масштаб учите на обучающей части f, тест только преобразуйте; AUC — по predict_proba(...)[:, 1].'\nassert close(need('test_f1'), _tf), f'test_f1 = {need(\"test_f1\")}, а ожидалось {_tf}. F1 — по ответам predict на отмасштабированном тесте.'",
+   "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, KFold, cross_val_score\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import roc_auc_score, f1_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nkf = KFold(n_splits=5, shuffle=True, random_state=42)\n\ndef cv_auc(df, scoring=\"roc_auc\"):\n    X = pd.get_dummies(df.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\n    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n    Xs = StandardScaler().fit_transform(X_train)\n    return cross_val_score(LogisticRegression(max_iter=2000), Xs, y_train, cv=kf, scoring=scoring).mean()",
+   "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, KFold, cross_val_score\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import roc_auc_score, f1_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nkf = KFold(n_splits=5, shuffle=True, random_state=42)\n\ndef cv_auc(df, scoring=\"roc_auc\"):\n    X = pd.get_dummies(df.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\n    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n    Xs = StandardScaler().fit_transform(X_train)\n    return cross_val_score(LogisticRegression(max_iter=2000), Xs, y_train, cv=kf, scoring=scoring).mean()\n\nf = g.copy()\nf[\"is_new\"] = (f[\"tenure_months\"] <= 3).astype(int)\nf[\"compl_x_deliv\"] = f[\"complaints\"] * f[\"delivery_share\"]\n\nauc_base, f1_base = round(cv_auc(g), 3), round(cv_auc(g, \"f1\"), 3)\nauc_both, f1_both = round(cv_auc(f), 3), round(cv_auc(f, \"f1\"), 3)\n\nX = pd.get_dummies(f.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nscaler = StandardScaler().fit(X_train)\nmodel = LogisticRegression(max_iter=2000).fit(scaler.transform(X_train), y_train)\ntest_auc = round(roc_auc_score(y_test, model.predict_proba(scaler.transform(X_test))[:, 1]), 3)\ntest_f1 = round(f1_score(y_test, model.predict(scaler.transform(X_test))), 3)\nprint(auc_base, f1_base, auc_both, f1_both, test_auc, test_f1)",
+   "hints": [
+    "CV: `auc_both = round(cv_auc(f), 3)`, `f1_both = round(cv_auc(f, \"f1\"), 3)`; для базы — то же с `g`.",
+    "Тест: `X = pd.get_dummies(f.drop(columns=[...]), dtype=int).fillna({\"avg_check\": 0})`, тот же `train_test_split`, затем `scaler = StandardScaler().fit(X_train)` и `scaler.transform(X_test)` для предсказаний."
+   ],
+   "explain": "На кросс-валидации два признака подняли AUC с 0.877 до 0.904, F1 — с 0.619 до 0.667. На тесте модель с ними даёт AUC 0.934 и F1 0.753. Тест здесь просто оказался «удобнее» фолдов: та же модель без новых признаков дала бы на нём 0.897 и 0.689, так что прирост на тесте того же порядка, что и на CV. Решение принимали по CV, а тест открыли один раз — поэтому его числу можно верить."
   },
   "ch07/06-features/pairs": {
    "chapter": "ch07",
@@ -1490,6 +1559,30 @@
    ],
    "explain": "Подготовка написана один раз, а модели меняются одной строкой — в этом удобство конвейера. Соседям масштабирование внутри `pre` обязательно (урок «Масштабирование и ближайшие соседи»); лесу оно не мешает и не помогает."
   },
+  "ch07/07b-own-steps/class-warm": {
+   "chapter": "ch07",
+   "lesson": "07b-own-steps",
+   "lesson_title": "Свои шаги конвейера: порядок категорий, функции и свой класс",
+   "id": "class-warm",
+   "title": "Кофемашина",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "guests_churn.csv",
+    "guest_tiers.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "_M = need('CoffeeMachine')\n_a = _M(100)\nassert getattr(_a, 'beans', None) == 100 and getattr(_a, 'cups', None) == 0, 'Сразу после CoffeeMachine(100) должно быть beans == 100 и cups == 0: запишите их в __init__ через self.'\n_r = _a.brew()\nassert _r is _a, 'brew должен возвращать сам объект: последняя строка — return self.'\n_a.brew(10)\nassert _a.beans == 72 and _a.cups == 2, f'После brew() и brew(10) у машины на 100 г: beans = {_a.beans}, cups = {_a.cups}, а нужно 72 и 2. Меняйте self.beans и self.cups.'\n_b = _M(50)\nassert _b.beans == 50 and _b.cups == 0, 'У новой машины свой запас и свой счётчик: храните их в self, а не в общей переменной.'\nassert int(need('left')) == 1000 - 3 * 18, f'left = {need(\"left\")}, а после трёх чашек по 18 г остаётся {1000 - 3 * 18}.'\nassert int(need('cups')) == 3, f'cups = {need(\"cups\")}, а сварили три чашки.'",
+   "starter": "class CoffeeMachine:\n    def __init__(self, beans):\n        # запомните запас в self.beans и заведите счётчик self.cups\n        pass\n\n    def brew(self, grams=18):\n        # уменьшите запас, увеличьте счётчик, верните self\n        pass\n\nm = CoffeeMachine(1000)",
+   "solution": "class CoffeeMachine:\n    def __init__(self, beans):\n        self.beans = beans\n        self.cups = 0\n\n    def brew(self, grams=18):\n        self.beans -= grams\n        self.cups += 1\n        return self\n\nm = CoffeeMachine(1000)\nm.brew().brew().brew()\nleft = m.beans\ncups = m.cups",
+   "hints": [
+    "В `__init__`: `self.beans = beans` и `self.cups = 0`. В `brew`: `self.beans -= grams`, `self.cups += 1`, `return self`.",
+    "Три чашки цепочкой: `m.brew().brew().brew()`, затем `left = m.beans`, `cups = m.cups`."
+   ],
+   "explain": "После трёх чашек осталось 1000 − 3 × 18 = 946 г. Данные машины живут в её атрибутах, а методы меняют их через `self` — поэтому у второй машины свой запас. Трансформер sklearn устроен так же: `fit` записывает выученное в атрибуты (`self.means_`) и возвращает `self`, а `transform` этими атрибутами пользуется."
+  },
   "ch07/07b-own-steps/ord-tier": {
    "chapter": "ch07",
    "lesson": "07b-own-steps",
@@ -1607,7 +1700,7 @@
    "starter": "from sklearn.model_selection import cross_val_score\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import Pipeline, make_pipeline\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler, FunctionTransformer\nfrom sklearn.linear_model import LogisticRegression\n\ndef add_more(df):\n    df = add_features(df)\n    df[\"extra\"] = 0\n    return df",
    "solution": "import numpy as np\nfrom sklearn.model_selection import cross_val_score\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import Pipeline, make_pipeline\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler, FunctionTransformer\nfrom sklearn.linear_model import LogisticRegression\n\ndef add_more(df):\n    df = add_features(df)\n    df[\"extra\"] = np.log1p(df[\"days_since_last\"])\n    return df\n\nnum = [\"tenure_months\", \"app\", \"visits_90d\", \"days_since_last\", \"avg_check\",\n       \"delivery_share\", \"promo_used\", \"complaints\", \"is_new\", \"compl_x_deliv\", \"extra\"]\ncat = [\"city\", \"fav_category\"]\npre = ColumnTransformer([\n    (\"num\", make_pipeline(SimpleImputer(strategy=\"constant\", fill_value=0), StandardScaler()), num),\n    (\"cat\", OneHotEncoder(handle_unknown=\"ignore\"), cat),\n])\npipe = Pipeline([(\"feat\", FunctionTransformer(add_more)), (\"prep\", pre), (\"model\", LogisticRegression(max_iter=2000))])\nauc_more = round(cross_val_score(pipe, X_train, y_train, cv=kf, scoring=\"roc_auc\").mean(), 3)\nprint(auc_more)",
    "hints": [
-    "Логистическая регрессия ищет связь вида «чем больше признак, тем выше риск — равномерно». Посмотрите, как доля ушедших меняется с `days_since_last` (группировка по интервалам из урока «Форма связи и важность признаков»): равномерно ли она растёт?",
+    "Логистическая регрессия ищет связь вида «чем больше признак, тем выше риск — равномерно». Посмотрите, как доля ушедших меняется с `days_since_last` (группировка по интервалам из урока «Форма связи и важность признаков»): равномерно ли она растёт? Подходящий кандидат — один из признаков формы связи из того урока.",
     "Риск быстро растёт в первые недели без визита и потом почти не меняется. Такую «сжатую» шкалу даёт логарифм — признак `log_days` из урока «Форма связи и важность признаков»: `np.log1p(df[\"days_since_last\"])`. Подойдёт и флаг «давно не был», если удачно выбрать порог."
    ],
    "explain": "Логарифм давности визита поднимает AUC примерно до 0.91: для линейной модели разница между 2 и 20 днями без визита теперь значит больше, чем между 80 и 98. Деревьям и лесу такие преобразования почти не нужны — они сами ставят пороги, а линейной модели форму связи приходится подсказывать."
@@ -1820,7 +1913,7 @@
     "Доля пойманных: `y[top].sum() / y.sum()`.",
     "GridSearchCV сам вызывает `top30_recall(модель_фолда, X_фолда, y_фолда)` на каждом проверочном фолде — вызывать функцию самим не нужно."
    ],
-   "explain": "Акция для 30 % гостей ловит около трёх четвертей всех уходящих — против 30 % при случайном выборе. Как и AUC, эта метрика смотрит на порядок гостей, а не на порог, поэтому все сочетания почти равны: веса классов и `C` порядок почти не меняют."
+   "explain": "Акция для 30 % гостей ловит около трёх четвертей всех уходящих — против 30 % при случайном выборе. Как и AUC, эта метрика смотрит на порядок гостей, а не на порог, поэтому все сочетания почти равны: веса классов и `C` порядок почти не меняют. Заметьте: победил крайний `C=0.01` (0.767). По правилу «Граница сетки» сетку стоило бы расширить влево. Но `C=0.1` с весами отстаёт лишь в четвёртом знаке (0.7669 против 0.7671) при разбросе по фолдам около 0.03, так что продолжать перебор ради такой разницы смысла нет."
   },
   "ch07/09-project/look": {
    "chapter": "ch07",

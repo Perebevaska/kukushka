@@ -3,12 +3,75 @@ title: "Свои шаги конвейера: порядок категорий,
 lead: "Готовых кодировщиков и заполнителей хватает не всегда. Учимся передавать конвейеру порядок категорий, встраивать в него свои признаки функцией и писать собственный шаг-трансформер — класс с fit и transform, который ведёт себя как родной для sklearn."
 files: [guests_churn.csv, guest_tiers.csv]
 recap:
+  - "Класс — шаблон объекта: атрибуты (`self.beans`) хранят данные объекта, методы — функции внутри класса с первым аргументом `self` («этот объект»). Класс-наследник получает методы родителя готовыми."
   - "`OrdinalEncoder(categories=[[\"базовая\", \"серебряная\", \"золотая\"]], handle_unknown=\"use_encoded_value\", unknown_value=-1)` — порядковые категории одним столбцом. Без `categories=` порядок алфавитный, и смысл ломается молча."
   - "`FunctionTransformer(функция)` встраивает в конвейер свои признаки. Функция должна считать каждую строку по ней самой, без статистик по всей таблице."
   - "Свой трансформер — класс `(TransformerMixin, BaseEstimator)`: `__init__` только сохраняет настройки под теми же именами, `fit` учит статистики в атрибуты с `_` и возвращает `self`, `transform` применяет их к копии таблицы."
 ---
 
-Конвейер из урока «Pipeline: предобработка и модель вместе» уже умеет заполнять пропуски, делать флаги и масштабировать. Здесь — три способа научить его своему.
+Конвейер из урока «Pipeline: предобработка и модель вместе» уже умеет заполнять пропуски, делать флаги и масштабировать. Здесь — три способа научить его своему. Третий способ — свой класс, поэтому начнём с короткой врезки о классах Python.
+
+## Класс за пять минут
+
+До сих пор мы писали функции. Но с объектами, у которых есть свои данные и свои функции, работаем с первой главы: `scaler.fit(X_train)` запоминает средние в `scaler.mean_`, а `model.predict(X)` пользуется выученными весами. Такие объекты делают по **классу**.
+
+- **Класс** — шаблон, как бланк чека: какие поля в нём есть и что с ним можно делать.
+- **Объект** — конкретный чек, заполненный по бланку: `r1 = Receipt("Зерно, Казань")`. Объектов одного класса может быть сколько угодно, и у каждого свои данные.
+- **Атрибут** — переменная внутри объекта: `r1.cafe`, `r1.items`. Похоже на ключ словаря, только через точку.
+- **Метод** — функция внутри класса: `r1.add(...)`, `r1.total()`. Вызывается через точку у конкретного объекта.
+- **`self`** — «этот самый объект». Первым аргументом каждого метода Python сам подставляет объект, у которого метод вызвали. Поэтому `self.items` в `r1.add(...)` — позиции чека `r1`, а не `r2`.
+- **`__init__`** — метод, который вызывается при создании объекта: `Receipt("Зерно, Казань")` запускает `__init__` и заполняет атрибуты.
+
+```python
+class Receipt:
+    """Чек: копит позиции и считает сумму."""
+
+    def __init__(self, cafe):
+        self.cafe = cafe          # атрибут: записали в объект
+        self.items = []           # у каждого чека — свой список
+
+    def add(self, name, price):
+        self.items.append((name, price))
+        return self               # вернуть сам объект — тогда можно писать цепочкой
+
+    def total(self):
+        return sum(price for name, price in self.items)
+
+r1 = Receipt("Зерно, Казань")
+r1.add("капучино", 220).add("круассан", 150)
+r2 = Receipt("Зерно, Пермь")
+r2.add("американо", 180)
+print(r1.cafe, r1.total())
+print(r2.cafe, r2.total())
+```
+
+Два чека сделаны по одному классу, но позиции у них не смешались: каждый метод работает со своим `self`. `return self` в `add` позволяет писать `r1.add(...).add(...)` — так же устроен `StandardScaler().fit(X).transform(X)`.
+
+**Родитель.** Класс можно построить на основе другого: `class LoyaltyReceipt(Receipt)` получает все методы `Receipt` готовыми и добавляет свои.
+
+```python
+class Receipt:
+    def __init__(self, cafe):
+        self.cafe = cafe
+        self.items = []
+    def add(self, name, price):
+        self.items.append((name, price))
+        return self
+    def total(self):
+        return sum(price for name, price in self.items)
+
+class LoyaltyReceipt(Receipt):
+    def bonus(self):
+        return self.total() // 10      # 10 % суммы — бонусами
+
+r3 = LoyaltyReceipt("Зерно, Тюмень")
+r3.add("латте", 240)
+print(r3.total(), r3.bonus())
+```
+
+`add` и `total` мы в `LoyaltyReceipt` не писали — они достались от родителя. Ровно так работают родители `TransformerMixin` и `BaseEstimator` в конце урока: они дают нашему трансформеру готовые методы `fit_transform` и `get_params`. Подробнее о классах — в уроке «Своя модель: класс с fit и predict» главы 9.
+
+{{practice: class-warm}}
 
 ## Порядковые категории: OrdinalEncoder
 
@@ -47,7 +110,7 @@ print("новый уровень:", enc.transform(pd.DataFrame({"card_tier": ["�
 - `handle_unknown="use_encoded_value", unknown_value=-1` — что делать с уровнем, которого не было при `fit`: вместо ошибки поставить −1. Без этих параметров новая «платиновая» карта уронила бы прогноз с `ValueError: Found unknown categories`.
 
 ::: figure ordinal-tiers
-Коды уровней карты при алфавитном и при смысловом порядке. Доли ушедших по уровням — 36.4 % у базовой, 17.4 % у серебряной, 13.0 % у золотой: при смысловом порядке они монотонно падают с кодом, при алфавитном — скачут.
+Коды уровней карты при алфавитном и при смысловом порядке. Доли ушедших по уровням на обучающей части — 36.4 % у базовой, 17.4 % у серебряной, 13.0 % у золотой: при смысловом порядке они монотонно падают с кодом, при алфавитном — скачут.
 :::
 
 ::: predict
@@ -351,6 +414,51 @@ print(pipe.named_steps["ratio"].means_.round(1).to_dict())
 
 Как читать результат: средние чеки, выученные на обучающей части, — 370.3 ₽ в Казани и около 326–329 ₽ в остальных городах. AUC почти не изменился: 0.8775 против 0.8773 без признака — чек относительно своего города об уходе не говорит ничего нового. Зато признак теперь считается честно: и в кросс-валидации, и для завтрашних гостей средние берутся только из обучения.
 
+::: note Статистика по ответу: `fit(self, X, y)`
+В уроке «Форма связи и важность признаков» был пример признака, посчитанного по ответу: доля ушедших в городе гостя. Его тоже упаковывают в свой шаг — только `fit` теперь пользуется `y`. Конвейер передаёт каждому шагу в `fit` и `X`, и `y` обучающей части (при кросс-валидации — обучающего фолда), поэтому ответы проверочных строк в доли не попадают.
+
+```python
+import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+class RateBy(TransformerMixin, BaseEstimator):
+    def __init__(self, by="city"):
+        self.by = by
+    def fit(self, X, y):
+        self.rates_ = y.groupby(X[self.by]).mean()   # доля ушедших по городам — только по обучению
+        self.overall_ = y.mean()                      # для города, которого не было
+        return self
+    def transform(self, X):
+        X = X.copy()
+        X["churn_rate_" + self.by] = X[self.by].map(self.rates_).fillna(self.overall_)
+        return X
+
+g = pd.read_csv("guests_churn.csv")
+y = g["churned"]
+X = g.drop(columns=["guest_id", "churned", "card_blocked"])
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+num = ["tenure_months", "app", "visits_90d", "days_since_last", "avg_check",
+       "delivery_share", "promo_used", "complaints", "churn_rate_city"]
+pre = ColumnTransformer([
+    ("num", make_pipeline(SimpleImputer(strategy="constant", fill_value=0), StandardScaler()), num),
+    ("cat", OneHotEncoder(handle_unknown="ignore"), ["fav_category"]),
+])
+pipe = Pipeline([("rate", RateBy()), ("prep", pre), ("model", LogisticRegression(max_iter=2000))])
+print(f"AUC {cross_val_score(pipe, X_train, y_train, cv=kf, scoring='roc_auc').mean():.4f}")
+pipe.fit(X_train, y_train)
+print(pipe.named_steps["rate"].rates_.round(3).to_dict())
+```
+
+Город здесь заменён одним столбцом — долей ушедших: от 0.207 в Перми до 0.276 в Тюмени. AUC 0.8769 — на уровне базы (0.8773): на четырёх городах выигрыша нет. Такое кодирование полезно, когда значений сотни (улицы, товары), а one-hot раздул бы таблицу. И только внутри конвейера: посчитанная по всей таблице доля содержит ответ того же гостя.
+:::
+
 ::: quiz
 Коллега написал свой трансформер с параметром `min_count`, и `GridSearchCV` (перебор настроек — урок «Подбор гиперпараметров») падает с `AttributeError: ... object has no attribute 'min_count'`. В `__init__` у него `self.threshold = min_count * 2`. В чём дело?
 
@@ -375,6 +483,72 @@ print(pipe.named_steps["ratio"].means_.round(1).to_dict())
 {{practice: p-transformer, group-ratio}}
 
 ## Практика
+
+## task: class-warm | Кофемашина | warmup
+
+Допишите класс `CoffeeMachine` — кофемашину, которая помнит запас зёрен и число сваренных чашек:
+
+- `__init__(self, beans)` запоминает запас зёрен в граммах в атрибуте `beans` и заводит счётчик `cups = 0`;
+- `brew(self, grams=18)` уменьшает запас на `grams`, увеличивает счётчик на 1 и возвращает сам объект (`self`).
+
+Затем создайте `m = CoffeeMachine(1000)`, сварите на ней три чашки по 18 г и сохраните в `left` остаток зёрен, а в `cups` — число чашек (из атрибутов `m`).
+
+### starter
+```python
+class CoffeeMachine:
+    def __init__(self, beans):
+        # запомните запас в self.beans и заведите счётчик self.cups
+        pass
+
+    def brew(self, grams=18):
+        # уменьшите запас, увеличьте счётчик, верните self
+        pass
+
+m = CoffeeMachine(1000)
+
+```
+
+### check
+```python
+_M = need('CoffeeMachine')
+_a = _M(100)
+assert getattr(_a, 'beans', None) == 100 and getattr(_a, 'cups', None) == 0, 'Сразу после CoffeeMachine(100) должно быть beans == 100 и cups == 0: запишите их в __init__ через self.'
+_r = _a.brew()
+assert _r is _a, 'brew должен возвращать сам объект: последняя строка — return self.'
+_a.brew(10)
+assert _a.beans == 72 and _a.cups == 2, f'После brew() и brew(10) у машины на 100 г: beans = {_a.beans}, cups = {_a.cups}, а нужно 72 и 2. Меняйте self.beans и self.cups.'
+_b = _M(50)
+assert _b.beans == 50 and _b.cups == 0, 'У новой машины свой запас и свой счётчик: храните их в self, а не в общей переменной.'
+assert int(need('left')) == 1000 - 3 * 18, f'left = {need("left")}, а после трёх чашек по 18 г остаётся {1000 - 3 * 18}.'
+assert int(need('cups')) == 3, f'cups = {need("cups")}, а сварили три чашки.'
+```
+
+### hint
+В `__init__`: `self.beans = beans` и `self.cups = 0`. В `brew`: `self.beans -= grams`, `self.cups += 1`, `return self`.
+
+### hint
+Три чашки цепочкой: `m.brew().brew().brew()`, затем `left = m.beans`, `cups = m.cups`.
+
+### solution
+```python
+class CoffeeMachine:
+    def __init__(self, beans):
+        self.beans = beans
+        self.cups = 0
+
+    def brew(self, grams=18):
+        self.beans -= grams
+        self.cups += 1
+        return self
+
+m = CoffeeMachine(1000)
+m.brew().brew().brew()
+left = m.beans
+cups = m.cups
+```
+
+### explain
+После трёх чашек осталось 1000 − 3 × 18 = 946 г. Данные машины живут в её атрибутах, а методы меняют их через `self` — поэтому у второй машины свой запас. Трансформер sklearn устроен так же: `fit` записывает выученное в атрибуты (`self.means_`) и возвращает `self`, а `transform` этими атрибутами пользуется.
 
 ## task: ord-tier | Уровень карты по порядку | base
 
@@ -708,7 +882,7 @@ out[["fav_category", "visits_90d", "visits_90d_minus_fav_category"]].head()
 
 Сырые `X_train`, `y_train`, `kf` и функция `add_features` из прошлой задачи (флаг новичка и жалобы × доставка) уже готовы. Конвейер с ней даёт средний CV-AUC около 0.905.
 
-Напишите функцию `add_more(df)`: она вызывает `add_features(df)` и добавляет **один** новый числовой столбец с именем `extra`. Добейтесь, чтобы CV-AUC конвейера (`scoring="roc_auc"`, `cv=kf`, числовые столбцы — 8 исходных + `is_new`, `compl_x_deliv`, `extra`) вырос хотя бы на 0.004 по сравнению с конвейером без `extra` (это примерно столько, сколько дал логарифм давности в уроке «Форма связи и важность признаков», где он выигрывал на всех фолдах). Ожидаемый путь — `log_days` из того урока; флаг «давно не был» тоже подойдёт, если удачно выбрать порог. В `auc_more` сохраните получившийся средний AUC (3 знака).
+Напишите функцию `add_more(df)`: она вызывает `add_features(df)` и добавляет **один** новый числовой столбец с именем `extra`. Добейтесь, чтобы CV-AUC конвейера (`scoring="roc_auc"`, `cv=kf`, числовые столбцы — 8 исходных + `is_new`, `compl_x_deliv`, `extra`) вырос хотя бы на 0.004 по сравнению с конвейером без `extra` (это примерно столько, сколько дал лучший признак в уроке «Форма связи и важность признаков», где он выигрывал на всех фолдах). В `auc_more` сохраните получившийся средний AUC (3 знака).
 
 Признак должен считаться по строке (никаких `.mean()` по столбцу) и не использовать `churned`.
 
@@ -780,7 +954,7 @@ assert close(need('auc_more'), round(_more, 3), 0.0011), f'auc_more = {need("auc
 ```
 
 ### hint
-Логистическая регрессия ищет связь вида «чем больше признак, тем выше риск — равномерно». Посмотрите, как доля ушедших меняется с `days_since_last` (группировка по интервалам из урока «Форма связи и важность признаков»): равномерно ли она растёт?
+Логистическая регрессия ищет связь вида «чем больше признак, тем выше риск — равномерно». Посмотрите, как доля ушедших меняется с `days_since_last` (группировка по интервалам из урока «Форма связи и важность признаков»): равномерно ли она растёт? Подходящий кандидат — один из признаков формы связи из того урока.
 
 ### hint
 Риск быстро растёт в первые недели без визита и потом почти не меняется. Такую «сжатую» шкалу даёт логарифм — признак `log_days` из урока «Форма связи и важность признаков»: `np.log1p(df["days_since_last"])`. Подойдёт и флаг «давно не был», если удачно выбрать порог.

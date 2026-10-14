@@ -137,7 +137,7 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\nwant = _pd.read_csv('orders_3m.csv')['client_id'].nunique()\nassert need('n_clients') == want, f'n_clients = {need(\"n_clients\")}, а нужно {want}. nunique сам пропускает пустые значения.'",
+   "check": "import pandas as _pd\nwant = _pd.read_csv('orders_3m.csv')['client_id'].nunique()\n_all = _pd.read_csv('orders_3m.csv')['client_id'].count()\nassert need('n_clients') != _all, 'Вы посчитали все непустые номера карт, а нужны разные: один гость делал много заказов.'\nassert need('n_clients') == want, f'n_clients = {need(\"n_clients\")} — это не число разных гостей. nunique считает разные значения и сам пропускает пустые.'",
    "starter": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")",
    "solution": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nn_clients = df[\"client_id\"].nunique()",
    "hints": [
@@ -186,7 +186,7 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\na = _pd.read_csv('orders_3m.csv')['amount']\nassert need('median_check') == a.median(), f'median_check = {need(\"median_check\")}.'\nassert close(need('share_big'), round((a > 600).mean() * 100, 1)), f'share_big = {need(\"share_big\")}, а нужно {round((a > 600).mean() * 100, 1)}.'",
+   "check": "import pandas as _pd\na = _pd.read_csv('orders_3m.csv')['amount']\nassert need('median_check') == a.median(), f'median_check = {need(\"median_check\")} — это не медиана суммы заказа. Медиана — median(), а не mean().'\n_w = round((a > 600).mean() * 100, 1)\nassert not close(need('share_big'), round(_w / 100, 3), 0.002), f'share_big = {need(\"share_big\")} похоже на долю, а просили проценты: умножьте на 100.'\nassert close(need('share_big'), _w), f'share_big = {need(\"share_big\")}. Нужна доля заказов с amount > 600 (строго больше), в процентах с одним знаком.'",
    "starter": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")",
    "solution": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nmedian_check = df[\"amount\"].median()\nshare_big = round((df[\"amount\"] > 600).mean() * 100, 1)",
    "hints": [
@@ -219,31 +219,6 @@
     "```python\nprices = pd.read_csv(\"supplier_prices.csv\", sep=..., encoding=..., decimal=..., thousands=...)\ntotal = round((prices[\"Цена, руб.\"] * prices[...]).sum(), 2)\n```"
    ],
    "explain": "Заказ — 187 816.80 ₽. Все четыре параметра здесь нужны: без `encoding` файл не откроется, без `sep` получится один столбец, без `decimal` и `thousands` цена останется текстом `'1 890,00'`, и умножение строки на число склеит её саму с собой несколько раз: `'1 890,00' * 2` — это `'1 890,001 890,00'`. Такая ошибка не падает — поэтому после каждой загрузки смотрите `dtypes`."
-  },
-  "ch02/01-dataframe/sheets-url": {
-   "chapter": "ch02",
-   "lesson": "01-dataframe",
-   "lesson_title": "DataFrame — таблица в Python",
-   "id": "sheets-url",
-   "title": "Ссылка на выгрузку Google Sheets",
-   "level": "base",
-   "exam": false,
-   "parsons": false,
-   "files": [
-    "orders_3m.csv",
-    "supplier_prices.csv"
-   ],
-   "display": true,
-   "setup": "",
-   "check": "f = need('sheet_csv_url')\nassert callable(f), 'sheet_csv_url должна быть функцией.'\n_base = 'https://docs.google.com/spreadsheets/d/'\nfor _link, _id, _gid in [\n    (_base + '1AbC-zerno_Plan2026/edit#gid=0', '1AbC-zerno_Plan2026', '0'),\n    (_base + '1Xy_menu/edit?gid=418#gid=418', '1Xy_menu', '418'),\n    (_base + '1Qq_shops/edit', '1Qq_shops', '0'),\n    (_base + '9Zz-staff/edit?usp=sharing#gid=77', '9Zz-staff', '77'),\n]:\n    _got = f(_link)\n    _want = f'{_base}{_id}/export?format=csv&gid={_gid}'\n    assert _got is not None, 'Функция ничего не возвращает — нужен return.'\n    assert _got == _want, f'Для ссылки {_link}\\nфункция вернула {_got!r},\\nа нужно       {_want!r}.'",
-   "starter": "def sheet_csv_url(link):\n    ...\n\nprint(sheet_csv_url(\"https://docs.google.com/spreadsheets/d/1AbC-zerno_Plan2026/edit#gid=0\"))",
-   "solution": "def sheet_csv_url(link):\n    sheet_id = link.split(\"/d/\")[1].split(\"/\")[0]\n    gid = link.split(\"gid=\")[-1] if \"gid=\" in link else \"0\"\n    return f\"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}\"\n\nprint(sheet_csv_url(\"https://docs.google.com/spreadsheets/d/1AbC-zerno_Plan2026/edit#gid=0\"))",
-   "hints": [
-    "Обе части достаются через `split`: идентификатор — между `\"/d/\"` и `\"/\"`, номер листа — после `\"gid=\"`. «После последнего» — значит, берём последний кусок: индекс `[-1]`.",
-    "`sheet_id = link.split(\"/d/\")[1].split(\"/\")[0]`. Для листа: если `\"gid=\" in link`, то `gid = link.split(\"gid=\")[-1]`, иначе `gid = \"0\"`.",
-    "```python\ndef sheet_csv_url(link):\n    sheet_id = link.split(\"/d/\")[1].split(\"/\")[0]\n    gid = link.split(\"gid=\")[-1] if \"gid=\" in link else ...\n    return f\"https://docs.google.com/spreadsheets/d/{...}/export?format=csv&gid={...}\"\n```"
-   ],
-   "explain": "Ссылки на одну и ту же таблицу бывают разными: с `#gid=`, с `?gid=…#gid=…`, с хвостом `?usp=sharing` или совсем без номера листа. Если брать **первый** кусок после `gid=`, для `edit?gid=418#gid=418` получится `'418#'` — и выгрузка сломается. `[-1]` берёт последний кусок, и в таких ссылках это чистый номер. (Бывают и ссылки с хвостом после номера, например `#gid=418&range=A1`, — тогда номер пришлось бы ещё отрезать по `&`.) Дальше такой адрес передают в `pd.read_csv(sheet_csv_url(link))` — в своём Jupyter, где есть интернет."
   },
   "ch02/01-dataframe/records": {
    "chapter": "ch02",
@@ -791,9 +766,7 @@
    "exam": false,
    "parsons": false,
    "files": [
-    "orders_3m.csv",
-    "zdb_guests.csv",
-    "zdb_orders.csv"
+    "orders_3m.csv"
    ],
    "display": true,
    "setup": "",
@@ -816,9 +789,7 @@
    "exam": false,
    "parsons": false,
    "files": [
-    "orders_3m.csv",
-    "zdb_guests.csv",
-    "zdb_orders.csv"
+    "orders_3m.csv"
    ],
    "display": true,
    "setup": "",
@@ -841,9 +812,7 @@
    "exam": false,
    "parsons": true,
    "files": [
-    "orders_3m.csv",
-    "zdb_guests.csv",
-    "zdb_orders.csv"
+    "orders_3m.csv"
    ],
    "display": true,
    "setup": "",
@@ -866,9 +835,7 @@
    "exam": false,
    "parsons": false,
    "files": [
-    "orders_3m.csv",
-    "zdb_guests.csv",
-    "zdb_orders.csv"
+    "orders_3m.csv"
    ],
    "display": true,
    "setup": "",
@@ -891,9 +858,7 @@
    "exam": false,
    "parsons": false,
    "files": [
-    "orders_3m.csv",
-    "zdb_guests.csv",
-    "zdb_orders.csv"
+    "orders_3m.csv"
    ],
    "display": true,
    "setup": "",
@@ -917,9 +882,7 @@
    "exam": false,
    "parsons": false,
    "files": [
-    "orders_3m.csv",
-    "zdb_guests.csv",
-    "zdb_orders.csv"
+    "orders_3m.csv"
    ],
    "display": true,
    "setup": "",
@@ -943,9 +906,7 @@
    "exam": false,
    "parsons": false,
    "files": [
-    "orders_3m.csv",
-    "zdb_guests.csv",
-    "zdb_orders.csv"
+    "orders_3m.csv"
    ],
    "display": true,
    "setup": "",
@@ -968,9 +929,7 @@
    "exam": false,
    "parsons": false,
    "files": [
-    "orders_3m.csv",
-    "zdb_guests.csv",
-    "zdb_orders.csv"
+    "orders_3m.csv"
    ],
    "display": true,
    "setup": "",
@@ -993,9 +952,7 @@
    "exam": false,
    "parsons": false,
    "files": [
-    "orders_3m.csv",
-    "zdb_guests.csv",
-    "zdb_orders.csv"
+    "orders_3m.csv"
    ],
    "display": true,
    "setup": "",
@@ -1008,6 +965,31 @@
     "```python\nrev = df.groupby(\"drink\")[\"amount\"].sum().sort_values(ascending=False)\ncum_share = rev.cumsum() / rev....()\nn80 = int((cum_share < ...).sum() + 1)\n```"
    ],
    "explain": "Это анализ Парето, частый вопрос бизнеса: какие позиции дают основную выручку и на чём сосредоточиться. `cumsum()` — тот самый накопительный итог из урока «Цикл for» главы 1."
+  },
+  "ch02/04a-guest-metrics/toy-guest": {
+   "chapter": "ch02",
+   "lesson": "04a-guest-metrics",
+   "lesson_title": "Метрики на гостя: повторные и конверсия",
+   "id": "toy-guest",
+   "title": "Три метрики на игрушечных данных",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "zdb_guests.csv",
+    "zdb_orders.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert close(need('check'), 1600 / 7, 0.01), f'check = {need(\"check\")}. Средний чек — сумма всех заказов, делённая на число заказов.'\nassert not close(need('arpu'), 1600 / 7, 0.01), 'arpu совпадает со средним чеком: сначала сгруппируйте заказы по гостю.'\nassert close(need('arpu'), 1600 / 3, 0.01), f'arpu = {need(\"arpu\")}. Выручка на гостя — сумма, делённая на число гостей.'\nassert close(need('repeat'), 2 / 3, 0.001), f'repeat = {need(\"repeat\")}. Повторные — гости с orders >= 2; нужна доля, а не число.'",
+   "starter": "import pandas as pd\nt = pd.DataFrame({\"client_id\": [\"X\", \"X\", \"Y\", \"Z\", \"Z\", \"Z\", \"Z\"],\n                  \"amount\": [200, 300, 500, 100, 150, 150, 200]})",
+   "solution": "import pandas as pd\nt = pd.DataFrame({\"client_id\": [\"X\", \"X\", \"Y\", \"Z\", \"Z\", \"Z\", \"Z\"],\n                  \"amount\": [200, 300, 500, 100, 150, 150, 200]})\npg = t.groupby(\"client_id\").agg(orders=(\"amount\", \"size\"), revenue=(\"amount\", \"sum\"))\ncheck = t[\"amount\"].mean()\narpu = pg[\"revenue\"].mean()\nrepeat = (pg[\"orders\"] >= 2).mean()",
+   "hints": [
+    "Сначала таблица «гость → заказов, сумма»: `t.groupby(\"client_id\").agg(...)`. Средний чек считается по `t`, остальное — по ней.",
+    "```python\npg = t.groupby(\"client_id\").agg(orders=(\"amount\", \"size\"), revenue=(\"amount\", \"sum\"))\ncheck = t[\"amount\"].mean()\narpu = pg[...].mean()\nrepeat = (pg[\"orders\"] >= ...).mean()\n```"
+   ],
+   "explain": "Выручка 1 600 ₽ одна, а знаменатели разные: 7 заказов дают средний чек 228.57 ₽, 3 гостя — 533.33 ₽ на гостя. Повторные — X и Z, 2 из 3, доля 0.667. Гость Y за один заказ принёс 500 ₽ — почти как Z за четыре (600 ₽): у Z чек ниже, зато он заходит чаще."
   },
   "ch02/04a-guest-metrics/per-guest": {
    "chapter": "ch02",
@@ -1060,6 +1042,31 @@
     "```python\noct_loyal = df[df[\"datetime\"].str.startswith(...) & df[\"client_id\"].notna()]\noct_counts = oct_loyal.groupby(\"client_id\").size()\nrepeat_oct = round((oct_counts >= ...).mean() * 100, 1)\n```"
    ],
    "explain": "В октябре заходили 208 гостей с картой, и 58.2 % из них — хотя бы дважды. В сентябре было 59.2 %, в ноябре — 61.2 %: октябрь чуть ниже соседей, но разница в 1–3 пункта на двух сотнях гостей — это несколько человек, а не тренд. Если считать по всем трём месяцам, получится 97.3 % — красивое, но бесполезное для сравнения число: чем длиннее окно, тем больше гостей успевают вернуться. Поэтому доля повторных всегда пишется с периодом."
+  },
+  "ch02/04a-guest-metrics/arpu-month": {
+   "chapter": "ch02",
+   "lesson": "04a-guest-metrics",
+   "lesson_title": "Метрики на гостя: повторные и конверсия",
+   "id": "arpu-month",
+   "title": "Выручка на гостя по месяцам",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "zdb_guests.csv",
+    "zdb_orders.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv')\n_l = _d[_d['client_id'].notna()].copy()\n_l['_m'] = _l['datetime'].str[:7]\n_g = _l.groupby('_m').agg(r=('amount', 'sum'), n=('client_id', 'nunique'))\n_want = {k: round(float(v), 2) for k, v in (_g['r'] / _g['n']).items()}\n_got = {str(k)[:7]: float(v) for k, v in dict(need('arpu_m')).items()}\nassert set(_got) == set(_want), f'Ключи: {sorted(_got)}, а нужны месяцы {sorted(_want)} — строки вида \"2026-09\".'\n_chk = (_l.groupby('_m')['amount'].mean()).round(2).to_dict()\nfor _k in _want:\n    assert not close(_got[_k], _chk[_k], 0.01), f'Для {_k} получилось {_got[_k]} — это средний чек месяца. Делите на число гостей (nunique), а не заказов.'\n    assert close(_got[_k], _want[_k], 0.01), f'Для {_k} получилось {_got[_k]}, а нужно {_want[_k]}. Знаменатель — разные гости этого месяца.'",
+   "starter": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")",
+   "solution": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nloyal = df[df[\"client_id\"].notna()].copy()\nloyal[\"month\"] = loyal[\"datetime\"].str[:7]\nm = loyal.groupby(\"month\").agg(revenue=(\"amount\", \"sum\"), guests=(\"client_id\", \"nunique\"))\narpu_m = (m[\"revenue\"] / m[\"guests\"]).round(2).to_dict()",
+   "hints": [
+    "Месяц достаньте из текста даты: `loyal[\"datetime\"].str[:7]` даёт `\"2026-09\"`. Затем одна группировка по месяцу с двумя агрегатами — суммой `amount` и `nunique` по `client_id`.",
+    "```python\nloyal = df[df[\"client_id\"].notna()].copy()\nloyal[\"month\"] = loyal[\"datetime\"].str[:7]\nm = loyal.groupby(\"month\").agg(revenue=(\"amount\", \"sum\"), guests=(\"client_id\", ...))\narpu_m = (m[\"revenue\"] / m[\"guests\"]).round(2).to_dict()\n```"
+   ],
+   "explain": "Сентябрь — 702.65 ₽ на гостя, октябрь — 652.64 ₽, ноябрь — 705.46 ₽. Октябрьский провал — от частоты, а не от чека: заказов на гостя 1.92 против 2.04 в сентябре и ноябре, средний чек гостей с картой почти тот же (340 против 344–345 ₽). Заметьте: три месячных значения в сумме дают 2 060.75 ₽, а выручка на гостя за три месяца — 1 645.96 ₽. Выручка та же, но знаменатель другой: за квартал 260 разных гостей, а в каждом месяце — 201–214, и многие из них одни и те же люди."
   },
   "ch02/04a-guest-metrics/conversion": {
    "chapter": "ch02",
@@ -1280,7 +1287,7 @@
   "ch02/05-merge/city": {
    "chapter": "ch02",
    "lesson": "05-merge",
-   "lesson_title": "Соединения: JOIN и UNION",
+   "lesson_title": "Соединения: JOIN и ловушка дублей",
    "id": "city",
    "title": "Город к заказу",
    "level": "warmup",
@@ -1305,7 +1312,7 @@
   "ch02/05-merge/by-city": {
    "chapter": "ch02",
    "lesson": "05-merge",
-   "lesson_title": "Соединения: JOIN и UNION",
+   "lesson_title": "Соединения: JOIN и ловушка дублей",
    "id": "by-city",
    "title": "Выручка по городам",
    "level": "warmup",
@@ -1330,7 +1337,7 @@
   "ch02/05-merge/p-merge": {
    "chapter": "ch02",
    "lesson": "05-merge",
-   "lesson_title": "Соединения: JOIN и UNION",
+   "lesson_title": "Соединения: JOIN и ловушка дублей",
    "id": "p-merge",
    "title": "Соберите выручку по категориям",
    "level": "warmup",
@@ -1355,7 +1362,7 @@
   "ch02/05-merge/category": {
    "chapter": "ch02",
    "lesson": "05-merge",
-   "lesson_title": "Соединения: JOIN и UNION",
+   "lesson_title": "Соединения: JOIN и ловушка дублей",
    "id": "category",
    "title": "Не кофе",
    "level": "base",
@@ -1380,7 +1387,7 @@
   "ch02/05-merge/all-shops": {
    "chapter": "ch02",
    "lesson": "05-merge",
-   "lesson_title": "Соединения: JOIN и UNION",
+   "lesson_title": "Соединения: JOIN и ловушка дублей",
    "id": "all-shops",
    "title": "Все кофейни в отчёте",
    "level": "base",
@@ -1405,7 +1412,7 @@
   "ch02/05-merge/per-seat": {
    "chapter": "ch02",
    "lesson": "05-merge",
-   "lesson_title": "Соединения: JOIN и UNION",
+   "lesson_title": "Соединения: JOIN и ловушка дублей",
    "id": "per-seat",
    "title": "Выручка на посадочное место",
    "level": "base",
@@ -1431,7 +1438,7 @@
   "ch02/05-merge/margin": {
    "chapter": "ch02",
    "lesson": "05-merge",
-   "lesson_title": "Соединения: JOIN и UNION",
+   "lesson_title": "Соединения: JOIN и ловушка дублей",
    "id": "margin",
    "title": "Маржа по напиткам",
    "level": "plus",
@@ -1456,7 +1463,7 @@
   "ch02/05-merge/validate": {
    "chapter": "ch02",
    "lesson": "05-merge",
-   "lesson_title": "Соединения: JOIN и UNION",
+   "lesson_title": "Соединения: JOIN и ловушка дублей",
    "id": "validate",
    "title": "Ловим дубль в справочнике",
    "level": "star",
@@ -1478,6 +1485,31 @@
     "```python static\ntry:\n    pd.merge(..., validate=\"many_to_one\")\n    caught = False\nexcept pd.errors.MergeError:\n    caught = True\nextra = len(pd.merge(df, shops_bad, on=\"shop_id\", how=\"left\")) - len(...)\n```"
    ],
    "explain": "Без проверки все заказы KZN-1 задвоились бы, и выручка Казани выросла бы почти на 200 тысяч — никакой ошибки, просто неверный отчёт. `validate` превращает тихую ошибку в громкую."
+  },
+  "ch02/05b-join-index/map-toy": {
+   "chapter": "ch02",
+   "lesson": "05b-join-index",
+   "lesson_title": "Соединения по индексу, anti join и UNION",
+   "id": "map-toy",
+   "title": "Цена по названию",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "shops.csv",
+    "menu.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nt = need('t', _pd.DataFrame)\nassert 'price' in t.columns, 'В t нет столбца price.'\n_p = t['price'].tolist()\nassert not t['price'].isna().all(), 'Столбец price целиком из NaN: присваивание Series ищет пару по индексу 0…3, а у price индекс — названия. Ищите по столбцу drink: map.'\nassert [None if _pd.isna(x) else float(x) for x in _p] == [260.0, 220.0, None, 260.0], f'price = {_p}. Цена должна найтись по названию: Раф — 260, Латте — 220, у Чая цены нет.'\nassert need('no_price') == 1, f'no_price = {need(\"no_price\")}. Пустые значения считает isna().sum().'",
+   "starter": "import pandas as pd\nt = pd.DataFrame({\"drink\": [\"Раф\", \"Латте\", \"Чай\", \"Раф\"]})\nprice = pd.Series({\"Латте\": 220, \"Раф\": 260, \"Какао\": 200})",
+   "solution": "import pandas as pd\nt = pd.DataFrame({\"drink\": [\"Раф\", \"Латте\", \"Чай\", \"Раф\"]})\nprice = pd.Series({\"Латте\": 220, \"Раф\": 260, \"Какао\": 200})\nt[\"price\"] = t[\"drink\"].map(price)\nno_price = int(t[\"price\"].isna().sum())",
+   "hints": [
+    "У `price` индекс — названия напитков, у `t` — номера строк. Пару нужно искать по столбцу `drink`.",
+    "`t[\"price\"] = t[\"drink\"].map(price)`; заказы без цены — `t[\"price\"].isna().sum()`."
+   ],
+   "explain": "`map` нашёл цену Рафа дважды и Латте один раз; чая в прайсе нет — `NaN`, а «Какао» из прайса просто не понадобилось. Это LEFT JOIN одного столбца: все строки `t` на месте. Присваивание `t[\"price\"] = price` дало бы столбец из `NaN`: индексы 0…3 и названия напитков не пересекаются."
   },
   "ch02/05b-join-index/align": {
    "chapter": "ch02",
@@ -1581,6 +1613,31 @@
     "`shops[~shops[\"shop_id\"].isin(df[\"shop_id\"])][\"shop_id\"].tolist()`."
    ],
    "explain": "Без заказов — EKB-1: кофейня открылась 15 октября 2026 года, но в выгрузке её заказов нет. Anti join — проверка, которая находит «потеряшек»: либо кофейня ещё не работает, либо её данные не доехали."
+  },
+  "ch02/05b-join-index/p-concat": {
+   "chapter": "ch02",
+   "lesson": "05b-join-index",
+   "lesson_title": "Соединения по индексу, anti join и UNION",
+   "id": "p-concat",
+   "title": "Соберите октябрь и ноябрь",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "orders_3m.csv",
+    "shops.csv",
+    "menu.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv')\n_n = int(_d['datetime'].str.startswith('2026-10').sum() + _d['datetime'].str.startswith('2026-11').sum())\nassert _lines == [str(_n)], f'Должно вывестись {_n}. Сейчас: {_lines}'",
+   "starter": "",
+   "solution": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\noct_df = df[df[\"datetime\"].str.startswith(\"2026-10\")]\nnov_df = df[df[\"datetime\"].str.startswith(\"2026-11\")]\nboth = pd.concat([oct_df, nov_df], ignore_index=True)\nprint(len(both))",
+   "hints": [
+    "Сначала загрузка, потом две части по месяцам, потом склейка и вывод.",
+    "`pd.concat` принимает **список** таблиц: `pd.concat([oct_df, nov_df], ignore_index=True)`."
+   ],
+   "explain": ""
   },
   "ch02/05b-join-index/concat": {
    "chapter": "ch02",
@@ -1886,6 +1943,52 @@
    ],
    "explain": "KZN-1 выросла в ноябре на 24.3 % — сильнее всех; PRM-2 — единственная, где выручка упала (−6 %). Рост в процентах честнее сравнения рублей: большой и маленькой кофейне одни и те же +5 000 ₽ значат разное. То же даёт `pct_change` вдоль строки: `pv.pct_change(axis=1)[11]` — изменение каждого месяца к предыдущему столбцу."
   },
+  "ch02/06b-timezones/unix-range": {
+   "chapter": "ch02",
+   "lesson": "06b-timezones",
+   "lesson_title": "Часовые пояса и unix-время",
+   "id": "unix-range",
+   "title": "Неделя событий",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "app_events.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_e = _pd.read_csv('app_events.csv')\n_f, _l = _pd.to_datetime(_e['ts'].min(), unit='ms'), _pd.to_datetime(_e['ts'].max(), unit='ms')\n_a = _pd.Timestamp(need('first_utc')); _b = _pd.Timestamp(need('last_utc'))\nassert _a.year == 2026 and _b.year == 2026, f'first_utc = {_a}, last_utc = {_b}. Проверьте единицу: 13 цифр — миллисекунды, unit=\"ms\".'\nassert _a == _f, f'first_utc = {_a} — это не самое раннее событие. Нужен минимум ts.'\nassert _b == _l, f'last_utc = {_b} — это не самое позднее событие. Нужен максимум ts.'",
+   "starter": "import pandas as pd\nev = pd.read_csv(\"app_events.csv\")",
+   "solution": "import pandas as pd\nev = pd.read_csv(\"app_events.csv\")\nfirst_utc = pd.to_datetime(ev[\"ts\"].min(), unit=\"ms\")\nlast_utc = pd.to_datetime(ev[\"ts\"].max(), unit=\"ms\")",
+   "hints": [
+    "Сначала найдите наименьшее и наибольшее число в `ts` (`min()`, `max()`), потом переведите каждое в дату.",
+    "`pd.to_datetime(ev[\"ts\"].min(), unit=\"ms\")` — и так же для `max()`. Можно и наоборот: перевести весь столбец, потом взять `min()` и `max()`."
+   ],
+   "explain": "События — с `2026-10-05 02:26` до `2026-10-11 17:24` по UTC, ровно неделя с понедельника по воскресенье. 02:26 ночи по UTC — это 07:26 по Перми: первое событие недели — утренний кофе, а не ночной заказ."
+  },
+  "ch02/06b-timezones/p-tz": {
+   "chapter": "ch02",
+   "lesson": "06b-timezones",
+   "lesson_title": "Часовые пояса и unix-время",
+   "id": "p-tz",
+   "title": "Соберите час пик Казани",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "app_events.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_e = _pd.read_csv('app_events.csv')\n_k = _pd.to_datetime(_e.loc[_e['shop_id'].str.startswith('KZN'), 'ts'], unit='ms') + _pd.Timedelta(hours=3)\n_h = int(_k.dt.hour.value_counts().idxmax())\nassert _lines == [str(_h)], f'Должно вывестись {_h}. Сейчас: {_lines}'",
+   "starter": "",
+   "solution": "import pandas as pd\nev = pd.read_csv(\"app_events.csv\")\nkzn = ev[ev[\"shop_id\"].str.startswith(\"KZN\")].copy()\nkzn[\"utc\"] = pd.to_datetime(kzn[\"ts\"], unit=\"ms\")\nkzn[\"local\"] = kzn[\"utc\"].dt.tz_localize(\"UTC\").dt.tz_convert(\"+03:00\")\nprint(kzn[\"local\"].dt.hour.value_counts().idxmax())",
+   "hints": [
+    "Порядок такой же, как в теории: отобрать город → число в дату → приписать UTC → перевести в местный пояс → посчитать.",
+    "Сначала `tz_localize(\"UTC\")`, потом `tz_convert(\"+03:00\")`: переводить можно только время, у которого уже есть пояс."
+   ],
+   "explain": ""
+  },
   "ch02/06b-timezones/unix": {
    "chapter": "ch02",
    "lesson": "06b-timezones",
@@ -1909,6 +2012,29 @@
     "```python\nperm = ev[ev[\"shop_id\"].str.startswith(...)].copy()\nperm[\"utc\"] = pd.to_datetime(perm[\"ts\"], unit=...)\nperm[\"local\"] = perm[\"utc\"].dt.tz_localize(...).dt.tz_convert(...)\nperm_peak = int(perm[\"local\"].dt.hour.value_counts().idxmax())\n```"
    ],
    "explain": "По пермским часам пик приложения — 13:00, обед. По UTC пик пришёлся бы на 8 утра — ровно на 5 часов раньше, и выглядел бы правдоподобно, поэтому такую ошибку легко не заметить. Если перепутать `tz_localize` и `tz_convert` и написать `tz_localize(\"+05:00\")`, часы останутся прежними, а у них появится неверная подпись «+05:00» — момент сдвинется на 5 часов в другую сторону."
+  },
+  "ch02/06b-timezones/tmn-fix": {
+   "chapter": "ch02",
+   "lesson": "06b-timezones",
+   "lesson_title": "Часовые пояса и unix-время",
+   "id": "tmn-fix",
+   "title": "Почините перевод времени",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "app_events.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_e = _pd.read_csv('app_events.csv')\n_t = _pd.to_datetime(_e.loc[_e['shop_id'].str.startswith('TMN'), 'ts'], unit='ms')\n_want = round(((_t + _pd.Timedelta(hours=5)).dt.hour < 10).mean() * 100, 1)\n_bad = round((_t.dt.hour < 10).mean() * 100, 1)\ntm = need('tmn', _pd.DataFrame)\nassert 'local' in tm.columns, 'В tmn нужен столбец local.'\nassert int(_pd.Timestamp(tm['local'].iloc[0]).hour) == (int(_t.iloc[0].hour) + 5) % 24, 'Часы в local не сдвинулись: tz_localize только подписывает пояс. Сначала tz_localize(\"UTC\"), потом tz_convert(\"+05:00\").'\nassert not close(need('tmn_morning'), _bad, 0.05), f'tmn_morning = {need(\"tmn_morning\")} — это доля по часам UTC.'\nassert close(need('tmn_morning'), _want, 0.05), f'tmn_morning = {need(\"tmn_morning\")}, а нужно {_want}.'",
+   "starter": "import pandas as pd\nev = pd.read_csv(\"app_events.csv\")\ntmn = ev[ev[\"shop_id\"].str.startswith(\"TMN\")].copy()\ntmn[\"utc\"] = pd.to_datetime(tmn[\"ts\"], unit=\"ms\")\ntmn[\"local\"] = tmn[\"utc\"].dt.tz_localize(\"+05:00\")\ntmn_morning = round((tmn[\"local\"].dt.hour < 10).mean() * 100, 1)\nprint(tmn_morning)",
+   "solution": "import pandas as pd\nev = pd.read_csv(\"app_events.csv\")\ntmn = ev[ev[\"shop_id\"].str.startswith(\"TMN\")].copy()\ntmn[\"utc\"] = pd.to_datetime(tmn[\"ts\"], unit=\"ms\")\ntmn[\"local\"] = tmn[\"utc\"].dt.tz_localize(\"UTC\").dt.tz_convert(\"+05:00\")\ntmn_morning = round((tmn[\"local\"].dt.hour < 10).mean() * 100, 1)\nprint(tmn_morning)",
+   "hints": [
+    "Посмотрите на первую строку: `tmn[[\"utc\", \"local\"]].head(1)`. Часы в `utc` и `local` одинаковые — значит, время не перевели, а только подписали.",
+    "`tz_localize` говорит, в каком поясе время **записано**, — это UTC. Переводит в другой пояс `tz_convert`: `tmn[\"utc\"].dt.tz_localize(\"UTC\").dt.tz_convert(\"+05:00\")`."
+   ],
+   "explain": "До 10 утра по тюменскому времени — 24.9 % событий, а не 60.6 %, как вышло у коллеги. `tz_localize(\"+05:00\")` не сдвинул часы, а объявил время UTC тюменским: первое событие `08:18` по Тюмени превратилось в `03:18+05:00`. Подпись стала правильной, а момент — на 5 часов раньше настоящего."
   },
   "ch02/06b-timezones/local-time": {
    "chapter": "ch02",
@@ -2084,109 +2210,6 @@
    ],
    "explain": "Средний чек доставки — 337.36 ₽, почти как в зале. Запрос к файлу удобен, когда файл большой: DuckDB читает только нужные столбцы и не загружает всё в память."
   },
-  "ch02/07-duckdb/subquery": {
-   "chapter": "ch02",
-   "lesson": "07-duckdb",
-   "lesson_title": "SQL прямо по датафрейму — DuckDB",
-   "id": "subquery",
-   "title": "Дорогие заказы Казани",
-   "level": "base",
-   "exam": false,
-   "parsons": false,
-   "files": [
-    "orders_3m.csv",
-    "shops.csv",
-    "menu.csv"
-   ],
-   "display": true,
-   "setup": "",
-   "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv'); _s = _pd.read_csv('shops.csv')\n_k = _d[_d['shop_id'].isin(_s.loc[_s['city'] == 'Казань', 'shop_id'])]\nwant = int((_k['amount'] > _d['amount'].mean()).sum())\ngot = need('big_kzn')\nassert 'KZN-' not in _code, 'Номера кофеен вписаны руками — возьмите их из shops подзапросом: shop_id IN (SELECT shop_id FROM shops WHERE ...).'\nassert 'IN' in _code.upper() and _code.upper().count('SELECT') >= 3, 'Нужны два подзапроса: IN (SELECT …) для кофеен и (SELECT AVG …) для среднего чека.'\nassert int(got) == want, f'big_kzn = {got}, а нужно другое число. Средний чек — по всей сети (без фильтра по городу), сравнение строгое: amount > среднего.'",
-   "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")",
-   "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\nbig_kzn = duckdb.sql(\"\"\"\n    SELECT COUNT(*) FROM df\n    WHERE shop_id IN (SELECT shop_id FROM shops WHERE city = 'Казань')\n      AND amount > (SELECT AVG(amount) FROM df)\n\"\"\").fetchone()[0]",
-   "hints": [
-    "Два условия в `WHERE` через `AND`: кофейня из Казани и сумма больше среднего. Каждое условие — со своим подзапросом.",
-    "`shop_id IN (SELECT shop_id FROM shops WHERE city = 'Казань')` и `amount > (SELECT AVG(amount) FROM df)`.",
-    "```python\nbig_kzn = duckdb.sql(\"\"\"\n    SELECT COUNT(*) FROM df\n    WHERE shop_id IN (SELECT ... FROM shops WHERE ...)\n      AND amount > (SELECT ... FROM df)\n\"\"\").fetchone()[0]\n```"
-   ],
-   "explain": "Дороже среднего по сети (около 340 ₽) — 283 казанских заказа из 833, примерно 34 %. По всей сети таких заказов 702 из 2089, тоже около трети: Казань здесь не выделяется. Типичная ошибка — посчитать средний чек внутри подзапроса только по Казани (`SELECT AVG(amount) FROM df WHERE shop_id IN …`): тогда сравнение идёт с другим порогом, и число заказов получится другим. В pandas то же самое — две маски: `df[\"shop_id\"].isin(kzn_ids) & (df[\"amount\"] > df[\"amount\"].mean())`."
-  },
-  "ch02/07-duckdb/cte": {
-   "chapter": "ch02",
-   "lesson": "07-duckdb",
-   "lesson_title": "SQL прямо по датафрейму — DuckDB",
-   "id": "cte",
-   "title": "Средняя дневная выручка городов",
-   "level": "base",
-   "exam": false,
-   "parsons": false,
-   "files": [
-    "orders_3m.csv",
-    "shops.csv",
-    "menu.csv"
-   ],
-   "display": true,
-   "setup": "",
-   "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime']).merge(_pd.read_csv('shops.csv'), on='shop_id')\n_w = _d.groupby(['city', _d['datetime'].dt.date])['amount'].sum().groupby(level=0).mean().round().sort_values(ascending=False)\nb = need('city_daily', _pd.DataFrame)\nassert list(b.columns) == ['city', 'avg_daily'], f'Столбцы: {list(b.columns)}, а нужны city и avg_daily.'\nassert 'WITH' in _code.upper(), 'Решите через CTE: WITH daily AS (...) SELECT ...'\nassert b['city'].tolist() == list(_w.index), f'Порядок городов: {b[\"city\"].tolist()}. Нужна сортировка по avg_daily по убыванию.'\n_a = [float(x) for x in b['avg_daily']]\nif any(abs(x - y) > 0.51 for x, y in zip(_a, _w.values)):\n    assert False, f'avg_daily = {_a}. Это не средняя дневная выручка. Похоже на среднее по заказам? Сначала сложите выручку внутри дня, потом усредняйте дни.'",
-   "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")",
-   "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\ncity_daily = duckdb.sql(\"\"\"\n    WITH daily AS (\n        SELECT city, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        JOIN shops USING (shop_id)\n        GROUP BY city, day\n    )\n    SELECT city, ROUND(AVG(revenue)) AS avg_daily\n    FROM daily\n    GROUP BY city\n    ORDER BY avg_daily DESC\n\"\"\").df()",
-   "hints": [
-    "В одном `GROUP BY` это не посчитать: сначала нужна сумма за каждый день, а потом среднее этих сумм. Это два уровня — CTE и основной запрос.",
-    "CTE: `SELECT city, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue FROM df JOIN shops USING (shop_id) GROUP BY city, day`. Основной запрос: `AVG(revenue)` по `city`.",
-    "```python\ncity_daily = duckdb.sql(\"\"\"\n    WITH daily AS (\n        SELECT city, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df JOIN shops USING (shop_id)\n        GROUP BY ...\n    )\n    SELECT city, ROUND(AVG(...)) AS avg_daily\n    FROM daily\n    GROUP BY city\n    ORDER BY ...\n\"\"\").df()\n```"
-   ],
-   "explain": "Казань в среднем приносит 3074 ₽ в день, Пермь — 2874 ₽, Тюмень — 1084 ₽, Уфа — 833 ₽. Каждый город — две кофейни или одна, и дневная выручка города складывается из всех его кофеен. Если бы вы написали `AVG(amount)` без CTE, получился бы средний **чек** (около 340 ₽ во всех городах) — совсем другая метрика. В pandas этот запрос — две группировки подряд: `full.groupby([\"city\", full[\"datetime\"].dt.date])[\"amount\"].sum().groupby(level=0).mean()`."
-  },
-  "ch02/07-duckdb/window": {
-   "chapter": "ch02",
-   "lesson": "07-duckdb",
-   "lesson_title": "SQL прямо по датафрейму — DuckDB",
-   "id": "window",
-   "title": "Лучший день каждой кофейни",
-   "level": "plus",
-   "exam": false,
-   "parsons": false,
-   "files": [
-    "orders_3m.csv",
-    "shops.csv",
-    "menu.csv"
-   ],
-   "display": true,
-   "setup": "",
-   "check": "import pandas as _pd\nd = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\ndaily = d.groupby(['shop_id', d['datetime'].dt.date])['amount'].sum()\nwant = daily.groupby(level=0).max()\nb = need('best_days', _pd.DataFrame)\nassert list(b.columns) == ['shop_id', 'day', 'revenue'], f'Столбцы: {list(b.columns)}.'\nassert b['shop_id'].tolist() == list(want.index), 'Должно быть по одной строке на кофейню, по порядку shop_id.'\nassert all(abs(float(x) - float(y)) < 1e-6 for x, y in zip(b['revenue'], want.values)), 'Выручка лучших дней не совпадает.'",
-   "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])",
-   "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\nbest_days = duckdb.sql(\"\"\"\n    WITH daily AS (\n        SELECT shop_id, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        GROUP BY shop_id, day\n    )\n    SELECT shop_id, day, revenue\n    FROM (\n        SELECT *, ROW_NUMBER() OVER (PARTITION BY shop_id ORDER BY revenue DESC) AS rn\n        FROM daily\n    )\n    WHERE rn = 1\n    ORDER BY shop_id\n\"\"\").df()",
-   "hints": [
-    "Два шага: сначала выручка «кофейня × день», потом нумерация дней внутри каждой кофейни по убыванию выручки.",
-    "CTE с выручкой по `shop_id` и `CAST(datetime AS DATE) AS day`, затем `ROW_NUMBER() OVER (PARTITION BY shop_id ORDER BY revenue DESC)` и `WHERE rn = 1`."
-   ],
-   "explain": "Для каждой кофейни — одна строка с её лучшим днём. `ROW_NUMBER` нумерует дни внутри кофейни по убыванию выручки, а `WHERE rn = 1` оставляет первый; в pandas это потребовало бы сортировки и `groupby(...).head(1)`."
-  },
-  "ch02/07-duckdb/order-fix": {
-   "chapter": "ch02",
-   "lesson": "07-duckdb",
-   "lesson_title": "SQL прямо по датафрейму — DuckDB",
-   "id": "order-fix",
-   "title": "Почините запрос: первый заказ гостя",
-   "level": "base",
-   "exam": false,
-   "parsons": false,
-   "files": [
-    "orders_3m.csv",
-    "shops.csv",
-    "menu.csv"
-   ],
-   "display": true,
-   "setup": "",
-   "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime']).dropna(subset=['client_id'])\n_w = _d.sort_values('datetime').groupby('client_id').head(1).sort_values('client_id')\nb = need('first_orders', _pd.DataFrame)\nassert list(b.columns) == ['client_id', 'datetime', 'amount'], f'Столбцы: {list(b.columns)}. Во внешнем SELECT перечислите только client_id, datetime, amount — без rn.'\nassert b['client_id'].notna().all(), 'В результате есть строка с пустым client_id — уберите заказы без карты.'\nassert len(b) == len(_w), f'Строк {len(b)}, а гостей с картой {len(_w)}: нужна ровно одна строка на гостя.'\nassert b['client_id'].tolist() == _w['client_id'].tolist(), 'Порядок строк: по возрастанию client_id.'\nassert [str(x)[:16] for x in b['datetime']] == [str(x)[:16] for x in _w['datetime']], 'Даты не совпадают с первыми заказами. Проверьте ORDER BY datetime внутри окна (по возрастанию).'\nassert 'ROW_NUMBER' in _code.upper(), 'Оставьте нумерацию ROW_NUMBER() — дело не в ней, а в месте, где по ней фильтруют.'",
-   "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nfirst_orders = duckdb.sql(\"\"\"\n    SELECT client_id, datetime, amount,\n           ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY datetime) AS rn\n    FROM df\n    WHERE client_id IS NOT NULL AND rn = 1\n    ORDER BY client_id\n\"\"\").df()",
-   "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nfirst_orders = duckdb.sql(\"\"\"\n    WITH ranked AS (\n        SELECT client_id, datetime, amount,\n               ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY datetime) AS rn\n        FROM df\n        WHERE client_id IS NOT NULL\n    )\n    SELECT client_id, datetime, amount\n    FROM ranked\n    WHERE rn = 1\n    ORDER BY client_id\n\"\"\").df()",
-   "hints": [
-    "По шагам выполнения: `WHERE` срабатывает раньше, чем `SELECT` посчитает `rn`. Значит, фильтр `rn = 1` должен стоять на уровень выше — во внешнем запросе.",
-    "Перенесите текущий запрос (без `rn = 1`) в `WITH ranked AS (...)`, а снаружи напишите `SELECT client_id, datetime, amount FROM ranked WHERE rn = 1 ORDER BY client_id`.",
-    "```python\nfirst_orders = duckdb.sql(\"\"\"\n    WITH ranked AS (\n        SELECT client_id, datetime, amount,\n               ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY datetime) AS rn\n        FROM df\n        WHERE client_id IS NOT NULL\n    )\n    SELECT ...\n    FROM ranked\n    WHERE ...\n    ORDER BY client_id\n\"\"\").df()\n```"
-   ],
-   "explain": "У 260 гостей с картой — 260 первых заказов. Фильтр `client_id IS NOT NULL` остался внутри CTE: он относится к исходным строкам и честно работает на шаге `WHERE`. А `rn = 1` переехал наружу, где `rn` уже обычный столбец. Если оставить `WHERE client_id IS NOT NULL` снаружи, результат будет тем же, но окно зря пронумерует и заказы без карты (они соберутся в одну «пустую» группу). В pandas тот же результат даёт `df.dropna(subset=[\"client_id\"]).sort_values(\"datetime\").groupby(\"client_id\").head(1)`."
-  },
   "ch02/07-duckdb/reconcile": {
    "chapter": "ch02",
    "lesson": "07-duckdb",
@@ -2212,6 +2235,205 @@
    ],
    "explain": "Порядок ключей у словарей может отличаться — сравнение `==` его не учитывает. Сверка двумя способами — лучшая страховка от ошибок в фильтрах и соединениях перед тем, как отправлять цифры руководству."
   },
+  "ch02/07s-subqueries-cte/cheap": {
+   "chapter": "ch02",
+   "lesson": "07s-subqueries-cte",
+   "lesson_title": "Подзапросы, CTE и порядок выполнения SQL",
+   "id": "cheap",
+   "title": "Заказы дешевле среднего",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "shops.csv",
+    "menu.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv')\nwant = int((_d['amount'] < _d['amount'].mean()).sum())\nassert '339' not in _code and '340' not in _code, 'Средний чек вписан числом — пусть его посчитает подзапрос (SELECT AVG(amount) FROM df).'\nassert _code.upper().count('SELECT') >= 2, 'Нужен подзапрос: WHERE amount < (SELECT AVG(amount) FROM df).'\nassert int(need('cheap')) == want, f'cheap = {need(\"cheap\")}, а нужно другое число. Сравнение строгое: amount < среднего.'",
+   "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")",
+   "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\ncheap = duckdb.sql(\"\"\"\n    SELECT COUNT(*) FROM df\n    WHERE amount < (SELECT AVG(amount) FROM df)\n\"\"\").fetchone()[0]",
+   "hints": [
+    "Это зеркало примера из теории: там считали заказы **дороже** среднего, здесь — дешевле.",
+    "`SELECT COUNT(*) FROM df WHERE amount < (SELECT AVG(amount) FROM df)`, затем `.fetchone()[0]`."
+   ],
+   "explain": "Дешевле среднего — 1387 заказов из 2089, около двух третей. Вместе с 702 заказами дороже среднего получается ровно 2089: заказа на сумму, равную среднему (339.97 ₽), нет. Средний чек выше «типичного» заказа: несколько дорогих заказов тянут его вверх, и большинство заказов оказывается ниже."
+  },
+  "ch02/07s-subqueries-cte/subquery": {
+   "chapter": "ch02",
+   "lesson": "07s-subqueries-cte",
+   "lesson_title": "Подзапросы, CTE и порядок выполнения SQL",
+   "id": "subquery",
+   "title": "Дорогие заказы Казани",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "shops.csv",
+    "menu.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv'); _s = _pd.read_csv('shops.csv')\n_k = _d[_d['shop_id'].isin(_s.loc[_s['city'] == 'Казань', 'shop_id'])]\nwant = int((_k['amount'] > _d['amount'].mean()).sum())\ngot = need('big_kzn')\nassert 'KZN-' not in _code, 'Номера кофеен вписаны руками — возьмите их из shops подзапросом: shop_id IN (SELECT shop_id FROM shops WHERE ...).'\nassert 'IN' in _code.upper() and _code.upper().count('SELECT') >= 3, 'Нужны два подзапроса: IN (SELECT …) для кофеен и (SELECT AVG …) для среднего чека.'\nassert int(got) == want, f'big_kzn = {got}, а нужно другое число. Средний чек — по всей сети (без фильтра по городу), сравнение строгое: amount > среднего.'",
+   "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")",
+   "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\nbig_kzn = duckdb.sql(\"\"\"\n    SELECT COUNT(*) FROM df\n    WHERE shop_id IN (SELECT shop_id FROM shops WHERE city = 'Казань')\n      AND amount > (SELECT AVG(amount) FROM df)\n\"\"\").fetchone()[0]",
+   "hints": [
+    "Два условия в `WHERE` через `AND`: кофейня из Казани и сумма больше среднего. Каждое условие — со своим подзапросом.",
+    "`shop_id IN (SELECT shop_id FROM shops WHERE city = 'Казань')` и `amount > (SELECT AVG(amount) FROM df)`.",
+    "```python\nbig_kzn = duckdb.sql(\"\"\"\n    SELECT COUNT(*) FROM df\n    WHERE shop_id IN (SELECT ... FROM shops WHERE ...)\n      AND amount > (SELECT ... FROM df)\n\"\"\").fetchone()[0]\n```"
+   ],
+   "explain": "Дороже среднего по сети (около 340 ₽) — 283 казанских заказа из 833, примерно 34 %. По всей сети таких заказов 702 из 2089, тоже около трети: Казань здесь не выделяется. Типичная ошибка — посчитать средний чек внутри подзапроса только по Казани (`SELECT AVG(amount) FROM df WHERE shop_id IN …`): тогда сравнение идёт с другим порогом, и число заказов получится другим. В pandas то же самое — две маски: `df[\"shop_id\"].isin(kzn_ids) & (df[\"amount\"] > df[\"amount\"].mean())`."
+  },
+  "ch02/07s-subqueries-cte/not-l": {
+   "chapter": "ch02",
+   "lesson": "07s-subqueries-cte",
+   "lesson_title": "Подзапросы, CTE и порядок выполнения SQL",
+   "id": "not-l",
+   "title": "Гости без больших стаканов",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "shops.csv",
+    "menu.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv').dropna(subset=['client_id'])\n_took = set(_d.loc[_d['size'] == 'L', 'client_id'])\nwant = len(set(_d['client_id']) - _took)\ngot = int(need('no_l'))\nassert got != 0, 'no_l = 0. Похоже, в списке подзапроса есть NULL: L брали и без карты. Добавьте в подзапрос AND client_id IS NOT NULL или перепишите через NOT EXISTS.'\nassert _code.upper().count('SELECT') >= 2, 'Список гостей, бравших L, возьмите подзапросом.'\nassert got == want, f'no_l = {got}, а нужно другое число. Считайте разных гостей: COUNT(DISTINCT client_id).'",
+   "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")",
+   "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nno_l = duckdb.sql(\"\"\"\n    SELECT COUNT(DISTINCT client_id) FROM df\n    WHERE client_id NOT IN (SELECT client_id FROM df\n                            WHERE size = 'L' AND client_id IS NOT NULL)\n\"\"\").fetchone()[0]",
+   "hints": [
+    "Гостей считайте через `COUNT(DISTINCT client_id)`: у одного гостя много заказов. Подзапрос — `SELECT client_id FROM df WHERE size = 'L'`.",
+    "Если вышел 0 — это ловушка `NOT IN` из теории: большие стаканы брали и без карты, и в списке оказался `NULL`. Добавьте в подзапрос `AND client_id IS NOT NULL`."
+   ],
+   "explain": "95 гостей из 260 ни разу не брали большой стакан. Без `IS NOT NULL` запрос вернул бы 0: из 412 заказов размера L 155 сделаны без карты, и `NULL` попал в список. Тот же ответ даёт `NOT EXISTS (SELECT 1 FROM df AS o WHERE o.client_id = df.client_id AND o.size = 'L')`: `NOT EXISTS` к `NULL` в подзапросе нечувствителен. `COUNT(DISTINCT …)` сам пропускает `NULL`, поэтому заказы без карты в ответ не попадают."
+  },
+  "ch02/07s-subqueries-cte/cte": {
+   "chapter": "ch02",
+   "lesson": "07s-subqueries-cte",
+   "lesson_title": "Подзапросы, CTE и порядок выполнения SQL",
+   "id": "cte",
+   "title": "Средняя дневная выручка городов",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "shops.csv",
+    "menu.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime']).merge(_pd.read_csv('shops.csv'), on='shop_id')\n_w = _d.groupby(['city', _d['datetime'].dt.date])['amount'].sum().groupby(level=0).mean().round().sort_values(ascending=False)\nb = need('city_daily', _pd.DataFrame)\nassert list(b.columns) == ['city', 'avg_daily'], f'Столбцы: {list(b.columns)}, а нужны city и avg_daily.'\nassert 'WITH' in _code.upper(), 'Решите через CTE: WITH daily AS (...) SELECT ...'\nassert b['city'].tolist() == list(_w.index), f'Порядок городов: {b[\"city\"].tolist()}. Нужна сортировка по avg_daily по убыванию.'\n_a = [float(x) for x in b['avg_daily']]\nif any(abs(x - y) > 0.51 for x, y in zip(_a, _w.values)):\n    assert False, f'avg_daily = {_a}. Это не средняя дневная выручка. Похоже на среднее по заказам? Сначала сложите выручку внутри дня, потом усредняйте дни.'",
+   "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")",
+   "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\ncity_daily = duckdb.sql(\"\"\"\n    WITH daily AS (\n        SELECT city, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        JOIN shops USING (shop_id)\n        GROUP BY city, day\n    )\n    SELECT city, ROUND(AVG(revenue)) AS avg_daily\n    FROM daily\n    GROUP BY city\n    ORDER BY avg_daily DESC\n\"\"\").df()",
+   "hints": [
+    "В одном `GROUP BY` это не посчитать: сначала нужна сумма за каждый день, а потом среднее этих сумм. Это два уровня — CTE и основной запрос.",
+    "CTE: `SELECT city, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue FROM df JOIN shops USING (shop_id) GROUP BY city, day`. Основной запрос: `AVG(revenue)` по `city`.",
+    "```python\ncity_daily = duckdb.sql(\"\"\"\n    WITH daily AS (\n        SELECT city, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df JOIN shops USING (shop_id)\n        GROUP BY ...\n    )\n    SELECT city, ROUND(AVG(...)) AS avg_daily\n    FROM daily\n    GROUP BY city\n    ORDER BY ...\n\"\"\").df()\n```"
+   ],
+   "explain": "Казань в среднем приносит 3074 ₽ в день, Пермь — 2874 ₽, Тюмень — 1084 ₽, Уфа — 833 ₽. Каждый город — две кофейни или одна, и дневная выручка города складывается из всех его кофеен. Если бы вы написали `AVG(amount)` без CTE, получился бы средний **чек** (около 340 ₽ во всех городах) — совсем другая метрика. В pandas этот запрос — две группировки подряд: `full.groupby([\"city\", full[\"datetime\"].dt.date])[\"amount\"].sum().groupby(level=0).mean()`."
+  },
+  "ch02/07s-subqueries-cte/window": {
+   "chapter": "ch02",
+   "lesson": "07s-subqueries-cte",
+   "lesson_title": "Подзапросы, CTE и порядок выполнения SQL",
+   "id": "window",
+   "title": "Лучший день каждой кофейни",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "shops.csv",
+    "menu.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\ndaily = d.groupby(['shop_id', d['datetime'].dt.date])['amount'].sum()\nwant = daily.groupby(level=0).max()\nb = need('best_days', _pd.DataFrame)\nassert list(b.columns) == ['shop_id', 'day', 'revenue'], f'Столбцы: {list(b.columns)}.'\nassert b['shop_id'].tolist() == list(want.index), 'Должно быть по одной строке на кофейню, по порядку shop_id.'\nassert all(abs(float(x) - float(y)) < 1e-6 for x, y in zip(b['revenue'], want.values)), 'Выручка лучших дней не совпадает.'",
+   "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])",
+   "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\nbest_days = duckdb.sql(\"\"\"\n    WITH daily AS (\n        SELECT shop_id, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        GROUP BY shop_id, day\n    )\n    SELECT shop_id, day, revenue\n    FROM (\n        SELECT *, ROW_NUMBER() OVER (PARTITION BY shop_id ORDER BY revenue DESC) AS rn\n        FROM daily\n    )\n    WHERE rn = 1\n    ORDER BY shop_id\n\"\"\").df()",
+   "hints": [
+    "Два шага: сначала выручка «кофейня × день», потом нумерация дней внутри каждой кофейни по убыванию выручки.",
+    "CTE с выручкой по `shop_id` и `CAST(datetime AS DATE) AS day`, затем `ROW_NUMBER() OVER (PARTITION BY shop_id ORDER BY revenue DESC)` и `WHERE rn = 1`."
+   ],
+   "explain": "Для каждой кофейни — одна строка с её лучшим днём. `ROW_NUMBER` нумерует дни внутри кофейни по убыванию выручки, а `WHERE rn = 1` оставляет первый; в pandas это потребовало бы сортировки и `groupby(...).head(1)`."
+  },
+  "ch02/07s-subqueries-cte/order-fix": {
+   "chapter": "ch02",
+   "lesson": "07s-subqueries-cte",
+   "lesson_title": "Подзапросы, CTE и порядок выполнения SQL",
+   "id": "order-fix",
+   "title": "Почините запрос: первый заказ гостя",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "shops.csv",
+    "menu.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime']).dropna(subset=['client_id'])\n_w = _d.sort_values('datetime').groupby('client_id').head(1).sort_values('client_id')\nb = need('first_orders', _pd.DataFrame)\nassert list(b.columns) == ['client_id', 'datetime', 'amount'], f'Столбцы: {list(b.columns)}. Во внешнем SELECT перечислите только client_id, datetime, amount — без rn.'\nassert b['client_id'].notna().all(), 'В результате есть строка с пустым client_id — уберите заказы без карты.'\nassert len(b) == len(_w), f'Строк {len(b)}, а гостей с картой {len(_w)}: нужна ровно одна строка на гостя.'\nassert b['client_id'].tolist() == _w['client_id'].tolist(), 'Порядок строк: по возрастанию client_id.'\nassert [str(x)[:16] for x in b['datetime']] == [str(x)[:16] for x in _w['datetime']], 'Даты не совпадают с первыми заказами. Проверьте ORDER BY datetime внутри окна (по возрастанию).'\nassert 'ROW_NUMBER' in _code.upper(), 'Оставьте нумерацию ROW_NUMBER() — дело не в ней, а в месте, где по ней фильтруют.'",
+   "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nfirst_orders = duckdb.sql(\"\"\"\n    SELECT client_id, datetime, amount,\n           ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY datetime) AS rn\n    FROM df\n    WHERE client_id IS NOT NULL AND rn = 1\n    ORDER BY client_id\n\"\"\").df()",
+   "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nfirst_orders = duckdb.sql(\"\"\"\n    WITH ranked AS (\n        SELECT client_id, datetime, amount,\n               ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY datetime) AS rn\n        FROM df\n        WHERE client_id IS NOT NULL\n    )\n    SELECT client_id, datetime, amount\n    FROM ranked\n    WHERE rn = 1\n    ORDER BY client_id\n\"\"\").df()",
+   "hints": [
+    "По шагам выполнения: `WHERE` срабатывает раньше, чем `SELECT` посчитает `rn`. Значит, фильтр `rn = 1` должен стоять на уровень выше — во внешнем запросе.",
+    "Перенесите текущий запрос (без `rn = 1`) в `WITH ranked AS (...)`, а снаружи напишите `SELECT client_id, datetime, amount FROM ranked WHERE rn = 1 ORDER BY client_id`.",
+    "```python\nfirst_orders = duckdb.sql(\"\"\"\n    WITH ranked AS (\n        SELECT client_id, datetime, amount,\n               ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY datetime) AS rn\n        FROM df\n        WHERE client_id IS NOT NULL\n    )\n    SELECT ...\n    FROM ranked\n    WHERE ...\n    ORDER BY client_id\n\"\"\").df()\n```"
+   ],
+   "explain": "У 260 гостей с картой — 260 первых заказов. Фильтр `client_id IS NOT NULL` остался внутри CTE: он относится к исходным строкам и честно работает на шаге `WHERE`. А `rn = 1` переехал наружу, где `rn` уже обычный столбец. Если оставить `WHERE client_id IS NOT NULL` снаружи, результат будет тем же, но окно зря пронумерует и заказы без карты (они соберутся в одну «пустую» группу). В pandas тот же результат даёт `df.dropna(subset=[\"client_id\"]).sort_values(\"datetime\").groupby(\"client_id\").head(1)`."
+  },
+  "ch02/07a-sql-python/items-peek": {
+   "chapter": "ch02",
+   "lesson": "07a-sql-python",
+   "lesson_title": "SQL из Python к базе: параметры и подключения",
+   "id": "items-peek",
+   "title": "Что лежит в базе",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "zerno.db"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import sqlite3 as _sq\n_c = _sq.connect('zerno.db')\n_cols = [d[0] for d in _c.execute('SELECT * FROM orders LIMIT 1').description]\n_n = _c.execute('SELECT COUNT(*) FROM order_items').fetchone()[0]\n_c.close()\nassert list(need('orders_cols')) == _cols, f'orders_cols = {list(need(\"orders_cols\"))}, а в orders столбцы {_cols}.'\nassert int(need('n_items')) == _n, f'n_items = {need(\"n_items\")} — это не число строк order_items.'\nassert 'COUNT' in _code.upper(), 'Посчитайте строки запросом: SELECT COUNT(*) FROM order_items.'\nassert calls('close') >= 1, 'Закройте подключение: con.close().'",
+   "starter": "import sqlite3\nimport pandas as pd",
+   "solution": "import sqlite3\nimport pandas as pd\n\ncon = sqlite3.connect(\"zerno.db\")\norders_cols = pd.read_sql_query(\"SELECT * FROM orders LIMIT 3\", con).columns.tolist()\nn_items = int(pd.read_sql_query(\"SELECT COUNT(*) AS n FROM order_items\", con)[\"n\"].iloc[0])\ncon.close()",
+   "hints": [
+    "Столбцы — у результата `pd.read_sql_query(\"SELECT * FROM orders LIMIT 3\", con)`: `.columns.tolist()`. Число строк — отдельный запрос с `COUNT(*)`.",
+    "```python\ncon = sqlite3.connect(\"zerno.db\")\norders_cols = pd.read_sql_query(\"SELECT * FROM orders LIMIT 3\", con).columns.tolist()\nn_items = int(pd.read_sql_query(\"SELECT COUNT(*) AS n FROM order_items\", con)[\"n\"].iloc[0])\ncon.close()\n```"
+   ],
+   "explain": "В `orders` шесть столбцов, суммы среди них нет. Позиций — 22 813 на 14 510 заказов, в среднем около полутора позиций на заказ. `LIMIT 3` — привычка, которая пригодится на рабочей базе: чтобы узнать столбцы, не нужно тянуть всю таблицу."
+  },
+  "ch02/07a-sql-python/p-sqlite": {
+   "chapter": "ch02",
+   "lesson": "07a-sql-python",
+   "lesson_title": "SQL из Python к базе: параметры и подключения",
+   "id": "p-sqlite",
+   "title": "Соберите запрос с параметром",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "zerno.db"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import sqlite3 as _sq\n_c = _sq.connect('zerno.db')\n_n = _c.execute(\"SELECT COUNT(*) FROM orders WHERE substr(ordered_at, 1, 7) = '2026-04'\").fetchone()[0]\n_c.close()\nassert _lines == [str(_n)], f'Должно вывестись {_n}. Сейчас: {_lines}'",
+   "starter": "",
+   "solution": "import sqlite3\nimport pandas as pd\ncon = sqlite3.connect(\"zerno.db\")\nquery = \"SELECT COUNT(*) AS n FROM orders WHERE substr(ordered_at, 1, 7) = ?\"\nt = pd.read_sql_query(query, con, params=(\"2026-04\",))\ncon.close()\nprint(t[\"n\"].iloc[0])",
+   "hints": [
+    "Схема урока: подключение → текст запроса с `?` → `read_sql_query` с `params=` → закрыть подключение → вывести.",
+    "`params=(\"2026-04\",)` — кортеж из одного значения, с запятой."
+   ],
+   "explain": ""
+  },
   "ch02/07a-sql-python/sqlite-read": {
    "chapter": "ch02",
    "lesson": "07a-sql-python",
@@ -2235,6 +2457,29 @@
     "```python\ncon = sqlite3.connect(\"zerno.db\")\nfood = pd.read_sql_query(\n    \"SELECT name, price FROM menu WHERE category = ? ORDER BY ...\",\n    con, params=(...,),\n)\ncon.close()\n```"
    ],
    "explain": "Еды в меню четыре позиции: сэндвич (260 ₽), сырники (240 ₽), чизкейк (220 ₽) и круассан (140 ₽). Поменяйте `cat = \"не кофе\"` — запрос тот же, а результат другой. Так и работают параметризованные отчёты. Если написать `params=(cat)` без запятой, `sqlite3` получит строку из трёх букв и пожалуется: `Incorrect number of bindings supplied`. Тот же результат в pandas без базы дал бы `menu[menu[\"category\"] == cat].sort_values(\"price\", ascending=False)`, но для этого пришлось бы сначала выгрузить всё меню."
+  },
+  "ch02/07a-sql-python/delivery-month": {
+   "chapter": "ch02",
+   "lesson": "07a-sql-python",
+   "lesson_title": "SQL из Python к базе: параметры и подключения",
+   "id": "delivery-month",
+   "title": "Доля доставки за месяц",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "zerno.db"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import sqlite3 as _sq\n_c = _sq.connect('zerno.db')\n_t = _c.execute(\"SELECT AVG(channel = 'доставка') FROM orders WHERE substr(ordered_at, 1, 7) = '2026-08'\").fetchone()[0]\n_all = _c.execute(\"SELECT AVG(channel = 'доставка') FROM orders\").fetchone()[0]\n_c.close()\n_want = round(_t * 100, 1)\nassert 'params' in _code, 'Передайте месяц через params=.'\nassert \"'2026-08'\" not in _code, 'Месяц вписан в текст запроса. Оставьте в SQL заполнитель ?, а значение — в params.'\nassert not close(need('share'), round(_all * 100, 1), 0.05), f'share = {need(\"share\")} — это доля за все шесть месяцев. Отфильтруйте заказы месяца: substr(ordered_at, 1, 7) = ?.'\nassert not close(need('share'), round(_t, 3), 0.001), f'share = {need(\"share\")}. Нужны проценты: умножьте долю на 100.'\nassert close(need('share'), _want, 0.05), f'share = {need(\"share\")} — не та доля. Числитель — заказы доставки месяца, знаменатель — все заказы месяца.'",
+   "starter": "import sqlite3\nimport pandas as pd\n\nmonth = \"2026-08\"",
+   "solution": "import sqlite3\nimport pandas as pd\n\nmonth = \"2026-08\"\ncon = sqlite3.connect(\"zerno.db\")\nt = pd.read_sql_query(\"SELECT channel FROM orders WHERE substr(ordered_at, 1, 7) = ?\",\n                      con, params=(month,))\ncon.close()\nshare = round((t[\"channel\"] == \"доставка\").mean() * 100, 1)",
+   "hints": [
+    "Месяц заказа — `substr(ordered_at, 1, 7)`. Достаньте из базы каналы заказов нужного месяца: `SELECT channel FROM orders WHERE substr(ordered_at, 1, 7) = ?`.",
+    "```python\ncon = sqlite3.connect(\"zerno.db\")\nt = pd.read_sql_query(\"SELECT channel FROM orders WHERE substr(ordered_at, 1, 7) = ?\",\n                      con, params=(month,))\ncon.close()\nshare = round((t[\"channel\"] == ...).mean() * 100, 1)\n```"
+   ],
+   "explain": "В августе доставка — 20.6 % заказов, в марте и июле — 19.0 %. Поменяйте `month` — и тот же код ответит про другой месяц. В SQL ту же долю даёт `AVG(channel = 'доставка')`: в SQLite сравнение возвращает 1 или 0, и среднее от них — доля, как `mean()` от True/False в pandas."
   },
   "ch02/07a-sql-python/sqlite-func": {
    "chapter": "ch02",
@@ -2336,7 +2581,7 @@
    "lesson_title": "Оконные функции SQL: ранги, доли, соседние строки",
    "id": "w-ntile",
    "title": "Четверти гостей по тратам",
-   "level": "base",
+   "level": "plus",
    "exam": false,
    "parsons": false,
    "files": [
@@ -2449,6 +2694,30 @@
     "`SUM(revenue) OVER (ORDER BY day) AS running`. Первый день, где `running` не меньше половины `revenue.sum()`: `cum.loc[cum[\"running\"] >= cum[\"revenue\"].sum() / 2, \"day\"].iloc[0]`."
    ],
    "explain": ""
+  },
+  "ch02/07c-sql-frames/w-half": {
+   "chapter": "ch02",
+   "lesson": "07c-sql-frames",
+   "lesson_title": "Рамки окна SQL: накопительные итоги и скользящие средние",
+   "id": "w-half",
+   "title": "Когда кофейня набрала половину",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "daily_sales.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_g = _d.groupby(['shop_id', _d['datetime'].dt.normalize()])['amount'].sum().reset_index()\n_g['run'] = _g.groupby('shop_id')['amount'].cumsum()\n_g['tot'] = _g.groupby('shop_id')['amount'].transform('sum')\n_w = _g[_g['run'] >= _g['tot'] / 2].groupby('shop_id')['datetime'].min()\nh = need('half', _pd.DataFrame)\nassert list(h.columns) == ['shop_id', 'half_day'], f'Столбцы: {list(h.columns)}, а нужны shop_id и half_day.'\nassert h['shop_id'].tolist() == list(_w.index), f'Кофейни: {h[\"shop_id\"].tolist()}. Нужна одна строка на кофейню, по возрастанию shop_id.'\n_got = [str(x)[:10] for x in h['half_day']]\n_want = [str(x)[:10] for x in _w.values]\nassert _got == _want, f'half_day = {_got}. Проверьте PARTITION BY shop_id в обоих окнах и фильтр running >= total / 2 снаружи, в отдельном запросе.'\nassert 'OVER' in _code.upper(), 'Посчитайте накопительный итог оконной функцией SUM(...) OVER (...).'",
+   "starter": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])",
+   "solution": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\nhalf = duckdb.sql(\"\"\"\n    WITH d AS (\n        SELECT shop_id, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        GROUP BY shop_id, day\n    ),\n    w AS (\n        SELECT shop_id, day,\n               SUM(revenue) OVER (PARTITION BY shop_id ORDER BY day) AS running,\n               SUM(revenue) OVER (PARTITION BY shop_id) AS total\n        FROM d\n    )\n    SELECT shop_id, MIN(day) AS half_day\n    FROM w\n    WHERE running >= total / 2\n    GROUP BY shop_id\n    ORDER BY shop_id\n\"\"\").df()",
+   "hints": [
+    "Окно по кофейне с порядком — накопительный итог: `SUM(revenue) OVER (PARTITION BY shop_id ORDER BY day)`. Окно по кофейне без порядка — итог за весь период: `SUM(revenue) OVER (PARTITION BY shop_id)`. Фильтровать по ним можно только уровнем выше.",
+    "```python\nhalf = duckdb.sql(\"\"\"\n    WITH d AS (\n        SELECT shop_id, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df GROUP BY shop_id, day\n    ),\n    w AS (\n        SELECT shop_id, day,\n               SUM(revenue) OVER (PARTITION BY shop_id ORDER BY day) AS running,\n               SUM(revenue) OVER (PARTITION BY shop_id) AS total\n        FROM d\n    )\n    SELECT shop_id, MIN(day) AS half_day\n    FROM w\n    WHERE ...\n    GROUP BY shop_id\n    ORDER BY shop_id\n\"\"\").df()\n```"
+   ],
+   "explain": "Пять кофеен перешли половину 17–18 октября, UFA-1 — последней, 20 октября: сентябрь у неё самый слабый, 27.3 % выручки за три месяца против 29–34 % у остальных кофеен. Середина периода — 15–16 октября, так что все шесть кофеен набрали половину чуть позже: выручка сети к ноябрю росла. Если поставить `WHERE running >= total / 2` в тот же запрос, где считаются окна, DuckDB ответит ошибкой: `WHERE` выполняется раньше окон."
   },
   "ch02/07c-sql-frames/w-ma7": {
    "chapter": "ch02",
@@ -2574,6 +2843,32 @@
     "`path = DATA / \"orders_3m.csv\"`; имя без расширения — `path.stem`."
    ],
    "explain": "`Path(\"data\") / \"orders_3m.csv\"` даёт `data/orders_3m.csv` на Mac и Linux и `data\\orders_3m.csv` на Windows — один и тот же код работает у всех. `stem` удобен, чтобы назвать файл результата по исходному: `orders_3m_clean.csv`."
+  },
+  "ch02/08-jupyter/sheets-url": {
+   "chapter": "ch02",
+   "lesson": "08-jupyter",
+   "lesson_title": "Своё рабочее место — uv и Jupyter",
+   "id": "sheets-url",
+   "title": "Ссылка на выгрузку Google Sheets",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "zerno_draft.ipynb",
+    "zerno_rerun.ipynb"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "f = need('sheet_csv_url')\nassert callable(f), 'sheet_csv_url должна быть функцией.'\n_base = 'https://docs.google.com/spreadsheets/d/'\nfor _link, _id, _gid in [\n    (_base + '1AbC-zerno_Plan2026/edit#gid=0', '1AbC-zerno_Plan2026', '0'),\n    (_base + '1Xy_menu/edit?gid=418#gid=418', '1Xy_menu', '418'),\n    (_base + '1Qq_shops/edit', '1Qq_shops', '0'),\n    (_base + '9Zz-staff/edit?usp=sharing#gid=77', '9Zz-staff', '77'),\n]:\n    _got = f(_link)\n    _want = f'{_base}{_id}/export?format=csv&gid={_gid}'\n    assert _got is not None, 'Функция ничего не возвращает — нужен return.'\n    assert _got == _want, f'Для ссылки {_link}\\nфункция вернула {_got!r},\\nа нужно       {_want!r}.'",
+   "starter": "def sheet_csv_url(link):\n    ...\n\nprint(sheet_csv_url(\"https://docs.google.com/spreadsheets/d/1AbC-zerno_Plan2026/edit#gid=0\"))",
+   "solution": "def sheet_csv_url(link):\n    sheet_id = link.split(\"/d/\")[1].split(\"/\")[0]\n    gid = link.split(\"gid=\")[-1] if \"gid=\" in link else \"0\"\n    return f\"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}\"\n\nprint(sheet_csv_url(\"https://docs.google.com/spreadsheets/d/1AbC-zerno_Plan2026/edit#gid=0\"))",
+   "hints": [
+    "Обе части достаются через `split`: идентификатор — между `\"/d/\"` и `\"/\"`, номер листа — после `\"gid=\"`. «После последнего» — значит, берём последний кусок: индекс `[-1]`.",
+    "`sheet_id = link.split(\"/d/\")[1].split(\"/\")[0]`. Для листа: если `\"gid=\" in link`, то `gid = link.split(\"gid=\")[-1]`, иначе `gid = \"0\"`.",
+    "```python\ndef sheet_csv_url(link):\n    sheet_id = link.split(\"/d/\")[1].split(\"/\")[0]\n    gid = link.split(\"gid=\")[-1] if \"gid=\" in link else ...\n    return f\"https://docs.google.com/spreadsheets/d/{...}/export?format=csv&gid={...}\"\n```"
+   ],
+   "explain": "Ссылки на одну и ту же таблицу бывают разными: с `#gid=`, с `?gid=…#gid=…`, с хвостом `?usp=sharing` или совсем без номера листа. Если брать **первый** кусок после `gid=`, для `edit?gid=418#gid=418` получится `'418#'` — и выгрузка сломается. `[-1]` берёт последний кусок, и в таких ссылках это чистый номер. (Бывают и ссылки с хвостом после номера, например `#gid=418&range=A1`, — тогда номер пришлось бы ещё отрезать по `&`.) Дальше такой адрес передают в `pd.read_csv(sheet_csv_url(link))` — в своём Jupyter, где есть интернет."
   },
   "ch02/08-jupyter/run-order": {
    "chapter": "ch02",
@@ -2722,7 +3017,7 @@
    "solution": "import json\nimport re\n\ndef audit(nb):\n    problems = []\n    best = None                                   # наибольший номер запуска выше текущей ячейки\n    for i, cell in enumerate(nb[\"cells\"]):\n        if cell[\"cell_type\"] != \"code\":\n            continue\n        src = \"\".join(cell[\"source\"])\n        n = cell.get(\"execution_count\")\n        if n is not None:\n            if best is not None and n < best:\n                problems.append((i, \"order\"))\n            best = n if best is None else max(best, n)\n        if re.search(r'[\"\\'](/|[A-Za-z]:[\\\\/])', src):\n            problems.append((i, \"abs_path\"))\n        if any(o[\"output_type\"] == \"error\" for o in cell[\"outputs\"]):\n            problems.append((i, \"error\"))\n        lines = [l.strip() for l in src.splitlines() if l.strip()]\n        if lines and all(l.startswith(\"#\") for l in lines):\n            problems.append((i, \"commented\"))\n    return problems\n\nnb = json.load(open(\"zerno_draft.ipynb\", encoding=\"utf-8\"))\naudit(nb)",
    "hints": [
     "Идите по `enumerate(nb[\"cells\"])`, пропускайте markdown. Для `\"order\"` храните наибольший номер запуска среди выполненных ячеек выше: если текущий номер меньше — проблема.",
-    "Абсолютный путь ищется регулярным выражением: `re.search(r'[\"\\'](/|[A-Za-z]:[\\\\/])', src)`, где `src = \"\".join(cell[\"source\"])`.",
+    "Абсолютный путь проще всего найти регулярным выражением: `re.search(r'[\"\\'](/|[A-Za-z]:[\\\\/])', src)`, где `src = \"\".join(cell[\"source\"])`. Без `re`: для каждой кавычки в `src` возьмите следующие символы `nxt = src[i + 1:i + 4]` и проверьте `nxt.startswith(\"/\")` или `nxt[:1].isalpha() and nxt[1:2] == \":\" and nxt[2:3] in (\"/\", \"\\\\\")`.",
     "Закомментированная ячейка: `lines = [l.strip() for l in src.splitlines() if l.strip()]`, затем `lines and all(l.startswith(\"#\") for l in lines)`. Ошибка: `any(o[\"output_type\"] == \"error\" for o in cell[\"outputs\"])`."
    ],
    "explain": "На черновике функция находит четыре проблемы: абсолютный путь (ячейка 2), сумму, посчитанную раньше фильтра (4), ошибку `KeyError` (5) и закомментированный код (6). После Restart & Run All (`zerno_rerun.ipynb`) порядок и путь исправлены, а ошибка и комментарии остались — перезапуск чинит историю, но не код. Примерно так работает и скрипт самопроверки проектов курса: он ищет в блокноте то же, что ищет живой ревьюер, только быстрее. Частая ошибка — сравнивать номер только с соседней ячейкой выше: если между ними есть невыполненная ячейка, нарушение пропадёт."
@@ -2944,6 +3239,31 @@
    ],
    "explain": "Лучший средний чек — у PRM-1: на экране 355.3, а в `avg` по-прежнему 355.2729…, и все дальнейшие расчёты идут по точному числу. Если бы вы написали `avg = avg.round(1)`, проверка заметила бы потерю точности, а при `pd.set_option` формат остался бы включённым для всего блокнота. Блок `with` хорош тем, что сам возвращает настройку на место — даже если внутри блока случится ошибка."
   },
+  "ch02/08b-jupyter-keys/rows-ctx": {
+   "chapter": "ch02",
+   "lesson": "08b-jupyter-keys",
+   "lesson_title": "Jupyter: руки на клавиатуре",
+   "id": "rows-ctx",
+   "title": "Шесть строк, все столбцы",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "shops.csv",
+    "menu.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\n_mr = _pd.get_option('display.max_rows')\nif _mr == 6:\n    _pd.set_option('display.max_rows', 60)        # чтобы настройка не утекла в другие задачи\nassert _mr != 6, 'После вашего кода display.max_rows осталась равной 6. Используйте with pd.option_context(...), а не set_option.'\nassert printed('[2089 rows x 9 columns]'), 'В выводе нет таблицы заказов: напечатайте df внутри блока with.'\nfor _c in ['drink', 'size', 'qty', 'channel']:\n    assert printed(_c), f'В выводе не видно столбца {_c}: столбцы обрезаны. Нужно display.max_columns = None.'\nassert printed('O-00003') and printed('O-02087'), 'Нужны первые и последние строки таблицы.'\nassert not printed('O-00004') and not printed('O-02086'), 'Строк в выводе больше шести. Нужно display.max_rows = 6.'\nassert calls('option_context') >= 1, 'Нужен pd.option_context.'",
+   "starter": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")",
+   "solution": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\n\nwith pd.option_context(\"display.max_rows\", 6, \"display.max_columns\", None):\n    print(df)",
+   "hints": [
+    "Пары идут подряд в одном вызове: `pd.option_context(\"display.max_rows\", 6, \"display.max_columns\", None)`. `None` у `max_columns` значит «без ограничения».",
+    "```python\nwith pd.option_context(\"display.max_rows\", ..., \"display.max_columns\", ...):\n    print(df)\n```"
+   ],
+   "explain": "Вместо многоточия посередине строки видны все столбцы, от `order_id` до `channel`. Если таблица не помещается по ширине, pandas переносит последние столбцы ниже — со значком `\\` в конце первой части. Строк — шесть, а внизу подпись `[2089 rows x 9 columns]`: обрезан только показ, данные целы. Когда блок `with` закончится, обе настройки вернутся к тем значениям, что были до него."
+  },
   "ch02/08b-jupyter-keys/timeit-read": {
    "chapter": "ch02",
    "lesson": "08b-jupyter-keys",
@@ -3020,32 +3340,6 @@
     "После исправления группировки появится `KeyError: \"Label(s) ['amout'] do not exist\"` — опечатка внутри `agg`."
    ],
    "explain": "Обе ошибки — `KeyError`, но сообщения разные: `groupby` пишет просто `'shop'`, а `agg` — `Label(s) ['amout'] do not exist`. Python останавливается на первой ошибке, поэтому вторая видна только после исправления первой — это нормально, чините по одной. Самый быстрый способ проверить имена — `df.columns.tolist()`: опечатки, лишние пробелы (`\"amount \"`) и регистр (`\"Amount\"`) видны сразу."
-  },
-  "ch02/08b-jupyter-keys/keys-sim": {
-   "chapter": "ch02",
-   "lesson": "08b-jupyter-keys",
-   "lesson_title": "Jupyter: руки на клавиатуре",
-   "id": "keys-sim",
-   "title": "Режим команд в миниатюре",
-   "level": "star",
-   "exam": false,
-   "parsons": false,
-   "files": [
-    "orders_3m.csv",
-    "shops.csv",
-    "menu.csv"
-   ],
-   "display": true,
-   "setup": "",
-   "check": "def _p(cells, cur, keys):\n    cells = [list(c) for c in cells]; trash = []\n    for k in keys:\n        if k == 'A': cells.insert(cur, ['code', ''])\n        elif k == 'B': cells.insert(cur + 1, ['code', '']); cur += 1\n        elif k == 'M': cells[cur][0] = 'markdown'\n        elif k == 'Y': cells[cur][0] = 'code'\n        elif k == 'DD':\n            trash.append((cur, cells.pop(cur)))\n            if not cells: cells.append(['code', ''])\n            cur = min(cur, len(cells) - 1)\n        elif k == 'Z' and trash:\n            i, c = trash.pop(); cells.insert(i, c); cur = i\n    return cells, cur\nf = need('press')\nnb = [['code', 'import pandas as pd'], ['code', \"df = pd.read_csv('orders_3m.csv')\"], ['markdown', '## Итоги']]\ncases = [(nb, 1, ['B', 'M']), (nb, 0, ['A', 'A']), (nb, 2, ['DD']), (nb, 0, ['DD', 'DD', 'Z']),\n         (nb, 1, ['DD', 'Z', 'Y']), ([['code', 'x = 1']], 0, ['DD']), (nb, 2, ['Y', 'DD', 'DD', 'Z', 'Z']),\n         (nb, 0, ['Z']), (nb, 2, ['B', 'DD'])]\nfor cells, cur, keys in cases:\n    before = [list(c) for c in cells]\n    got = f(cells, cur, keys)\n    want = _p(cells, cur, keys)\n    assert got is not None and (list(map(list, got[0])), got[1]) == want, f'press(..., cur={cur}, keys={keys}) вернула {got}, а нужно {want}.'\n    assert cells == before, 'Функция изменила исходный список ячеек — работайте с копией.'",
-   "starter": "def press(cells, cur, keys):\n    cells = [list(c) for c in cells]      # работаем с копией\n    ...\n    return cells, cur\n\nnb = [[\"code\", \"import pandas as pd\"], [\"code\", \"df = pd.read_csv('orders_3m.csv')\"]]\npress(nb, 1, [\"B\", \"M\"])",
-   "solution": "def press(cells, cur, keys):\n    cells = [list(c) for c in cells]      # работаем с копией\n    trash = []                            # удалённые ячейки: (номер, ячейка)\n    for k in keys:\n        if k == \"A\":\n            cells.insert(cur, [\"code\", \"\"])\n        elif k == \"B\":\n            cells.insert(cur + 1, [\"code\", \"\"])\n            cur += 1\n        elif k == \"M\":\n            cells[cur][0] = \"markdown\"\n        elif k == \"Y\":\n            cells[cur][0] = \"code\"\n        elif k == \"DD\":\n            trash.append((cur, cells.pop(cur)))\n            if not cells:\n                cells.append([\"code\", \"\"])\n            cur = min(cur, len(cells) - 1)\n        elif k == \"Z\" and trash:\n            i, cell = trash.pop()\n            cells.insert(i, cell)\n            cur = i\n    return cells, cur\n\nnb = [[\"code\", \"import pandas as pd\"], [\"code\", \"df = pd.read_csv('orders_3m.csv')\"]]\npress(nb, 1, [\"B\", \"M\"])",
-   "hints": [
-    "Все действия — операции со списком: `insert`, `pop` и замена `cells[cur][0]`. Для `\"Z\"` нужна «корзина» — список пар `(номер, ячейка)`, куда `\"DD\"` кладёт удалённое.",
-    "После `\"DD\"`: если список опустел — добавьте пустую ячейку; затем `cur = min(cur, len(cells) - 1)` — так курсор не выйдет за конец.",
-    "`\"Z\"`: `if trash: i, cell = trash.pop(); cells.insert(i, cell); cur = i`. `trash.pop()` берёт последнюю удалённую — как настоящая отмена."
-   ],
-   "explain": "Модель показывает, почему клавиши ведут себя так, как ведут: <kbd>A</kbd> не двигает курсор, потому что новая ячейка встаёт на его место; <kbd>Z</kbd> — это стопка: две отмены подряд возвращают ячейки в обратном порядке удаления. Тонкое место — удаление последней ячейки: без `min(cur, len(cells) - 1)` курсор укажет за конец списка, и следующее <kbd>M</kbd> упадёт с `IndexError`. Вторая ловушка — изменить исходный список: строка `cells = [list(c) for c in cells]` копирует и список, и каждую ячейку внутри."
   },
   "ch02/08c-terminal-memory/w-lines": {
    "chapter": "ch02",
@@ -3124,6 +3418,31 @@
    ],
    "explain": "Больше всего весит журнал `service_log.jsonl` — 658 КБ из 1 063. Разбор такого вывода — частая мини-задача: «что съело диск», «какие выгрузки не пришли». `split()` без аргументов здесь ключевой: столбцы `ls -l` выровнены пробелами разной длины, и `split(\" \")` дал бы кучу пустых строк. Ловушка — имя файла с пробелом (`daily sales.csv`): тогда `parts[-1]` вернёт только последнее слово. Надёжнее `line.split(maxsplit=8)[-1]` — первые 8 полей отрезаются, а остаток строки целиком становится именем."
   },
+  "ch02/08c-terminal-memory/cat-codes": {
+   "chapter": "ch02",
+   "lesson": "08c-terminal-memory",
+   "lesson_title": "Терминал и память: заглянуть в файл, не открывая его",
+   "id": "cat-codes",
+   "title": "Справочник и коды",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "orders_3m.csv",
+    "shops.csv",
+    "menu.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert [str(x) for x in need('cats')] == ['L', 'M', 'S'], f'cats = {list(need(\"cats\"))}. Справочник — .cat.categories, значения в нём по алфавиту.'\nassert [int(x) for x in need('codes')] == [1, 2, 1, 0, 1, 2], f'codes = {[int(x) for x in need(\"codes\")]}. Код — номер значения в справочнике, с нуля: .cat.codes.'",
+   "starter": "import pandas as pd\nsizes = pd.Series([\"M\", \"S\", \"M\", \"L\", \"M\", \"S\"])",
+   "solution": "import pandas as pd\nsizes = pd.Series([\"M\", \"S\", \"M\", \"L\", \"M\", \"S\"])\nc = sizes.astype(\"category\")\ncats = c.cat.categories.tolist()\ncodes = c.cat.codes.tolist()",
+   "hints": [
+    "Сначала `sizes.astype(\"category\")`, затем у результата — `.cat.categories` и `.cat.codes`, оба через `.tolist()`.",
+    "```python\nc = sizes.astype(\"category\")\ncats = c.cat.categories.tolist()\ncodes = c.cat.codes.tolist()\n```"
+   ],
+   "explain": "Справочник — три значения по алфавиту: L — код 0, M — 1, S — 2. Шесть заказов хранятся шестью маленькими кодами, а буквы записаны один раз. Порядок по алфавиту здесь не совпадает с порядком размеров (S < M < L) — для группировок это неважно, а если нужен «правильный» порядок, его задают `pd.Categorical(..., categories=[\"S\", \"M\", \"L\"], ordered=True)`."
+  },
   "ch02/08c-terminal-memory/mem-category": {
    "chapter": "ch02",
    "lesson": "08c-terminal-memory",
@@ -3170,7 +3489,7 @@
    "starter": "import pandas as pd",
    "solution": "import pandas as pd\norders = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\nshops = pd.read_csv(\"shops.csv\")\nmenu = pd.read_csv(\"menu.csv\")\nfull = (orders.merge(shops, on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n              .merge(menu, on=\"drink\", how=\"left\", validate=\"many_to_one\"))\nsame_rows = len(full) == len(orders)",
    "hints": [
-    "Уроки «Соединения: JOIN и UNION» и «Даты и время»: `pd.read_csv(..., parse_dates=[\"datetime\"])`, затем два `merge` подряд.",
+    "Уроки «Соединения: JOIN и ловушка дублей» и «Даты и время»: `pd.read_csv(..., parse_dates=[\"datetime\"])`, затем два `merge` подряд.",
     "`full = df.merge(shops, on=\"shop_id\", how=\"left\", validate=\"many_to_one\").merge(menu, on=\"drink\", how=\"left\", validate=\"many_to_one\")`; `same_rows = len(full) == len(df)`."
    ],
    "explain": "Строк после двух соединений столько же, сколько заказов, — справочники без дублей. Эту проверку стоит оставлять в коде навсегда: справочники меняют другие люди."
@@ -3322,10 +3641,10 @@
    "starter": "import pandas as pd\n# full уже собрана: заказы + справочник кофеен + меню, datetime — дата\nfull.head(3)\nSIZE_K = {\"S\": 1.0, \"M\": 1.25, \"L\": 1.5}",
    "solution": "import pandas as pd\nSIZE_K = {\"S\": 1.0, \"M\": 1.25, \"L\": 1.5}\nfull[\"cost\"] = full[\"cost_s\"] * full[\"size\"].map(SIZE_K) * full[\"qty\"]\ng = full.groupby(\"category\")[[\"amount\", \"cost\"]].sum()\nmargin = ((g[\"amount\"] - g[\"cost\"]) / g[\"amount\"] * 100).round(1)\nmargin",
    "hints": [
-    "Урок «Соединения: JOIN и UNION», задача про маржу: сначала столбец `cost`, потом суммы двух столбцов по категориям.",
+    "Урок «Соединения: JOIN и ловушка дублей», задача про маржу: сначала столбец `cost`, потом суммы двух столбцов по категориям.",
     "`full[\"cost\"] = full[\"cost_s\"] * full[\"size\"].map({\"S\": 1, \"M\": 1.25, \"L\": 1.5}) * full[\"qty\"]`; затем `g = full.groupby(\"category\")[[\"amount\", \"cost\"]].sum()`."
    ],
-   "explain": "Маржа у категорий почти одинаковая: кофе — 75.9 %, не кофе — 77.3 %, разница по неокруглённым значениям — около 1.35 п. п. (77.29 − 75.94), меньше порога в 3 п. п.: **H6 не подтвердилась**. Значит, продвигать «не кофе» ради маржи особого смысла нет; важнее, какие конкретные напитки внутри категорий выгоднее (урок «Соединения: JOIN и UNION»)."
+   "explain": "Маржа у категорий почти одинаковая: кофе — 75.9 %, не кофе — 77.3 %, разница по неокруглённым значениям — около 1.35 п. п. (77.29 − 75.94), меньше порога в 3 п. п.: **H6 не подтвердилась**. Значит, продвигать «не кофе» ради маржи особого смысла нет; важнее, какие конкретные напитки внутри категорий выгоднее (урок «Соединения: JOIN и ловушка дублей»)."
   },
   "ch02/09-project/verdicts": {
    "chapter": "ch02",

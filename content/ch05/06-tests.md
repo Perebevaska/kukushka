@@ -29,8 +29,6 @@ recap:
 Карта тестов из таблицы выше в виде дерева вопросов: какие данные, сколько групп, одни ли это объекты, нет ли сильного перекоса.
 :::
 
-{{practice: choose}}
-
 ## t-тест: средние двух групп
 
 Различается ли среднее время доставки авто- и вело-курьеров?
@@ -56,7 +54,7 @@ print(f"t = {res.statistic:.2f}, p = {res.pvalue:.3f}")
 В SQL статистических тестов обычно нет — их считают в Python. Но исходные числа для них (среднее, дисперсию, количество по группам) удобно получить запросом `GROUP BY` с `AVG`, `VAR_SAMP`, `COUNT`.
 :::
 
-{{practice: welch, agree}}
+{{practice: welch}}
 
 ## Одна группа против числа
 
@@ -86,8 +84,8 @@ import pandas as pd
 from scipy import stats
 
 d = pd.read_csv("deliveries.csv", parse_dates=["created"])
-ok = d[d["actual_min"].between(1, 299)]
-ok = ok.assign(month=ok["created"].dt.month)          # месяц — отдельным столбцом
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["month"] = ok["created"].dt.month                 # месяц — отдельным столбцом
 m = ok.pivot_table(index="shop_id", columns="month", values="actual_min", aggfunc="mean")
 print(m.round(1))
 res = stats.ttest_rel(m[11], m[10])
@@ -98,7 +96,7 @@ print(f"в среднем по кофейням +{(m[11] - m[10]).mean():.1f} м
 
 ### Разберём вместе: парный тест руками
 
-Ноябрь против октября по шести кофейням. Доли опозданий (%):
+Теперь не минуты, а **доли опозданий** — другая величина, поэтому и результат будет другим, чем у кода выше. Ноябрь против октября по шести кофейням, доли опозданий (%):
 
 | кофейня | октябрь | ноябрь | разница |
 |---|---|---|---|
@@ -169,7 +167,7 @@ print(f"z = {z:.2f}, p = {p:.4f}")
 
 p ≈ 0.001 — тот же вывод, что дал перестановочный тест в уроке «Проверка гипотез: логика и p-value», только быстрее.
 
-{{practice: p-ztest}}
+{{practice: p-ztest, agree}}
 
 ## Хи-квадрат: связь категорий
 
@@ -351,7 +349,7 @@ for alt in ("two-sided", "greater", "less"):
   > Выбрасывать данные бессмысленно. Смотрите на эффект и интервал.
 :::
 
-{{practice: report}}
+{{practice: choose, report}}
 
 ## Практика
 
@@ -376,7 +374,10 @@ d = _pd.read_csv('deliveries.csv')
 ok = d[d['actual_min'].between(1, 299)]
 r = _st.ttest_ind(ok.loc[ok['courier'] == 'пеший', 'actual_min'], ok.loc[ok['courier'] == 'вело', 'actual_min'], equal_var=False)
 assert close(need('t_stat'), round(r.statistic, 4)), f't_stat = {need("t_stat")}, а нужно {round(r.statistic, 4)}. Порядок групп: пешие, потом вело; equal_var=False.'
-assert close(need('p_value'), round(r.pvalue, 4)), f'p_value = {need("p_value")}.'
+pv = float(need('p_value'))
+if pv == 0:
+    raise AssertionError('p_value = 0.0 — это след округления. Сохраните res.pvalue как есть, без round.')
+assert abs(pv / r.pvalue - 1) < 1e-3, f'p_value = {pv}, а нужно около {r.pvalue:.2e}.'
 ```
 
 ### hint
@@ -395,7 +396,7 @@ walk = ok.loc[ok["courier"] == "пеший", "actual_min"]
 velo = ok.loc[ok["courier"] == "вело", "actual_min"]
 res = stats.ttest_ind(walk, velo, equal_var=False)
 t_stat = round(res.statistic, 4)
-p_value = round(res.pvalue, 4)
+p_value = res.pvalue
 ```
 
 ### explain

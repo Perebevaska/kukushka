@@ -115,7 +115,7 @@ print(f"пакетом: {batch_ms / 100:.3f} мс на гостя")
   > Наоборот: при «хвосте» p95 обычно заметно больше и среднего, и медианы — требование по нему строже.
 :::
 
-{{practice: latency}}
+{{practice: tail, latency}}
 
 ## Тот же сервис на FastAPI
 
@@ -128,6 +128,8 @@ print(f"пакетом: {batch_ms / 100:.3f} мс на гостя")
 - Приложение шлёт **запрос**. У запроса есть метод: **GET** — «дай страницу», **POST** — «вот данные, обработай». Мы шлём анкету гостя в JSON, поэтому нужен POST. Сервис отвечает JSON-текстом и кодом из раздела «Коды ответа» урока «Модель как сервис: запрос, проверка, ответ».
 - `@app.post("/predict")` над функцией — **декоратор**: строка с `@`, которая стоит прямо над `def` и что-то делает с функцией. Здесь она регистрирует функцию в приложении: «на POST-запрос по пути `/predict` вызывай меня». Саму функцию вызывает FastAPI, а не вы.
 - **uvicorn** — программа, которая запускает приложение FastAPI и держит его включённым: принимает запросы на порту и передаёт их вашим функциям. Команда `uvicorn service:app --port 8000` значит «возьми объект `app` из файла `service.py` и слушай порт 8000».
+
+Сервис читает артефакт из урока «Модель как артефакт: файл, паспорт, контрольный набор»: `model.joblib` уже лежит в `models/churn/1.0/`, а паспорт `card.json` там сохранялся в текущую папку. Перед запуском переложите `card.json` рядом с моделью, в `models/churn/1.0/`. В паспорте нужны поля `features`, `threshold` и `version` — они там есть.
 
 ```python static
 # uv add fastapi uvicorn scikit-learn pandas joblib
@@ -170,9 +172,9 @@ def predict(guest: Guest):
 - `app = FastAPI(...)` — само приложение. `@app.post("/predict")` — декоратор: FastAPI будет вызывать `predict` на каждый POST-запрос по пути `/predict`.
 - `guest: Guest` — FastAPI сам прочитает JSON, проверит его по `Guest` и при нарушении вернёт **422** со списком ошибок — функция `predict` даже не вызовется. Проверку руками писать не нужно.
 - Модель загружается **один раз** при старте сервиса, а не на каждый запрос: загрузка файла — самая медленная часть.
-- Ошибка внутри `predict` автоматически превращается в ответ **500**.
+- Ошибка внутри `predict` автоматически превращается в ответ **500**. В отличие от нашего ручного обработчика, текст ошибки клиент не увидит: придёт только `Internal Server Error`, а подробности останутся в журнале сервиса, в терминале, где он запущен.
 
-Запустите сервис командой из комментария в начале файла и, не закрывая этот терминал, проверьте его из второго терминала или из Python. `requests.post(адрес, json=словарь)` отправляет словарь как JSON-тело POST-запроса — так же, как это сделает приложение:
+Запустите сервис командой из комментария в начале файла. В терминале появится строка `Uvicorn running on http://127.0.0.1:8000` — сервис работает и ждёт запросов; остановить его — `Ctrl+C`. Не закрывая этот терминал, проверьте его из второго терминала или из Python. `requests.post(адрес, json=словарь)` отправляет словарь как JSON-тело POST-запроса — так же, как это сделает приложение:
 
 ```python static
 import requests   # uv add requests
@@ -218,13 +220,13 @@ print(check_status(toy_predict, cases))
 
 Тест «визиты True» не прошёл: `isinstance(True, int)` — та самая ловушка из раздела «Проверка входа» урока «Модель как сервис: запрос, проверка, ответ». Без теста её бы никто не заметил, пока приложение не прислало бы `true`. В рабочих проектах тесты пишут в отдельных файлах для **pytest** — функции с именами `test_...` и `assert` внутри; запуск — `uv run pytest`.
 
-{{practice: tests}}
+{{practice: tests, tests-write}}
 
 ## Практика
 
 ## task: batch | Пакет без падений | base
 
-Готовая `predict_one` — в заготовке (полная версия: проверка + модель). В `requests` — 50 запросов, среди которых есть плохие. Напишите `predict_batch(payloads)`, возвращающий DataFrame ответов в том же порядке, и примените: `res`. Сохраните `status_counts` — словарь `{код: число}` и `bad_fields` — Series: сколько раз каждое поле встречается в ошибках 422 (поле — часть строки ошибки до двоеточия), по убыванию.
+Готовая `predict_one` — в заготовке (полная версия: проверка + модель). В `batch_requests` — 50 запросов, среди которых есть плохие. Напишите `predict_batch(payloads)`, возвращающий DataFrame ответов в том же порядке, и примените: `res`. Сохраните `status_counts` — словарь `{код: число}` и `bad_fields` — Series: сколько раз каждое поле встречается в ошибках 422 (поле — часть строки ошибки до двоеточия), по убыванию.
 
 ### setup
 ```python
@@ -259,7 +261,7 @@ def predict_one(payload):
         return {"status": 500, "errors": [f"{type(e).__name__}: {e}"]}
     return {"status": 200, "proba": round(p, 3), "in_campaign": p >= CARD["threshold"], "model_version": "1.0"}
 _rnd = random.Random(7)
-requests = []
+batch_requests = []
 for _r in _X.head(50).to_dict("records"):
     _r = {k: (None if isinstance(v, float) and v != v else v) for k, v in _r.items()}
     for k in ["tenure_months", "app", "visits_90d", "days_since_last", "promo_used", "complaints"]:
@@ -271,7 +273,7 @@ for _r in _X.head(50).to_dict("records"):
         _r["visits_90d"] = -1
     elif _u < 0.24:
         _r.pop("city")
-    requests.append(_r)
+    batch_requests.append(_r)
 ```
 
 ### starter
@@ -281,14 +283,14 @@ import pandas as pd
 def predict_batch(payloads):
     ...
 
-res = predict_batch(requests)
+res = predict_batch(batch_requests)
 
 ```
 
 ### check
 ```python
 import pandas as _pd
-f, po, rq = need('predict_batch'), need('predict_one'), need('requests')
+f, po, rq = need('predict_batch'), need('predict_one'), need('batch_requests')
 w = _pd.DataFrame([po(p) for p in rq])
 r = need('res', _pd.DataFrame)
 assert len(r) == 50 and list(r['status']) == list(w['status']), 'res — ответы predict_one на каждый запрос, в том же порядке.'
@@ -320,7 +322,7 @@ import pandas as pd
 def predict_batch(payloads):
     return pd.DataFrame([predict_one(p) for p in payloads])
 
-res = predict_batch(requests)
+res = predict_batch(batch_requests)
 status_counts = {int(k): int(v) for k, v in res["status"].value_counts().items()}
 fields = [e.split(":")[0] for errs in res.loc[res["status"] == 422, "errors"] for e in errs]
 bad_fields = pd.Series(fields).value_counts()
@@ -330,6 +332,56 @@ print(bad_fields)
 
 ### explain
 Из 50 запросов 15 плохих — почти каждый третий, но остальные получили нормальные ответы — пакет не упал. А разбивка ошибок по полям сразу показывает, где у клиента проблема: чаще всего ломается `delivery_share` — похоже на проценты вместо доли. Это и есть ценность понятных сообщений об ошибках: без них в журнале было бы «что-то не так в 10 запросах».
+
+## task: tail | Хвост в цифрах | warmup
+
+В заготовке `times` — время ответа сервиса на 20 запросов в миллисекундах. Требование к сервису: «p95 не больше 100 мс». Посчитайте `p50`, `p95` (через `np.percentile`), `mean_ms` — среднее, `slow` — сколько запросов дольше 50 мс, и `meets` — выполнено ли требование (обычный `bool`).
+
+### setup
+```python
+times = [8, 9, 7, 8, 10, 9, 8, 7, 9, 8, 11, 8, 9, 7, 8, 95, 9, 8, 120, 8]
+```
+
+### starter
+```python
+import numpy as np
+
+p50 = ...
+```
+
+### check
+```python
+import numpy as _np
+t = need('times')
+assert close(need('p50'), _np.percentile(t, 50)), f'p50 = {need("p50")}: медиана — np.percentile(times, 50).'
+assert close(need('p95'), _np.percentile(t, 95)), f'p95 = {need("p95")}: np.percentile(times, 95), без округления.'
+assert close(need('mean_ms'), _np.mean(t)), f'mean_ms = {need("mean_ms")}: np.mean(times).'
+assert int(need('slow')) == 2, f'slow = {need("slow")}: сколько чисел в times больше 50.'
+m = need('meets')
+assert type(m) is bool, f'meets = {m!r}: нужен обычный bool — оберните сравнение в bool(...).'
+assert m is True, 'meets: p95 ≤ 100?'
+```
+
+### hint
+`np.percentile(times, 50)` и `np.percentile(times, 95)`; среднее — `np.mean(times)`. Медленные: `sum(t > 50 for t in times)`.
+
+### hint
+Сравнение с числом numpy даёт `np.bool_`. Для обычного `bool`: `meets = bool(p95 <= 100)`.
+
+### solution
+```python
+import numpy as np
+
+p50 = np.percentile(times, 50)
+p95 = np.percentile(times, 95)
+mean_ms = np.mean(times)
+slow = sum(t > 50 for t in times)
+meets = bool(p95 <= 100)
+print(p50, p95, mean_ms, slow, meets)
+```
+
+### explain
+Медиана — 8 мс, а среднее — 18.3 мс: всего два медленных запроса (95 и 120 мс) больше чем вдвое подняли среднее, хотя 18 из 20 гостей ждали около 8 мс. p95 = 96.25 мс: требование выполнено, но с запасом меньше 4 мс. Ещё один запрос дольше 100 мс среди двадцати — и p95 перевалит за 100. Среднее не описывает ни типичного гостя (ему 8 мс), ни хвост (ему около 100), поэтому требования пишут через процентили.
 
 ## task: latency | Время ответа | plus
 
@@ -513,3 +565,86 @@ print(failed, failed_v1)
 
 ### explain
 Четыре из девяти случаев прошли «не туда», и каждый — реальный инцидент в будущем: `True` вместо 0/1, проценты вместо доли, копейки вместо рублей, новичок со стажем 0. Тесты стоят пять минут, а находят такое до выкладки. Хорошая привычка: каждый раз, когда в работе находится новая поломка, добавлять её в `cases` — чтобы она не вернулась.
+
+## task: tests-write | Тесты, которые ловят ошибки | base
+
+В заготовке — исправленная проверка `predict_ok` и две версии с ошибками, которые однажды попадали в работу: в `predict_bug_bool` поле `app` принимает `True`, в `predict_bug_share` доля доставки проверяется до 100, а не до 1. Все три возвращают словарь `{"status": ...}`. Функция `check_status` — из раздела «Тесты сервиса», запрос `GOOD` — нормальный гость.
+
+Составьте список `cases` из кортежей `(название, запрос, ожидаемый статус)` — не меньше трёх случаев. Требования: на `predict_ok` все случаи проходят (`check_status(predict_ok, cases) == []`), а каждая версия с ошибкой проваливает хотя бы один случай.
+
+### setup
+```python
+GOOD = {"city": "Пермь", "tenure_months": 12, "app": 0, "visits_90d": 4, "days_since_last": 8,
+        "avg_check": 446, "delivery_share": 0.04, "fav_category": "кофе", "promo_used": 1, "complaints": 0}
+def check_status(predict_one, cases):
+    failed = []
+    for name, payload, expected in cases:
+        got = predict_one(payload)["status"]
+        if got != expected:
+            failed.append((name, expected, got))
+    return failed
+def _make(app_ok, share_hi):
+    def predict(p):
+        errors = [f for f in GOOD if f not in p]
+        for f in ["tenure_months", "app", "visits_90d", "days_since_last", "promo_used", "complaints"]:
+            if f in p and not app_ok(p[f]):
+                errors.append(f)
+        if "app" in p and app_ok(p["app"]) and p["app"] not in (0, 1):
+            errors.append("app")
+        if "delivery_share" in p and not (isinstance(p["delivery_share"], (int, float)) and 0 <= p["delivery_share"] <= share_hi):
+            errors.append("delivery_share")
+        return {"status": 422 if errors else 200}
+    return predict
+_strict = lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0
+_loose = lambda v: isinstance(v, int) and v >= 0
+predict_ok = _make(_strict, 1)
+predict_bug_bool = _make(_loose, 1)
+predict_bug_share = _make(_strict, 100)
+```
+
+### starter
+```python
+cases = [
+    ("норма", GOOD, 200),
+    # добавьте случаи, на которых ошибаются версии с багами
+]
+
+print(check_status(predict_ok, cases))
+print(check_status(predict_bug_bool, cases))
+print(check_status(predict_bug_share, cases))
+```
+
+### check
+```python
+cs = need('cases', list)
+assert len(cs) >= 3, f'В cases {len(cs)} случаев, нужно не меньше трёх.'
+assert all(isinstance(c, tuple) and len(c) == 3 for c in cs), 'Каждый случай — кортеж (название, запрос, ожидаемый статус).'
+cst, ok, bb, bs = need('check_status'), need('predict_ok'), need('predict_bug_bool'), need('predict_bug_share')
+bad = cst(ok, cs)
+assert bad == [], f'На исправленной проверке не прошли: {bad}. Ожидаемый статус должен быть верным: 422 для плохого запроса, 200 для хорошего.'
+assert cst(bb, cs), 'Ни один случай не ловит predict_bug_bool: добавьте запрос, где app (или другое целое поле) равно True, с ожиданием 422.'
+assert cst(bs, cs), 'Ни один случай не ловит predict_bug_share: добавьте запрос с долей доставки больше 1 (например, 40 — проценты), с ожиданием 422.'
+```
+
+### hint
+Тест ловит ошибку, если на нём версия с багом отвечает не так, как правильная. Для бага с `True` нужен запрос, где `app=True`; правильная проверка ответит 422, а версия с багом — 200.
+
+### hint
+Запрос на основе нормального: `dict(GOOD, app=True)` и `dict(GOOD, delivery_share=40)` — оба с ожиданием 422.
+
+### solution
+```python
+cases = [
+    ("норма", GOOD, 200),
+    ("app = True", dict(GOOD, app=True), 422),
+    ("доставка в процентах", dict(GOOD, delivery_share=40), 422),
+    ("доля доставки 1.0", dict(GOOD, delivery_share=1.0), 200),
+]
+
+print(check_status(predict_ok, cases))
+print(check_status(predict_bug_bool, cases))
+print(check_status(predict_bug_share, cases))
+```
+
+### explain
+Правильная проверка проходит все случаи, а каждая версия с багом проваливает свой: `predict_bug_bool` отвечает 200 на `app=True`, `predict_bug_share` — 200 на долю 40. Случай «доля 1.0 → 200» полезен в другую сторону: он ловит слишком строгую проверку, например `< 1` вместо `<= 1`. Хороший набор тестов проверяет и плохие запросы, и граничные хорошие. Так и пополняют `cases` в работе: нашли поломку — добавили запрос, на котором она видна.

@@ -14,6 +14,10 @@ recap:
 
 Модели sklearn принимают таблицу: строка — объект, столбец — признак. Картинку 32 × 32 вытягиваем в строку из 1024 чисел — и сравниваем модели, как в главах 6–7.
 
+::: note Про время
+В этом уроке почти каждый пример и каждая задача обучают модели на 1500 кадрах по 1024 пикселя. В браузере один запуск занимает от 5 секунд до минуты (первый — дольше: загружается sklearn). Пока ячейка считается, подождите и не запускайте её повторно.
+:::
+
 ```python
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -61,6 +65,8 @@ for name, m in models.items():
 
 ## Где модель ошибается
 
+Пример обучает лес из 100 деревьев — в браузере это 10–15 секунд.
+
 ```python
 import numpy as np
 import pandas as pd
@@ -94,7 +100,7 @@ for ax, k in zip(axes, wrong):
 
 Как читать матрицу: возьмите строку «круассан». Число на диагонали — сколько круассанов узнано, остальные числа строки — куда ушли неузнанные. Сумма строки — сколько всего круассанов в тесте.
 
-Строки — правда, столбцы — ответ модели. Больше всего ошибок между круассаном и печеньем: оба — тёмные пятна средней величины. Маффин с его тёмной шапкой путают редко, пустой поднос — почти никогда.
+Строки — правда, столбцы — ответ модели. Больше всего ошибок между круассаном и печеньем: оба — тёмные пятна средней величины. Маффин с его тёмной шапкой путают редко. Пустой поднос модель узнаёт почти всегда (116 из 118), но посмотрите и на столбец «пусто»: 5 круассанов она приняла за пустую ячейку. Для витрины это ложная тревога — «допеките круассаны», хотя они лежат на месте.
 
 {{practice: confusion}}
 
@@ -129,6 +135,8 @@ plt.imshow(imp, cmap="hot"); plt.colorbar(); plt.title("важность пик�
 ## Аугментация
 
 Отражённый круассан — тоже круассан, сдвинутый — тоже. Значит, можно бесплатно увеличить обучающую выборку: добавить отражённые по горизонтали и случайно сдвинутые копии кадров. Модель увидит выпечку в большем числе положений.
+
+Пример ниже обучает два леса, второй — на втрое большей выборке, поэтому в браузере он считается 15–20 секунд.
 
 ```python
 import numpy as np
@@ -190,7 +198,7 @@ print("с аугментацией: ", round(aug.score(flat(X[te]), y[te]), 3))
   > Каждый кадр получает ровно по копии каждого вида, так что доли классов не меняются ни в одном случае.
 :::
 
-{{practice: augment, bright-aug}}
+{{practice: augment}}
 
 ## Стресс-тест
 
@@ -247,7 +255,7 @@ print(np.allclose(norm(img), norm(dim)))
 :::
 
 ::: tip Аналогия
-Нормировка кадра — как оценка «на фоне класса»: учитель, который ставит оценки относительно среднего по классу, одинаково выделит лучшего ученика и в сильном, и в слабом классе. Модели нужно «темнее остального в этом кадре», а не «темнее 0.4». Хромает аналогия в одном: если в кадре почти нет разброса (пустой ровный поднос), деление на маленький разброс раздувает шум — к стандартному отклонению прибавляют небольшое число.
+Нормировка кадра — как оценка «на фоне класса»: учитель, который ставит оценки относительно среднего по классу, одинаково выделит лучшего ученика и в сильном, и в слабом классе. Модели нужно «темнее остального в этом кадре», а не «темнее 0.4». Одна оговорка: если в кадре почти нет разброса (пустой ровный поднос), деление на маленький разброс раздувает шум — к стандартному отклонению прибавляют небольшое число.
 :::
 
 Это подсказывает лечение: перед моделью нормировать каждый кадр по его собственным среднему и разбросу. Тогда «тёмное» означает «темнее остального в этом кадре», а не «темнее 0.4».
@@ -265,7 +273,7 @@ print(np.allclose(norm(img), norm(dim)))
   > Больше деревьев не научит модель вечернему свету.
 :::
 
-{{practice: stress, light}}
+{{practice: stress, light, bright-aug}}
 
 ## Практика
 
@@ -375,10 +383,13 @@ from sklearn.model_selection import train_test_split as _tts
 from sklearn.ensemble import RandomForestClassifier as _RF
 from sklearn.metrics import confusion_matrix as _cmf
 d0 = _np.load('showcase.npz'); A, y0, c0 = d0['X'].reshape(2000, -1) / 255, d0['y'], [str(c) for c in d0['classes']]
-tr, te = _tts(_np.arange(2000), test_size=0.25, random_state=42, stratify=y0)
-p = _RF(100, random_state=0).fit(A[tr], y0[tr]).predict(A[te])
-M = _pd.DataFrame(_cmf(y0[te], p), index=c0, columns=c0)
+M = _pd.DataFrame([[116, 1, 0, 1], [5, 101, 1, 21], [0, 4, 120, 1], [1, 9, 0, 119]], index=c0, columns=c0)   # эталон
 g = need('cm', _pd.DataFrame)
+if g.shape != M.shape or not (g.values == M.values).all():
+    # не совпало с заранее посчитанным эталоном — считаем честно (на другой версии sklearn числа могут чуть отличаться)
+    tr, te = _tts(_np.arange(2000), test_size=0.25, random_state=42, stratify=y0)
+    p = _RF(100, random_state=0).fit(A[tr], y0[tr]).predict(A[te])
+    M = _pd.DataFrame(_cmf(y0[te], p), index=c0, columns=c0)
 assert [str(i) for i in g.index] == c0 and [str(i) for i in g.columns] == c0, 'Индекс и столбцы cm — названия классов по порядку.'
 assert (g.values == M.values).all(), f'cm не совпадает:\n{M}'
 pc = _pd.Series(_np.diag(M.values) / M.values.sum(1), index=c0).round(3)
@@ -446,8 +457,15 @@ from sklearn.ensemble import RandomForestClassifier
 import numpy as _np
 from sklearn.ensemble import RandomForestClassifier as _RF
 X0, y0, tr0 = need('X'), need('y'), need('tr')
-im = _RF(100, random_state=0).fit(X0[tr0].reshape(len(tr0), -1), y0[tr0]).feature_importances_.reshape(32, 32)
-assert _np.asarray(need('imp')).shape == (32, 32) and _np.allclose(need('imp'), im), 'imp — feature_importances_.reshape(32, 32) леса, обученного на X[tr].'
+g_imp = _np.asarray(need('imp'), dtype=float)
+assert g_imp.shape == (32, 32), f'imp.shape = {g_imp.shape}, а нужно (32, 32): feature_importances_.reshape(32, 32).'
+im = g_imp
+fast = (close(g_imp.sum(), 1, 1e-6) and close(g_imp[8:24, 8:24].sum(), 0.622, 0.0011)
+        and close(g_imp.sum() - g_imp[4:28, 4:28].sum(), 0.172, 0.0011) and _np.unravel_index(g_imp.argmax(), (32, 32)) == (14, 16))
+if not fast:
+    # не совпало с заранее посчитанным эталоном — считаем честно (на другой версии sklearn числа могут чуть отличаться)
+    im = _RF(100, random_state=0).fit(X0[tr0].reshape(len(tr0), -1), y0[tr0]).feature_importances_.reshape(32, 32)
+    assert _np.allclose(g_imp, im), 'imp — feature_importances_.reshape(32, 32) леса, обученного на X[tr].'
 assert close(need('center_share'), round(float(im[8:24, 8:24].sum()), 3), 0.0011), f'center_share = {need("center_share")}.'
 assert close(need('border_share'), round(float(im.sum() - im[4:28, 4:28].sum()), 3), 0.0011), f'border_share = {need("border_share")}.'
 r, c = _np.unravel_index(im.argmax(), im.shape)
@@ -538,6 +556,8 @@ print(acc_by_k, best_k, drop_1_to_40)
 
 Напишите `augment(Z, labels, rng)` как в уроке: исходные кадры + отражённые по горизонтали + сдвинутые на случайные `(dy, dx)` из `rng.integers(-4, 5, size=(len(Z), 2))`. Примените к обучающей части с `rng = np.random.default_rng(0)` и обучите лес `RandomForestClassifier(100, random_state=0)`. Сохраните `acc_base`, `acc_aug` (3 знака на обычном тесте) и `n_train_aug` — размер расширенной выборки.
 
+Задача обучает несколько лесов на тысячах кадров — в браузере это занимает до минуты. После запуска подождите и не нажимайте «Запустить» повторно.
+
 ### setup
 ```python
 import numpy as np
@@ -569,12 +589,15 @@ f = need('augment')
 Za, la = f(X0[tr][:5], y0[tr][:5], _np.random.default_rng(1))
 assert len(Za) == 15 and len(la) == 15, 'augment должна вернуть втрое больше кадров и меток.'
 assert _np.allclose(Za[5], X0[tr][0][:, ::-1]), 'Вторая треть — отражения по горизонтали (Z[:, :, ::-1]).'
-r = _np.random.default_rng(0); sh = r.integers(-4, 5, size=(len(tr), 2))
-Xs = _np.stack([_np.roll(z, tuple(s), axis=(0, 1)) for z, s in zip(X0[tr], sh)])
-Xa = _np.concatenate([X0[tr], X0[tr][:, :, ::-1], Xs]); ya = _np.concatenate([y0[tr]] * 3)
-fl = lambda Z: Z.reshape(len(Z), -1)
-wb = round(_RF(100, random_state=0).fit(fl(X0[tr]), y0[tr]).score(fl(X0[te]), y0[te]), 3)
-wa = round(_RF(100, random_state=0).fit(fl(Xa), ya).score(fl(X0[te]), y0[te]), 3)
+wb, wa = 0.912, 0.964   # эталон
+if not (close(need('acc_base'), wb, 0.005) and close(need('acc_aug'), wa, 0.006)):
+    # не совпало с заранее посчитанным эталоном — считаем честно (на другой версии sklearn числа могут чуть отличаться)
+    r = _np.random.default_rng(0); sh = r.integers(-4, 5, size=(len(tr), 2))
+    Xs = _np.stack([_np.roll(z, tuple(s), axis=(0, 1)) for z, s in zip(X0[tr], sh)])
+    Xa = _np.concatenate([X0[tr], X0[tr][:, :, ::-1], Xs]); ya = _np.concatenate([y0[tr]] * 3)
+    fl = lambda Z: Z.reshape(len(Z), -1)
+    wb = round(_RF(100, random_state=0).fit(fl(X0[tr]), y0[tr]).score(fl(X0[te]), y0[te]), 3)
+    wa = round(_RF(100, random_state=0).fit(fl(Xa), ya).score(fl(X0[te]), y0[te]), 3)
 assert need('n_train_aug') == 4500, f'n_train_aug = {need("n_train_aug")}.'
 assert close(need('acc_base'), wb, 0.005), f'acc_base = {need("acc_base")}, а нужно {wb}.'
 assert close(need('acc_aug'), wa, 0.006), f'acc_aug = {need("acc_aug")}, а нужно {wa}.'
@@ -613,6 +636,8 @@ print(n_train_aug, acc_base, acc_aug)
 ## task: stress | Стресс-тест сдвигом | plus
 
 Сравните устойчивость к сдвигу трёх моделей: лес на пикселях, лес на пикселях с аугментацией (`X_aug`, `y_aug` — в заготовке) и лес на 9 глобальных признаках из урока «Свёртка и фильтры» (функция `global_features` — в заготовке). Все леса — `RandomForestClassifier(100, random_state=0)`. Тестовые кадры сдвиньте на 4 пикселя вправо: `np.roll(X[te], 4, axis=2)`. Сохраните `stress` — DataFrame с индексом `["пиксели", "пиксели + аугментация", "глобальные признаки"]` и столбцами `обычный`, `сдвиг` (доли верных, 3 знака).
+
+Задача обучает несколько лесов на тысячах кадров — в браузере это занимает до минуты. После запуска подождите и не нажимайте «Запустить» повторно.
 
 ### setup
 ```python
@@ -655,15 +680,19 @@ import pandas as _pd
 from sklearn.ensemble import RandomForestClassifier as _RF
 X0, y0, tr0, te0 = need('X'), need('y'), need('tr'), need('te')
 gf, fl = need('global_features'), need('flat')
-Xs = _np.roll(X0[te0], 4, axis=2)
-m1 = _RF(100, random_state=0).fit(fl(X0[tr0]), y0[tr0])
-m2 = _RF(100, random_state=0).fit(fl(need('X_aug')), need('y_aug'))
-m3 = _RF(100, random_state=0).fit(gf(X0[tr0]), y0[tr0])
-w = _pd.DataFrame({'обычный': [m1.score(fl(X0[te0]), y0[te0]), m2.score(fl(X0[te0]), y0[te0]), m3.score(gf(X0[te0]), y0[te0])],
-                   'сдвиг': [m1.score(fl(Xs), y0[te0]), m2.score(fl(Xs), y0[te0]), m3.score(gf(Xs), y0[te0])]},
-                  index=['пиксели', 'пиксели + аугментация', 'глобальные признаки']).round(3)
+idx = ['пиксели', 'пиксели + аугментация', 'глобальные признаки']
+w = _pd.DataFrame({'обычный': [0.912, 0.964, 0.962], 'сдвиг': [0.822, 0.868, 0.95]}, index=idx)   # эталон
 g = need('stress', _pd.DataFrame)
-assert list(g.index) == list(w.index) and list(g.columns) == ['обычный', 'сдвиг'], f'Индекс {list(g.index)}, столбцы {list(g.columns)}.'
+assert list(g.index) == idx and list(g.columns) == ['обычный', 'сдвиг'], f'Индекс {list(g.index)}, столбцы {list(g.columns)}.'
+if not ((g - w).abs() < 0.006).all().all():
+    # не совпало с заранее посчитанным эталоном — считаем честно (на другой версии sklearn числа могут чуть отличаться)
+    Xs = _np.roll(X0[te0], 4, axis=2)
+    m1 = _RF(100, random_state=0).fit(fl(X0[tr0]), y0[tr0])
+    m2 = _RF(100, random_state=0).fit(fl(need('X_aug')), need('y_aug'))
+    m3 = _RF(100, random_state=0).fit(gf(X0[tr0]), y0[tr0])
+    w = _pd.DataFrame({'обычный': [m1.score(fl(X0[te0]), y0[te0]), m2.score(fl(X0[te0]), y0[te0]), m3.score(gf(X0[te0]), y0[te0])],
+                       'сдвиг': [m1.score(fl(Xs), y0[te0]), m2.score(fl(Xs), y0[te0]), m3.score(gf(Xs), y0[te0])]},
+                      index=idx).round(3)
 assert ((g - w).abs() < 0.006).all().all(), f'stress:\n{g}\nа нужно\n{w}'
 ```
 
@@ -701,6 +730,8 @@ print(stress)
 
 Нормировка — не единственное лекарство от вечернего света. Добавьте к обучающей части её копию, где каждый кадр умножен на свой случайный множитель из `rng.uniform(0.6, 1.1, size=len(tr))` (`rng = np.random.default_rng(0)`). Обучите `RandomForestClassifier(100, random_state=0)` на 3000 кадрах. Сохраните `acc_normal` и `acc_dim` — точность на обычном тесте и на тесте × 0.7 (3 знака), и `acc_dim_base` — точность на тесте × 0.7 у леса без аугментации.
 
+Задача обучает несколько лесов на тысячах кадров — в браузере это занимает до минуты. После запуска подождите и не нажимайте «Запустить» повторно.
+
 ### setup
 ```python
 import numpy as np
@@ -726,12 +757,16 @@ import numpy as _np
 from sklearn.ensemble import RandomForestClassifier as _RF
 X0, y0, tr0, te0 = need('X'), need('y'), need('tr'), need('te')
 fl = lambda Z: Z.reshape(len(Z), -1)
-fac = _np.random.default_rng(0).uniform(0.6, 1.1, size=len(tr0))
-Xa = _np.concatenate([X0[tr0], X0[tr0] * fac[:, None, None]]); ya = _np.concatenate([y0[tr0], y0[tr0]])
-m = _RF(100, random_state=0).fit(fl(Xa), ya); b = _RF(100, random_state=0).fit(fl(X0[tr0]), y0[tr0])
-assert close(need('acc_normal'), round(m.score(fl(X0[te0]), y0[te0]), 3), 0.006), f'acc_normal = {need("acc_normal")}.'
-assert close(need('acc_dim'), round(m.score(fl(X0[te0] * 0.7), y0[te0]), 3), 0.006), f'acc_dim = {need("acc_dim")}.'
-assert close(need('acc_dim_base'), round(b.score(fl(X0[te0] * 0.7), y0[te0]), 3), 0.006), f'acc_dim_base = {need("acc_dim_base")}.'
+w = {'acc_normal': 0.94, 'acc_dim': 0.898, 'acc_dim_base': 0.468}   # эталон
+if not all(close(need(k), v, 0.006) for k, v in w.items()):
+    # не совпало с заранее посчитанным эталоном — считаем честно (на другой версии sklearn числа могут чуть отличаться)
+    fac = _np.random.default_rng(0).uniform(0.6, 1.1, size=len(tr0))
+    Xa = _np.concatenate([X0[tr0], X0[tr0] * fac[:, None, None]]); ya = _np.concatenate([y0[tr0], y0[tr0]])
+    m = _RF(100, random_state=0).fit(fl(Xa), ya); b = _RF(100, random_state=0).fit(fl(X0[tr0]), y0[tr0])
+    w = {'acc_normal': round(m.score(fl(X0[te0]), y0[te0]), 3), 'acc_dim': round(m.score(fl(X0[te0] * 0.7), y0[te0]), 3),
+         'acc_dim_base': round(b.score(fl(X0[te0] * 0.7), y0[te0]), 3)}
+for k, v in w.items():
+    assert close(need(k), v, 0.006), f'{k} = {need(k)}, а нужно {v}.'
 ```
 
 ### hint
@@ -767,6 +802,8 @@ print(acc_normal, acc_dim, acc_dim_base)
 
 Проверьте модели на «вечерних» кадрах: тест, умноженный на 0.7. Напишите `normalize(Z)` — для массива кадров `(n, 32, 32)` вернуть таблицу `(n, 1024)`, где каждая строка — кадр минус его среднее, делённый на его стандартное отклонение. Обучите `RandomForestClassifier(100, random_state=0)` на сырых пикселях и на нормированных. Сохраните `light` — словарь `{"сырые": (обычный, тусклый), "нормированные": (обычный, тусклый)}` с долями верных (3 знака).
 
+Задача обучает несколько лесов на тысячах кадров — в браузере это занимает до минуты. После запуска подождите и не нажимайте «Запустить» повторно.
+
 ### setup
 ```python
 import numpy as np
@@ -800,12 +837,15 @@ assert t.shape == (3, 1024), f'normalize(X[:3]).shape = {t.shape}, а нужно
 assert _np.allclose(t.mean(1), 0, atol=1e-9) and _np.allclose(t.std(1), 1), 'У каждой строки среднее 0 и стандартное отклонение 1.'
 fl = lambda Z: Z.reshape(len(Z), -1)
 nz = lambda Z: (fl(Z) - fl(Z).mean(1, keepdims=True)) / fl(Z).std(1, keepdims=True)
-Xd = X0[te0] * 0.7
-a = _RF(100, random_state=0).fit(fl(X0[tr0]), y0[tr0]); b = _RF(100, random_state=0).fit(nz(X0[tr0]), y0[tr0])
-w = {'сырые': (round(a.score(fl(X0[te0]), y0[te0]), 3), round(a.score(fl(Xd), y0[te0]), 3)),
-     'нормированные': (round(b.score(nz(X0[te0]), y0[te0]), 3), round(b.score(nz(Xd), y0[te0]), 3))}
+w = {'сырые': (0.912, 0.468), 'нормированные': (0.94, 0.94)}   # эталон
 g = need('light', dict)
 assert set(g) == set(w), f'Ключи: {list(g)}.'
+if not all(close(g[k][i], w[k][i], 0.006) for k in w for i in range(2)):
+    # не совпало с заранее посчитанным эталоном — считаем честно (на другой версии sklearn числа могут чуть отличаться)
+    Xd = X0[te0] * 0.7
+    a = _RF(100, random_state=0).fit(fl(X0[tr0]), y0[tr0]); b = _RF(100, random_state=0).fit(nz(X0[tr0]), y0[tr0])
+    w = {'сырые': (round(a.score(fl(X0[te0]), y0[te0]), 3), round(a.score(fl(Xd), y0[te0]), 3)),
+         'нормированные': (round(b.score(nz(X0[te0]), y0[te0]), 3), round(b.score(nz(Xd), y0[te0]), 3))}
 assert all(close(g[k][i], w[k][i], 0.006) for k in w for i in range(2)), f'light = {g}, а нужно {w}.'
 ```
 

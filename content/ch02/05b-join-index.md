@@ -96,7 +96,7 @@ print(by_code["revenue2"].tail(2))
 
 - `shops["shop_id"].map(rev)` — для каждого кода из столбца берёт значение из `rev` по индексу. Это LEFT JOIN одного столбца: у EKB-1 пары нет — `NaN`.
 - `set_index("shop_id")` делает коды кофеен индексом справочника. Теперь индексы обеих сторон — коды, и присваивание находит пары.
-- Тот же результат дал бы `merge` из начала урока — он нагляднее и проверяется `validate`.
+- Тот же результат дал бы `merge` из урока «Соединения: JOIN и ловушка дублей» — он нагляднее и проверяется `validate`.
 
 **Дубли в индексе.** Если в индексе правой Series значение повторяется, pandas не знает, какое из них взять, и падает: `ValueError: cannot reindex on an axis with duplicate labels`. Так бывает, если сделать индексом столбец заказов: `df.set_index("shop_id")["amount"]` — у каждой кофейни сотни строк. Это полезная ошибка: она останавливает ту же беду, от которой `merge` защищает `validate`.
 
@@ -119,11 +119,11 @@ print(t["y"].tolist())
 ::: warn Типичные ошибки
 - **Столбец целиком из `NaN`.** Индексы не совпадают по смыслу: справа коды кофеен, слева номера строк. Лечится `map` или `set_index`.
 - **`.tolist()` или `.values`, чтобы «убрать NaN».** Значения лягут по позициям — молча и, скорее всего, не на свои строки. Это хуже, чем `NaN`.
-- **Присваивание после фильтра.** `df["big"] = df[df["amount"] > 500]["amount"]` — у отобранных строк индекс сохранился, и они попадут на свои места, а остальные получат `NaN`. Иногда это и нужно, но знать об этом надо.
+- **Присваивание после фильтра.** `df["big"] = df[df["amount"] > 500]["amount"]` — у отобранных строк индекс сохранился, и они попадут на свои места, а остальные получат `NaN`. Иногда это и нужно — например, столбец «сумма крупного заказа», пустой у мелких, — но знать об этом надо.
 - **`cannot reindex on an axis with duplicate labels`.** В индексе справа повторы — сначала агрегируйте (`groupby`), потом присваивайте.
 :::
 
-{{practice: align}}
+{{practice: map-toy, align}}
 
 ## join и ключи разного типа
 
@@ -293,9 +293,50 @@ print(m["_merge"].tolist())
 - **`concat` без `ignore_index=True`.** Номера строк повторятся, и `loc` начнёт возвращать по две строки.
 :::
 
-{{practice: concat}}
+{{practice: p-concat, concat}}
 
 ## Практика
+
+## task: map-toy | Цена по названию | warmup
+
+В таблице `t` — четыре заказа, в Series `price` — цены, индекс у неё — названия напитков. Добавьте в `t` столбец `price` с ценой каждого заказа: значение ищется по названию напитка, а не по номеру строки. Сохраните в `no_price` число заказов, для которых цены не нашлось.
+
+### starter
+```python
+import pandas as pd
+t = pd.DataFrame({"drink": ["Раф", "Латте", "Чай", "Раф"]})
+price = pd.Series({"Латте": 220, "Раф": 260, "Какао": 200})
+
+```
+
+### check
+```python
+import pandas as _pd
+t = need('t', _pd.DataFrame)
+assert 'price' in t.columns, 'В t нет столбца price.'
+_p = t['price'].tolist()
+assert not t['price'].isna().all(), 'Столбец price целиком из NaN: присваивание Series ищет пару по индексу 0…3, а у price индекс — названия. Ищите по столбцу drink: map.'
+assert [None if _pd.isna(x) else float(x) for x in _p] == [260.0, 220.0, None, 260.0], f'price = {_p}. Цена должна найтись по названию: Раф — 260, Латте — 220, у Чая цены нет.'
+assert need('no_price') == 1, f'no_price = {need("no_price")}. Пустые значения считает isna().sum().'
+```
+
+### hint
+У `price` индекс — названия напитков, у `t` — номера строк. Пару нужно искать по столбцу `drink`.
+
+### hint
+`t["price"] = t["drink"].map(price)`; заказы без цены — `t["price"].isna().sum()`.
+
+### solution
+```python
+import pandas as pd
+t = pd.DataFrame({"drink": ["Раф", "Латте", "Чай", "Раф"]})
+price = pd.Series({"Латте": 220, "Раф": 260, "Какао": 200})
+t["price"] = t["drink"].map(price)
+no_price = int(t["price"].isna().sum())
+```
+
+### explain
+`map` нашёл цену Рафа дважды и Латте один раз; чая в прайсе нет — `NaN`, а «Какао» из прайса просто не понадобилось. Это LEFT JOIN одного столбца: все строки `t` на месте. Присваивание `t["price"] = price` дало бы столбец из `NaN`: индексы 0…3 и названия напитков не пересекаются.
 
 ## task: align | Почините тихий JOIN | base
 
@@ -501,6 +542,34 @@ no_orders = shops[~shops["shop_id"].isin(df["shop_id"])]["shop_id"].tolist()
 
 ### explain
 Без заказов — EKB-1: кофейня открылась 15 октября 2026 года, но в выгрузке её заказов нет. Anti join — проверка, которая находит «потеряшек»: либо кофейня ещё не работает, либо её данные не доехали.
+
+## task: p-concat | Соберите октябрь и ноябрь | warmup
+
+Соберите программу: она склеивает заказы октября и ноября в одну таблицу и выводит число строк в ней.
+
+### parsons
+```python
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+oct_df = df[df["datetime"].str.startswith("2026-10")]
+nov_df = df[df["datetime"].str.startswith("2026-11")]
+both = pd.concat([oct_df, nov_df], ignore_index=True)
+print(len(both))
+```
+
+### check
+```python
+import pandas as _pd
+_d = _pd.read_csv('orders_3m.csv')
+_n = int(_d['datetime'].str.startswith('2026-10').sum() + _d['datetime'].str.startswith('2026-11').sum())
+assert _lines == [str(_n)], f'Должно вывестись {_n}. Сейчас: {_lines}'
+```
+
+### hint
+Сначала загрузка, потом две части по месяцам, потом склейка и вывод.
+
+### hint
+`pd.concat` принимает **список** таблиц: `pd.concat([oct_df, nov_df], ignore_index=True)`.
 
 ## task: concat | Склеить месяцы | plus
 

@@ -119,6 +119,8 @@ plt.show()
 
 Коды частот: `"h"` — час, `"D"` — день, `"W"` — неделя (по воскресеньям), `"MS"` — месяц с меткой на первое число. Вместо `sum` может быть любая агрегация: `mean`, `max`, `count`.
 
+Где стоит метка корзины, зависит от частоты. У `"h"`, `"D"` и `"MS"` метка — **начало** периода (как в игрушечном примере). У `"W"` метка — **конец** недели, воскресенье: корзина с меткой 2026-03-08 — это дни с понедельника 2 марта по воскресенье 8 марта. Так же ведёт себя месячный код `"ME"` (метка — последнее число месяца). Поэтому первая недельная корзина нашего ряда помечена 2026-03-01: 1 марта — воскресенье, и в эту «неделю» попал один день. Последняя помечена 2026-09-06, хотя данных в сентябре нет: в неё попал один день — понедельник 31 августа.
+
 ::: sql
 `s.resample("D").sum()` — это `SELECT date_trunc('day', datetime), SUM(orders) FROM app_orders GROUP BY 1`.
 :::
@@ -146,7 +148,7 @@ print(f"рост за полгода: с {r.iloc[6]:.0f} до {r.iloc[-1]:.0f} �
 - `r.head(8)` — первые 8 значений: шесть пропусков, потом первые средние.
 - `r.iloc[6]` — первое непустое значение (седьмой день), `r.iloc[-1]` — последнее.
 
-Как окно движется, проще увидеть на игрушечном ряду из урока выше (5, 7, 12, 10, 3, 9) с окном в 3 часа: `toy.rolling(3).mean()` даёт пропуск, пропуск, 8, 9.67, 8.33, 7.33 — по значению на каждый час. Корзины resample стоят встык и сжимают ряд.
+Как окно движется, проще увидеть на игрушечном ряду из раздела про resample (5, 7, 12, 10, 3, 9) с окном в 3 часа: `toy.rolling(3).mean()` даёт пропуск, пропуск, 8, 9.67, 8.33, 7.33 — по значению на каждый час. Корзины resample стоят встык и сжимают ряд.
 
 ::: figure ts-rolling-vs-resample
 Сверху: окно из трёх часов сдвигается на час, окна перекрываются, на выходе столько же значений, сколько на входе (первые два — NaN). Снизу: resample("2h") — корзины встык, из шести значений получается три.
@@ -366,7 +368,7 @@ print(day_total, morning, share_morning)
 
 ## task: daily | Дни и недели | warmup
 
-Сохраните `daily` — заказы по дням (сумма) и `weekly_mean` — среднее число заказов в день по неделям (сначала дни, потом среднее по неделям: `daily.resample("W").mean()`). В `best_week` — дату конца недели с наибольшим средним.
+Сохраните `daily` — заказы по дням (сумма), `weekly_mean` — среднее число заказов в день по неделям (сначала дни, потом среднее по неделям: `daily.resample("W").mean()`) и `week_days` — сколько дней попало в каждую неделю (`daily.resample("W").count()`). В `best_week` — метку (воскресенье, конец недели) **полной** недели (7 дней) с наибольшим средним, в `best_mean` — это среднее (1 знак).
 
 ### starter
 ```python
@@ -382,14 +384,19 @@ s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetim
 d0 = s0.resample('D').sum(); w0 = d0.resample('W').mean()
 assert need('daily', _pd.Series).equals(d0), 'daily — s.resample("D").sum().'
 assert _pd.Series(need('weekly_mean')).round(6).equals(w0.round(6)), 'weekly_mean — daily.resample("W").mean().'
-assert need('best_week') == w0.idxmax(), f'best_week = {need("best_week")}.'
+c0 = d0.resample('W').count()
+assert list(_pd.Series(need('week_days')).values) == list(c0.values), 'week_days — daily.resample("W").count().'
+full = w0[c0 == 7]
+assert need('best_week') != w0.idxmax(), f'best_week = {need("best_week")}: в эту «неделю» попал один день, 31 августа. Нужна лучшая полная неделя: week_days == 7.'
+assert need('best_week') == full.idxmax(), f'best_week = {need("best_week")}, а нужно {full.idxmax().date()}.'
+assert close(need('best_mean'), round(full.max(), 1), 0.06), f'best_mean = {need("best_mean")}, а нужно {round(float(full.max()), 1)}.'
 ```
 
 ### hint
-`daily = s.resample("D").sum()`; `weekly_mean.idxmax()`.
+Сначала дневной ряд `s.resample("D").sum()`, потом по нему `resample("W").mean()`. Если взять `s.resample("W").mean()` сразу от часового ряда, получится среднее за час, а не за день.
 
 ### hint
-Сначала дневной ряд `s.resample("D").sum()`, потом по нему `resample("W").mean()`. Если взять `s.resample("W").mean()` сразу от часового ряда, получится среднее за час, а не за день.
+Полные недели — `weekly_mean[week_days == 7]`; у них `.idxmax()` и `.max()`.
 
 ### solution
 ```python
@@ -397,8 +404,15 @@ import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
 daily = s.resample("D").sum()
 weekly_mean = daily.resample("W").mean()
-best_week = weekly_mean.idxmax()
+week_days = daily.resample("W").count()
+full = weekly_mean[week_days == 7]
+best_week = full.idxmax()
+best_mean = round(full.max(), 1)
+print(weekly_mean.idxmax(), week_days[weekly_mean.idxmax()], best_week, best_mean)
 ```
+
+### explain
+Если взять `weekly_mean.idxmax()` без фильтра, «лучшей» окажется неделя с меткой 2026-09-06 — среднее 286, но в ней один день, понедельник 31 августа. Это ловушка неполной корзины из блока «Типичные ошибки»: среднее по одному дню нельзя сравнивать со средним по семи. Лучшая полная неделя кончается 16 августа: 265.6 заказа в день. Первая корзина (2026-03-01) тоже неполная — один день.
 
 ## task: p-roll | Скользящее среднее | warmup
 
@@ -473,7 +487,7 @@ peak_weekend = int(profile["выходные"].idxmax())
 
 ## task: growth | Рост по скользящему среднему | base
 
-По дневному ряду посчитайте 28-дневное скользящее среднее `trend28`. Сохраните `first_value` — его первое непустое значение, `last_value` — последнее (оба целые, округлением) и `growth_pct` — рост в процентах (1 знак).
+По дневному ряду посчитайте 28-дневное скользящее среднее `trend28`. Сохраните `first_value` — его первое непустое значение, `last_value` — последнее (оба целые, округлением) и `growth_pct` — рост в процентах (1 знак). Рост считайте по неокруглённым значениям скользящего среднего, а не по `first_value` и `last_value`.
 
 ### starter
 ```python
@@ -490,14 +504,14 @@ s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetim
 t = s0.resample('D').sum().rolling(28).mean().dropna()
 f, l = round(t.iloc[0]), round(t.iloc[-1])
 assert need('first_value') == f and need('last_value') == l, f'first_value, last_value = {need("first_value")}, {need("last_value")}, а нужно {f}, {l}.'
-assert close(need('growth_pct'), round((t.iloc[-1] / t.iloc[0] - 1) * 100, 1), 0.06), f'growth_pct = {need("growth_pct")}.'
+assert close(need('growth_pct'), round((t.iloc[-1] / t.iloc[0] - 1) * 100, 1), 0.06), f'growth_pct = {need("growth_pct")}, а нужно {round(float((t.iloc[-1] / t.iloc[0] - 1) * 100), 1)}: считайте по неокруглённым t.iloc[0] и t.iloc[-1].'
 ```
 
 ### hint
 `trend28.dropna()` уберёт первые 27 пропусков; первое и последнее — `.iloc[0]`, `.iloc[-1]`.
 
 ### hint
-Рост в процентах: `(last - first) / first * 100`, затем `round(..., 1)`.
+Рост в процентах считайте по неокруглённым значениям: `(t.iloc[-1] / t.iloc[0] - 1) * 100`, затем `round(..., 1)`. Если взять уже округлённые 171 и 258, получится 50.9 вместо 50.6.
 
 ### solution
 ```python

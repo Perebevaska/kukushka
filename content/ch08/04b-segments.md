@@ -14,7 +14,7 @@ recap:
 Общий AUC за май–сентябрь — 0.846. Хорошая новость для отчёта, но менеджер, который ведёт тендеры, спрашивает другое: «А на **моих** заявках модель работает?» Одно число по всем заявкам может прятать сегмент, где модель ошибается систематически. Поэтому качество смотрят ещё и **по сегментам** — каналам, городам, типам клиентов.
 
 ::: tip Аналогия
-«Средняя температура по больнице» — 36.6, а в одной палате у всех жар. Общий показатель честно посчитан, но про палату ничего не говорит. Где аналогия хромает: у AUC всё ещё хитрее — общий может быть **выше** любого из частных, это разберём на примере ниже.
+«Средняя температура по больнице» — 36.6, а в одной палате у всех жар. Общий показатель честно посчитан, но про палату ничего не говорит. У AUC всё ещё хитрее — общий может быть **выше** любого из частных, это разберём на примере ниже.
 :::
 
 ### Игрушечный пример: общий AUC выше, чем в каждом сегменте
@@ -48,6 +48,8 @@ y = [1, 0, 1, 0, 1, 0]
 p = [0.6, 0.5, 0.4, 0.2, 0.1, 0.05]
 print(roc_auc_score(y, p), roc_auc_score(y[:3], p[:3]), roc_auc_score(y[3:], p[3:]))
 ```
+
+{{practice: seg-toy}}
 
 ### На заявках кейтеринга
 
@@ -179,6 +181,8 @@ for ch in ["сайт", "выставка", "тендер"]:
 
 **Что получилось.** По всем заявкам AUC 0.846, интервал 0.82–0.87 — узкий: 1 728 заявок и 230 договоров. У сайта (71 договор) 0.84–0.91. У выставок 0.85–0.99, у тендеров 0.60–0.97 — эти интервалы такие широкие, что сравнивать каналы между собой бессмысленно.
 
+Точку отсчёта тоже считают кодом. Правило «повторный клиент — первым» — это столбец `repeat_client` (1 у повторных, 0 у остальных), подставленный вместо прогноза: `roc_auc_score(live["converted"], live["repeat_client"])` даёт **0.671**. У правила всего два значения, поэтому большинство пар — ничьи (оба клиента новые или оба повторные), а ничья в AUC считается за половину пары. Отсюда и скромные 0.67 при том, что повторные клиенты заключают договор в 41 % случаев, а новые — в 9 %.
+
 Так выглядит отчёт по этим числам:
 
 ::: tip Образец отчёта о метрике
@@ -205,7 +209,7 @@ for ch in ["сайт", "выставка", "тендер"]:
 - **Лучший сегмент в заголовке.** Выбирать «самое красивое число» из десятка сегментов — та же подгонка, что подбор порога на тесте.
 :::
 
-{{practice: metric-report}}
+{{practice: metric-report, rule-base, report-text}}
 
 ## Практика
 
@@ -462,3 +466,256 @@ wider = round((rep_social["ci_high"] - rep_social["ci_low"]) / (rep_all["ci_high
 
 ### explain
 По всем заявкам: AUC 0.846, интервал 0.819–0.866. По соцсетям: 0.852, интервал 0.79–0.92 — почти втрое шире: 22 договора против 230. Точечные AUC почти равны, но второе число знает о мире гораздо меньше. А строки `pred` и `fact` в отчёте по соцсетям (0.025 против 0.068) — главная находка: функция-отчёт выводит её автоматически, без отдельного поиска. Такую функцию стоит держать в своём модуле и вызывать для каждой метрики, которую вы показываете людям.
+
+## task: seg-toy | Игрушечный пример своими руками | warmup
+
+Восемь заявок из двух каналов уже лежат в таблице `t`. Посчитайте `auc_all` — AUC по всем восьми заявкам и `auc_seg` — Series с AUC внутри каждого канала (индекс — канал). Округлите до 2 знаков. В `higher` сохраните `True`, если общий AUC выше AUC в каждом из каналов.
+
+### starter
+```python
+import pandas as pd
+from sklearn.metrics import roc_auc_score
+
+t = pd.DataFrame({
+    "channel": ["рекомендация"] * 4 + ["соцсети"] * 4,
+    "p": [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+    "deal": [1, 1, 0, 1, 0, 1, 0, 0],
+})
+
+```
+
+### check
+```python
+import pandas as _pd
+from sklearn.metrics import roc_auc_score as _auc
+_t = _pd.DataFrame({"channel": ["рекомендация"] * 4 + ["соцсети"] * 4,
+                    "p": [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1], "deal": [1, 1, 0, 1, 0, 1, 0, 0]})
+_a = _auc(_t['deal'], _t['p'])
+assert close(need('auc_all'), _a, 0.006), f'auc_all = {need("auc_all")}, а нужно около {round(_a, 2)}: roc_auc_score(t["deal"], t["p"]).'
+s = need('auc_seg', _pd.Series)
+assert sorted(s.index) == ['рекомендация', 'соцсети'], f'Индекс auc_seg: {list(s.index)} — нужны два канала.'
+for ch, g in _t.groupby('channel'):
+    _v = _auc(g['deal'], g['p'])
+    assert close(s[ch], _v, 0.006), f'{ch}: {s[ch]}, а нужно около {round(_v, 2)} — AUC только по заявкам этого канала.'
+assert need('higher') == True, 'higher: общий AUC 0.81 выше, чем 0.67 в каждом канале, — нужно True.'
+```
+
+### hint
+AUC внутри канала — та же функция, применённая к куску таблицы: `t.groupby("channel")[["deal", "p"]].apply(...)`, как функция `seg` в теории.
+
+### hint
+```python
+auc_all = round(roc_auc_score(t["deal"], t["p"]), 2)
+auc_seg = t.groupby("channel")[["deal", "p"]].apply(lambda g: roc_auc_score(g["deal"], g["p"])).round(2)
+higher = bool(auc_all > auc_seg.max())
+```
+
+### solution
+```python
+import pandas as pd
+from sklearn.metrics import roc_auc_score
+
+t = pd.DataFrame({
+    "channel": ["рекомендация"] * 4 + ["соцсети"] * 4,
+    "p": [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+    "deal": [1, 1, 0, 1, 0, 1, 0, 0],
+})
+auc_all = round(roc_auc_score(t["deal"], t["p"]), 2)
+auc_seg = t.groupby("channel")[["deal", "p"]].apply(lambda g: roc_auc_score(g["deal"], g["p"])).round(2)
+higher = bool(auc_all > auc_seg.max())
+```
+
+### explain
+Внутри каждого канала AUC 0.67 (из трёх пар верно упорядочены две), а по всем заявкам — 0.81 (13 пар из 16). Все прогнозы рекомендаций выше всех прогнозов соцсетей, а договоров в рекомендациях три из четырёх против одного из четырёх. Пары «договор из рекомендаций — отказ из соцсетей» модель упорядочивает верно всегда, и они поднимают общий AUC. `lambda g: ...` — короткая функция в одну строку, то же, что `def seg(g): return ...`.
+
+## task: rule-base | Модель против простого правила по каналам | base
+
+Сравните модель с правилом «повторный клиент — первым» внутри каждого канала. Заявки мая–сентября с прогнозом `p` уже лежат в `live`. Сохраните `rule_auc` — AUC правила по всем заявкам (`repeat_client` вместо прогноза, 3 знака), Series `gain` (индекс — канал) — на сколько AUC модели выше AUC правила внутри канала (3 знака), и в `least` — канал, где модель добавляет к правилу меньше всего.
+
+### setup
+```python
+import numpy as np
+import pandas as pd
+from sklearn.pipeline import make_pipeline
+from sklearn.compose import make_column_transformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+d = pd.read_csv("catering_leads.csv", parse_dates=["created"])
+d["month"] = d["created"].dt.month
+num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting"]
+cat = ["channel", "event_type", "city", "company_size", "manager"]
+prep = make_column_transformer(
+    (make_pipeline(SimpleImputer(strategy="median", add_indicator=True), StandardScaler()), num),
+    (make_pipeline(SimpleImputer(strategy="constant", fill_value="не указан"),
+                   OneHotEncoder(handle_unknown="ignore")), cat),
+)
+model = make_pipeline(prep, LogisticRegression(max_iter=1000))
+train = d[d["month"] <= 4]
+model.fit(train[num + cat], train["converted"])
+live = d[d["month"] >= 5].copy()
+live["p"] = model.predict_proba(live[num + cat])[:, 1]
+```
+
+### starter
+```python
+import pandas as pd
+from sklearn.metrics import roc_auc_score
+# готово, как в теории: d, model, live (заявки мая–сентября, столбец p — прогноз)
+
+```
+
+### check
+```python
+from sklearn.metrics import roc_auc_score as _auc
+import pandas as _pd
+L = live
+_r = _auc(L['converted'], L['repeat_client'])
+assert close(need('rule_auc'), _r, 0.0015), f'rule_auc = {need("rule_auc")}, а нужно около {round(_r, 3)}: roc_auc_score(live["converted"], live["repeat_client"]).'
+_m = L.groupby('channel')[['converted', 'p']].apply(lambda g: _auc(g['converted'], g['p']))
+_q = L.groupby('channel')[['converted', 'repeat_client']].apply(lambda g: _auc(g['converted'], g['repeat_client']))
+_g = _m - _q
+s = need('gain', _pd.Series)
+assert sorted(s.index) == sorted(_g.index), f'Индекс gain: {list(s.index)} — нужны все шесть каналов.'
+for ch in _g.index:
+    assert not close(s[ch], -_g[ch], 0.0015), f'{ch}: {s[ch]} — знак наоборот: из AUC модели вычитают AUC правила.'
+    assert close(s[ch], _g[ch], 0.0015), f'{ch}: gain = {s[ch]}, а нужно около {round(float(_g[ch]), 3)}.'
+assert need('least') == _g.idxmin(), f'least = {need("least")!r}, а нужно {_g.idxmin()!r}: наименьший gain.'
+```
+
+### hint
+AUC внутри канала — как в функции `seg` из теории, только отдельно для `p` и для `repeat_client`: `live.groupby("channel")[["converted", "p"]].apply(lambda g: roc_auc_score(g["converted"], g["p"]))`.
+
+### hint
+```python
+m = live.groupby("channel")[["converted", "p"]].apply(lambda g: roc_auc_score(g["converted"], g["p"]))
+r = live.groupby("channel")[["converted", "repeat_client"]].apply(lambda g: roc_auc_score(g["converted"], g["repeat_client"]))
+gain = (m - r).round(3)
+least = ...
+```
+
+### solution
+```python
+import pandas as pd
+from sklearn.metrics import roc_auc_score
+
+rule_auc = round(roc_auc_score(live["converted"], live["repeat_client"]), 3)
+m = live.groupby("channel")[["converted", "p"]].apply(lambda g: roc_auc_score(g["converted"], g["p"]))
+r = live.groupby("channel")[["converted", "repeat_client"]].apply(lambda g: roc_auc_score(g["converted"], g["repeat_client"]))
+gain = (m - r).round(3)
+least = gain.idxmin()
+```
+
+### explain
+По всем заявкам правило даёт 0.671, модель — 0.846. Внутри каналов модель выше правила везде: на 0.16–0.22 в пяти каналах и только на 0.085 в рекомендациях. Там 37 % заявок — от повторных клиентов (в остальных каналах 10–15 %), и правило само по себе неплохо сортирует. Для отчёта это строка «С чем сравнить»: в рекомендациях выигрыш от модели скромный, и если модель там сломается, менеджеры почти не потеряют, переключившись на правило.
+
+## task: report-text | Отчёт словами | base
+
+Метрику мало посчитать — её надо написать так, чтобы из текста нельзя было сделать неверный вывод. Соберите f-строку `report` для канала «соцсети» по образцу из теории. В ней должны быть: число заявок и договоров, AUC (3 знака), 95 % интервал (2 знака, функция `auc_ci` из теории), средний прогноз и фактическая конверсия (3 знака). Например: `"Соцсети: AUC 0.852 (95 % ДИ 0.79–0.92) на 324 заявках, 22 договора. Прогноз 0.025 при факте 0.068."` — но числа должны браться из переменных, а не быть вписаны руками.
+
+### setup
+```python
+import numpy as np
+import pandas as pd
+from sklearn.pipeline import make_pipeline
+from sklearn.compose import make_column_transformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+d = pd.read_csv("catering_leads.csv", parse_dates=["created"])
+d["month"] = d["created"].dt.month
+num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting"]
+cat = ["channel", "event_type", "city", "company_size", "manager"]
+prep = make_column_transformer(
+    (make_pipeline(SimpleImputer(strategy="median", add_indicator=True), StandardScaler()), num),
+    (make_pipeline(SimpleImputer(strategy="constant", fill_value="не указан"),
+                   OneHotEncoder(handle_unknown="ignore")), cat),
+)
+model = make_pipeline(prep, LogisticRegression(max_iter=1000))
+train = d[d["month"] <= 4]
+model.fit(train[num + cat], train["converted"])
+live = d[d["month"] >= 5].copy()
+live["p"] = model.predict_proba(live[num + cat])[:, 1]
+```
+
+### starter
+```python
+import numpy as np
+import pandas as pd
+from sklearn.metrics import roc_auc_score
+# готово, как в теории: d, model, live (заявки мая–сентября, столбец p — прогноз)
+
+def auc_ci(y, p, n_boot=200, seed=0):
+    y, p = np.asarray(y), np.asarray(p)
+    rng = np.random.default_rng(seed)
+    aucs = []
+    for _ in range(n_boot):
+        i = rng.integers(0, len(y), len(y))
+        if y[i].min() == y[i].max():
+            continue
+        aucs.append(roc_auc_score(y[i], p[i]))
+    return np.percentile(aucs, [2.5, 97.5])
+
+soc = live[live["channel"] == "соцсети"]
+
+```
+
+### check
+```python
+from sklearn.metrics import roc_auc_score as _auc
+L = live[live['channel'] == 'соцсети']
+r = need('report', str)
+_must = {
+    'число заявок': str(len(L)),
+    'число договоров': str(int(L['converted'].sum())),
+    'AUC': f"{_auc(L['converted'], L['p']):.3f}",
+    'средний прогноз': f"{L['p'].mean():.3f}",
+    'конверсия': f"{L['converted'].mean():.3f}",
+    'нижняя граница ДИ': '0.79',
+    'верхняя граница ДИ': '0.92',
+}
+for what, val in _must.items():
+    assert val in r, f'В отчёте не нашёл {what} ({val}). Сейчас report = {r!r}'
+assert '{' not in r, f'В строке остались фигурные скобки — не забыли букву f перед кавычками? report = {r!r}'
+```
+
+### hint
+Все числа уже есть: `len(soc)`, `soc["converted"].sum()`, `roc_auc_score(soc["converted"], soc["p"])`, `soc["p"].mean()`, `soc["converted"].mean()` и `lo, hi = auc_ci(soc["converted"], soc["p"])`. Формат «3 знака» в f-строке — `{x:.3f}`.
+
+### hint
+```python
+lo, hi = auc_ci(soc["converted"], soc["p"])
+auc = roc_auc_score(soc["converted"], soc["p"])
+report = (f"Соцсети: AUC {auc:.3f} (95 % ДИ {lo:.2f}–{hi:.2f}) на {len(soc)} заявках, "
+          f"{...} договора. Прогноз {...:.3f} при факте {...:.3f}.")
+```
+
+### solution
+```python
+import numpy as np
+import pandas as pd
+from sklearn.metrics import roc_auc_score
+
+def auc_ci(y, p, n_boot=200, seed=0):
+    y, p = np.asarray(y), np.asarray(p)
+    rng = np.random.default_rng(seed)
+    aucs = []
+    for _ in range(n_boot):
+        i = rng.integers(0, len(y), len(y))
+        if y[i].min() == y[i].max():
+            continue
+        aucs.append(roc_auc_score(y[i], p[i]))
+    return np.percentile(aucs, [2.5, 97.5])
+
+soc = live[live["channel"] == "соцсети"]
+lo, hi = auc_ci(soc["converted"], soc["p"])
+auc = roc_auc_score(soc["converted"], soc["p"])
+report = (f"Соцсети: AUC {auc:.3f} (95 % ДИ {lo:.2f}–{hi:.2f}) на {len(soc)} заявках, "
+          f"{soc['converted'].sum()} договора. Прогноз {soc['p'].mean():.3f} при факте {soc['converted'].mean():.3f}.")
+print(report)
+```
+
+### explain
+Получилось: «Соцсети: AUC 0.852 (95 % ДИ 0.79–0.92) на 324 заявках, 22 договора. Прогноз 0.025 при факте 0.068.» Одна строка закрывает три вопроса читателя: на скольких данных (22 договора — мало), насколько число может прыгать (интервал шириной 0.13) и можно ли верить вероятностям (нет: занижены почти втрое). Строку собирают кодом, а не переписывают руками: при следующем пересчёте все числа обновятся сами, и опечатка в отчёте не появится.

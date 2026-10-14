@@ -111,6 +111,13 @@ def _no_input(*args, **kwargs):
 
 
 _SPECIFIC = [
+    (r"feature names should match|Feature names unseen at fit time|Feature names seen at fit time, yet now missing|Feature names must be in the same order",
+     'Столбцы новых данных не совпадают со столбцами, на которых модель обучали: какого-то нет, есть лишний или другой порядок. '
+     'Выровняйте их: X_new = X_new.reindex(columns=X_train.columns, fill_value=0) — или соберите предобработку и модель в один Pipeline, '
+     'чтобы новые данные проходили те же шаги, что и обучающие.'),
+    (r"X has \d+ features?, but \w+ is expecting \d+ features?",
+     'Модели подали другое число столбцов, чем при обучении. Обычно новые данные не прошли ту же предобработку '
+     '(get_dummies дал другой набор столбцов, забыли масштабирование). Выровняйте столбцы через reindex(columns=X_train.columns, fill_value=0) или используйте Pipeline.'),
     (r"unterminated (triple-quoted )?string literal|EOL while scanning string literal",
      'Не закрыта кавычка: строка должна начинаться и заканчиваться кавычкой одного вида — "…" или \'…\'.'),
     (r"Maybe you meant '==' or ':=' instead of '='",

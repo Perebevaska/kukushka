@@ -79,7 +79,7 @@ checks = [450, 1280, 320, 990, 610, 1150]
 ### check
 ```python
 assert need('top2_sum') == 2430, f'top2_sum = {need("top2_sum")}. Два крупнейших — 1280 и 1150.'
-assert not has_literal(1280) or _code.count('1280') == 1, 'Найдите крупнейшие чеки кодом.'
+assert not has_literal(2430) and _code.count('1280') == 1 and _code.count('1150') == 1, 'Найдите крупнейшие чеки кодом: числа 1280, 1150 и 2430 не нужно писать вручную — они должны получиться из списка checks.'
 ```
 
 ### hint

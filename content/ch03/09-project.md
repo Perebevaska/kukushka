@@ -532,7 +532,7 @@ assert need('n_orphans') == len(set(o['client_id'].dropna()) - set(w['client_id'
 ```
 
 ### hint
-Глава 2, уроки «Группировки: GROUP BY и HAVING» и «Соединения: JOIN и UNION»: `stats = orders.groupby("client_id").agg(orders=("order_id", "count"), revenue=("amount", "sum"))`, затем `clients.merge(stats, on="client_id", how="left")`.
+Глава 2, уроки «Группировки: GROUP BY и HAVING» и «Соединения: JOIN и ловушка дублей»: `stats = orders.groupby("client_id").agg(orders=("order_id", "count"), revenue=("amount", "sum"))`, затем `clients.merge(stats, on="client_id", how="left")`.
 
 ### hint
 После LEFT JOIN у гостей без заказов — `NaN`. Здесь пусто действительно значит ноль: `fillna(0)`.
@@ -560,7 +560,7 @@ guests.head()
 
 - `clients` — число анкет;
 - `active_pct` — доля гостей с заказами, % (1 знак);
-- `avg_revenue` — средняя выручка на гостя за осень, включая гостей без заказов (округлить до целого).
+- `avg_revenue` — средняя выручка на гостя за осень, включая гостей без заказов, округлённая до целого рубля: `round(0)` (подойдёт и дробная запись вида `702.0`, и `astype(int)` после округления).
 
 Отсортируйте по `clients` по убыванию. В `best_source` сохраните источник с наибольшей `avg_revenue` среди групп, где **не меньше 20 гостей**.
 

@@ -43,7 +43,7 @@ print(f"AUC {cv_auc(g):.3f}, F1 {cv_auc(g, 'f1'):.3f}")
 Параметр `scoring` говорит `cross_val_score`, какую метрику считать на каждом фолде: по умолчанию это accuracy, `"roc_auc"` — ROC-AUC из урока «Порог, PR- и ROC-кривые», `"f1"` — F1 из урока «Precision, recall и F1». Отправная точка — AUC около 0.877 и F1 около 0.62. Тест мы не трогаем: он нужен для финальной проверки, а выбирать признаки по нему — то же подглядывание, что и выбор глубины дерева (глава 6).
 
 ::: note Небольшая неточность
-Здесь масштабировщик учится на всей обучающей части, а потом её режут на фолды — средние «видят» и проверочный фолд. На наших данных это сдвигает оценку в четвёртом знаке. Как убрать даже эту мелочь, покажет урок «Pipeline: предобработка и модель вместе» (Pipeline).
+Здесь масштабировщик учится на всей обучающей части, а потом её режут на фолды — средние «видят» и проверочный фолд. На наших данных это сдвигает оценку лишь в пятом знаке (0.87685 против 0.87684 при честной подготовке внутри фолдов). Как убрать даже эту мелочь, покажет урок «Pipeline: предобработка и модель вместе» (Pipeline).
 :::
 
 Первая идея: визиты за 90 дней непривычны, пересчитаем их в визиты в месяц.
@@ -139,7 +139,7 @@ share = pd.cut(g["delivery_share"], [-0.01, 0.2, 0.5, 1])
 print(g.pivot_table(index="complaints", columns=share, values="churned", aggfunc="mean", observed=True).round(2))
 ```
 
-Без жалоб гости с большой долей доставки уходят даже реже остальных. С одной жалобой гости, которые мало заказывают доставку, уходят в 41 % случаев, а те, у кого доставка — больше половины заказов, — почти все. Видимо, жалуются как раз на доставку, и для тех, кто ей живёт, это повод уйти. Логистическая регрессия складывает «вклад жалоб» и «вклад доставки» по отдельности и такой эффект «вместе сильнее, чем по отдельности» поймать не может. Подскажем ей произведением:
+Без жалоб гости с большой долей доставки уходят не чаще остальных (13 % против 27 % и 11 %). С одной жалобой гости, которые мало заказывают доставку, уходят в 41 % случаев, а те, у кого доставка — больше половины заказов, — почти все. Видимо, жалуются как раз на доставку, и для тех, кто ей живёт, это повод уйти. Логистическая регрессия складывает «вклад жалоб» и «вклад доставки» по отдельности и такой эффект «вместе сильнее, чем по отдельности» поймать не может. Подскажем ей произведением:
 
 ::: figure interaction-grid
 Доля ушедших по жалобам и доле доставки. Без жалоб доставка почти ни на что не влияет, с одной жалобой — уход растёт с 41 % до 97 %. Эффект одного признака зависит от другого — это взаимодействие.
@@ -196,7 +196,7 @@ print(f"и с флагом новичка: {cv_auc(g):.3f}, F1 {cv_auc(g, 'f1'):
 
 Флаги и взаимодействия подсказывают модели ступеньки и сочетания. Как подсказать ей форму плавной связи, отличить настоящий прирост от удачной нарезки фолдов и понять, какие признаки модель на самом деле использует, — в уроке «Форма связи и важность признаков».
 
-{{practice: is-new, cxd, pairs}}
+{{practice: is-new, cxd, both, pairs}}
 
 ## Практика
 
@@ -382,6 +382,110 @@ print(auc_base, auc_vpm, auc_new)
 
 ### explain
 Визиты в месяц ничего не добавили — это тот же столбец в других единицах. Флаг новичка добавил почти 0.02: он описывает ступеньку, которую линейная модель сама не видит.
+
+## task: both | Два признака: CV, потом тест | plus
+
+Соберите оба признака урока в одной копии таблицы: `f = g.copy()`, в ней `is_new` (стаж ≤ 3 месяцев, 0/1) и `compl_x_deliv` (жалобы × доля доставки). Сравните с исходной таблицей кросс-валидацией на одних фолдах (функция `cv_auc` уже в заготовке), все числа — 3 знака:
+
+- `auc_base`, `f1_base` — CV-AUC и CV-F1 на исходной `g`;
+- `auc_both`, `f1_both` — то же на `f`.
+
+Признаки выбраны по CV — теперь один раз проверьте на тесте. Соберите из `f` таблицу признаков так же, как внутри `cv_auc` (`get_dummies`, `fillna`, то же `train_test_split`), обучите `StandardScaler` на обучающей части и `LogisticRegression(max_iter=2000)` на отмасштабированной обучающей части. Сохраните `test_auc` (по `predict_proba`) и `test_f1` (по `predict`) на тесте.
+
+### starter
+```python
+import pandas as pd
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score, f1_score
+
+g = pd.read_csv("guests_churn.csv")
+y = g["churned"]
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+
+def cv_auc(df, scoring="roc_auc"):
+    X = pd.get_dummies(df.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+    Xs = StandardScaler().fit_transform(X_train)
+    return cross_val_score(LogisticRegression(max_iter=2000), Xs, y_train, cv=kf, scoring=scoring).mean()
+
+```
+
+### check
+```python
+import pandas as _pd
+from sklearn.model_selection import train_test_split as _tts, KFold as _KF, cross_val_score as _cvs
+from sklearn.preprocessing import StandardScaler as _SS
+from sklearn.linear_model import LogisticRegression as _LR
+from sklearn.metrics import roc_auc_score as _auc, f1_score as _f1
+_g = _pd.read_csv('guests_churn.csv')
+_y = _g['churned']
+_kf = _KF(n_splits=5, shuffle=True, random_state=42)
+def _split(df):
+    X = _pd.get_dummies(df.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})
+    return _tts(X, _y, test_size=0.25, random_state=42, stratify=_y)
+def _cv(df, sc):
+    a, b, c, d = _split(df)
+    return round(_cvs(_LR(max_iter=2000), _SS().fit_transform(a), c, cv=_kf, scoring=sc).mean(), 3)
+_f = _g.copy()
+_f['is_new'] = (_f['tenure_months'] <= 3).astype(int)
+_f['compl_x_deliv'] = _f['complaints'] * _f['delivery_share']
+_w = {'auc_base': _cv(_g, 'roc_auc'), 'f1_base': _cv(_g, 'f1'), 'auc_both': _cv(_f, 'roc_auc'), 'f1_both': _cv(_f, 'f1')}
+for _k, _v in _w.items():
+    _how = 'исходной таблице g' if _k.endswith('base') else 'копии f с is_new и compl_x_deliv'
+    assert close(need(_k), _v), f'{_k} = {need(_k)}, а ожидалось {_v}. Это cv_auc на {_how}; для F1 — scoring="f1".'
+_a, _b, _c, _d = _split(_f)
+_s = _SS().fit(_a)
+_m = _LR(max_iter=2000).fit(_s.transform(_a), _c)
+_ta = round(_auc(_d, _m.predict_proba(_s.transform(_b))[:, 1]), 3)
+_tf = round(_f1(_d, _m.predict(_s.transform(_b))), 3)
+assert close(need('test_auc'), _ta), f'test_auc = {need("test_auc")}, а ожидалось {_ta}. Масштаб учите на обучающей части f, тест только преобразуйте; AUC — по predict_proba(...)[:, 1].'
+assert close(need('test_f1'), _tf), f'test_f1 = {need("test_f1")}, а ожидалось {_tf}. F1 — по ответам predict на отмасштабированном тесте.'
+```
+
+### hint
+CV: `auc_both = round(cv_auc(f), 3)`, `f1_both = round(cv_auc(f, "f1"), 3)`; для базы — то же с `g`.
+
+### hint
+Тест: `X = pd.get_dummies(f.drop(columns=[...]), dtype=int).fillna({"avg_check": 0})`, тот же `train_test_split`, затем `scaler = StandardScaler().fit(X_train)` и `scaler.transform(X_test)` для предсказаний.
+
+### solution
+```python
+import pandas as pd
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score, f1_score
+
+g = pd.read_csv("guests_churn.csv")
+y = g["churned"]
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+
+def cv_auc(df, scoring="roc_auc"):
+    X = pd.get_dummies(df.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+    Xs = StandardScaler().fit_transform(X_train)
+    return cross_val_score(LogisticRegression(max_iter=2000), Xs, y_train, cv=kf, scoring=scoring).mean()
+
+f = g.copy()
+f["is_new"] = (f["tenure_months"] <= 3).astype(int)
+f["compl_x_deliv"] = f["complaints"] * f["delivery_share"]
+
+auc_base, f1_base = round(cv_auc(g), 3), round(cv_auc(g, "f1"), 3)
+auc_both, f1_both = round(cv_auc(f), 3), round(cv_auc(f, "f1"), 3)
+
+X = pd.get_dummies(f.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+scaler = StandardScaler().fit(X_train)
+model = LogisticRegression(max_iter=2000).fit(scaler.transform(X_train), y_train)
+test_auc = round(roc_auc_score(y_test, model.predict_proba(scaler.transform(X_test))[:, 1]), 3)
+test_f1 = round(f1_score(y_test, model.predict(scaler.transform(X_test))), 3)
+print(auc_base, f1_base, auc_both, f1_both, test_auc, test_f1)
+```
+
+### explain
+На кросс-валидации два признака подняли AUC с 0.877 до 0.904, F1 — с 0.619 до 0.667. На тесте модель с ними даёт AUC 0.934 и F1 0.753. Тест здесь просто оказался «удобнее» фолдов: та же модель без новых признаков дала бы на нём 0.897 и 0.689, так что прирост на тесте того же порядка, что и на CV. Решение принимали по CV, а тест открыли один раз — поэтому его числу можно верить.
 
 ## task: pairs | Поиск взаимодействий перебором | star
 

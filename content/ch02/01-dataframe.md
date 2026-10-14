@@ -7,7 +7,6 @@ recap:
   - "`pd.read_csv(\"файл.csv\")` — загрузить CSV. `df.head()`, `df.shape`, `df.columns`, `df.dtypes`, `df.info()` — первый осмотр."
   - "`df[\"amount\"]` — столбец; у него есть `sum()`, `mean()`, `median()`, `min()`, `max()`, `count()`, `nunique()`, `value_counts()`."
   - "Русские выгрузки: `pd.read_csv(f, sep=\";\", encoding=\"cp1251\", decimal=\",\", thousands=\" \")`. После загрузки — всегда `df.dtypes`: числа не должны остаться `str`."
-  - "`read_csv` читает и по адресу в интернете; Google Таблица — через адрес `…/d/<id>/export?format=csv&gid=<лист>` при доступе «все, у кого есть ссылка»."
   - "Пустые ячейки в pandas — `NaN`. `isna()` / `notna()` — проверка; `mean()` от `True/False` — доля."
   - "Последнее выражение в ячейке показывается само — как в Jupyter. Таблицы — таблицей."
 ---
@@ -88,7 +87,7 @@ print(df.dtypes)         # типы столбцов
 Типы pandas определил сам: `int64` — целые числа, `str` — текст. Всё, что в главе 1 мы превращали `int(...)` руками, здесь уже сделано.
 
 ::: note Почему внизу `dtype: object`
-Последняя строка вывода — `dtype: object` — это тип самого списка типов, а не какого-то столбца. На неё не обращайте внимания. И ещё: в pandas 2 (он стоит во многих рабочих Jupyter) текстовые столбцы показываются не как `str`, а как `object`. Для нас это одно и то же — текст.
+`dtype: object` внизу — это тип самого вывода `dtypes`, а не какого-то столбца: не обращайте на него внимания. И ещё: в pandas 2 (он стоит во многих рабочих Jupyter) текстовые столбцы показываются не как `str`, а как `object`. Для нас это одно и то же — текст.
 :::
 
 `info()` собирает всё сразу и показывает, сколько в каждом столбце **непустых** значений:
@@ -224,68 +223,9 @@ prices.to_csv("для_excel.csv", sep=";", decimal=",", encoding="utf-8-sig", in
   > `round` работает с числами, а здесь строки. Чинить надо при чтении.
 :::
 
+`read_csv` читает и по адресу в интернете — например, выгрузку Google Таблицы. В браузере курса интернета нет, поэтому это разобрано в уроке «Своё рабочее место — uv и Jupyter», где вы работаете на своём компьютере.
+
 {{practice: supplier}}
-
-## Данные по ссылке и из Google Sheets
-
-Файл не обязательно скачивать: `read_csv` принимает и **адрес в интернете** — сам скачает и прочитает. Так удобно брать открытые данные или таблицу, которую коллеги ведут онлайн:
-
-```python static
-import pandas as pd
-
-url = "https://example.com/open-data/coffee_prices.csv"   # любой адрес, который отдаёт CSV
-df = pd.read_csv(url, sep=";", encoding="utf-8")
-```
-
-Все параметры из предыдущего раздела работают так же. В браузерной версии курса выход в интернет закрыт, поэтому этот код — для вашего Jupyter.
-
-**Google Sheets.** План продаж «Зерна» ведут в Google Таблице. Её адрес в браузере выглядит так:
-
-```text
-https://docs.google.com/spreadsheets/d/1AbC-zerno_Plan2026/edit#gid=0
-```
-
-Это страница редактора, а не CSV. Но у каждой таблицы есть адрес **выгрузки**: часть `edit…` заменяется на `export?format=csv&gid=…`, где `gid` — номер листа (его видно в адресе после `gid=`, у первого листа обычно `0`):
-
-```text
-https://docs.google.com/spreadsheets/d/1AbC-zerno_Plan2026/export?format=csv&gid=0
-```
-
-```python static
-import pandas as pd
-
-sheet_id = "1AbC-zerno_Plan2026"
-gid = 0
-plan = pd.read_csv(f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}")
-```
-
-Чтобы это сработало, у таблицы должен быть доступ «Все, у кого есть ссылка» (просмотр). Закрытую таблицу так не прочитать — нужен вход через API, это отдельная тема.
-
-Собрать адрес выгрузки из обычной ссылки — чистая работа со строками, её можно делать и без интернета:
-
-```python
-link = "https://docs.google.com/spreadsheets/d/1AbC-zerno_Plan2026/edit#gid=0"
-
-sheet_id = link.split("/d/")[1].split("/")[0]   # всё между «/d/» и следующим «/»
-print(sheet_id)
-export = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid=0"
-print(export)
-```
-
-Что здесь происходит:
-
-- `link.split("/d/")` режет ссылку на две части: до `/d/` и после. `[1]` — вторая часть, она начинается с идентификатора таблицы.
-- `.split("/")[0]` отрезает всё после первого `/` — остаётся только идентификатор `1AbC-zerno_Plan2026`.
-- f-строка подставляет его в шаблон адреса выгрузки.
-
-::: warn Типичные ошибки
-- **Ссылка на редактор вместо выгрузки.** `read_csv(".../edit#gid=0")` скачает HTML-страницу, и pandas выдаст `ParserError` или таблицу из обрывков разметки.
-- **Таблица закрыта.** Вместо данных приходит страница входа в аккаунт — та же `ParserError`. Проверьте доступ по ссылке.
-- **Не тот лист.** Без `gid` выгружается первый лист. Номер нужного листа — в адресе после `gid=`.
-- **Данные по ссылке меняются.** Сегодняшний расчёт завтра может не повториться: для отчёта сохраните копию (`df.to_csv("plan_2026-10-09.csv")`).
-:::
-
-{{practice: sheets-url}}
 
 ## Столбец: Series
 
@@ -333,6 +273,8 @@ print(df.shape)
 
 Почему: `shape` — это (строк, столбцов). Три строки, два столбца.
 :::
+
+Если в квадратных скобках не одно имя, а **список** имён, получится не столбец, а таблица из этих столбцов: `df[["drink", "amount"]]` — DataFrame с двумя столбцами. Внешние скобки — «взять из таблицы», внутренние — список Python. Список может быть и из одного имени: `df[["amount"]]` — таблица из одного столбца, а не Series. Подробно о выборе столбцов — в уроке «Выбор столбцов и строк: SELECT и WHERE».
 
 ::: quiz
 `df["amount"]` и `df[["amount"]]` — в чём разница?
@@ -649,7 +591,9 @@ df = pd.read_csv("orders_3m.csv")
 ```python
 import pandas as _pd
 want = _pd.read_csv('orders_3m.csv')['client_id'].nunique()
-assert need('n_clients') == want, f'n_clients = {need("n_clients")}, а нужно {want}. nunique сам пропускает пустые значения.'
+_all = _pd.read_csv('orders_3m.csv')['client_id'].count()
+assert need('n_clients') != _all, 'Вы посчитали все непустые номера карт, а нужны разные: один гость делал много заказов.'
+assert need('n_clients') == want, f'n_clients = {need("n_clients")} — это не число разных гостей. nunique считает разные значения и сам пропускает пустые.'
 ```
 
 ### hint
@@ -735,8 +679,10 @@ df = pd.read_csv("orders_3m.csv")
 ```python
 import pandas as _pd
 a = _pd.read_csv('orders_3m.csv')['amount']
-assert need('median_check') == a.median(), f'median_check = {need("median_check")}.'
-assert close(need('share_big'), round((a > 600).mean() * 100, 1)), f'share_big = {need("share_big")}, а нужно {round((a > 600).mean() * 100, 1)}.'
+assert need('median_check') == a.median(), f'median_check = {need("median_check")} — это не медиана суммы заказа. Медиана — median(), а не mean().'
+_w = round((a > 600).mean() * 100, 1)
+assert not close(need('share_big'), round(_w / 100, 3), 0.002), f'share_big = {need("share_big")} похоже на долю, а просили проценты: умножьте на 100.'
+assert close(need('share_big'), _w), f'share_big = {need("share_big")}. Нужна доля заказов с amount > 600 (строго больше), в процентах с одним знаком.'
 ```
 
 ### hint
@@ -799,67 +745,6 @@ total = round((prices["Цена, руб."] * prices["Количество"]).sum
 
 ### explain
 Заказ — 187 816.80 ₽. Все четыре параметра здесь нужны: без `encoding` файл не откроется, без `sep` получится один столбец, без `decimal` и `thousands` цена останется текстом `'1 890,00'`, и умножение строки на число склеит её саму с собой несколько раз: `'1 890,00' * 2` — это `'1 890,001 890,00'`. Такая ошибка не падает — поэтому после каждой загрузки смотрите `dtypes`.
-
-## task: sheets-url | Ссылка на выгрузку Google Sheets | base
-
-Напишите функцию `sheet_csv_url(link)`: она получает обычную ссылку на Google Таблицу и возвращает адрес выгрузки в CSV вида `https://docs.google.com/spreadsheets/d/<id>/export?format=csv&gid=<gid>`.
-
-- `<id>` — часть ссылки между `/d/` и следующим `/`;
-- `<gid>` — номер листа: то, что стоит после **последнего** `gid=` в ссылке. Если `gid=` в ссылке нет, лист первый — `0`.
-
-Примеры: ссылка `https://docs.google.com/spreadsheets/d/1Xy_menu/edit?gid=418#gid=418` → `https://docs.google.com/spreadsheets/d/1Xy_menu/export?format=csv&gid=418`.
-
-### starter
-```python
-def sheet_csv_url(link):
-    ...
-
-print(sheet_csv_url("https://docs.google.com/spreadsheets/d/1AbC-zerno_Plan2026/edit#gid=0"))
-```
-
-### check
-```python
-f = need('sheet_csv_url')
-assert callable(f), 'sheet_csv_url должна быть функцией.'
-_base = 'https://docs.google.com/spreadsheets/d/'
-for _link, _id, _gid in [
-    (_base + '1AbC-zerno_Plan2026/edit#gid=0', '1AbC-zerno_Plan2026', '0'),
-    (_base + '1Xy_menu/edit?gid=418#gid=418', '1Xy_menu', '418'),
-    (_base + '1Qq_shops/edit', '1Qq_shops', '0'),
-    (_base + '9Zz-staff/edit?usp=sharing#gid=77', '9Zz-staff', '77'),
-]:
-    _got = f(_link)
-    _want = f'{_base}{_id}/export?format=csv&gid={_gid}'
-    assert _got is not None, 'Функция ничего не возвращает — нужен return.'
-    assert _got == _want, f'Для ссылки {_link}\nфункция вернула {_got!r},\nа нужно       {_want!r}.'
-```
-
-### hint
-Обе части достаются через `split`: идентификатор — между `"/d/"` и `"/"`, номер листа — после `"gid="`. «После последнего» — значит, берём последний кусок: индекс `[-1]`.
-
-### hint
-`sheet_id = link.split("/d/")[1].split("/")[0]`. Для листа: если `"gid=" in link`, то `gid = link.split("gid=")[-1]`, иначе `gid = "0"`.
-
-### hint
-```python
-def sheet_csv_url(link):
-    sheet_id = link.split("/d/")[1].split("/")[0]
-    gid = link.split("gid=")[-1] if "gid=" in link else ...
-    return f"https://docs.google.com/spreadsheets/d/{...}/export?format=csv&gid={...}"
-```
-
-### solution
-```python
-def sheet_csv_url(link):
-    sheet_id = link.split("/d/")[1].split("/")[0]
-    gid = link.split("gid=")[-1] if "gid=" in link else "0"
-    return f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
-
-print(sheet_csv_url("https://docs.google.com/spreadsheets/d/1AbC-zerno_Plan2026/edit#gid=0"))
-```
-
-### explain
-Ссылки на одну и ту же таблицу бывают разными: с `#gid=`, с `?gid=…#gid=…`, с хвостом `?usp=sharing` или совсем без номера листа. Если брать **первый** кусок после `gid=`, для `edit?gid=418#gid=418` получится `'418#'` — и выгрузка сломается. `[-1]` берёт последний кусок, и в таких ссылках это чистый номер. (Бывают и ссылки с хвостом после номера, например `#gid=418&range=A1`, — тогда номер пришлось бы ещё отрезать по `&`.) Дальше такой адрес передают в `pd.read_csv(sheet_csv_url(link))` — в своём Jupyter, где есть интернет.
 
 ## task: records | Из списка словарей: пропуск | plus
 

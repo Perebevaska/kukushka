@@ -119,9 +119,9 @@
    "files": [],
    "display": true,
    "setup": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\ndef loss(w):\n    return np.mean((w * km - minutes) ** 2)\ndef grad(w):\n    return np.mean(2 * (w * km - minutes) * km)",
-   "check": "import numpy as _np\nL, G = need('loss'), need('grad')\ndef _d(lr, tol=1e-6, ms=10000):\n    w, prev = 0.0, L(0.0)\n    for st in range(1, ms + 1):\n        w = w - lr * G(w); cur = L(w)\n        if abs(prev - cur) < tol: return w, st\n        prev = cur\n    return w, ms\nw = {lr: _d(lr) for lr in [0.001, 0.01, 0.03]}\ng = {float(k): v for k, v in need('steps', dict).items()}\nassert all(g[k] == w[k][1] for k in w), f'steps = {g}, а нужно {({k: v[1] for k, v in w.items()})}.'\ngw = {float(k): v for k, v in need('w_found', dict).items()}\nassert all(close(gw[k], round(w[k][0], 4), 2e-4) for k in w), f'w_found = {gw}.'\nw1 = _d(0.1)\nassert need('steps_01') == w1[1], f'steps_01 = {need(\"steps_01\")}, а нужно {w1[1]}.'\nassert not _np.isfinite(need('w_01')) or abs(need('w_01')) > 1e6, f'w_01 = {need(\"w_01\")}: при lr = 0.1 спуск расходится — вес улетает.'",
+   "check": "import numpy as _np\nL, G = need('loss'), need('grad')\ndef _d(lr, tol=1e-6, ms=10000):\n    w, prev = 0.0, L(0.0)\n    for st in range(1, ms + 1):\n        w = w - lr * G(w); cur = L(w)\n        if abs(prev - cur) < tol: return w, st\n        prev = cur\n    return w, ms\nw = {lr: _d(lr) for lr in [0.001, 0.01, 0.03]}\ng = {float(k): v for k, v in need('steps', dict).items()}\nassert all(g[k] == w[k][1] for k in w), f'steps = {g}, а нужно {({k: v[1] for k, v in w.items()})}.'\ngw = {float(k): v for k, v in need('w_found', dict).items()}\nassert all(close(gw[k], round(w[k][0], 4), 2e-4) for k in w), f'w_found = {gw}.'\nwith _np.errstate(all='ignore'):\n    w1 = _d(0.1)\nassert need('steps_01') == w1[1], f'steps_01 = {need(\"steps_01\")}, а нужно {w1[1]}.'\nassert not _np.isfinite(need('w_01')) or abs(need('w_01')) > 1e6, f'w_01 = {need(\"w_01\")}: при lr = 0.1 спуск расходится — вес улетает.'",
    "starter": "def descend(lr, tol=1e-6, max_steps=10000):\n    w, prev = 0.0, loss(0.0)\n    ...",
-   "solution": "def descend(lr, tol=1e-6, max_steps=10000):\n    w, prev = 0.0, loss(0.0)\n    for step in range(1, max_steps + 1):\n        w = w - lr * grad(w)\n        cur = loss(w)\n        if abs(prev - cur) < tol:\n            return w, step\n        prev = cur\n    return w, max_steps\n\nsteps, w_found = {}, {}\nfor lr in [0.001, 0.01, 0.03]:\n    w, n = descend(lr)\n    steps[lr], w_found[lr] = n, round(float(w), 4)\nw_01, steps_01 = descend(0.1)\nprint(steps, w_found, steps_01, w_01)",
+   "solution": "def descend(lr, tol=1e-6, max_steps=10000):\n    w, prev = 0.0, loss(0.0)\n    for step in range(1, max_steps + 1):\n        w = w - lr * grad(w)\n        cur = loss(w)\n        if abs(prev - cur) < tol:\n            return w, step\n        prev = cur\n    return w, max_steps\n\nsteps, w_found = {}, {}\nfor lr in [0.001, 0.01, 0.03]:\n    w, n = descend(lr)\n    steps[lr], w_found[lr] = n, round(float(w), 4)\nwith np.errstate(all=\"ignore\"):         # переполнение при lr = 0.1 ожидаемо\n    w_01, steps_01 = descend(0.1)\nprint(steps, w_found, steps_01, w_01)",
    "hints": [
     "Цикл по номерам шагов от 1: обновить `w`, посчитать новую потерю, сравнить с предыдущей; если разница меньше `tol` — `return w, step`. В конце цикла — `prev = cur`.",
     "После цикла (если так и не остановились) — `return w, max_steps`.",
@@ -171,6 +171,29 @@
    ],
    "explain": "Квадрат ошибки делает выброс огромным, и прямая по MSE тянется к нему. MAE штрафует выброс линейно — прямая почти его не замечает. Для MAE нет формулы, как для MSE, но градиентному спуску формула и не нужна: достаточно уметь считать наклон. Так же устроено обучение бустинга с любой функцией потерь."
   },
+  "ch10/01b-numeric/ops-hand": {
+   "chapter": "ch10",
+   "lesson": "01b-numeric",
+   "lesson_title": "Численные методы: цена формулы и деление пополам",
+   "id": "ops-hand",
+   "title": "Операции на салфетке",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert need('normal_ops') == 1000 * 10 ** 2 + 10 ** 3, f'normal_ops = {need(\"normal_ops\")}, а нужно 101000: n·d² + d³ = 100 000 + 1000.'\nassert need('gd_ops') == 2 * 1000 * 10 * 100, f'gd_ops = {need(\"gd_ops\")}, а нужно 2000000: 2·n·d·k.'\nassert need('cheaper') == 'формула', f'cheaper = {need(\"cheaper\")!r}: сравните normal_ops и gd_ops.'\nassert need('steps_equiv') == 5, f'steps_equiv = {need(\"steps_equiv\")}, а нужно 5: один шаг стоит 2·n·d = 20 000 умножений.'",
+   "starter": "n, d, k = 1000, 10, 100",
+   "solution": "n, d, k = 1000, 10, 100\nnormal_ops = n * d * d + d ** 3\ngd_ops = 2 * n * d * k\ncheaper = \"формула\" if normal_ops < gd_ops else \"спуск\"\nsteps_equiv = normal_ops // (2 * n * d)\nprint(normal_ops, gd_ops, cheaper, steps_equiv)",
+   "hints": [
+    "Подставьте числа в формулы: $1000 \\cdot 10^2 + 10^3$ и $2 \\cdot 1000 \\cdot 10 \\cdot 100$.",
+    "`normal_ops = n * d * d + d ** 3`, `gd_ops = 2 * n * d * k`, `cheaper = \"формула\" if normal_ops < gd_ops else \"спуск\"`."
+   ],
+   "explain": "Формула — 101 000 умножений, 100 шагов спуска — 2 000 000, в 20 раз больше. Одна формула здесь стоит всего 5 шагов спуска: при 10 признаках спуск не успел бы даже приблизиться к ответу. Это и есть правило «формула выгоднее, пока признаков меньше, чем шагов спуска»: 10 признаков против 100 шагов."
+  },
   "ch10/01b-numeric/ops-count": {
    "chapter": "ch10",
    "lesson": "01b-numeric",
@@ -195,6 +218,29 @@
    ],
    "explain": "Граница — 991 признак: при 100 000 строк и 500 шагах ниже неё дешевле формула, выше — спуск. Почему около тысячи: поделите обе оценки на $n \\cdot d$. У формулы останется примерно $d$ (слагаемое $d^2 / n$ мало), у спуска — $2 \\cdot 500 = 1000$. Отсюда правило на глаз: формула выгоднее, пока признаков меньше, чем шагов спуска. А для текстов есть ещё и память: 20 ГБ на одну служебную таблицу. Если бы вы считали $n \\cdot d$ вместо $n \\cdot d^2$, формула всегда казалась бы дешёвой, и граница исчезла бы."
   },
+  "ch10/01b-numeric/bisect-steps": {
+   "chapter": "ch10",
+   "lesson": "01b-numeric",
+   "lesson_title": "Численные методы: цена формулы и деление пополам",
+   "id": "bisect-steps",
+   "title": "Сколько делений нужно",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import math as _m\nassert close(need('len_after_5'), 100 / 2 ** 5, 1e-9), f'len_after_5 = {need(\"len_after_5\")}, а нужно 3.125: 100 / 2⁵.'\nassert need('steps_100') == 14, f'steps_100 = {need(\"steps_100\")}, а нужно 14: 2¹³ = 8192 делений мало (100 / 8192 > 0.01), 2¹⁴ = 16 384 хватает.'\nassert need('steps_300') == 15, f'steps_300 = {need(\"steps_300\")}, а нужно 15.'",
+   "starter": "import math",
+   "solution": "import math\nlen_after_5 = 100 / 2 ** 5\nsteps_100 = math.ceil(math.log2(100 / 0.01))\nsteps_300 = math.ceil(math.log2(300 / 0.01))\nprint(len_after_5, steps_100, steps_300)",
+   "hints": [
+    "После каждого деления длина делится на 2: после 5 делений — `100 / 2 ** 5`. Делений нужно столько, чтобы `2 ** steps` стало не меньше, чем длина / допуск.",
+    "```python\nlength, steps = 100, 0\nwhile length > 0.01:\n    length /= 2\n    steps += 1\n```\nИли сразу: `math.ceil(math.log2(100 / 0.01))`."
+   ],
+   "explain": "Отрезок в 100 единиц после 5 делений — 3.125, а до 0.01 его сужают 14 делений. Отрезок втрое длиннее требует всего на 2 деления больше — 15: число шагов растёт как логарифм длины. Поэтому бисекции можно смело давать широкий отрезок «с запасом» — от 0 до 300 минут обошлось 15 вычислениями функции."
+  },
   "ch10/01b-numeric/bisect": {
    "chapter": "ch10",
    "lesson": "01b-numeric",
@@ -218,6 +264,29 @@
     "```python\ndef bisect(f, lo, hi, tol=1e-6):\n    steps = 0\n    while hi - lo > tol:\n        mid = ...\n        if f(lo) * f(mid) > 0:\n            lo = mid\n        else:\n            hi = ...\n        steps += 1\n    return ..., steps\n```"
    ],
    "explain": "Число шагов зависит только от длины отрезка и допуска: $\\lceil \\log_2 (2 / 10^{-6}) \\rceil = 21$, какой бы ни была функция. Это и сила, и слабость метода. Сила — он предсказуем и не может разойтись. Слабость — он медленнее «умных» методов вроде `scipy.optimize.brentq`, и он умеет работать только с одной переменной. Проверка нарочно запускает вашу функцию и на убывающей функции `1 - t²`. Код вида «если `f(mid) > 0`, то `hi = mid`» работает только для возрастающих функций, а сравнение со знаком на левом краю — для любых."
+  },
+  "ch10/01b-numeric/promise-levels": {
+   "chapter": "ch10",
+   "lesson": "01b-numeric",
+   "lesson_title": "Численные методы: цена формулы и деление пополам",
+   "id": "promise-levels",
+   "title": "Цена обещания",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nimport pandas as pd\ndef bisect(f, lo, hi, tol=1e-6):\n    steps = 0\n    while hi - lo > tol:\n        mid = (lo + hi) / 2\n        if f(lo) * f(mid) > 0:\n            lo = mid\n        else:\n            hi = mid\n        steps += 1\n    return (lo + hi) / 2, steps",
+   "check": "import numpy as _np, pandas as _pd\nd0 = _pd.read_csv('deliveries.csv'); a0 = d0.loc[d0['actual_min'].between(1, 299), 'actual_min'].values\ndef _bis(f, lo, hi, tol):\n    while hi - lo > tol:\n        mid = (lo + hi) / 2\n        if f(lo) * f(mid) > 0: lo = mid\n        else: hi = mid\n    return (lo + hi) / 2\nP = {lv: round(_bis(lambda t: _np.mean(a0 > t) - lv, 0, 300, 0.01)) for lv in (0.05, 0.10, 0.20)}\npp = {float(k): v for k, v in need('promise', dict).items()}\nassert set(pp) == set(P), f'Ключи promise — уровни {sorted(P)}, а сейчас {sorted(pp)}.'\nfor lv in P:\n    assert pp[lv] == P[lv], f'promise[{lv}] = {pp[lv]}, а нужно {P[lv]}. Функция для bisect: np.mean(actual > t) - уровень.'\nll = {float(k): v for k, v in need('late', dict).items()}\nfor lv in P:\n    want = round(float(_np.mean(a0 > P[lv])), 3)\n    assert close(ll.get(lv), want, 0.0011), f'late[{lv}] = {ll.get(lv)}, а нужно {want}.'\nassert need('extra_for_5') == P[0.05] - P[0.10], f'extra_for_5 = {need(\"extra_for_5\")}, а нужно {P[0.05] - P[0.10]}.'",
+   "starter": "# уже есть: функция bisect(f, lo, hi, tol) из урока\nimport numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nactual = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].values\nlevels = [0.05, 0.10, 0.20]",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nactual = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].values\nlevels = [0.05, 0.10, 0.20]\n\npromise, late = {}, {}\nfor level in levels:\n    t, _ = bisect(lambda t: np.mean(actual > t) - level, 0, 300, tol=0.01)\n    promise[level] = round(t)\n    late[level] = round(float(np.mean(actual > promise[level])), 3)\nextra_for_5 = promise[0.05] - promise[0.10]\nprint(promise, late, extra_for_5)",
+   "hints": [
+    "Внутри цикла по уровням функция своя: `lambda t: np.mean(actual > t) - level`. Начните с `promise, late = {}, {}`.",
+    "```python\nfor level in levels:\n    t, _ = bisect(lambda t: np.mean(actual > t) - level, 0, 300, tol=0.01)\n    promise[level] = round(t)\n    late[level] = round(float(np.mean(actual > promise[level])), 3)\n```"
+   ],
+   "explain": "Обещания: 55 минут при 5 % опозданий, 48 — при 10 %, 41 — при 20 %. Вдвое меньше опозданий стоит 7 минут обещания, и столько же можно срезать, если смириться с каждым пятым опозданием. Фактические доли опозданий — 4.9 %, 10.0 % и 19.9 %: обещание в целых минутах не всегда попадает в уровень точно, но не превышает его. Каждый поиск занял 15 делений, как и предсказывает задача о числе шагов. Такую таблицу «уровень — обещание» удобно показать директору: решение о компромиссе между скоростью обещания и опозданиями принимает он."
   },
   "ch10/01b-numeric/promise-time": {
    "chapter": "ch10",
@@ -354,7 +423,7 @@
    "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\nres = {}\nwith np.errstate(all=\"ignore\"):              # не показывать предупреждения о переполнении\n    for lr in [0.1, 0.3, 0.5, 0.7, 0.9, 1.1]:\n        w = np.zeros(X1.shape[1])\n        for _ in range(100):\n            w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)\n        res[lr] = np.mean((X1 @ w - y) ** 2)\nbest_lr = max(lr for lr, v in res.items() if np.isfinite(v) and v < 61)",
    "hints": [
     "Перебор шагов в цикле; условие — `np.isfinite(mse) and mse < 61`.",
-    "Из разбора «Почему шаг ограничен сверху»: предельный шаг равен 2 / λ_max. У трёх признаков этой задачи он около 0.72 — посчитайте сами: `2 / np.linalg.eigvalsh(2 / len(y) * X1.T @ X1)[-1]`. Число 0.5 из разбора — для четырёх признаков, с суммой заказа."
+    "Из разбора «Почему шаг ограничен сверху»: выше предельного шага спуск взрывается, ниже — сходится. Число 0.5 из разбора — для четырёх признаков, с суммой заказа; у трёх признаков этой задачи граница своя, её и найдёт перебор. (Кто прочитал блок «для любопытных», может сверить: `2 / np.linalg.eigvalsh(2 / len(y) * X1.T @ X1)[-1]`.)"
    ],
    "explain": "Граница резкая: предельный шаг для этих трёх признаков ≈ 0.72. При 0.7 спуск сходится (MSE 60.04), при 0.9 взрывается. Положение границы зависит от данных (от «крутизны» самой крутой стенки ямы), поэтому универсального хорошего шага нет — его подбирают."
   },
@@ -451,6 +520,29 @@
    ],
    "explain": "Результат SGD немного зависит от порядка строк — разброс — тысячные доли минуты, а точное решение лишь чуть лучше. Для таких данных это неважно, но в нейросетях (глава 11), где спуск — единственный способ обучения, `random_state` фиксируют всегда, иначе результат не повторить."
   },
+  "ch10/02b-optimizers/momentum-hand": {
+   "chapter": "ch10",
+   "lesson": "02b-optimizers",
+   "lesson_title": "Оптимизаторы: инерция, Adam и затухание весов",
+   "id": "momentum-hand",
+   "title": "Три шага с инерцией",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "want = [0.2, 0.5, 0.85]\ngot = [float(x) for x in need('ws', list)]\nassert len(got) == 3, f'В ws {len(got)} чисел, а шагов три.'\nassert all(close(a, b, 1e-4) for a, b in zip(got, want)), f'ws = {got}, а нужно {want}. Сначала обновите v, потом w = w - lr * v.'\nassert close(need('plain_step'), 0.2, 1e-9), f'plain_step = {need(\"plain_step\")}, а нужно 0.2.'\nassert close(need('limit_step'), 0.4, 1e-9), f'limit_step = {need(\"limit_step\")}, а нужно 0.4.'",
+   "starter": "g, lr, beta = -1.0, 0.2, 0.5\nv, w = 0.0, 0.0",
+   "solution": "g, lr, beta = -1.0, 0.2, 0.5\nv, w = 0.0, 0.0\nws = []\nfor _ in range(3):\n    v = beta * v + g\n    w = w - lr * v\n    ws.append(round(w, 4))\nplain_step = lr * abs(g)\nlimit_step = lr * abs(g) / (1 - beta)\nprint(ws, plain_step, limit_step)",
+   "hints": [
+    "Шаг 1: v = 0.5 · 0 + (−1) = −1, w = 0 − 0.2 · (−1) = 0.2. Дальше то же самое в цикле из трёх повторов.",
+    "```python\nws = []\nfor _ in range(3):\n    v = beta * v + g\n    w = w - lr * v\n    ws.append(round(w, 4))\n```"
+   ],
+   "explain": "Скорости −1, −1.5, −1.75, веса 0.2, 0.5, 0.85: шаги 0.2, 0.3, 0.35 растут к пределу 0.4. При β = 0.5 инерция лишь удваивает шаг, при β = 0.9 из урока — удесятеряет: предел равен обычному шагу, делённому на 1 − β. Поэтому β = 0.9 и даёт заметное ускорение на пологих склонах."
+  },
   "ch10/02b-optimizers/momentum": {
    "chapter": "ch10",
    "lesson": "02b-optimizers",
@@ -497,6 +589,52 @@
     "```python\nw, m, s = np.array([0, 5.0]), np.zeros(2), np.zeros(2)\nhistory = []\nfor t in range(1, 4):\n    g = 2 / n * X1.T @ (X1 @ w - y)\n    w_old = w\n    w, m, s = adam_step(w, g, m, s, t)\n    if t == 1:\n        first_step = ...\n        raw_first = ...\n    history.append(w.round(4))\n```"
    ],
    "explain": "Первый шаг — ровно (0.1, 0.1), как в разборе урока: каждый вес сдвинулся на `lr`, хотя градиенты (−32 и −82) отличались в 2.5 раза. Следующие шаги чуть короче (0.0999, 0.0998): градиент немного уменьшился, а сглаженный размер `s_hat` ещё помнит прошлые большие значения. Без поправки первый сдвиг был бы 0.3162 — втрое больше задуманного `lr`. Поправка и нужна, чтобы первые шаги не зависели от того, что `m` и `s` стартуют с нуля. Если бы вы считали градиент один раз до цикла, все три шага были бы одинаковыми по 0.1. За три шага разница крошечная (0.3 против 0.2998), но на длинном спуске Adam шёл бы по устаревшему направлению и проскочил бы дно."
+  },
+  "ch10/02b-optimizers/adam-lr": {
+   "chapter": "ch10",
+   "lesson": "02b-optimizers",
+   "lesson_title": "Оптимизаторы: инерция, Adam и затухание весов",
+   "id": "adam-lr",
+   "title": "Шаг Adam тоже подбирают",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\ndef adam_step(w, g, m, s, t, lr=0.1, b1=0.9, b2=0.999, eps=1e-8):\n    m = b1 * m + (1 - b1) * g\n    s = b2 * s + (1 - b2) * g ** 2\n    w = w - lr * (m / (1 - b1 ** t)) / (np.sqrt(s / (1 - b2 ** t)) + eps)\n    return w, m, s",
+   "check": "import numpy as _np, pandas as _pd\nd0 = _pd.read_csv('deliveries.csv'); ok0 = d0[d0['actual_min'].between(1, 299)].copy(); ok0['walk'] = (ok0['courier'] == 'пеший').astype(int)\nXa = _np.column_stack([_np.ones(len(ok0)), ok0[['distance_km', 'items', 'walk', 'amount']].values.astype(float)]); ya = ok0['actual_min'].values\nW = {}\nfor lr in [0.005, 0.01, 0.05, 0.2, 1.0]:\n    w, m, s = _np.zeros(5), _np.zeros(5), _np.zeros(5)\n    for t in range(1, 2001):\n        g = 2 / len(ya) * Xa.T @ (Xa @ w - ya); m = 0.9 * m + 0.1 * g; s = 0.999 * s + 0.001 * g * g\n        w = w - lr * (m / (1 - 0.9 ** t)) / (_np.sqrt(s / (1 - 0.999 ** t)) + 1e-8)\n    W[lr] = round(float(_np.mean((Xa @ w - ya) ** 2)), 1)\ngot = {float(k): v for k, v in need('mse_by_lr', dict).items()}\nassert set(got) == set(W), f'Ключи mse_by_lr — шаги {sorted(W)}, а сейчас {sorted(got)}.'\nfor lr in W:\n    if lr == 1.0:   # при lr = 1 спуск скачет: точное число зависит от порядка операций, важно лишь, что далеко от 60\n        assert got[lr] > 61, f'mse_by_lr[1.0] = {got[lr]}: при таком шаге Adam не должен успокоиться у дна. Каждый запуск — с нулевых w, m, s и t от 1 до 2000.'\n        continue\n    assert close(got[lr], W[lr], 0.11), f'mse_by_lr[{lr}] = {got[lr]}, а нужно {W[lr]}. Каждый запуск — с нулевых w, m, s и t от 1 до 2000.'\nwant_good = sorted(lr for lr, v in W.items() if v < 61 and lr != 1.0)\nassert [float(x) for x in need('good', list)] == want_good, f'good = {need(\"good\")}, а нужно {want_good}.'",
+   "starter": "# уже есть: adam_step(w, g, m, s, t, lr) из задачи «Шаг Adam руками»\nimport numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\", \"amount\"]].values.astype(float)   # без масштаба\ny = ok[\"actual_min\"].values\nX1 = np.column_stack([np.ones(len(X)), X])\nn = len(y)",
+   "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\", \"amount\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nX1 = np.column_stack([np.ones(len(X)), X])\nn = len(y)\n\nmse_by_lr = {}\nfor lr in [0.005, 0.01, 0.05, 0.2, 1.0]:\n    w, m, s = np.zeros(5), np.zeros(5), np.zeros(5)\n    for t in range(1, 2001):\n        g = 2 / n * X1.T @ (X1 @ w - y)\n        w, m, s = adam_step(w, g, m, s, t, lr=lr)\n    mse_by_lr[lr] = round(float(np.mean((X1 @ w - y) ** 2)), 1)\ngood = sorted(lr for lr, v in mse_by_lr.items() if v < 61)\nprint(mse_by_lr, good)",
+   "hints": [
+    "Для каждого `lr` начинайте с `w, m, s = np.zeros(5), np.zeros(5), np.zeros(5)`; внутри цикла `for t in range(1, 2001)` считайте градиент по текущим весам и вызывайте `adam_step(..., t, lr=lr)`.",
+    "```python\nmse_by_lr = {}\nfor lr in [0.005, 0.01, 0.05, 0.2, 1.0]:\n    w, m, s = np.zeros(5), np.zeros(5), np.zeros(5)\n    for t in range(1, 2001):\n        g = 2 / n * X1.T @ (X1 @ w - y)\n        w, m, s = adam_step(w, g, m, s, t, lr=lr)\n    mse_by_lr[lr] = round(float(np.mean((X1 @ w - y) ** 2)), 1)\n```"
+   ],
+   "explain": "MSE после 2000 шагов: 85.3 при шаге 0.005, 65.1 при 0.01, 60.0 при 0.05 и 0.2, а при 1.0 — сотни (у нас 470 в браузере и 215 в Jupyter: спуск скачет, и точное число зависит от мельчайших различий в округлении). Слишком маленький шаг не успевает дойти: первые шаги Adam — около `lr` на вес, и при 0.005 до свободного члена 16 идти тысячи шагов. Слишком большой не даёт успокоиться у дна. Хорошие шаги — 0.05 и 0.2, но и у них путь не гладкий: на немасштабированных данных MSE по дороге временами подскакивает (при 0.2 — почти до 2000 около 1600-го шага) и снова успокаивается. Adam снимает проблему масштаба признаков, но шаг обучения остаётся гиперпараметром."
+  },
+  "ch10/02b-optimizers/decay": {
+   "chapter": "ch10",
+   "lesson": "02b-optimizers",
+   "lesson_title": "Оптимизаторы: инерция, Adam и затухание весов",
+   "id": "decay",
+   "title": "Затухание веса",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert close(need('factor'), 0.9, 1e-9), f'factor = {need(\"factor\")}, а нужно 0.9: 1 − 2 · 0.1 · 0.5.'\nassert close(need('w5'), 5.9049, 1e-4), f'w5 = {need(\"w5\")}, а нужно 5.9049: 10 · 0.9⁵.'\nassert close(need('w5_small'), 9.5099, 1e-4), f'w5_small = {need(\"w5_small\")}, а нужно 9.5099: множитель 1 − 2 · 0.1 · 0.05 = 0.99.'",
+   "starter": "w0, lr, lam = 10.0, 0.1, 0.5",
+   "solution": "w0, lr, lam = 10.0, 0.1, 0.5\nfactor = 1 - 2 * lr * lam\nw5 = round(w0 * factor ** 5, 4)\nw5_small = round(w0 * (1 - 2 * lr * 0.05) ** 5, 4)\nprint(factor, w5, w5_small)",
+   "hints": [
+    "Без градиента шаг — просто `w = factor * w`. Пять шагов — `w0 * factor ** 5`.",
+    "`factor = 1 - 2 * lr * lam`, `w5 = round(w0 * factor ** 5, 4)`, для малого λ множитель `1 - 2 * lr * 0.05`."
+   ],
+   "explain": "При λ = 0.5 вес за пять шагов «усох» с 10 до 5.90 — почти вдвое, хотя градиент ничего не делал. При λ = 0.05 — лишь до 9.51. Признак, который не помогает предсказывать, со штрафом постепенно теряет вес; признак, который помогает, удерживается градиентом, тянущим вес обратно."
   },
   "ch10/02b-optimizers/l2-grad": {
    "chapter": "ch10",
@@ -635,7 +773,7 @@
     "Старт — среднее `y_tr` и для обучения, и для теста. В цикле дерево учится на `y_tr − f_tr`, а обновляются оба прогноза одним и тем же деревом. Вернуть нужно прогноз для `X_te`.",
     "Скопируйте цикл из теории в функцию: два прогноза (`f_train`, `f_test`), старт — среднее `y_tr`."
    ],
-   "explain": "При 30 деревьях больший шаг выигрывает: с шагом 0.1 модель ещё не успела «дойти». Но при большом числе деревьев маленький шаг обычно догоняет и обгоняет — это видно в следующем уроке."
+   "explain": "При 30 деревьях больший шаг выигрывает: с шагом 0.1 модель ещё не успела «дойти». Но при большом числе деревьев маленький шаг обычно догоняет и обгоняет — это видно в задаче «Шаг и число деревьев» ниже."
   },
   "ch10/03-boosting/vs-sklearn": {
    "chapter": "ch10",
@@ -823,7 +961,7 @@
     "Два списка через `staged_predict(X_train)` и `staged_predict(X_test)`.",
     "Лучшее число деревьев — номер минимума тестовой кривой: `int(np.argmin(te)) + 1`; MAE при нём — `te[best_n - 1]`, при 400 — `te[-1]`."
    ],
-   "explain": "С шагом 0.3 модель быстро доходит до минимума и потом переобучается: ошибка на обучении продолжает падать (до двух с небольшим минут), а на тесте растёт. Разрыв между ними — мера переобучения, как в главе 6."
+   "explain": "С шагом 0.3 модель быстро доходит до минимума и потом переобучается: ошибка на обучении продолжает падать (до 2.23 минуты к 400-му дереву), а на тесте растёт: 3.85 в минимуме на 82-м дереве и 4.24 к 400-му. Разрыв между ними — мера переобучения, как в главе 6."
   },
   "ch10/04-tuning/early-stop": {
    "chapter": "ch10",
@@ -895,7 +1033,7 @@
     "Категории: `X_cat = ok[cols].copy()`, затем для трёх столбцов `X_cat[c] = X_cat[c].astype(\"category\")`.",
     "Число разных значений столбца — `.nunique()`; сложите по трём столбцам."
    ],
-   "explain": "Ошибка одинаковая с точностью до сотых, а столбцов 6 вместо 16. Флаги для 13 категорий — не проблема; проблема начинается, когда категорий тысячи (артикулы, адреса): `get_dummies` раздувает таблицу до тысяч почти пустых столбцов. Тогда нативные категории HGB или CatBoost не только экономят память, но часто и точнее — им не нужно собирать «группу похожих значений» из отдельных флагов."
+   "explain": "Ошибка почти одинаковая (3.90 и 3.91), а столбцов 6 вместо 16. Флаги для 13 категорий — не проблема; проблема начинается, когда категорий тысячи (артикулы, адреса): `get_dummies` раздувает таблицу до тысяч почти пустых столбцов. Тогда нативные категории HGB или CatBoost не только экономят память, но часто и точнее — им не нужно собирать «группу похожих значений» из отдельных флагов."
   },
   "ch10/04-tuning/hgb-nan": {
    "chapter": "ch10",
@@ -1081,7 +1219,7 @@
     "`max_depth=None` — без ограничения глубины (ограничивает число листьев). Строки grid собирайте словарями в список в порядке: lr 0.05 (depth 3, 6, None), потом lr 0.1.",
     "Лучшая строка: `grid.loc[grid[\"val_mae\"].idxmin()]`. Числа из неё приходят как `float`: `max_iter` переведите через `int(...)`, а глубину — как сказано в условии, через `pd.isna(...)`."
    ],
-   "explain": "Подбор немного помог (около 5.2 против 5.3 по умолчанию). Варианты в сетке отличаются на валидации в пределах нескольких десятых — бустинг не слишком капризен, если остановить его вовремя."
+   "explain": "Подбор немного помог (около 5.2 против 5.3 по умолчанию). Варианты в сетке отличаются на валидации в пределах нескольких десятых — бустинг не слишком капризен, если остановить его вовремя. Посмотрите на строку `lr = 0.05, depth = 3`: лучшее `n_iter` у неё ровно 500, то есть верхняя граница `max_iter`. Это сигнал, что модели не хватило деревьев и её ошибка на валидации (5.19) — ещё не предел: границу надо поднять и проверить снова. Если лучшее число итераций упирается в границу перебора, граница мала."
   },
   "ch10/05-project/trend": {
    "chapter": "ch10",
@@ -1089,7 +1227,7 @@
    "lesson_title": "Проект: прогноз дневной выручки",
    "id": "trend",
    "title": "Шаг 7. Ловушка тренда",
-   "level": "star",
+   "level": "plus",
    "exam": false,
    "parsons": false,
    "files": [
@@ -1129,7 +1267,7 @@
     "`fit_s = time.perf_counter() - t0` после `model.fit(X[tr], y[tr])`, `predict_ms = (time.perf_counter() - t0) * 1000` после `model.predict(X[~tr])`. RMSE — `np.sqrt(mean_squared_error(y[~tr], pred))`.",
     "`table = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")`, `best = table.index[0]`, `gain_vs_linear = round(float(table.loc[\"линейная\", \"rmse\"] - table[\"rmse\"].min()), 2)`, `nightly_ok = bool((table[\"fit_s\"] < 60).all())`."
    ],
-   "explain": "Лучший по RMSE — `HistGradientBoosting` (7.15), рядом лес (7.30), классический `GradientBoosting` со 100 неглубокими деревьями по умолчанию заметно хуже (8.61), линейная модель — вдвое хуже лучшей (15.91). Все модели обучаются за секунды, так что ночное переобучение не проблема ни для одной: на этих данных выбор делается по качеству. Время станет аргументом, когда кофеен будут сотни, а прогноз понадобится по часам. Тогда пригодится та же таблица, только с CatBoost и LightGBM. В нашем блокноте CatBoost с ранней остановкой по апрелю–июню дал RMSE 6.55 против 7.27 у HGB из того же блокнота. Там HGB тоже с ранней остановкой по апрелю–июню и с нативными категориями, поэтому его число не 7.15, как в вашей таблице. Подробно — в уроке «CatBoost и LightGBM в своём Jupyter» после проекта. Если бы вы замеряли время вместе с подсчётом метрик или печатью, `fit_s` включал бы лишнее. Секундомер ставят вплотную вокруг `fit` и `predict`.\n\n## Итог для операционного директора\n\n> **Точность.** Прогноз выручки кофейни на день ошибается в среднем примерно на 5 тыс. ₽ при средней дневной выручке во втором полугодии около 66 тыс. — меньше 8 %. Привычный ориентир «как неделю назад» ошибается вдвое сильнее (около 10 тыс. ₽).\n>\n> **Что важно для прогноза.** Формат кофейни определяет, как она реагирует на выходные и погоду: бизнес-центр в выходные теряет две трети выручки, торговый центр выигрывает треть, уличная кофейня проседает в дождь. Модель учитывает это сама.\n>\n> **Стоимость в работе.** Модель обучается на двух годах истории за секунды, поэтому её можно переобучать каждую ночь. Промышленная библиотека CatBoost в нашей проверке снизила ошибку ещё примерно на 0.3 тыс. ₽ в день — её стоит взять при переносе прогноза в рабочую систему.\n>\n> **Ограничения.** Модель учится на прошлом: рост сети, новые форматы или резкие изменения (ремонт рядом, новый конкурент) нужно учитывать отдельно. Тренд пересчитываем ежемесячно, качество проверяем по фактам каждую неделю (мониторинг из главы 8).\n>\n> **Рекомендация.** Перейти на прогноз для планирования смен и закупок, начав с двух кофеен на месяц и сравнив расходы на смены и списания с остальными."
+   "explain": "Лучший по RMSE — `HistGradientBoosting` (7.15), рядом лес (7.30), классический `GradientBoosting` со 100 неглубокими деревьями по умолчанию заметно хуже (8.61), линейная модель — вдвое хуже лучшей (15.91). Все модели обучаются за секунды, так что ночное переобучение не проблема ни для одной: на этих данных выбор делается по качеству. Время станет аргументом, когда кофеен будут сотни, а прогноз понадобится по часам. Тогда пригодится та же таблица, только с CatBoost и LightGBM. В нашем блокноте CatBoost с ранней остановкой по апрелю–июню дал RMSE 6.55 против 7.27 у HGB из того же блокнота. Там HGB тоже с ранней остановкой по апрелю–июню и с нативными категориями, поэтому его число не 7.15, как в вашей таблице. Подробно — в уроке «CatBoost и LightGBM в своём Jupyter» после проекта. Если бы вы замеряли время вместе с подсчётом метрик или печатью, `fit_s` включал бы лишнее. Секундомер ставят вплотную вокруг `fit` и `predict`.\n\n## Итог для операционного директора\n\n> **Точность.** Прогноз выручки кофейни на день ошибается в среднем примерно на 5 тыс. ₽ при средней дневной выручке во втором полугодии около 66 тыс. — меньше 8 %. Привычный ориентир «как неделю назад» ошибается вдвое сильнее (около 10 тыс. ₽).\n>\n> **Что важно для прогноза.** Формат кофейни определяет, как она реагирует на выходные и погоду: бизнес-центр в выходные теряет две трети выручки, торговый центр выигрывает треть, уличная кофейня проседает в дождь. Модель учитывает это сама.\n>\n> **Стоимость в работе.** Модель обучается на двух годах истории за секунды, поэтому её можно переобучать каждую ночь. Промышленная библиотека CatBoost в нашей проверке без снятия тренда ошибалась на 4.93 тыс. ₽ в день — почти столько же, сколько наш бустинг с поправкой на тренд (4.98). При переносе прогноза в рабочую систему её стоит проверить вместе со снятием тренда: выигрыш возможен, но пока не доказан.\n>\n> **Ограничения.** Модель учится на прошлом: рост сети, новые форматы или резкие изменения (ремонт рядом, новый конкурент) нужно учитывать отдельно. Тренд пересчитываем ежемесячно, качество проверяем по фактам каждую неделю (мониторинг из главы 8).\n>\n> **Рекомендация.** Перейти на прогноз для планирования смен и закупок, начав с двух кофеен на месяц и сравнив расходы на смены и списания с остальными."
   },
   "ch10/06-libraries/speed-table": {
    "chapter": "ch10",
@@ -1153,7 +1291,7 @@
     "`t0 = time.perf_counter(); model.fit(X_tr, y_tr); fit_s = time.perf_counter() - t0`. Для прогноза — то же, умноженное на 1000. RMSE — `np.sqrt(mean_squared_error(y_te, pred))`.",
     "```python\nrows = []\nfor name, model in models.items():\n    ...\n    rows.append({\"model\": name, \"rmse\": round(float(rmse), 3), \"fit_s\": fit_s, \"predict_ms\": predict_ms})\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")\nbest = table.index[0]\nfastest_fit = table[\"fit_s\"].idxmin()\n```"
    ],
-   "explain": "Лучшая ошибка у классического `GradientBoosting` (RMSE 4.907), чуть хуже `HistGradientBoosting` (5.053) с теми же 200 деревьями глубины 3, у леса — 5.811. Время — ваше собственное, поэтому проверка сравнивает `fastest_fit` с вашей же таблицей. В браузере у нас быстрее всех обучился `HistGradientBoosting`, но на 1400 строках разница — секунда-другая. Его преимущество растёт с размером данных: он ищет пороги только между 255 интервалами каждого признака, а не перебирает все значения. Если в таблицу попали секунды вместо миллисекунд для прогноза, числа будут вида 0.03 вместо 30 — это видно сразу, поэтому единицы измерения пишут прямо в названии столбца."
+   "explain": "Лучшая ошибка у классического `GradientBoosting` (RMSE 4.907), чуть хуже `HistGradientBoosting` (5.053) с теми же 200 деревьями глубины 3, у леса — 5.811. Время — ваше собственное, поэтому проверка сравнивает `fastest_fit` с вашей же таблицей. В браузере у нас быстрее всех обучился `HistGradientBoosting`, но на 1400 строках разница — доли секунды (у нас 0.2 с против 0.4–0.5 с). Его преимущество растёт с размером данных: он ищет пороги только между 255 интервалами каждого признака, а не перебирает все значения. Если в таблицу попали секунды вместо миллисекунд для прогноза, числа будут вида 0.03 вместо 30 — это видно сразу, поэтому единицы измерения пишут прямо в названии столбца."
   }
  }
 }

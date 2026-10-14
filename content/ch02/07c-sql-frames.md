@@ -94,7 +94,7 @@ for oid, s in r:
 Почему: без явной рамки работает `RANGE ... CURRENT ROW`. Заказы `a` и `b` — оба из дня 1, это одно значение ключа, поэтому каждый видит сумму обоих: 150.
 :::
 
-Для накопительного итога **по дням** это ровно то, что нужно: каждый день получает итог на конец дня. А вот если нужен итог «после каждого заказа», ключ должен быть уникальным (время заказа, номер заказа) или рамка — `ROWS`. Но `ROWS` при повторах в ключе сортировки складывает строки одного дня в случайном порядке — значит, нужен ещё и уникальный второй ключ.
+Для накопительного итога **по дням** это ровно то, что нужно: каждый день получает итог на конец дня. А вот если нужен итог «после каждого заказа», ключ должен быть уникальным (время заказа, номер заказа) или рамка — `ROWS`. Но `ROWS` при повторах в ключе сортировки складывает строки одного дня в том порядке, в каком база их прочитала: на тех же трёх заказах `ROWS` с `ORDER BY day` может дать и a 100, b 150, и b 50, a 150. Поэтому нужен уникальный второй ключ: с `ORDER BY day, order_id` результат всегда a 100, b 150, c 220.
 
 На трёх месяцах заказов — накопительная выручка сети по дням:
 
@@ -181,6 +181,15 @@ ma.head(12)
 Даже `RANGE` усредняет только дни, в которые были заказы: день без заказов в него не входит, хотя выручка в этот день — ноль. Если нужно «среднее с учётом нулей», считают `SUM(revenue) OVER (... RANGE ...) / 7` или заранее достраивают календарь: `generate_series` в DuckDB, `reindex(pd.date_range(...), fill_value=0)` в pandas.
 :::
 
+Скользящие средние в задачах считаются и по второму файлу — `daily_sales.csv`: дневная выручка шести кофеен за 2024–2025 годы, по строке на пару «кофейня × день», без пропущенных дней. Выручка `revenue_k` — в тысячах рублей; остальные столбцы (погода, праздник, акция) пригодятся в главах про модели.
+
+```python
+import pandas as pd
+ds = pd.read_csv("daily_sales.csv", parse_dates=["date"])
+print(ds.shape)
+ds.head(3)
+```
+
 ::: quiz
 По таблице «кофейня × день» считают скользящее среднее `AVG(revenue) OVER (PARTITION BY shop_id ORDER BY day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)`. В некоторые дни в кофейне не было заказов. Что не так?
 
@@ -239,7 +248,7 @@ print(right.head(7))
 - **`rolling(7)` без `min_periods`.** Первые 6 значений — `NaN`, тогда как SQL посчитает их по неполной рамке. При сверке SQL и pandas это расхождение легко принять за ошибку.
 :::
 
-{{practice: w-running, w-ma7, w-range}}
+{{practice: w-running, w-half, w-ma7, w-range}}
 
 ## FIRST_VALUE и LAST_VALUE
 
@@ -462,9 +471,90 @@ half_day = cum.loc[cum["running"] >= cum["revenue"].sum() / 2, "day"].iloc[0]
 print(half_day)
 ```
 
+## task: w-half | Когда кофейня набрала половину | base
+
+Для каждой кофейни найдите день, когда её накопительная выручка с 1 сентября впервые достигла **половины** её выручки за все три месяца. Результат `half` — DataFrame со столбцами `shop_id` и `half_day` (дата), по одной строке на кофейню, по возрастанию `shop_id`. Посчитайте одним SQL-запросом: выручка «кофейня × день» в CTE, затем два окна по кофейне — накопительный итог и итог за весь период, затем фильтр **после** окон.
+
+### starter
+```python
+import duckdb
+import pandas as pd
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+
+```
+
+### check
+```python
+import pandas as _pd
+_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])
+_g = _d.groupby(['shop_id', _d['datetime'].dt.normalize()])['amount'].sum().reset_index()
+_g['run'] = _g.groupby('shop_id')['amount'].cumsum()
+_g['tot'] = _g.groupby('shop_id')['amount'].transform('sum')
+_w = _g[_g['run'] >= _g['tot'] / 2].groupby('shop_id')['datetime'].min()
+h = need('half', _pd.DataFrame)
+assert list(h.columns) == ['shop_id', 'half_day'], f'Столбцы: {list(h.columns)}, а нужны shop_id и half_day.'
+assert h['shop_id'].tolist() == list(_w.index), f'Кофейни: {h["shop_id"].tolist()}. Нужна одна строка на кофейню, по возрастанию shop_id.'
+_got = [str(x)[:10] for x in h['half_day']]
+_want = [str(x)[:10] for x in _w.values]
+assert _got == _want, f'half_day = {_got}. Проверьте PARTITION BY shop_id в обоих окнах и фильтр running >= total / 2 снаружи, в отдельном запросе.'
+assert 'OVER' in _code.upper(), 'Посчитайте накопительный итог оконной функцией SUM(...) OVER (...).'
+```
+
+### hint
+Окно по кофейне с порядком — накопительный итог: `SUM(revenue) OVER (PARTITION BY shop_id ORDER BY day)`. Окно по кофейне без порядка — итог за весь период: `SUM(revenue) OVER (PARTITION BY shop_id)`. Фильтровать по ним можно только уровнем выше.
+
+### hint
+```python
+half = duckdb.sql("""
+    WITH d AS (
+        SELECT shop_id, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue
+        FROM df GROUP BY shop_id, day
+    ),
+    w AS (
+        SELECT shop_id, day,
+               SUM(revenue) OVER (PARTITION BY shop_id ORDER BY day) AS running,
+               SUM(revenue) OVER (PARTITION BY shop_id) AS total
+        FROM d
+    )
+    SELECT shop_id, MIN(day) AS half_day
+    FROM w
+    WHERE ...
+    GROUP BY shop_id
+    ORDER BY shop_id
+""").df()
+```
+
+### solution
+```python
+import duckdb
+import pandas as pd
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+half = duckdb.sql("""
+    WITH d AS (
+        SELECT shop_id, CAST(datetime AS DATE) AS day, SUM(amount) AS revenue
+        FROM df
+        GROUP BY shop_id, day
+    ),
+    w AS (
+        SELECT shop_id, day,
+               SUM(revenue) OVER (PARTITION BY shop_id ORDER BY day) AS running,
+               SUM(revenue) OVER (PARTITION BY shop_id) AS total
+        FROM d
+    )
+    SELECT shop_id, MIN(day) AS half_day
+    FROM w
+    WHERE running >= total / 2
+    GROUP BY shop_id
+    ORDER BY shop_id
+""").df()
+```
+
+### explain
+Пять кофеен перешли половину 17–18 октября, UFA-1 — последней, 20 октября: сентябрь у неё самый слабый, 27.3 % выручки за три месяца против 29–34 % у остальных кофеен. Середина периода — 15–16 октября, так что все шесть кофеен набрали половину чуть позже: выручка сети к ноябрю росла. Если поставить `WHERE running >= total / 2` в тот же запрос, где считаются окна, DuckDB ответит ошибкой: `WHERE` выполняется раньше окон.
+
 ## task: w-ma7 | Скользящее среднее с правильным началом | base
 
-Новый файл `daily_sales.csv` — дневная выручка шести кофеен за 2024–2025 годы: по строке на пару «кофейня × день», без пропусков. Столбец `revenue_k` — выручка дня в **тысячах рублей**; остальные столбцы (город, формат, погода, праздник, акция) в этой задаче не нужны.
+Файл `daily_sales.csv` из теории — дневная выручка шести кофеен за 2024–2025 годы: по строке на пару «кофейня × день», без пропусков. Столбец `revenue_k` — выручка дня в **тысячах рублей**; остальные столбцы (город, формат, погода, праздник, акция) в этой задаче не нужны.
 
 Посчитайте 7-дневное скользящее среднее `revenue_k` кофейни TMN-1 и покажите его **за декабрь 2025 года**. Результат `dec` — DataFrame со столбцами `date`, `revenue_k`, `ma7` (среднее за текущий и 6 предыдущих дней, округлённое до 1 знака), 31 строка по возрастанию даты. Среднее для 1 декабря должно учитывать последние дни ноября. Сохраните `peak_date` — дату с максимальным `ma7` в декабре.
 

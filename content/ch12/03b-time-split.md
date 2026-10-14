@@ -23,7 +23,7 @@ recap:
 
 Игрушечный пример: 10 часов с номерами 0…9, в тест отправляем 30 %, то есть 3 часа.
 
-- С перемешиванием (`random_state=0`) в тест попадают часы 2, 8 и 4. В обучении остаются 9, 1, 6, 7, 3, 0, 5 — и часы 5, 6, 7, 9 идут **позже** тестового часа 4: модель учится на будущем относительно теста.
+- С перемешиванием (`random_state=0`) в тест попадают часы 2, 8 и 4. В обучении остаются 9, 1, 6, 7, 3, 0, 5 — и пять из них (3, 5, 6, 7, 9) идут **позже** первого тестового часа 2: модель учится на будущем относительно теста.
 - С `shuffle=False` тест — последние три часа 7, 8, 9, обучение — 0…6. Всё обучение раньше теста, как в жизни.
 
 ::: figure ts-noshuffle
@@ -74,7 +74,9 @@ for shuffle in (True, False):
 
 Маска по дате и `shuffle=False` дают одно и то же — хвост ряда; отличаются только тем, как задана граница. Маска удобнее, когда граница календарная («тест — август»), `shuffle=False` — когда нужна доля строк.
 
-**Что получилось:** при перемешивании тест «размазан» по всему ряду с 8 марта, и 3397 обучающих часов лежат позже его начала. Модель видела соседние часы до и после каждого тестового — RMSE 3.60. При `shuffle=False` тест — последние 850 часов (с 27 июля), RMSE 4.29. Разница — это и есть оптимизм перемешивания: в работе модели предстоит прогнозировать будущее, и честная оценка — вторая.
+**Что получилось:** при перемешивании тест «размазан» по всему ряду и начинается 8 марта в 01:00 — со второй строки таблицы. Поэтому позже его начала лежит практически всё обучение: 3397 часов из 3398. Модель видела соседние часы до и после каждого тестового — RMSE 3.60. При `shuffle=False` тест — последние 850 часов (с 27 июля), RMSE 4.29.
+
+Не вся разница 0.7 — оптимизм перемешивания. Тесты тут разные: перемешанный — весь март–август, честный — конец июля и август, где заказов больше (в среднем 10.6 в час против 8.5 в обучении) и шум крупнее. Часть разницы — просто более трудный период. Если сравнить на одном и том же периоде, разрыв меньше: это задачи «Тот же период — другая оценка» и «Кросс-валидация по времени» (там около 0.3). Но и он не ноль, а в работе модели предстоит прогнозировать будущее — честная оценка вторая.
 
 ::: predict
 ```python static
@@ -96,7 +98,7 @@ print(a, b)
 - **Лаги после разбиения.** Если считать `shift` отдельно в обучении и тесте, первые часы теста потеряют историю. Признаки строят на всём ряду, а делят уже готовую таблицу.
 :::
 
-{{practice: noshuffle}}
+{{practice: noshuffle, check-order, same-period}}
 
 ## Кросс-валидация по времени: TimeSeriesSplit
 
@@ -144,7 +146,7 @@ for i, (tr, te) in enumerate(TimeSeriesSplit(n_splits=4).split(s)):
   > Скорость тут ни при чём: обучение на прошлом и проверка на будущем — вопрос честности оценки.
 :::
 
-{{practice: folds, tscv}}
+{{practice: folds, tscv, month-folds}}
 
 ## Практика
 
@@ -238,7 +240,174 @@ print(test_start, rmse_time, rmse_shuffled, gap)
 ```
 
 ### explain
-Тест по времени начинается 27 июля в 14:00 — это последние 850 часов. На нём RMSE около 4.29, а при перемешивании — около 3.60: оценка «улучшилась» почти на 0.7 заказа в час только из-за того, что модель видела соседние часы до и после каждого тестового. Если бы вы пообещали менеджеру точность 3.6, в августе получили бы 4.3 — и объяснять разницу пришлось бы задним числом. Заметить ошибку просто: у честного разбиения по времени `X_tr.index.max() < X_te.index.min()`.
+Тест по времени начинается 27 июля в 14:00 — это последние 850 часов. На нём RMSE около 4.29, а при перемешивании — около 3.60: оценка «улучшилась» почти на 0.7 заказа в час. Часть этого — оттого, что модель видела соседние часы до и после каждого тестового, а часть — оттого, что август труднее: уровень и шум выше. Сколько приходится на каждую причину, разбирает задача «Тот же период — другая оценка». Если бы вы пообещали менеджеру точность 3.6, в августе получили бы 4.3 — и объяснять разницу пришлось бы задним числом. Заметить ошибку просто: у честного разбиения по времени `X_tr.index.max() < X_te.index.min()`.
+
+## task: check-order | Проверка честности разбиения | warmup
+
+Напишите функцию `is_time_split(X_tr, X_te)`: она возвращает `True`, если все обучающие строки раньше всех тестовых (по индексу-времени), иначе `False`. Примените её к двум разбиениям таблицы `X` с `test_size=0.2`: по времени (`shuffle=False`) — результат в `honest_ok`, с перемешиванием (`random_state=0`) — в `shuffled_ok`. В `n_later` сохраните, сколько обучающих строк перемешанного разбиения идут позже его первой тестовой строки.
+
+### setup
+```python
+import pandas as pd
+def make_features(s):
+    df = pd.DataFrame({"y": s})
+    df["hour"] = df.index.hour
+    df["dow"] = df.index.dayofweek
+    df["weekend"] = (df["dow"] >= 5).astype(int)
+    df["lag_1"] = s.shift(1)
+    df["lag_24"] = s.shift(24)
+    df["lag_168"] = s.shift(168)
+    df["roll_24"] = s.shift(1).rolling(24).mean()
+    return df.dropna()
+```
+
+### starter
+```python
+# уже есть: make_features(s)
+import pandas as pd
+from sklearn.model_selection import train_test_split
+s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+df = make_features(s)
+X, y = df.drop(columns="y"), df["y"]
+
+def is_time_split(X_tr, X_te):
+    ...
+
+```
+
+### check
+```python
+import pandas as _pd
+from sklearn.model_selection import train_test_split as _tts
+f = need('is_time_split')
+_i = _pd.date_range('2026-01-01', periods=6, freq='h')
+_a = _pd.DataFrame({'v': range(6)}, index=_i)
+assert f(_a.iloc[:4], _a.iloc[4:]) is not None, 'is_time_split ничего не возвращает: нужен return.'
+assert bool(f(_a.iloc[:4], _a.iloc[4:])) is True, 'Обучение — первые 4 часа, тест — последние 2: функция должна вернуть True.'
+assert bool(f(_a.iloc[[0, 1, 5]], _a.iloc[[2, 3, 4]])) is False, 'Час 05:00 в обучении позже тестовых 02:00–04:00: функция должна вернуть False.'
+assert bool(f(_a.iloc[[3, 1, 0]], _a.iloc[[5, 4]])) is True, 'Порядок строк внутри частей не важен — сравнивайте максимум обучения и минимум теста.'
+d = make_features(need('s')); X0 = d.drop(columns='y')
+a, b = _tts(X0, test_size=0.2, random_state=0)
+nl = int((a.index > b.index.min()).sum())
+assert need('honest_ok') == True, f'honest_ok = {need("honest_ok")}: разбиение с shuffle=False честное.'
+assert need('shuffled_ok') == False, f'shuffled_ok = {need("shuffled_ok")}: перемешанное разбиение кладёт будущее в обучение.'
+assert int(need('n_later')) == nl, f'n_later = {need("n_later")}, а нужно {nl}: (X_tr.index > X_te.index.min()).sum() для перемешанного разбиения.'
+```
+
+### hint
+Все обучающие строки раньше всех тестовых — значит, самая поздняя обучающая раньше самой ранней тестовой: `X_tr.index.max() < X_te.index.min()`.
+
+### hint
+Два разбиения: `train_test_split(X, test_size=0.2, shuffle=False)` и `train_test_split(X, test_size=0.2, random_state=0)` — каждое возвращает пару `X_tr, X_te`. Сравнение даёт `numpy.bool_`; для печати и проверки удобно обернуть в `bool(...)`.
+
+### solution
+```python
+import pandas as pd
+from sklearn.model_selection import train_test_split
+s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+df = make_features(s)
+X, y = df.drop(columns="y"), df["y"]
+
+def is_time_split(X_tr, X_te):
+    return bool(X_tr.index.max() < X_te.index.min())
+
+X_tr, X_te = train_test_split(X, test_size=0.2, shuffle=False)
+honest_ok = is_time_split(X_tr, X_te)
+X_tr_s, X_te_s = train_test_split(X, test_size=0.2, random_state=0)
+shuffled_ok = is_time_split(X_tr_s, X_te_s)
+n_later = int((X_tr_s.index > X_te_s.index.min()).sum())
+print(honest_ok, shuffled_ok, n_later, len(X_tr_s))
+```
+
+### explain
+Честное разбиение проходит проверку, перемешанное — нет. В перемешанном первая тестовая строка — 8 марта 01:00, вторая строка таблицы, поэтому позже неё 3397 обучающих строк из 3398: почти всё обучение. Такую проверку стоит ставить в каждый конвейер с рядом одной строкой `assert is_time_split(X_tr, X_te)` — она ловит и перемешивание, и неотсортированную таблицу.
+
+## task: same-period | Тот же период — другая оценка | plus
+
+Разница 4.29 против 3.60 в задаче «Хвост ряда в тест» смешивает две причины: перемешивание и более трудный конец лета. Разделите их. Обучите бустинг `HistGradientBoostingRegressor(random_state=0)` на двух разбиениях `test_size=0.2` — по времени (`shuffle=False`) и перемешанном (`random_state=0`). Сохраните `rmse_time` и `rmse_shuffled` (3 знака) как раньше. Затем у перемешанной модели возьмите только те её тестовые строки, что попадают в период честного теста (не раньше его первой строки): `n_tail` — их число, `rmse_shuffled_tail` — RMSE на них (3 знака). Наконец, `part_period = rmse_shuffled_tail - rmse_shuffled` — вклад трудного периода и `part_shuffle = rmse_time - rmse_shuffled_tail` — вклад перемешивания (оба 3 знака).
+
+### setup
+```python
+import pandas as pd
+def make_features(s):
+    df = pd.DataFrame({"y": s})
+    df["hour"] = df.index.hour
+    df["dow"] = df.index.dayofweek
+    df["weekend"] = (df["dow"] >= 5).astype(int)
+    df["lag_1"] = s.shift(1)
+    df["lag_24"] = s.shift(24)
+    df["lag_168"] = s.shift(168)
+    df["roll_24"] = s.shift(1).rolling(24).mean()
+    return df.dropna()
+```
+
+### starter
+```python
+# уже есть: make_features(s)
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import HistGradientBoostingRegressor
+s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+df = make_features(s)
+X, y = df.drop(columns="y"), df["y"]
+
+```
+
+### check
+```python
+import numpy as _np, pandas as _pd
+from sklearn.model_selection import train_test_split as _tts
+from sklearn.ensemble import HistGradientBoostingRegressor as _H
+d = make_features(need('s')); X0, y0 = d.drop(columns='y'), d['y']
+_r = lambda a, b: float(_np.sqrt(((a - b) ** 2).mean()))
+a, b, c, e = _tts(X0, y0, test_size=0.2, shuffle=False); rt = _r(e, _H(random_state=0).fit(a, c).predict(b)); t0 = b.index.min()
+a, b, c, e = _tts(X0, y0, test_size=0.2, random_state=0); pb = _H(random_state=0).fit(a, c).predict(b); rs = _r(e, pb)
+m = b.index >= t0; rtail = _r(e[m], pb[m])
+assert close(need('rmse_time'), round(rt, 3), 0.002) and close(need('rmse_shuffled'), round(rs, 3), 0.002), f'rmse_time, rmse_shuffled = {need("rmse_time")}, {need("rmse_shuffled")}, а нужно {round(rt, 3)}, {round(rs, 3)}.'
+assert int(need('n_tail')) == int(m.sum()), f'n_tail = {need("n_tail")}, а нужно {int(m.sum())}: тестовые строки перемешанного разбиения с индексом >= первой строки честного теста.'
+assert close(need('rmse_shuffled_tail'), round(rtail, 3), 0.002), f'rmse_shuffled_tail = {need("rmse_shuffled_tail")}, а нужно {round(rtail, 3)}.'
+assert close(need('part_period'), round(rtail - rs, 3), 0.004) and close(need('part_shuffle'), round(rt - rtail, 3), 0.004), f'part_period, part_shuffle = {need("part_period")}, {need("part_shuffle")}, а нужно {round(rtail - rs, 3)}, {round(rt - rtail, 3)}.'
+```
+
+### hint
+Предсказания перемешанной модели сохраните в переменную, а не только RMSE: понадобятся строки по маске. Маска периода — `X_te_s.index >= test_start`, где `test_start = X_te.index.min()` у честного разбиения.
+
+### hint
+RMSE на части строк: `np.sqrt(((y_te_s[mask] - p_s[mask]) ** 2).mean())`. Маска — массив `True/False`, им можно отбирать и Series, и массив предсказаний.
+
+### solution
+```python
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import HistGradientBoostingRegressor
+s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+df = make_features(s)
+X, y = df.drop(columns="y"), df["y"]
+
+def rmse(a, b):
+    return float(np.sqrt(((a - b) ** 2).mean()))
+
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, shuffle=False)
+p = HistGradientBoostingRegressor(random_state=0).fit(X_tr, y_tr).predict(X_te)
+rmse_time = round(rmse(y_te, p), 3)
+test_start = X_te.index.min()
+
+X_tr_s, X_te_s, y_tr_s, y_te_s = train_test_split(X, y, test_size=0.2, random_state=0)
+p_s = HistGradientBoostingRegressor(random_state=0).fit(X_tr_s, y_tr_s).predict(X_te_s)
+rmse_shuffled = round(rmse(y_te_s, p_s), 3)
+
+tail = X_te_s.index >= test_start
+n_tail = int(tail.sum())
+rmse_shuffled_tail = round(rmse(y_te_s[tail], p_s[tail]), 3)
+part_period = round(rmse_shuffled_tail - rmse_shuffled, 3)
+part_shuffle = round(rmse_time - rmse_shuffled_tail, 3)
+print(rmse_time, rmse_shuffled, n_tail, rmse_shuffled_tail, part_period, part_shuffle)
+```
+
+### explain
+На тех же 163 часах конца июля — августа перемешанная модель ошибается на 3.825, а не на 3.597, как на всём своём тесте: примерно 0.23 из разницы — это трудный период, а не перемешивание. Оставшиеся около 0.47 — сам оптимизм перемешивания: на одном и том же периоде честная модель ошибается на 4.293, а подсмотревшая соседние часы — на 3.825. Вывод тот же, что в теории: перемешивание завышает качество, но сравнивать оценки надо на одинаковом периоде, иначе разница смешивает две причины.
 
 ## task: folds | Границы фолдов | warmup
 
@@ -357,4 +526,85 @@ mean_rmse_kfold = round(kf.mean(), 3)
 ```
 
 ### explain
-Обычный KFold даёт чуть более оптимистичную оценку: модель обучается и на часах после проверяемых, а соседние часы похожи. Разница здесь небольшая, но на рядах с сильным трендом или сменой режима она бывает огромной. По времени — всегда честнее.
+Обычный KFold даёт более оптимистичную оценку: около 3.73 против 4.03 у `TimeSeriesSplit`, разрыв около 0.3. Модель обучается и на часах после проверяемых, а соседние часы похожи. Заметьте и рост ошибки по фолдам: последний (4.28) хуже первого (4.01) — поздние фолды приходятся на период с бо́льшим уровнем заказов. На рядах с сильным трендом или сменой режима разрыв между KFold и проверкой по времени бывает огромным. По времени — всегда честнее.
+
+## task: month-folds | Тесты по месяцам | plus
+
+`TimeSeriesSplit` режет ряд по номерам строк, а отчитываться удобнее по месяцам. Сделайте проверку «по месяцам» вручную: для каждого из месяцев июнь, июль, август обучите `HistGradientBoostingRegressor(random_state=0)` на всех строках таблицы до начала месяца и проверьте на строках этого месяца. Сохраните словари с ключами `"06"`, `"07"`, `"08"`: `month_rmse` — RMSE (3 знака), `month_mean` — среднее число заказов в час в тесте (2 знака) и `rel_error` — отношение RMSE к среднему (3 знака).
+
+### setup
+```python
+import pandas as pd
+def make_features(s):
+    df = pd.DataFrame({"y": s})
+    df["hour"] = df.index.hour
+    df["dow"] = df.index.dayofweek
+    df["weekend"] = (df["dow"] >= 5).astype(int)
+    df["lag_1"] = s.shift(1)
+    df["lag_24"] = s.shift(24)
+    df["lag_168"] = s.shift(168)
+    df["roll_24"] = s.shift(1).rolling(24).mean()
+    return df.dropna()
+```
+
+### starter
+```python
+# уже есть: make_features(s)
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import HistGradientBoostingRegressor
+s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+df = make_features(s)
+X, y = df.drop(columns="y"), df["y"]
+
+```
+
+### check
+```python
+import numpy as _np, pandas as _pd
+from sklearn.ensemble import HistGradientBoostingRegressor as _H
+d = make_features(need('s')); X0, y0 = d.drop(columns='y'), d['y']
+w_r, w_m, w_e = {}, {}, {}
+for k in ('06', '07', '08'):
+    st = _pd.Timestamp(f'2026-{k}-01'); en = st + _pd.offsets.MonthBegin(1)
+    tr = X0.index < st; te = (X0.index >= st) & (X0.index < en)
+    p = _H(random_state=0).fit(X0[tr], y0[tr]).predict(X0[te]); r = float(_np.sqrt(((y0[te] - p) ** 2).mean()))
+    w_r[k], w_m[k], w_e[k] = round(r, 3), round(float(y0[te].mean()), 2), round(r / float(y0[te].mean()), 3)
+g_r, g_m, g_e = need('month_rmse', dict), need('month_mean', dict), need('rel_error', dict)
+assert sorted(g_r) == ['06', '07', '08'], f'Ключи month_rmse: {sorted(g_r)}, а нужны "06", "07", "08".'
+assert all(close(g_m[k], w_m[k], 0.006) for k in w_m), f'month_mean = {g_m}, а нужно {w_m}: среднее y в строках месяца.'
+assert all(close(g_r[k], w_r[k], 0.002) for k in w_r), f'month_rmse = {g_r}, а нужно {w_r}: обучение — все строки до 1-го числа месяца, тест — строки месяца.'
+assert all(close(g_e[k], w_e[k], 0.002) for k in w_e), f'rel_error = {g_e}, а нужно {w_e}.'
+```
+
+### hint
+Границы месяца: `start = pd.Timestamp("2026-06-01")`, конец — `start + pd.offsets.MonthBegin(1)` (1 июля). Маски: `train = X.index < start`, `test = (X.index >= start) & (X.index < end)`.
+
+### hint
+Цикл по `["06", "07", "08"]`, внутри — `pd.Timestamp(f"2026-{m}-01")`, обучение на `X[train]`, предсказание на `X[test]` и три числа в три словаря.
+
+### solution
+```python
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import HistGradientBoostingRegressor
+s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+df = make_features(s)
+X, y = df.drop(columns="y"), df["y"]
+
+month_rmse, month_mean, rel_error = {}, {}, {}
+for m in ["06", "07", "08"]:
+    start = pd.Timestamp(f"2026-{m}-01")
+    end = start + pd.offsets.MonthBegin(1)
+    train = X.index < start
+    test = (X.index >= start) & (X.index < end)
+    p = HistGradientBoostingRegressor(random_state=0).fit(X[train], y[train]).predict(X[test])
+    r = float(np.sqrt(((y[test] - p) ** 2).mean()))
+    month_rmse[m] = round(r, 3)
+    month_mean[m] = round(float(y[test].mean()), 2)
+    rel_error[m] = round(r / float(y[test].mean()), 3)
+print(month_rmse, month_mean, rel_error)
+```
+
+### explain
+RMSE растёт от месяца к месяцу: 3.963, 4.142, 4.256 — хотя обучение каждый раз длиннее. Но и заказов больше: 8.95, 9.73, 10.63 в час. Относительная ошибка, наоборот, падает: 0.443, 0.426, 0.400. Модель не становится хуже — растёт масштаб ряда, а с ним и ошибка в заказах. Это та же поправка, что в теории: август «труднее» в абсолютных числах, поэтому сравнивать RMSE разных периодов напрямую нельзя.

@@ -353,6 +353,30 @@
    ],
    "explain": "Пик — около 7, линия среднего — на 7.2. Распределение чуть скошено вправо: слева оно упирается в ноль, а справа ещё встречаются 12–15 опозданий. При большом n и p не слишком близко к 0 или 1 биномиальное распределение становится похожим на нормальное — это пригодится в следующем уроке."
   },
+  "ch05/02-distributions/binom-hand": {
+   "chapter": "ch05",
+   "lesson": "02-distributions",
+   "lesson_title": "Распределения: мат. ожидание, биномиальное, Пуассона",
+   "id": "binom-hand",
+   "title": "Биномиальное руками",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv",
+    "arrivals.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "from scipy import stats as _st\nw = need('ways')\nassert int(w) == 6, f'ways = {w}. Выпишите все строки из четырёх букв «О»/«В» с ровно двумя «О»: ООВВ, ОВОВ, … — их меньше 16, но больше 4.'\no = need('one')\nif close(o, 0.24 * 0.76, 1e-4):\n    raise AssertionError('one: в варианте четыре доставки — два множителя 0.24 и два 0.76: 0.24 ** 2 * 0.76 ** 2.')\nassert close(o, 0.24 ** 2 * 0.76 ** 2, 6e-5), f'one = {o}. Вероятность одного варианта — произведение по четырём доставкам.'\nwant = _st.binom.pmf(2, 4, 0.24)\nassert close(need('p_hand'), want, 4e-4), f'p_hand = {need(\"p_hand\")}, ожидалось ≈ {want:.4f}.'\nassert close(need('p_scipy'), round(want, 4), 6e-5), f'p_scipy = {need(\"p_scipy\")}. stats.binom.pmf(2, 4, 0.24).'",
+   "starter": "from scipy import stats",
+   "solution": "import itertools\nfrom scipy import stats\nways = sum(1 for v in itertools.product(\"ОВ\", repeat=4) if v.count(\"О\") == 2)\none = round(0.24 ** 2 * 0.76 ** 2, 4)\np_hand = round(ways * 0.24 ** 2 * 0.76 ** 2, 4)\np_scipy = round(stats.binom.pmf(2, 4, 0.24), 4)",
+   "hints": [
+    "Вариант «ООВВ» имеет вероятность 0.24 × 0.24 × 0.76 × 0.76; у «ОВОВ» и остальных — та же, меняется только порядок множителей.",
+    "Перебрать все 16 строк можно так: `import itertools`, затем `itertools.product(\"ОВ\", repeat=4)` даёт кортежи вроде `('О', 'В', 'О', 'В')`; считайте те, где `v.count(\"О\") == 2`."
+   ],
+   "explain": "Вариантов 6: ООВВ, ОВОВ, ОВВО, ВООВ, ВОВО, ВВОО. Каждый случается с вероятностью 0.0333, вместе — 0.1996, ровно столько же даёт `pmf`. Для 20 доставок и 5 опозданий вариантов уже 15 504, и перебор строк превращается в работу для компьютера — поэтому `pmf` и считают формулой."
+  },
   "ch05/02-distributions/ev-comp": {
    "chapter": "ch05",
    "lesson": "02-distributions",
@@ -517,7 +541,7 @@
     "Ожидаемое — `n * p`. Хвост «20 и более» — `stats.binom.sf(19, n, p)`.",
     "z = (наблюдение − среднее) / σ, где σ = √(n · p · (1 − p))."
    ],
-   "explain": "Ожидалось 12 опозданий, случилось 20 — на 2.6 стандартных отклонения больше. При обычной для сети частоте 20+ опозданий из 50 случаются примерно в 1 % недель. Это сильный сигнал, что у новой кофейни что-то не так (далёкие адреса, новый курьер), — но не доказательство: в сети из десятков кофеен раз в несколько недель такое случится и просто так. Как отличать сигнал от случайности строго — уроки «Проверка гипотез: логика и p-value»–6."
+   "explain": "Ожидалось 12 опозданий, случилось 20 — на 2.6 стандартных отклонения больше. При обычной для сети частоте 20+ опозданий из 50 случаются примерно в 1 % недель. Это сильный сигнал, что у новой кофейни что-то не так (далёкие адреса, новый курьер), — но не доказательство: в сети из десятков кофеен раз в несколько недель такое случится и просто так. Как отличать сигнал от случайности строго — уроки «Проверка гипотез: логика и p-value» и «Статистические тесты: какой выбрать»."
   },
   "ch05/02b-normal/tails": {
    "chapter": "ch05",
@@ -540,7 +564,7 @@
     "`m, s = a.mean(), a.std()`; `real_tail = (a > m + 2 * s).mean()`. Сравнивайте с моделью по неокруглённым долям.",
     "Кривая: `x = np.linspace(0, 2000, 300)`, `ax.plot(x, stats.norm.pdf(x, m, s))`; гистограмма — `ax.hist(a, bins=40, density=True)`."
    ],
-   "explain": "Дорогих заказов (дороже 602 + 2 × 364 ≈ 1 330 ₽) в данных 5.3 %, а колокол обещает 2.3 % — в 2.3 раза меньше. У времени доставки тот же порог превышают 4.5 % доставок — хвост денег даже тяжелее. Слева же колокол ошибается в другую сторону: «среднее − 2σ» для денег отрицательно, и нормальная модель отводит почти 5 % заказов на суммы дешевле нуля. Деньги, время и расстояния почти всегда скошены вправо — поэтому выводы о них строят на квантилях, бутстрэпе или логарифме, а не на правиле 68–95–99.7."
+   "explain": "Дорогих заказов (дороже 602 + 2 × 364 ≈ 1 330 ₽) в данных 5.3 %, а колокол обещает 2.3 % — в 2.3 раза меньше. У времени доставки тот же порог превышают 4.5 % доставок — хвост денег даже тяжелее. Слева же колокол ошибается в другую сторону: «среднее − 2σ» для денег отрицательно, и нормальная модель отводит почти 5 % заказов на суммы дешевле нуля. Деньги, время и расстояния почти всегда скошены вправо — поэтому выводы о них строят на квантилях, бутстрэпе (о нём — в уроке «Доверительные интервалы») или логарифме, а не на правиле 68–95–99.7."
   },
   "ch05/02b-normal/log": {
    "chapter": "ch05",
@@ -921,7 +945,7 @@
    "hints": [
     "`g = ok.groupby(\"courier\")[\"late\"].agg([\"sum\", \"size\"])` — опозданий и всего по группе.",
     "Пройдите по строкам `for name, row in g.iterrows():` и посчитайте `proportion_confint(row[\"sum\"], row[\"size\"], method=\"wilson\")`. Результаты соберите в список словарей и превратите в DataFrame.",
-    "Каркас: `rows = []`, в цикле `rows.append({\"courier\": name, \"n\": int(row[\"size\"]), \"share\": ..., \"lo\": lo, \"hi\": hi})`, после цикла `pd.DataFrame(rows).set_index(\"courier\")`."
+    "Каркас: `rows = []`, в цикле `rows.append({\"courier\": name, \"n\": int(row[\"size\"]), \"late\": ..., \"lo\": lo, \"hi\": hi})`, после цикла `pd.DataFrame(rows).set_index(\"courier\")`."
    ],
    "explain": "Интервалы трёх типов курьеров не пересекаются, и пешие отстоят от остальных очень далеко. Это уже почти доказательство, что разница не случайна."
   },
@@ -1105,7 +1129,7 @@
    "solution": "import numpy as np\nlate = np.array([1, 0, 0, 1, 1, 0, 0, 0])\ngrp = np.array([True, True, True, True, False, False, False, False])\nrng = np.random.default_rng(0)\nshuffled = rng.permutation(grp)\nprint(late[shuffled].mean() - late[~shuffled].mean())",
    "hints": [
     "Данные и генератор — до перемешивания, вывод — последним.",
-    "`shuffled = rng.permutation(is_tmn)` — затем разница долей `late[shuffled].mean() - late[~shuffled].mean()`."
+    "`shuffled = rng.permutation(grp)` — затем разница долей `late[shuffled].mean() - late[~shuffled].mean()`."
    ],
    "explain": ""
   },
@@ -1261,9 +1285,9 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nr = _st.ttest_ind(ok.loc[ok['courier'] == 'пеший', 'actual_min'], ok.loc[ok['courier'] == 'вело', 'actual_min'], equal_var=False)\nassert close(need('t_stat'), round(r.statistic, 4)), f't_stat = {need(\"t_stat\")}, а нужно {round(r.statistic, 4)}. Порядок групп: пешие, потом вело; equal_var=False.'\nassert close(need('p_value'), round(r.pvalue, 4)), f'p_value = {need(\"p_value\")}.'",
+   "check": "import pandas as _pd\nfrom scipy import stats as _st\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nr = _st.ttest_ind(ok.loc[ok['courier'] == 'пеший', 'actual_min'], ok.loc[ok['courier'] == 'вело', 'actual_min'], equal_var=False)\nassert close(need('t_stat'), round(r.statistic, 4)), f't_stat = {need(\"t_stat\")}, а нужно {round(r.statistic, 4)}. Порядок групп: пешие, потом вело; equal_var=False.'\npv = float(need('p_value'))\nif pv == 0:\n    raise AssertionError('p_value = 0.0 — это след округления. Сохраните res.pvalue как есть, без round.')\nassert abs(pv / r.pvalue - 1) < 1e-3, f'p_value = {pv}, а нужно около {r.pvalue:.2e}.'",
    "starter": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]",
-   "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nwalk = ok.loc[ok[\"courier\"] == \"пеший\", \"actual_min\"]\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"]\nres = stats.ttest_ind(walk, velo, equal_var=False)\nt_stat = round(res.statistic, 4)\np_value = round(res.pvalue, 4)",
+   "solution": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nwalk = ok.loc[ok[\"courier\"] == \"пеший\", \"actual_min\"]\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"]\nres = stats.ttest_ind(walk, velo, equal_var=False)\nt_stat = round(res.statistic, 4)\np_value = res.pvalue",
    "hints": [
     "Две группы: `walk` — время пеших доставок, `velo` — вело; обе — Series `actual_min` с фильтром по `courier`.",
     "`stats.ttest_ind(walk, velo, equal_var=False)`; результат — `.statistic`, `.pvalue`."
@@ -2075,7 +2099,7 @@
     "Внутри — шаги 2, 3 и 5. Удобно завести вспомогательную функцию для разницы долей и p.",
     "Условие решения: `srm_ok and late_p < 0.05 and late_diff < 0 and not (rev_p < 0.05 and rev_diff < 0)`."
    ],
-   "explain": "Глава 5 пройдена. Итог для руководителя: новое обещание для пешей зоны вдвое сокращает опоздания и заметно поднимает оценки; конверсия в пешей зоне падает примерно на 3.5 п.п.; выручка на сессию, возможно, снижается, но тест не может это ни подтвердить, ни исключить. Рекомендация «внедрять» следует из правила, выбранного заранее: защитная метрика в нём — выручка, а она значимо не упала. Падение конверсии — главная оговорка отчёта. Условие — следить за выручкой, а лучше продлить тест примерно до семи недель (около 9 400 сессий на группу), чтобы сузить интервал по деньгам до ±10 ₽. Следующая глава — машинное обучение: научимся не только проверять гипотезы, но и предсказывать."
+   "explain": "Глава 5 пройдена. Итог для руководителя: новое обещание для пешей зоны вдвое сокращает опоздания и заметно поднимает оценки; конверсия в пешей зоне падает примерно на 3.6 п.п.; выручка на сессию, возможно, снижается, но тест не может это ни подтвердить, ни исключить. Рекомендация «внедрять» следует из правила, выбранного заранее: защитная метрика в нём — выручка, а она значимо не упала. Падение конверсии — главная оговорка отчёта. Условие — следить за выручкой, а лучше продлить тест примерно до семи недель (около 9 400 сессий на группу), чтобы сузить интервал по деньгам до ±10 ₽. Следующая глава — машинное обучение: научимся не только проверять гипотезы, но и предсказывать."
   }
  }
 }

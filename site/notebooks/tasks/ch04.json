@@ -254,8 +254,8 @@
    "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")",
    "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\np50 = t.median()\np90 = t.quantile(0.9)",
    "hints": [
-    "`t = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]`, затем `t.quantile(0.9)`.",
-    "Медиана — `t.median()` или `t.quantile(0.5)`."
+    "Сначала отфильтруйте время `between(1, 299)`, потом возьмите у получившегося столбца `quantile` — аргумент долей (0.9), не процентами.",
+    "`t = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]`, затем `t.quantile(0.9)`; медиана — `t.median()` или `t.quantile(0.5)`."
    ],
    "explain": ""
   },
@@ -374,54 +374,6 @@
    ],
    "explain": "Медиана — 33 минуты. Пунктир делит площадь гистограммы пополам, и видно, что правее него хвост длиннее, чем слева: половина доставок укладывается в 33 минуты, но «вторая половина» растянута до 90+."
   },
-  "ch04/02-histograms/minute-flat": {
-   "chapter": "ch04",
-   "lesson": "02-histograms",
-   "lesson_title": "Распределения и гистограммы",
-   "id": "minute-flat",
-   "title": "Ровные минуты",
-   "level": "base",
-   "exam": false,
-   "parsons": false,
-   "files": [
-    "deliveries.csv"
-   ],
-   "display": true,
-   "setup": "",
-   "check": "import pandas as _pd\nimport numpy as _np\nm = _pd.read_csv('deliveries.csv', parse_dates=['created'])['created'].dt.minute\nc, _ = _np.histogram(m, bins=12, range=(0, 60))\ne = len(m) / 12\nax = ax_of()\nassert len(ax.patches) == 12, f'Корзин {len(ax.patches)}: от 0 до 60 по 5 минут — 12 корзин, range=(0, 60).'\nassert [int(p.get_height()) for p in ax.patches] == [int(x) for x in c], 'Высоты не совпадают с числом заказов по минутам: ax.hist(d[\"created\"].dt.minute, bins=12, range=(0, 60)).'\nassert close(need('expected'), round(e, 1), 0.051), f'expected = {need(\"expected\")}: все заказы, делённые на число корзин.'\nwant = round(max(abs(c - e)) / e * 100, 1)\nassert close(need('max_dev_pct'), want, 0.051), f'max_dev_pct = {need(\"max_dev_pct\")} не совпадает. Нужно наибольшее |корзина − expected| / expected × 100: модуль отклонения (abs), максимум по 12 корзинам, деление на неокруглённое expected.'",
-   "starter": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])",
-   "solution": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nminute = d[\"created\"].dt.minute\nfig, ax = plt.subplots(figsize=(8, 3))\ncounts, edges, bars = ax.hist(minute, bins=12, range=(0, 60))\ne = len(minute) / 12\nax.axhline(e, color=\"red\", linestyle=\"--\")\nax.set_xlabel(\"минута часа\")\nax.set_title(\"Минута создания заказа: ровно, как и ожидали\")\nexpected = round(e, 1)\nmax_dev_pct = round(abs(counts - e).max() / e * 100, 1)",
-   "hints": [
-    "Минута — `d[\"created\"].dt.minute`. `ax.hist` возвращает высоты: `counts, edges, bars = ax.hist(...)`.",
-    "`expected = round(len(d) / 12, 1)`; отклонение — `abs(counts - len(d) / 12).max() / (len(d) / 12) * 100`.",
-    "Почти готово: `counts, edges, bars = ax.hist(minute, bins=12, range=(0, 60))`, затем `e = len(minute) / 12`, `max_dev_pct = round(abs(counts - e).max() / e * 100, 1)`."
-   ],
-   "explain": "На корзину приходится в среднем 156.4 заказа, а самая «неровная» корзина отклоняется на 12.5 %. Много это или мало? По ориентиру из раздела «Какую форму ожидать» случайный разброс — около $\\sqrt{156} \\approx 12$ штук, то есть 8 %. Отклонение в полтора таких шага — обычная случайность, никакого пика на минуте 0 нет: время записывает система, а не человек. Если бы корзина 0–5 оказалась вдвое выше остальных, это был бы признак ручного ввода с округлением."
-  },
-  "ch04/02-histograms/poisson-day": {
-   "chapter": "ch04",
-   "lesson": "02-histograms",
-   "lesson_title": "Распределения и гистограммы",
-   "id": "poisson-day",
-   "title": "Доставки за день и Пуассон",
-   "level": "plus",
-   "exam": false,
-   "parsons": false,
-   "files": [
-    "deliveries.csv"
-   ],
-   "display": true,
-   "setup": "",
-   "check": "import math as _m\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nk = d[d['shop_id'] == 'KZN-1']\ndays = _pd.date_range('2026-09-01', '2026-11-30')\npdw = k.groupby(k['created'].dt.normalize()).size().reindex(days, fill_value=0)\nlw = pdw.mean()\ns = need('per_day', _pd.Series)\nif len(s) < len(days):\n    raise AssertionError(f'В per_day {len(s)} дней, а в периоде {len(days)}: добавьте пустые дни через reindex(days, fill_value=0).')\nassert [int(x) for x in s.values] == [int(x) for x in pdw.values], 'per_day не совпадает: доставки KZN-1 по дням (dt.normalize()) с нулями в пустых днях.'\nassert close(need('lam'), round(lw, 2), 0.006), f'lam = {need(\"lam\")}: среднее per_day с нулями в пустых днях, округлённое до 2 знаков.'\nobs = pdw.value_counts(normalize=True).sort_index()\nexp = _pd.Series({j: lw ** j * _m.exp(-lw) / _m.factorial(j) for j in obs.index})\nt = need('table', _pd.DataFrame)\nassert list(t.columns[:2]) == ['obs', 'exp'] or set(['obs', 'exp']) <= set(t.columns), f'Столбцы table: {list(t.columns)} — нужны obs и exp.'\nassert [int(i) for i in t.index] == [int(i) for i in obs.index], f'Индекс table: {list(t.index)} — встречавшиеся значения по возрастанию.'\nassert all(close(a, b, 0.001) for a, b in zip(t['obs'], obs)), 'obs — доли дней: value_counts(normalize=True).sort_index().'\nassert all(close(a, b, 0.001) for a, b in zip(t['exp'], exp)), 'exp — λ^k · e^(−λ) / k! для каждого k из индекса.'\nassert int(need('worst_k')) == int((obs - exp).abs().idxmax()), f'worst_k = {need(\"worst_k\")}.'",
-   "starter": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")",
-   "solution": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")\nk = d[d[\"shop_id\"] == \"KZN-1\"]\nper_day = k.groupby(k[\"created\"].dt.normalize()).size().reindex(days, fill_value=0)\nmean = per_day.mean()\nlam = round(mean, 2)\nobs = per_day.value_counts(normalize=True).sort_index()\nexp = pd.Series({j: mean ** j * math.exp(-mean) / math.factorial(j) for j in obs.index})\ntable = pd.DataFrame({\"obs\": obs, \"exp\": exp})\nworst_k = (table[\"obs\"] - table[\"exp\"]).abs().idxmax()\ntable.round(3)",
-   "hints": [
-    "Доставки по дням — `k.groupby(k[\"created\"].dt.normalize()).size()`, где `k` — строки KZN-1. Пустые дни — `.reindex(days, fill_value=0)`.",
-    "`obs = per_day.value_counts(normalize=True).sort_index()`; формула для каждого `j` из `obs.index`: `lam ** j * math.exp(-lam) / math.factorial(j)`.",
-    "`table = pd.DataFrame({\"obs\": obs, \"exp\": exp})`; `worst_k = (table[\"obs\"] - table[\"exp\"]).abs().idxmax()`. Для формулы берите точное среднее, а округляйте только `lam` для ответа."
-   ],
-   "explain": "У KZN-1 4.71 доставки в день; сильнее всего формула расходится с данными на семи доставках: 14.3 % дней против ожидаемых 9.2 %. Это 13 дней вместо 8 — для 91 дня в пределах случайности. Пустой день за осень был всего один, и формула тоже ждёт около одного (0.9 %). Если бы забыли `reindex`, этот день пропал бы, среднее стало бы 4.77, а нулей не оказалось бы вовсе — расхождение с Пуассоном появилось бы из-за ошибки подсчёта, а не из-за данных."
-  },
   "ch04/02-histograms/compare": {
    "chapter": "ch04",
    "lesson": "02-histograms",
@@ -469,6 +421,123 @@
     "```python static\nok = d[d[\"actual_min\"].between(1, 299)]\ndelay = ...\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.hist(delay, bins=16, range=(-40, 40))\nax.axvline(0, color=\"red\")\nlate_pct = round(... * 100, 1)\n```"
    ],
    "explain": "Гистограмма опоздания отвечает сразу на два вопроса: как часто опаздываем (площадь справа от нуля) и насколько сильно (как далеко тянется хвост). Почти каждая четвёртая доставка опаздывает — с этой цифры начнётся проект главы."
+  },
+  "ch04/02b-shape/poisson-hand": {
+   "chapter": "ch04",
+   "lesson": "02b-shape",
+   "lesson_title": "Какую форму ожидать: Пуассон и ровные минуты",
+   "id": "poisson-hand",
+   "title": "Пуассон цепочкой",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import math as _m\nq0 = _m.exp(-3); q1 = q0 * 3; q2 = q1 * 3 / 2\nassert close(need('p0'), round(q0, 3), 0.0006), f'p0 = {need(\"p0\")}: math.exp(-lam).'\nif close(need('p1'), round(q0 * 3 / 2, 3), 0.0006):\n    raise AssertionError('p1: умножайте p0 на lam / k с k = 1, то есть на 3.')\nassert close(need('p1'), round(q1, 3), 0.0006), f'p1 = {need(\"p1\")}: p0 · lam / 1.'\nassert close(need('p2'), round(q2, 3), 0.0006), f'p2 = {need(\"p2\")}: p1 · lam / 2.'\nassert close(need('p3plus'), round(1 - q0 - q1 - q2, 3), 0.0011), f'p3plus = {need(\"p3plus\")}: 1 − (p0 + p1 + p2).'",
+   "starter": "import math\nlam = 3",
+   "solution": "import math\nlam = 3\np0 = math.exp(-lam)\np1 = p0 * lam / 1\np2 = p1 * lam / 2\np3plus = 1 - (p0 + p1 + p2)\np0, p1, p2, p3plus = (round(x, 3) for x in (p0, p1, p2, p3plus))\nprint(p0, p1, p2, p3plus)",
+   "hints": [
+    "`p0 = math.exp(-lam)`; дальше `p1 = p0 * lam / 1`, `p2 = p1 * lam / 2`.",
+    "`p3plus = 1 - (p0 + p1 + p2)`; округляйте в конце: `round(p0, 3)` и т. д."
+   ],
+   "explain": "При среднем 3 доставки пустой день бывает в 5 % дней, одна доставка — в 14.9 %, две — в 22.4 %, а в 57.7 % дней доставок три и больше. Больше половины дней — «не ниже среднего», хотя и пустые дни случаются примерно раз в три недели."
+  },
+  "ch04/02b-shape/ufa-empty": {
+   "chapter": "ch04",
+   "lesson": "02b-shape",
+   "lesson_title": "Какую форму ожидать: Пуассон и ровные минуты",
+   "id": "ufa-empty",
+   "title": "Пустые дни в Уфе",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import math as _m\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nu = d[d['shop_id'] == 'UFA-1']\ndays = _pd.date_range('2026-09-01', '2026-11-30')\nraw = u.groupby(u['created'].dt.normalize()).size()\npdw = raw.reindex(days, fill_value=0)\nlw = pdw.mean()\nif close(need('lam'), round(raw.mean(), 2), 0.006):\n    raise AssertionError(f'lam = {need(\"lam\")} — это среднее только по дням с доставками ({len(raw)} дней). Добавьте пустые дни: reindex(days, fill_value=0).')\ns = need('per_day', _pd.Series)\nassert len(s) == len(days) and [int(x) for x in s.values] == [int(x) for x in pdw.values], 'per_day — доставки UFA-1 по дням (dt.normalize()) с нулями в пустых днях, 91 значение.'\nassert close(need('lam'), round(lw, 2), 0.006), f'lam = {need(\"lam\")}: среднее per_day, 2 знака.'\nassert int(need('empty')) == int((pdw == 0).sum()), f'empty = {need(\"empty\")}: (per_day == 0).sum().'\nassert close(need('exp_empty'), round(91 * _m.exp(-lw), 1), 0.051), f'exp_empty = {need(\"exp_empty\")}: 91 · e^(−λ) с неокруглённым средним.'",
+   "starter": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")",
+   "solution": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")\nu = d[d[\"shop_id\"] == \"UFA-1\"]\nper_day = u.groupby(u[\"created\"].dt.normalize()).size().reindex(days, fill_value=0)\nmean = per_day.mean()\nlam = round(mean, 2)\nempty = int((per_day == 0).sum())\nexp_empty = round(len(days) * math.exp(-mean), 1)\nprint(lam, empty, exp_empty)",
+   "hints": [
+    "Как в разделе «На реальных данных»: строки UFA-1, `groupby(...dt.normalize()).size()`, затем `.reindex(days, fill_value=0)`.",
+    "`mean = per_day.mean()`, `empty = (per_day == 0).sum()`, `exp_empty = round(len(days) * math.exp(-mean), 1)`."
+   ],
+   "explain": "У UFA-1 в среднем 2.02 доставки в день. Пустых дней было 14, формула ждёт 12.0 — близко, разница в пределах случайности ($\\sqrt{12} ≈ 3.5$). Значит, пустые дни — не сбой выгрузки и не закрытая кофейня, а обычное следствие малого потока. Без `reindex` эти 14 дней пропали бы: среднее стало бы 2.39, а вопрос «сколько пустых дней» вообще не имел бы ответа."
+  },
+  "ch04/02b-shape/minute-flat": {
+   "chapter": "ch04",
+   "lesson": "02b-shape",
+   "lesson_title": "Какую форму ожидать: Пуассон и ровные минуты",
+   "id": "minute-flat",
+   "title": "Ровные минуты",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nimport numpy as _np\nm = _pd.read_csv('deliveries.csv', parse_dates=['created'])['created'].dt.minute\nc, _ = _np.histogram(m, bins=12, range=(0, 60))\ne = len(m) / 12\nax = ax_of()\nassert len(ax.patches) == 12, f'Корзин {len(ax.patches)}: от 0 до 60 по 5 минут — 12 корзин, range=(0, 60).'\nassert [int(p.get_height()) for p in ax.patches] == [int(x) for x in c], 'Высоты не совпадают с числом заказов по минутам: ax.hist(d[\"created\"].dt.minute, bins=12, range=(0, 60)).'\nassert close(need('expected'), round(e, 1), 0.051), f'expected = {need(\"expected\")}: все заказы, делённые на число корзин.'\nwant = round(max(abs(c - e)) / e * 100, 1)\nassert close(need('max_dev_pct'), want, 0.051), f'max_dev_pct = {need(\"max_dev_pct\")} не совпадает. Нужно наибольшее |корзина − expected| / expected × 100: модуль отклонения (abs), максимум по 12 корзинам, деление на неокруглённое expected.'",
+   "starter": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])",
+   "solution": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nminute = d[\"created\"].dt.minute\nfig, ax = plt.subplots(figsize=(8, 3))\ncounts, edges, bars = ax.hist(minute, bins=12, range=(0, 60))\ne = len(minute) / 12\nax.axhline(e, color=\"red\", linestyle=\"--\")\nax.set_xlabel(\"минута часа\")\nax.set_title(\"Минута создания заказа: ровно, как и ожидали\")\nexpected = round(e, 1)\nmax_dev_pct = round(abs(counts - e).max() / e * 100, 1)",
+   "hints": [
+    "Минута — `d[\"created\"].dt.minute`. `ax.hist` возвращает высоты: `counts, edges, bars = ax.hist(...)`.",
+    "`expected = round(len(d) / 12, 1)`; отклонение — `abs(counts - len(d) / 12).max() / (len(d) / 12) * 100`.",
+    "Почти готово: `counts, edges, bars = ax.hist(minute, bins=12, range=(0, 60))`, затем `e = len(minute) / 12`, `max_dev_pct = round(abs(counts - e).max() / e * 100, 1)`."
+   ],
+   "explain": "На корзину приходится в среднем 156.4 заказа, а самая «неровная» корзина отклоняется на 12.5 %. Много это или мало? По ориентиру из раздела «Какую форму ожидать» случайный разброс — около $\\sqrt{156} \\approx 12$ штук, то есть 8 %. Отклонение в полтора таких шага — обычная случайность, никакого пика на минуте 0 нет: время записывает система, а не человек. Если бы корзина 0–5 оказалась вдвое выше остальных, это был бы признак ручного ввода с округлением."
+  },
+  "ch04/02b-shape/poisson-day": {
+   "chapter": "ch04",
+   "lesson": "02b-shape",
+   "lesson_title": "Какую форму ожидать: Пуассон и ровные минуты",
+   "id": "poisson-day",
+   "title": "Доставки за день и Пуассон",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import math as _m\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nk = d[d['shop_id'] == 'KZN-1']\ndays = _pd.date_range('2026-09-01', '2026-11-30')\npdw = k.groupby(k['created'].dt.normalize()).size().reindex(days, fill_value=0)\nlw = pdw.mean()\ns = need('per_day', _pd.Series)\nif len(s) < len(days):\n    raise AssertionError(f'В per_day {len(s)} дней, а в периоде {len(days)}: добавьте пустые дни через reindex(days, fill_value=0).')\nassert [int(x) for x in s.values] == [int(x) for x in pdw.values], 'per_day не совпадает: доставки KZN-1 по дням (dt.normalize()) с нулями в пустых днях.'\nassert close(need('lam'), round(lw, 2), 0.006), f'lam = {need(\"lam\")}: среднее per_day с нулями в пустых днях, округлённое до 2 знаков.'\nobs = pdw.value_counts(normalize=True).sort_index()\nexp = _pd.Series({j: lw ** j * _m.exp(-lw) / _m.factorial(j) for j in obs.index})\nt = need('table', _pd.DataFrame)\nassert list(t.columns[:2]) == ['obs', 'exp'] or set(['obs', 'exp']) <= set(t.columns), f'Столбцы table: {list(t.columns)} — нужны obs и exp.'\nassert [int(i) for i in t.index] == [int(i) for i in obs.index], f'Индекс table: {list(t.index)} — встречавшиеся значения по возрастанию.'\nassert all(close(a, b, 0.001) for a, b in zip(t['obs'], obs)), 'obs — доли дней: value_counts(normalize=True).sort_index().'\nassert all(close(a, b, 0.001) for a, b in zip(t['exp'], exp)), 'exp — λ^k · e^(−λ) / k! для каждого k из индекса.'\nassert int(need('worst_k')) == int((obs - exp).abs().idxmax()), f'worst_k = {need(\"worst_k\")}.'",
+   "starter": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")",
+   "solution": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")\nk = d[d[\"shop_id\"] == \"KZN-1\"]\nper_day = k.groupby(k[\"created\"].dt.normalize()).size().reindex(days, fill_value=0)\nmean = per_day.mean()\nlam = round(mean, 2)\nobs = per_day.value_counts(normalize=True).sort_index()\nexp = pd.Series({j: mean ** j * math.exp(-mean) / math.factorial(j) for j in obs.index})\ntable = pd.DataFrame({\"obs\": obs, \"exp\": exp})\nworst_k = (table[\"obs\"] - table[\"exp\"]).abs().idxmax()\ntable.round(3)",
+   "hints": [
+    "Доставки по дням — `k.groupby(k[\"created\"].dt.normalize()).size()`, где `k` — строки KZN-1. Пустые дни — `.reindex(days, fill_value=0)`.",
+    "`obs = per_day.value_counts(normalize=True).sort_index()`; формула для каждого `j` из `obs.index`: `lam ** j * math.exp(-lam) / math.factorial(j)`.",
+    "`table = pd.DataFrame({\"obs\": obs, \"exp\": exp})`; `worst_k = (table[\"obs\"] - table[\"exp\"]).abs().idxmax()`. Для формулы берите точное среднее, а округляйте только `lam` для ответа."
+   ],
+   "explain": "У KZN-1 4.71 доставки в день; сильнее всего формула расходится с данными на семи доставках: 14.3 % дней против ожидаемых 9.2 %. Это 13 дней вместо 8 — для 91 дня в пределах случайности. Пустой день за осень был всего один, и формула тоже ждёт около одного (0.9 %). Если бы забыли `reindex`, этот день пропал бы, среднее стало бы 4.77, а нулей не оказалось бы вовсе — расхождение с Пуассоном появилось бы из-за ошибки подсчёта, а не из-за данных."
+  },
+  "ch04/02b-shape/weekday-sqrt": {
+   "chapter": "ch04",
+   "lesson": "02b-shape",
+   "lesson_title": "Какую форму ожидать: Пуассон и ровные минуты",
+   "id": "weekday-sqrt",
+   "title": "Ровно ли по дням недели",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import math as _m\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nc = d['created'].dt.dayofweek.value_counts().sort_index()\ne = len(d) / 7\nst = ((c - e) / _m.sqrt(e)).round(1)\ncc = need('counts', _pd.Series)\nassert [int(i) for i in cc.sort_index().index] == list(range(7)) and [int(x) for x in cc.sort_index().values] == [int(x) for x in c.values], 'counts — d[\"created\"].dt.dayofweek.value_counts().sort_index().'\nassert close(need('expected'), round(e, 1), 0.051), f'expected = {need(\"expected\")}: все доставки / 7.'\ns = need('steps', _pd.Series).sort_index()\nassert len(s) == 7 and all(close(a, b, 0.051) for a, b in zip(s.values, st.values)), f'steps = {[float(x) for x in s.values]}, а нужно {[float(x) for x in st.values]}: (counts − expected) / √expected.'\nwant = sorted(int(i) for i in st.index[st.abs() >= 2])\nassert sorted(int(x) for x in need('loud')) == want, f'loud = {need(\"loud\")}, а нужно {want}: дни, где |steps| ≥ 2.'",
+   "starter": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])",
+   "solution": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ncounts = d[\"created\"].dt.dayofweek.value_counts().sort_index()\ne = len(d) / 7\nexpected = round(e, 1)\nsteps = ((counts - e) / math.sqrt(e)).round(1)\nloud = list(steps.index[steps.abs() >= 2])\nprint(counts.tolist(), expected, steps.tolist(), loud)",
+   "hints": [
+    "`counts = d[\"created\"].dt.dayofweek.value_counts().sort_index()`, `e = len(d) / 7`.",
+    "`steps = ((counts - e) / math.sqrt(e)).round(1)`; дни с большим отклонением — `list(steps.index[steps.abs() >= 2])`."
+   ],
+   "explain": "На день недели в среднем 268.1 доставки, шаг случайного разброса — $\\sqrt{268} ≈ 16$. Будни отклоняются на 0.4–1.8 шага вниз, а суббота (+2.4) и воскресенье (+3.0) — вверх: 308 и 318 доставок. Число самих дней одинаковое (по 13), значит, перекос не от календаря. Это не ошибка данных, а история: в выходные гости чаще заказывают доставку домой. Ровной формы здесь ждать было нельзя — день недели, в отличие от минуты часа, на поведение гостей влияет."
   },
   "ch04/03-boxplots/box-km": {
    "chapter": "ch04",
@@ -703,6 +772,29 @@
    ],
    "explain": ""
   },
+  "ch04/03b-sigma/ddof-small": {
+   "chapter": "ch04",
+   "lesson": "03b-sigma",
+   "lesson_title": "Стандартное отклонение: разброс одним числом",
+   "id": "ddof-small",
+   "title": "ddof на пяти и на тридцати пяти",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)]\nw = o[(o['weather'] == 'снег') & (o['courier'] == 'пеший')].sort_values('created')['actual_min']\nl5 = w.tail(5)\ng5 = round((l5.std(ddof=1) / l5.std(ddof=0) - 1) * 100, 1)\ng35 = round((w.std(ddof=1) / w.std(ddof=0) - 1) * 100, 1)\nx = need('last5')\nvals = sorted(float(v) for v in (x['actual_min'] if isinstance(x, _pd.DataFrame) else x))\nassert vals == sorted(float(v) for v in l5), f'В last5 значения {vals}, а нужны пять последних по created пеших доставок в снег: {sorted(float(v) for v in l5)}.'\nassert close(need('gap5'), g5, 0.051), f'gap5 = {need(\"gap5\")}, а нужно {g5}: (std(ddof=1) / std(ddof=0) − 1) × 100 по пяти доставкам.'\nassert close(need('gap35'), g35, 0.051), f'gap35 = {need(\"gap35\")}, а нужно {g35}: то же по всем 35.'",
+   "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]",
+   "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nwalk = ok[(ok[\"weather\"] == \"снег\") & (ok[\"courier\"] == \"пеший\")].sort_values(\"created\")[\"actual_min\"]\nlast5 = walk.tail(5)\ngap5 = round((last5.std(ddof=1) / last5.std(ddof=0) - 1) * 100, 1)\ngap35 = round((walk.std(ddof=1) / walk.std(ddof=0) - 1) * 100, 1)\nprint(last5.tolist(), gap5, gap35)",
+   "hints": [
+    "Фильтр — два условия через `&`: `ok[(ok[\"weather\"] == \"снег\") & (ok[\"courier\"] == \"пеший\")]`; затем `sort_values(\"created\")` и `.tail(5)`.",
+    "`s1 = x.std(ddof=1)`, `s0 = x.std(ddof=0)`, разница в процентах — `round((s1 / s0 - 1) * 100, 1)`."
+   ],
+   "explain": "На пяти доставках (39, 41, 46, 35, 36 минут) σ с `ddof=1` — 4.39, с `ddof=0` — 3.93: разница 11.8 %. На всех 35 — 15.48 против 15.26, разница 1.5 %. Отношение двух σ зависит только от n: это $\\sqrt{n / (n - 1)}$, $\\sqrt{5/4} ≈ 1.118$ и $\\sqrt{35/34} ≈ 1.015$. Поэтому на маленьких срезах (одна кофейня в снег, один курьер за неделю) выбор `ddof` меняет ответ на десятки процентов, а на тысячах строк — нет."
+  },
   "ch04/03b-sigma/sigma-courier": {
    "chapter": "ch04",
    "lesson": "03b-sigma",
@@ -725,6 +817,52 @@
     "`spread = pd.DataFrame({\"mean\": g.mean(), \"std\": g.std(), \"iqr\": g.quantile(0.75) - g.quantile(0.25)}).round(1)`; самый стабильный — `spread[\"std\"].idxmin()`."
    ],
    "explain": "У вело-курьеров σ = 9.1 минуты, у авто — 10.7, у пеших — 13.3: велосипедисты самые предсказуемые. IQR у авто и пеших одинаковый (14 минут), а σ у пеших заметно больше — значит, у пеших длиннее хвосты: середина такая же, но чаще бывают очень долгие доставки. Две меры разброса вместе говорят больше, чем каждая отдельно. На сотнях доставок в группе `ddof=0` и `ddof=1` почти не отличаются (у авто 10.6 вместо 10.7), но на группах из 5–10 значений разница заметная — привычка писать `ddof` явно спасает."
+  },
+  "ch04/03b-sigma/sigma-shops": {
+   "chapter": "ch04",
+   "lesson": "03b-sigma",
+   "lesson_title": "Стандартное отклонение: разброс одним числом",
+   "id": "sigma-shops",
+   "title": "Кто раздул σ",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\na = d.dropna(subset=['actual_min']).groupby('shop_id')['actual_min'].std().round(1)\nb = d[d['actual_min'].between(1, 299)].groupby('shop_id')['actual_min'].std().round(1)\nw = _pd.DataFrame({'raw': a, 'clean': b})\nw['ratio'] = (w['raw'] / w['clean']).round(1)\ns = need('shops', _pd.DataFrame)\nif 'shop_id' in s.columns:\n    s = s.set_index('shop_id')\nfor c in ('raw', 'clean', 'ratio'):\n    assert c in s.columns, f'В shops нет столбца {c}.'\nassert set(s.index) == set(w.index), f'Строки shops: {list(s.index)} — кофейни.'\nfor c in ('raw', 'clean'):\n    assert all(close(s.loc[k, c], w.loc[k, c], 0.051) for k in w.index), f'Столбец {c} не совпадает: {c} — std() по {\"всем непустым значениям\" if c == \"raw\" else \"доставкам 1–299 минут\"}.'\nassert all(close(s.loc[k, 'ratio'], w.loc[k, 'ratio'], 0.051) for k in w.index), 'ratio = raw / clean, 1 знак.'\nexp = sorted(w.index[w['ratio'] > 2])\nassert sorted(str(x) for x in need('inflated')) == exp, f'inflated = {need(\"inflated\")}, а нужно {exp}.'",
+   "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")",
+   "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nraw = d.groupby(\"shop_id\")[\"actual_min\"].std().round(1)\nclean = d[d[\"actual_min\"].between(1, 299)].groupby(\"shop_id\")[\"actual_min\"].std().round(1)\nshops = pd.DataFrame({\"raw\": raw, \"clean\": clean})\nshops[\"ratio\"] = (shops[\"raw\"] / shops[\"clean\"]).round(1)\ninflated = list(shops.index[shops[\"ratio\"] > 2])\nshops",
+   "hints": [
+    "Два `groupby(\"shop_id\")[\"actual_min\"].std()`: один по `d` (пустые значения `std` пропускает сам), второй — по `d[d[\"actual_min\"].between(1, 299)]`. Соберите их в `pd.DataFrame({\"raw\": ..., \"clean\": ...})`.",
+    "`shops[\"ratio\"] = (shops[\"raw\"] / shops[\"clean\"]).round(1)`; список — `list(shops.index[shops[\"ratio\"] > 2])`."
+   ],
+   "explain": "После очистки σ у всех кофеен почти одинаковая — 10.0–11.5 минуты. До очистки у PRM-1 она 76.2 (в 6.7 раза больше), у KZN-2 — 54.0, у PRM-2 — 59.5: именно там лежат пять «забытых» заказов на 735–1 281 минуту (у PRM-1 их три). У KZN-1 тоже есть мусор — 0 и −12 минут, — но σ выросла только с 10.7 до 11.2: значения рядом с нулём отстоят от среднего на десятки минут, а не на тысячу. σ по сырым данным показывает не «какая кофейня нестабильна», а «где больше всего забытых заказов»."
+  },
+  "ch04/03b-sigma/two-sigma": {
+   "chapter": "ch04",
+   "lesson": "03b-sigma",
+   "lesson_title": "Стандартное отклонение: разброс одним числом",
+   "id": "two-sigma",
+   "title": "Правило ±2σ на скошенных данных",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\ns = d.loc[d['actual_min'].between(1, 299), 'actual_min']\nm, sd = s.mean(), s.std()\nsh = round(s.between(m - 2 * sd, m + 2 * sd).mean() * 100, 1)\nassert close(need('share2'), sh, 0.051), f'share2 = {need(\"share2\")}, а нужно {sh}: between(m - 2 * sd, m + 2 * sd).mean() × 100.'\nassert int(need('above')) == int((s > m + 2 * sd).sum()), f'above = {need(\"above\")}: (s > m + 2 * sd).sum().'\nassert int(need('below')) == int((s < m - 2 * sd).sum()), f'below = {need(\"below\")}: (s < m - 2 * sd).sum().'",
+   "starter": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\ns = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]",
+   "solution": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\ns = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nm, sd = s.mean(), s.std()\nshare2 = round(s.between(m - 2 * sd, m + 2 * sd).mean() * 100, 1)\nabove = int((s > m + 2 * sd).sum())\nbelow = int((s < m - 2 * sd).sum())\nprint(round(m - 2 * sd, 1), round(m + 2 * sd, 1), share2, above, below)",
+   "hints": [
+    "Как в разделе «На реальных данных»: `s.between(m - 2 * sd, m + 2 * sd).mean()` — доля; умножьте на 100 и округлите.",
+    "Число значений выше границы — сумма `True`: `(s > m + 2 * sd).sum()`; так же для нижней."
+   ],
+   "explain": "Границы — 12.4 и 56.5 минуты, внутри 95.5 % доставок — почти как у колокола. Но за границами всё несимметрично: 82 доставки дольше 56.5 минуты и ни одной быстрее 12.4 (самая быстрая — 14 минут). У колокола хвосты были бы примерно поровну. Значит, «±2σ» здесь не описывает риски: опасный хвост один — справа, и его лучше описывать квантилем, например «10 % доставок дольше N минут»."
   },
   "ch04/04-slices/late-share": {
    "chapter": "ch04",
@@ -949,14 +1087,14 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\nwant = o.pivot_table(index=o['created'].dt.dayofweek, columns=o['created'].dt.hour, values='late', aggfunc='mean')\np = need('pv', _pd.DataFrame)\nassert p.shape == want.shape, f'Размер pv {p.shape}, а нужно {want.shape} (7 дней × 13 часов).'\nax = ax_of()\nassert ax.images, 'Нужна картинка-матрица: ax.imshow(pv.values, ...).'\nassert ax.images[0].get_array().shape == want.shape\nassert len(figs[0].axes) == 2, 'Добавьте шкалу цветов: fig.colorbar(im, ax=ax).'\nlabels = [t.get_text() for t in ax.get_xticklabels()]\nassert labels == [str(h) for h in want.columns], f'Подписи по X: {labels[:4]}… — часы по порядку.'\nst = want.stack()\nk = st.idxmax()\nassert tuple(int(x) for x in need('worst_cell')) == (int(k[0]), int(k[1])), f'worst_cell = {need(\"worst_cell\")}, а нужно {k}.'",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\nwant = o.pivot_table(index=o['created'].dt.dayofweek, columns=o['created'].dt.hour, values='late', aggfunc='mean')\np = need('pv', _pd.DataFrame)\nassert p.shape == want.shape, f'Размер pv {p.shape}, а нужно {want.shape} (7 дней × 13 часов).'\nax = ax_of()\nassert ax.images, 'Нужна картинка-матрица: ax.imshow(pv.values, ...).'\nassert ax.images[0].get_array().shape == want.shape\nassert len(figs[0].axes) == 2, 'Добавьте шкалу цветов: fig.colorbar(im, ax=ax).'\nlabels = [t.get_text() for t in ax.get_xticklabels()]\nassert labels == [str(h) for h in want.columns], f'Подписи по X: {labels[:4]}… — часы по порядку.'\nnw = o.pivot_table(index=o['created'].dt.dayofweek, columns=o['created'].dt.hour, values='late', aggfunc='size')\nnn = need('n', _pd.DataFrame)\nassert nn.shape == nw.shape and int(nn.fillna(0).values.sum()) == int(nw.fillna(0).values.sum()), 'n — та же сводная, но aggfunc=\"size\": сколько доставок в каждой ячейке.'\nk0 = want.stack().idxmax()\nk = want.where(nw >= 30).stack().idxmax()\nwc = tuple(int(x) for x in need('worst_cell'))\nif wc == (int(k0[0]), int(k0[1])):\n    raise AssertionError(f'worst_cell = {wc} — это максимум по всем ячейкам, а в ней всего {int(nw.loc[k0])} доставок. Ищите только среди ячеек, где n >= 30.')\nassert wc == (int(k[0]), int(k[1])), f'worst_cell = {wc}, а нужно ({int(k[0])}, {int(k[1])}): максимум доли среди ячеек с n >= 30.'\nassert int(need('worst_n')) == int(nw.loc[k]), f'worst_n = {need(\"worst_n\")}: n в ячейке worst_cell.'",
    "starter": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"dow\"] = ok[\"created\"].dt.dayofweek\nok[\"hour\"] = ok[\"created\"].dt.hour",
-   "solution": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"dow\"] = ok[\"created\"].dt.dayofweek\nok[\"hour\"] = ok[\"created\"].dt.hour\npv = ok.pivot_table(index=\"dow\", columns=\"hour\", values=\"late\", aggfunc=\"mean\")\n\nfig, ax = plt.subplots(figsize=(9, 3.5))\nim = ax.imshow(pv.values, aspect=\"auto\", cmap=\"Reds\")\nfig.colorbar(im, ax=ax, label=\"доля опозданий\")\nax.set_xticks(range(len(pv.columns)))\nax.set_xticklabels(pv.columns)\nax.set_yticks(range(7))\nax.set_yticklabels([\"пн\", \"вт\", \"ср\", \"чт\", \"пт\", \"сб\", \"вс\"])\nax.set_title(\"Опоздания: день недели × час\")\nworst_cell = pv.stack().idxmax()",
+   "solution": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"dow\"] = ok[\"created\"].dt.dayofweek\nok[\"hour\"] = ok[\"created\"].dt.hour\npv = ok.pivot_table(index=\"dow\", columns=\"hour\", values=\"late\", aggfunc=\"mean\")\n\nfig, ax = plt.subplots(figsize=(9, 3.5))\nim = ax.imshow(pv.values, aspect=\"auto\", cmap=\"Reds\")\nfig.colorbar(im, ax=ax, label=\"доля опозданий\")\nax.set_xticks(range(len(pv.columns)))\nax.set_xticklabels(pv.columns)\nax.set_yticks(range(7))\nax.set_yticklabels([\"пн\", \"вт\", \"ср\", \"чт\", \"пт\", \"сб\", \"вс\"])\nax.set_title(\"Опоздания: день недели × час\")\nn = ok.pivot_table(index=\"dow\", columns=\"hour\", values=\"late\", aggfunc=\"size\")\nworst_cell = pv.where(n >= 30).stack().idxmax()\nworst_n = n.loc[worst_cell]\nprint(worst_cell, worst_n)",
    "hints": [
     "`pv = ok.pivot_table(index=\"dow\", columns=\"hour\", values=\"late\", aggfunc=\"mean\")`; `im = ax.imshow(pv.values, aspect=\"auto\", cmap=\"Reds\")`; `fig.colorbar(im, ax=ax)`.",
-    "Подписи: `ax.set_xticks(range(len(pv.columns)))` и `ax.set_xticklabels(pv.columns)`. Наибольшая ячейка: `pv.stack().idxmax()` — вернёт пару (день, час)."
+    "Подписи: `ax.set_xticks(range(len(pv.columns)))` и `ax.set_xticklabels(pv.columns)`. Маленькие ячейки уберите: `pv.where(n >= 30)` оставляет долю там, где условие верно, а в остальных ставит `NaN`. Затем `.stack().idxmax()` — вернёт пару (день, час), `NaN` пропускаются."
    ],
-   "explain": "В ячейках тепловой карты бывает всего по 10–20 доставок, поэтому отдельные «горячие» клетки могут быть случайностью. Смотрите на полосы и пятна — например, тёмные столбцы обеда и вечера через всю неделю. Это устойчивая картина; одиночная яркая клетка — нет."
+   "explain": "В ячейках тепловой карты от 4 до 40 доставок, в половине — 20 и меньше. Самая яркая клетка карты — воскресенье, 20 часов: 53 % опозданий, но это 8 из 15 доставок, одна-две доставки сдвинут долю на 7–13 пунктов. Среди 15 ячеек, где 30 доставок и больше, лидер — пятница, 13 часов: 16 из 31, 51.6 %. Это обеденный пик, и он совпадает с тёмным столбцом обеда через всю неделю — такой картине верить можно. Смотрите на полосы и пятна, а не на одиночные клетки."
   },
   "ch04/05-time/weekly": {
    "chapter": "ch04",
@@ -1363,10 +1501,10 @@
    "display": true,
    "setup": "",
    "check": "import pandas as _pd\nr = _pd.read_csv('preorders.csv', parse_dates=['date'])\nf = r.groupby('guest_id')['date'].transform('min')\nr['cohort'] = f.dt.to_period('M').astype(str)\nr['age'] = (r['date'].dt.year - f.dt.year) * 12 + (r['date'].dt.month - f.dt.month)\nw = r.groupby(['cohort', 'age'])['guest_id'].nunique()\nassert 'duckdb' in _code and calls('sql') >= 1, 'Посчитайте через duckdb.sql(...), а не pandas.'\ns = need('sql', _pd.DataFrame)\nfor c in ('cohort', 'age', 'guests'):\n    assert c in s.columns, f'В sql нет столбца {c}: дайте ему имя через AS {c}.'\ngot = {(str(a)[:7], int(b)): int(c) for a, b, c in zip(s['cohort'], s['age'], s['guests'])}\nif len(got) > len(w):\n    raise AssertionError(f'Пар (когорта, месяц) {len(got)}, а нужно {len(w)}: месяц жизни — date_diff(\"month\") между обрезанными до месяца датами, не дни / 30.')\nassert got == {k: int(v) for k, v in w.items()}, 'Числа не совпадают: COUNT(DISTINCT r.guest_id) и date_diff(\\'month\\', date_trunc(\\'month\\', f.first), date_trunc(\\'month\\', r.date)).'\nwd = need('wide', _pd.DataFrame)\nassert wd.shape == (6, 6), f'wide {wd.shape}, а нужно 6 когорт × 6 месяцев: pivot_table(index=\"cohort\", columns=\"age\", values=\"guests\").'",
-   "starter": "import pandas as pd\nimport duckdb\nraw = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nsql = duckdb.sql(\"\"\"\n    WITH f AS (\n        SELECT guest_id, MIN(date) AS first FROM raw GROUP BY guest_id\n    )\n    SELECT ...\n\"\"\").df()",
+   "starter": "import pandas as pd\nimport duckdb\nraw = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nsql = duckdb.sql(\"\"\"\n    -- 1) CTE f: первая дата заказа каждого гостя\n    -- 2) заказы + f, группировка по когорте и месяцу жизни\n\"\"\").df()",
    "solution": "import pandas as pd\nimport duckdb\nraw = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nsql = duckdb.sql(\"\"\"\n    WITH f AS (\n        SELECT guest_id, MIN(date) AS first FROM raw GROUP BY guest_id\n    )\n    SELECT date_trunc('month', f.first) AS cohort,\n           date_diff('month', date_trunc('month', f.first), date_trunc('month', r.date)) AS age,\n           COUNT(DISTINCT r.guest_id) AS guests\n    FROM raw AS r\n    JOIN f USING (guest_id)\n    GROUP BY 1, 2\n    ORDER BY 1, 2\n\"\"\").df()\nwide = sql.pivot_table(index=\"cohort\", columns=\"age\", values=\"guests\")\nwide",
    "hints": [
-    "После CTE `f` соедините заказы с первой датой: `FROM raw AS r JOIN f USING (guest_id)`, сгруппируйте по когорте и месяцу жизни.",
+    "Начните с `WITH f AS (SELECT guest_id, MIN(date) AS first FROM raw GROUP BY guest_id)`. После CTE `f` соедините заказы с первой датой: `FROM raw AS r JOIN f USING (guest_id)`, сгруппируйте по когорте и месяцу жизни.",
     "`date_trunc('month', f.first) AS cohort`, `date_diff('month', date_trunc('month', f.first), date_trunc('month', r.date)) AS age`, `COUNT(DISTINCT r.guest_id) AS guests`, `GROUP BY 1, 2`.",
     "Матрица — `wide = sql.pivot_table(index=\"cohort\", columns=\"age\", values=\"guests\")`."
    ],
@@ -1445,6 +1583,54 @@
     "`monthly = pd.DataFrame({\"dau\": ..., \"mau\": ...})`, затем `monthly[\"sticky\"] = (monthly[\"dau\"] / monthly[\"mau\"] * 100).round(1)`; лучший — `str(monthly[\"sticky\"].idxmax())`."
    ],
    "explain": "Липкость выросла с 8.6 % в январе до 14.5 % в июне: средний гость месяца в июне заказывал около четырёх дней из тридцати. MAU с марта не рос (939 в марте, 874 в июне), а средний DAU рос (99.4 → 127.0) — значит, растёт не аудитория, а привычка. Если бы MAU посчитали суммой DAU, в январе вышло бы 885 вместо 330: постоянный гость посчитался бы по разу за каждый свой день, и липкость стала бы бессмысленной."
+  },
+  "ch04/05c-dau-mau/wau-full": {
+   "chapter": "ch04",
+   "lesson": "05c-dau-mau",
+   "lesson_title": "Когорты в SQL и DAU/MAU: проверка и частота",
+   "id": "wau-full",
+   "title": "WAU только по полным неделям",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "preorders.csv",
+    "preorder_guests.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nr = _pd.read_csv('preorders.csv', parse_dates=['date'])\ng = r.groupby(r['date'].dt.to_period('W'))\nw = _pd.DataFrame({'wau': g['guest_id'].nunique(), 'days': g['date'].nunique()})\nwf = w[w['days'] == 7]\nwk = need('weekly', _pd.DataFrame)\nfor c in ('wau', 'days'):\n    assert c in wk.columns, f'В weekly нет столбца {c}.'\nassert len(wk) == len(w), f'В weekly {len(wk)} строк, а недель в выгрузке {len(w)}: группируйте по to_period(\"W\").'\nif [int(x) for x in wk['days']] == [int(x) for x in g.size()]:\n    raise AssertionError('days — это число заказов в неделе. Нужно число разных дат: g[\"date\"].nunique().')\nassert [int(x) for x in wk['days']] == [int(x) for x in w['days']], f'days = {[int(x) for x in wk[\"days\"]][:3]}…, а нужно {[int(x) for x in w[\"days\"]][:3]}…: разные даты в неделе — nunique() по date.'\nassert [int(x) for x in wk['wau']] == [int(x) for x in w['wau']], 'wau — разные гости за неделю: nunique() по guest_id.'\nfu = need('full', _pd.DataFrame)\nassert len(fu) == len(wf), f'В full {len(fu)} строк, а полных недель {len(wf)}: оставьте days == 7.'\nassert int(need('n_full')) == len(wf), f'n_full = {need(\"n_full\")}, а полных недель {len(wf)}.'\nassert int(need('min_wau')) == int(wf['wau'].min()), f'min_wau = {need(\"min_wau\")}: наименьший wau среди полных недель.'",
+   "starter": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nweek = o[\"date\"].dt.to_period(\"W\")",
+   "solution": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nweek = o[\"date\"].dt.to_period(\"W\")\ng = o.groupby(week)\nweekly = pd.DataFrame({\"wau\": g[\"guest_id\"].nunique(), \"days\": g[\"date\"].nunique()})\nfull = weekly[weekly[\"days\"] == 7]\nn_full = len(full)\nmin_wau = full[\"wau\"].min()\nprint(n_full, min_wau)\nweekly.head(3)",
+   "hints": [
+    "Сгруппируйте один раз: `g = o.groupby(week)`, затем два столбца — `g[\"guest_id\"].nunique()` и `g[\"date\"].nunique()`; соберите их в `pd.DataFrame({...})`.",
+    "`full = weekly[weekly[\"days\"] == 7]`, `n_full = len(full)`, `min_wau = full[\"wau\"].min()`."
+   ],
+   "explain": "Недель в выгрузке 27, полных — 25. Отброшены первая (4 дня, WAU 41) и последняя (2 дня, WAU 249). Наименьший WAU полной недели — 79 (5–11 января): база только набиралась. Если бы считали `days` через `size()`, получили бы число заказов, и условие `== 7` не выполнилось бы ни разу. Тот же приём — сначала проверить, сколько дней в периоде, — работает для месяцев и кварталов."
+  },
+  "ch04/05c-dau-mau/sticky-city": {
+   "chapter": "ch04",
+   "lesson": "05c-dau-mau",
+   "lesson_title": "Когорты в SQL и DAU/MAU: проверка и частота",
+   "id": "sticky-city",
+   "title": "Липкость по городам",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "preorders.csv",
+    "preorder_guests.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nr = _pd.read_csv('preorders.csv', parse_dates=['date']).merge(_pd.read_csv('preorder_guests.csv'), on='guest_id')\nj = r[r['date'].dt.to_period('M') == _pd.Period('2026-06', 'M')]\nt = j.pivot_table(index='date', columns='city', values='guest_id', aggfunc='nunique')\nmau = j.groupby('city')['guest_id'].nunique()\nw = (t.mean() / mau * 100).round(1)\ns = need('city_sticky', _pd.Series)\ngot = {str(k): float(v) for k, v in s.items()}\nassert set(got) == set(w.index), f'Города в city_sticky: {sorted(got)}, а нужно {sorted(w.index)}.'\ndau_all = j.groupby('date')['guest_id'].nunique().mean()\nif all(close(got[c], dau_all / mau[c] * 100, 0.06) for c in got):\n    raise AssertionError('Средний DAU взят по всей сети. Нужен DAU гостей своего города: nunique по паре (дата, город).')\nfor c in w.index:\n    assert close(got[c], float(w[c]), 0.051), f'У {c} получилось {got[c]}, ожидалось {float(w[c])}: средний за дни июня DAU города / MAU города × 100.'\nassert str(need('best_city')) == str(w.idxmax()), f'best_city = {need(\"best_city\")!r}.'",
+   "starter": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")",
+   "solution": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")\nj = o.merge(guests, on=\"guest_id\")\nj = j[j[\"date\"].dt.to_period(\"M\") == \"2026-06\"]\ndau = j.pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")\nmau = j.groupby(\"city\")[\"guest_id\"].nunique()\ncity_sticky = (dau.mean() / mau * 100).round(1)\nbest_city = city_sticky.idxmax()\nprint(mau)\ncity_sticky",
+   "hints": [
+    "Сначала `merge` заказов со справочником по `guest_id`, затем фильтр июня: `o[\"date\"].dt.to_period(\"M\") == \"2026-06\"`. DAU по городам удобно получить сводной: `pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")` — строка на день, столбец на город.",
+    "Средний DAU — `.mean()` этой сводной (по каждому столбцу), MAU — `groupby(\"city\")[\"guest_id\"].nunique()`. Делите Series на Series: pandas выровняет их по городам."
+   ],
+   "explain": "Пермь — 15.3 %, Казань и Тюмень — по 13.9 %: пермский гость июня заказывал в среднем около 4.6 дня из 30, казанский — около 4.2. Разница 1.4 п.п. небольшая, а MAU Тюмени — всего 87 гостей против 391–396 в Казани и Перми, так что её цифра шатается сильнее остальных. Ловушка задачи — взять общий DAU сети и делить на MAU города: общий средний DAU июня — 127 гостей, и у Тюмени выйдет 146 %, у Казани — 32.5 %. Больше 100 % — явный знак ошибки. Для честного сравнения городов числитель и знаменатель должны считаться по одним и тем же гостям."
   },
   "ch04/06-correlation/scatter": {
    "chapter": "ch04",
@@ -1885,14 +2071,14 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\nw = o.pivot_table(index=_pd.Grouper(key='created', freq='W'), columns='shop_id', values='late', aggfunc='mean').iloc[1:-1] * 100\nassert len(figs) == 1 and len(figs[0].axes) == 6, 'Нужна сетка 2 × 3: plt.subplots(2, 3, ...).'\naxs = figs[0].axes\nassert sorted(a.get_title() for a in axs) == sorted(w.columns), 'Заголовки графиков — коды кофеен.'\nassert len({a.get_ylim() for a in axs}) == 1, 'Шкала Y должна быть общей: sharey=True.'\nfor a in axs:\n    s = w[a.get_title()]\n    assert a.lines and all(close(x, y) for x, y in zip(a.lines[0].get_ydata(), s.values)), f'Линия {a.get_title()} не совпадает с долей опозданий по полным неделям.'\nassert figs[0]._suptitle is not None and figs[0]._suptitle.get_text().strip(), 'Добавьте общий заголовок: fig.suptitle(...).'\nassert need('worst_week_shop') == w.max().idxmax(), f'worst_week_shop = {need(\"worst_week_shop\")!r}.'",
+   "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\no = d[d['actual_min'].between(1, 299)].copy()\no['late'] = o['actual_min'] > o['promised_min']\nw = o.pivot_table(index=_pd.Grouper(key='created', freq='W'), columns='shop_id', values='late', aggfunc='mean').iloc[1:-1] * 100\nassert len(figs) == 1 and len(figs[0].axes) == 6, 'Нужна сетка 2 × 3: plt.subplots(2, 3, ...).'\naxs = figs[0].axes\nassert sorted(a.get_title() for a in axs) == sorted(w.columns), 'Заголовки графиков — коды кофеен.'\nassert len({a.get_ylim() for a in axs}) == 1, 'Шкала Y должна быть общей: sharey=True.'\nfor a in axs:\n    s = w[a.get_title()]\n    assert a.lines and all(close(x, y) for x, y in zip(a.lines[0].get_ydata(), s.values)), f'Линия {a.get_title()} не совпадает с долей опозданий по полным неделям.'\nassert figs[0]._suptitle is not None and figs[0]._suptitle.get_text().strip(), 'Добавьте общий заголовок: fig.suptitle(...).'\nassert need('top_avg_shop') == w.mean().idxmax(), f'top_avg_shop = {need(\"top_avg_shop\")!r}: среднее по неделям у каждой кофейни — w.mean(), затем idxmax().'",
    "starter": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]",
-   "solution": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nw = ok.pivot_table(index=pd.Grouper(key=\"created\", freq=\"W\"), columns=\"shop_id\",\n                   values=\"late\", aggfunc=\"mean\").iloc[1:-1] * 100\n\nfig, axes = plt.subplots(2, 3, figsize=(10, 5), sharex=True, sharey=True)\nfor ax, shop in zip(axes.flat, w.columns):\n    ax.plot(w.index, w[shop])\n    ax.set_title(shop)\n    ax.tick_params(axis=\"x\", labelrotation=45)\nfig.suptitle(\"Доля опозданий по неделям, %\")\nfig.tight_layout()\nworst_week_shop = w.max().idxmax()",
+   "solution": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nw = ok.pivot_table(index=pd.Grouper(key=\"created\", freq=\"W\"), columns=\"shop_id\",\n                   values=\"late\", aggfunc=\"mean\").iloc[1:-1] * 100\n\nfig, axes = plt.subplots(2, 3, figsize=(10, 5), sharex=True, sharey=True)\nfor ax, shop in zip(axes.flat, w.columns):\n    ax.plot(w.index, w[shop])\n    ax.set_title(shop)\n    ax.tick_params(axis=\"x\", labelrotation=45)\nfig.suptitle(\"Доля опозданий по неделям, %\")\nfig.tight_layout()\ntop_avg_shop = w.mean().idxmax()\nprint(w.mean().round(1).sort_values())",
    "hints": [
     "Таблица «неделя × кофейня»: `ok.pivot_table(index=pd.Grouper(key=\"created\", freq=\"W\"), columns=\"shop_id\", values=\"late\", aggfunc=\"mean\").iloc[1:-1] * 100`.",
-    "`for ax, shop in zip(axes.flat, w.columns):` — рисуйте `w[shop]`. Худшая кофейня — `w.max().idxmax()`: максимум по каждому столбцу, затем его номер."
+    "`for ax, shop in zip(axes.flat, w.columns):` — рисуйте `w[shop]`. Кофейня-лидер по опозданиям — `w.mean().idxmax()`: среднее по каждому столбцу, затем подпись наибольшего."
    ],
-   "explain": "Общая шкала — главное в маленьких графиках: без неё каждый график растянется под свои данные, и маленькая кофейня с колебаниями от 20 до 25 % будет выглядеть так же «драматично», как большая с колебаниями от 10 до 40 %."
+   "explain": "Общая шкала — главное в маленьких графиках: без неё каждый график растянется под свои данные, и маленькая кофейня с колебаниями от 20 до 25 % будет выглядеть так же «драматично», как большая с колебаниями от 10 до 40 %. Средняя недельная доля выше всех у KZN-2 — 33.3 %, следом TMN-1 (30.0 %); у остальных четырёх — 20–23 %. Самая «горячая» отдельная неделя тоже у KZN-2 (45.5 %), но там всего 11–25 доставок в неделю: по одной неделе вывод делать нельзя, по среднему за 12 недель — можно."
   },
   "ch04/07-readable/percent-axis": {
    "chapter": "ch04",
@@ -1943,6 +2129,30 @@
    ],
    "explain": "370.9 ₽ на заказ, 380.5 ₽ на кофейню, 392.7 ₽ на гостя. Гости с 21+ заказами — это 230 человек из 2 210, но 46.9 % всех заказов, и чек у них ниже среднего. Поэтому «среднее на заказ» — это во многом среднее постоянных гостей. Если маркетолог спрашивает «сколько тратит обычный гость за раз», ответ — 392.7, а не 370.9. Частая ошибка — посчитать «на гостя» как `сумма / число гостей`: это 2 953 ₽ — выручка на гостя за полгода, совсем другой показатель."
   },
+  "ch04/07c-metrics/per-guest-rev": {
+   "chapter": "ch04",
+   "lesson": "07c-metrics",
+   "lesson_title": "Метрики: чьё среднее и воронка",
+   "id": "per-guest-rev",
+   "title": "Третье число: выручка на гостя",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "preorders.csv",
+    "app_funnel.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\no = _pd.read_csv('preorders.csv')\ng = o['guest_id'].nunique()\nrv = round(o['amount'].sum() / g, 1)\nif close(need('rev_per_guest'), round(o.groupby('guest_id')['amount'].mean().mean(), 1), 0.051):\n    raise AssertionError('rev_per_guest — это средний чек гостя. Нужна выручка на гостя: o[\"amount\"].sum() / o[\"guest_id\"].nunique().')\nassert close(need('rev_per_guest'), rv, 0.051), f'rev_per_guest = {need(\"rev_per_guest\")}, а нужно {rv}: сумма amount / число разных гостей.'\nassert close(need('orders_per_guest'), round(len(o) / g, 2), 0.0051), f'orders_per_guest = {need(\"orders_per_guest\")}: число строк / число разных гостей.'\nassert close(need('per_order'), o['amount'].mean(), 1e-6), 'per_order — o[\"amount\"].mean() без округления.'",
+   "starter": "import pandas as pd\no = pd.read_csv(\"preorders.csv\")",
+   "solution": "import pandas as pd\no = pd.read_csv(\"preorders.csv\")\nguests = o[\"guest_id\"].nunique()\nrev_per_guest = round(o[\"amount\"].sum() / guests, 1)\norders_per_guest = round(len(o) / guests, 2)\nper_order = o[\"amount\"].mean()\nprint(rev_per_guest, orders_per_guest, round(per_order * len(o) / guests, 1))",
+   "hints": [
+    "Число разных гостей — `o[\"guest_id\"].nunique()`; число заказов — `len(o)`.",
+    "`rev_per_guest = round(o[\"amount\"].sum() / o[\"guest_id\"].nunique(), 1)`; так же для заказов на гостя с `len(o)`."
+   ],
+   "explain": "Выручка на гостя за полгода — 2 953.3 ₽, заказов на гостя — 7.96. Последнее число в выводе то же самое, 2 953.3: выручка на гостя = средний чек заказа × заказов на гостя (370.9 × 7.96 ≈ 2 952; рубль разницы — от округления множителей). Поэтому её можно поднять двумя путями — чеком или частотой, — и в отчёте полезно показывать оба множителя. Средний чек гостя (392.7 ₽) в это равенство не входит: он отвечает на другой вопрос."
+  },
   "ch04/07c-metrics/funnel": {
    "chapter": "ch04",
    "lesson": "07c-metrics",
@@ -1967,6 +2177,54 @@
     "`funnel = pd.DataFrame({\"sessions\": s})`, затем `funnel[\"from_prev\"] = (funnel[\"sessions\"] / funnel[\"sessions\"].shift() * 100).round(1)`; худший шаг — `funnel[\"from_prev\"].idxmin()` (NaN пропускается)."
    ],
    "explain": "Худший шаг — корзина: до неё доходят 45.6 % посмотревших меню. Но «худший» не значит «сломанный»: на витрине многие просто смотрят. Подозрительнее другое — 82.9 % на шаге оплата → заказ, где гость уже решил купить. Срез по платформе в теории показал, что это Android после обновления. Воронка подсказывает, куда смотреть, а причину находит срез. Без `reindex(steps)` шаги встали бы по алфавиту, и `shift()` делил бы «заказ» на ничто, а «корзину» — на «заказ»."
+  },
+  "ch04/07c-metrics/funnel-rows": {
+   "chapter": "ch04",
+   "lesson": "07c-metrics",
+   "lesson_title": "Метрики: чьё среднее и воронка",
+   "id": "funnel-rows",
+   "title": "Строки против сессий",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "preorders.csv",
+    "app_funnel.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nf = _pd.read_csv('app_funnel.csv', parse_dates=['ts'])\nst = ['открыл', 'меню', 'корзина', 'оплата', 'заказ']\nr = f['step'].value_counts().reindex(st)\ns = f.groupby('step')['session_id'].nunique().reindex(st)\nw = ((r / r.shift() - s / s.shift()) * 100).round(1)\ng = need('gap', _pd.Series)\nassert list(g.index) == st, f'Индекс gap: {list(g.index)} — шаги в порядке пути (reindex(steps)).'\nassert _pd.isna(g.iloc[0]), 'У первого шага предыдущего нет — там должен быть NaN.'\nassert all(close(a, b, 0.051) for a, b in zip(g.iloc[1:], w.iloc[1:])), f'gap = {[float(x) for x in g.iloc[1:]]}, а нужно {[float(x) for x in w.iloc[1:]]}: (строки / строки.shift() − сессии / сессии.shift()) × 100.'\nassert need('inflated') == w.idxmax(), f'inflated = {need(\"inflated\")!r}: шаг с наибольшим gap.'\nassert need('hidden') == w.idxmin(), f'hidden = {need(\"hidden\")!r}: шаг с наименьшим (самым отрицательным) gap.'",
+   "starter": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]",
+   "solution": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nrows = f[\"step\"].value_counts().reindex(steps)\nsessions = f.groupby(\"step\")[\"session_id\"].nunique().reindex(steps)\ngap = ((rows / rows.shift() - sessions / sessions.shift()) * 100).round(1)\ninflated = gap.idxmax()\nhidden = gap.idxmin()\ngap",
+   "hints": [
+    "Строки — `f[\"step\"].value_counts().reindex(steps)`, сессии — `f.groupby(\"step\")[\"session_id\"].nunique().reindex(steps)`. Конверсия — ряд, делённый на `ряд.shift()`.",
+    "`gap = ((rows / rows.shift() - sessions / sessions.shift()) * 100).round(1)`; шаги — `gap.idxmax()` и `gap.idxmin()`."
+   ],
+   "explain": "На шаге «меню» строки завышают конверсию на 17.4 п.п. (96.0 % вместо 78.6 %): гости открывают меню по нескольку раз за сессию. На шаге «оплата» — наоборот, занижают на 13.5 п.п. (57.7 % вместо 71.2 %): делим на раздутое число строк корзины, и появляется обрыв, которого нет. На «корзине» и «заказе» разница почти нулевая. Ошибка в одну строку кода переставляет «главную проблему» воронки с одного шага на другой."
+  },
+  "ch04/07c-metrics/funnel-platform": {
+   "chapter": "ch04",
+   "lesson": "07c-metrics",
+   "lesson_title": "Метрики: чьё среднее и воронка",
+   "id": "funnel-platform",
+   "title": "Срез воронки самостоятельно",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "preorders.csv",
+    "app_funnel.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nf = _pd.read_csv('app_funnel.csv', parse_dates=['ts'])\nf['p'] = (f['ts'] >= '2026-06-15').map({True: 'после 15.06', False: 'до 15.06'})\npv = f.pivot_table(index=['platform', 'p'], columns='step', values='session_id', aggfunc='nunique')\nc = pv['заказ'] / pv['оплата']\npc = need('pay_conv', _pd.Series)\nassert len(pc) == 4, f'В pay_conv {len(pc)} значений, а нужно 4: две платформы × два периода.'\ngot = sorted(round(float(x), 1) for x in pc.values)\nwant = sorted(round(float(x) * 100, 1) for x in c.values)\nif got == sorted(round(float(x), 3) for x in c.values) or all(v < 1.5 for v in got):\n    raise AssertionError('pay_conv — в процентах: умножьте долю на 100.')\nassert all(close(a, b, 0.051) for a, b in zip(got, want)), f'pay_conv = {got}, а нужно {want}: заказ / оплата × 100 по разным сессиям.'\na_b, a_a = c[('android', 'до 15.06')], c[('android', 'после 15.06')]\nlw = round(pv.loc[('android', 'после 15.06'), 'оплата'] * (a_b - a_a))\nassert int(need('lost')) == int(lw), f'lost = {need(\"lost\")}, а нужно {int(lw)}: сессии Android на оплате после 15.06 × (конверсия до − конверсия после).'",
+   "starter": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]",
+   "solution": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)",
+   "hints": [
+    "Период — `(f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})`: `map` со словарём заменяет `True`/`False` подписями. Сводная — `pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")`.",
+    "`pay_conv = (pv[\"заказ\"] / pv[\"оплата\"] * 100).round(1)`. Строка Android после 15.06 — `pv.loc[(\"android\", \"после 15.06\")]`; конверсии для `lost` берите долями без округления."
+   ],
+   "explain": "iOS — 91.4 % и 93.1 %, Android до 15 июня — 90.6 %, после — 60.7 %. При прежней конверсии из 349 сессий на оплате получилось бы около 316 заказов, вышло 212 — минус 104. Это та же цифра, что в теории, но теперь вы получили её сами и можете пересчитать на любую дату или платформу. Оговорка для отчёта: «до» и «после» — разные дни, и часть разницы может давать что-то ещё, случившееся 15 июня. Но iOS в те же дни не просел — значит, причина в Android."
   },
   "ch04/08-eda/slice-fn": {
    "chapter": "ch04",
@@ -2244,7 +2502,7 @@
    "starter": "import pandas as pd\nimport matplotlib.pyplot as plt",
    "solution": "import pandas as pd\nimport matplotlib.pyplot as plt\nspread = {}\nfor by in [\"courier\", \"weather\", \"shop_id\", \"items\", \"hour\"]:\n    g = ok.groupby(by)[\"late\"].agg([\"mean\", \"size\"])\n    g = g[g[\"size\"] >= 50]\n    spread[by] = round((g[\"mean\"].max() - g[\"mean\"].min()) * 100, 1)\nranking = pd.Series(spread).sort_values(ascending=False)\ntop_factor = ranking.index[0]\n\nt = (ok.groupby(top_factor)[\"late\"].mean() * 100).sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nbars = ax.bar(t.index, t.values, color=[\"tab:red\"] + [\"lightgray\"] * (len(t) - 1))\nax.bar_label(bars, fmt=\"%.1f\")\nax.set_ylabel(\"опозданий, %\")\nax.set_title(f\"Главный фактор — {top_factor}\")\nranking",
    "hints": [
-    "Урок «EDA по плану», задача «Какой признак важнее» — тот же цикл.",
+    "Урок «EDA по плану: от вопроса к выводу», задача «Какой признак важнее» — тот же цикл.",
     "Для графика: `t = (ok.groupby(top_factor)[\"late\"].mean() * 100).sort_values(ascending=False)`."
    ],
    "explain": "Тип курьера лидирует с огромным отрывом — разброс около 69 п.п., дальше позиции, час, погода и кофейня (13–22 п.п.). Подписи значений на столбцах превращают график в готовый слайд: «пешие опаздывают в 5–6 раз чаще вело и в 14 раз чаще машин»."
@@ -2263,15 +2521,15 @@
    ],
    "display": true,
    "setup": "import pandas as _pd0\nimport math as _m0\ndef _ref_ok(raw=None):\n    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()\n    o = d[d['actual_min'].between(1, 299)].copy()\n    o['late'] = o['actual_min'] > o['promised_min']\n    o['delay'] = o['actual_min'] - o['promised_min']\n    o['hour'] = o['created'].dt.hour\n    return o\nok = _ref_ok()",
-   "check": "import pandas as _pd\no = _ref_ok()\npv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100\np = need('pv', _pd.DataFrame)\nassert p.shape == pv.shape, f'Форма pv {p.shape}, а нужно {pv.shape}: строки — promised_min (30, 45, 60), столбцы — courier.'\n_a, _b = p.fillna(-1).values.ravel(), pv.fillna(-1).values.ravel()\nif all(close(a * 100, b, 0.051) for a, b in zip(_a, _b) if b >= 0):\n    raise AssertionError('В pv доли от 0 до 1, а нужны проценты: умножьте на 100.')\nassert all(close(a, b, 0.051) for a, b in zip(_a, _b)), 'Значения pv не совпадают. Нужна доля опозданий (aggfunc=\"mean\" по late) × 100; строки — promised_min, столбцы — courier.'\nw = o[(o['courier'] == 'пеший') & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)\nassert close(need('walk_p80'), w), f'walk_p80 = {need(\"walk_p80\")}, а нужно {w}.'\nassert need('fair_promise') == int(_m0.ceil(w / 5) * 5), f'fair_promise = {need(\"fair_promise\")}, а нужно {int(_m0.ceil(w / 5) * 5)}.'",
+   "check": "import pandas as _pd\no = _ref_ok()\npv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100\np = need('pv', _pd.DataFrame)\nassert p.shape == pv.shape, f'Форма pv {p.shape}, а нужно {pv.shape}: строки — promised_min (30, 45, 60), столбцы — courier.'\n_a, _b = p.fillna(-1).values.ravel(), pv.fillna(-1).values.ravel()\nif all(close(a * 100, b, 0.051) for a, b in zip(_a, _b) if b >= 0):\n    raise AssertionError('В pv доли от 0 до 1, а нужны проценты: умножьте на 100.')\nassert all(close(a, b, 0.051) for a, b in zip(_a, _b)), 'Значения pv не совпадают. Нужна доля опозданий (aggfunc=\"mean\" по late) × 100; строки — promised_min, столбцы — courier.'\nw = o[(o['courier'] == 'пеший') & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)\nassert close(need('walk_p80'), w), f'walk_p80 = {need(\"walk_p80\")}, а нужно {w}.'\nassert need('fair_promise') == int(_m0.ceil(w / 5) * 5), f'fair_promise = {need(\"fair_promise\")}, а нужно {int(_m0.ceil(w / 5) * 5)}.'\nw45 = o[(o['courier'] == 'пеший') & (o['promised_min'] == 45)]\nassert close(need('walk45_km'), w45['distance_km'].median()), f'walk45_km = {need(\"walk45_km\")}: медиана distance_km пеших с обещанием 45 минут.'\nassert close(need('walk45_min'), w45['actual_min'].median()), f'walk45_min = {need(\"walk45_min\")}: медиана actual_min пеших с обещанием 45 минут.'",
    "starter": "import pandas as pd\nimport math",
-   "solution": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\nwalk30 = ok[(ok[\"courier\"] == \"пеший\") & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\npv.round(1)",
+   "solution": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\nwalk30 = ok[(ok[\"courier\"] == \"пеший\") & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == \"пеший\") & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)",
    "hints": [
     "Урок «Срезы: сравниваем группы» — срез по двум признакам сводной таблицей. Для `walk_p80` сначала отберите пеших с обещанием 30 минут, потом возьмите квантиль 0.8 их `actual_min`.",
     "`ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100`. Округление вверх до 5: `math.ceil(x / 5) * 5`.",
-    "```python static\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\nwalk30 = ok[(ok[\"courier\"] == \"пеший\") & (ok[\"promised_min\"] == ...)]\nwalk_p80 = walk30[\"actual_min\"].quantile(...)\nfair_promise = math.ceil(walk_p80 / 5) * 5\n```"
+    "```python static\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\nwalk30 = ok[(ok[\"courier\"] == \"пеший\") & (ok[\"promised_min\"] == ...)]\nwalk_p80 = walk30[\"actual_min\"].quantile(...)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == \"пеший\") & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\n```"
    ],
-   "explain": "Пешие опаздывают при любом обещании, а вело и авто с теми же обещаниями — заметно реже. При обещании 30 минут опаздывают 69.7 % пеших доставок (317), а у вело — 24.4 %. Обещание рассчитано на скорость велосипеда: пешие доставляют 80 % таких заказов за 40 минут — это и есть реалистичное обещание.\n\nОбратите внимание на строку 45 минут: у пеших там опозданий ещё больше — 89.5 % (86 доставок). Это не ошибка в таблице. Обещание зависит от расстояния: при 45 минутах медианное расстояние у пеших — 3 км, и везут они такие заказы около 60 минут (медиана 59.5). Пешком 3 км вовремя не довезти почти никогда.\n\nОтсюда два рычага для бизнеса: обещать пешим реалистичное время (40 минут вместо 30) и не отдавать пешим заказы дальше 1.5 км — на таких расстояниях они опаздывают в 91.5 % доставок (106). Второй рычаг сам по себе проблему не решает: и до 1.5 км пешие опаздывают в 67.7 % доставок (297), там нужен первый. Как их сочетать, решает бизнес, а аналитик даёт цифры для обоих."
+   "explain": "Пешие опаздывают при любом обещании, а вело и авто с теми же обещаниями — заметно реже. При обещании 30 минут опаздывают 69.7 % пеших доставок (317), а у вело — 24.4 %. Обещание рассчитано на скорость велосипеда: пешие доставляют 80 % таких заказов за 40 минут — это и есть реалистичное обещание.\n\nОбратите внимание на строку 45 минут: у пеших там опозданий ещё больше — 89.5 % (86 доставок). Это не ошибка в таблице. Обещание зависит от расстояния: при 45 минутах медианное расстояние у пеших — 3 км (`walk45_km`; при 30 минутах — 1.2 км), и везут они такие заказы около 60 минут (`walk45_min` = 59.5). Пешком 3 км вовремя не довезти почти никогда.\n\nОтсюда два рычага для бизнеса: обещать пешим реалистичное время (40 минут вместо 30) и не отдавать пешим заказы дальше 1.5 км — на таких расстояниях они опаздывают в 91.5 % доставок (106). Второй рычаг сам по себе проблему не решает: и до 1.5 км пешие опаздывают в 67.7 % доставок (297), там нужен первый. Как их сочетать, решает бизнес, а аналитик даёт цифры для обоих."
   },
   "ch04/09-project/kzn2": {
    "chapter": "ch04",
@@ -2319,7 +2577,7 @@
     "`ok.set_index(\"created\").resample(\"W\")[[\"late\", \"snow\"]].mean()`, полные недели — `.iloc[1:-1]`. Переименуйте столбцы: `weeks.columns = [\"late_pct\", \"snow_pct\"]`. График: `weeks.plot(ax=ax)`.",
     "```python static\nweeks = ok.set_index(\"created\").resample(\"W\")[[\"late\", \"snow\"]].mean().iloc[...] * 100\nweeks.columns = [\"late_pct\", \"snow_pct\"]\nr_weeks = round(weeks[\"late_pct\"].corr(weeks[...]), 2)\nfig, ax = plt.subplots(figsize=(9, 3.5))\nweeks.plot(ax=ax, marker=\"o\")\n```"
    ],
-   "explain": "Недель всего десяток, поэтому корреляцию по ним стоит воспринимать как подсказку, а не доказательство. Сильнее аргумент из урока «EDA по плану»: внутри каждого типа курьера в снег опаздывают чаще. Два независимых взгляда, указывающих в одну сторону, убедительнее одного."
+   "explain": "Недель всего десяток, поэтому корреляцию по ним стоит воспринимать как подсказку, а не доказательство. Сильнее аргумент из урока «EDA по плану: от вопроса к выводу»: внутри каждого типа курьера в снег опаздывают чаще. Два независимых взгляда, указывающих в одну сторону, убедительнее одного."
   },
   "ch04/09-project/ratings": {
    "chapter": "ch04",

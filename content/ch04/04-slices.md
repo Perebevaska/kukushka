@@ -113,7 +113,7 @@ by_hour = ok.groupby(ok["created"].dt.hour)["late"].mean() * 100
 
 fig, ax = plt.subplots(figsize=(8, 3.5))
 ax.plot(by_hour.index, by_hour.values, marker="o")
-ax.set_xticks(by_hour.index)
+ax.set_xticks(by_hour.index)                     # подпись на каждом часе, иначе matplotlib подпишет через один
 ax.set_xlabel("час")
 ax.set_ylabel("опозданий, %")
 ax.set_title("Опоздания по часам")
@@ -182,7 +182,7 @@ ax.set_title("Опоздания: обещание × курьер")
 :::
 
 ::: tip Аналогия
-Средний балл класса за контрольную вырос, хотя каждый ученик написал как обычно: просто в этом году в классе больше отличников. Общая цифра меняется и от того, **как** справился каждый, и от того, **кто** вошёл в группу. Где аналогия хромает: состав класса меняется случайно, а состав курьеров в снег выбирает диспетчер — он сам отправляет машины туда, где велосипед не справится.
+Средний балл класса за контрольную вырос, хотя каждый ученик написал как обычно: просто в этом году в классе больше отличников. Общая цифра меняется и от того, **как** справился каждый, и от того, **кто** вошёл в группу. Разница в том, что состав класса меняется случайно, а состав курьеров в снег выбирает диспетчер — он сам отправляет машины туда, где велосипед не справится.
 :::
 
 ```python
@@ -192,7 +192,14 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["late"] = ok["actual_min"] > ok["promised_min"]
 x = ok[ok["weather"].isin(["снег", "ясно"])]
 print(x.pivot_table(index="courier", columns="weather", values="late", aggfunc=["size", "mean"]).round(3))
+
+mix_clear = x[x["weather"] == "ясно"]["courier"].value_counts(normalize=True)   # шаг 3: состав в ясную погоду
+late_snow = x[x["weather"] == "снег"].groupby("courier")["late"].mean()         # доли опозданий в снег
+print(mix_clear.round(2))
+print("снег с ясным составом:", round((mix_clear * late_snow).sum() * 100, 1), "%")   # шаг 4
 ```
+
+Последние строки — шаги 3 и 4 кодом. `value_counts(normalize=True)` даёт доли курьеров в ясную погоду (0.51 / 0.27 / 0.22), `mix_clear * late_snow` перемножает Series с выравниванием по типу курьера, `.sum()` складывает взвешенные доли: **40.1 %**.
 
 {{practice: grouped, heatmap}}
 
@@ -844,7 +851,7 @@ snow_nov = round(ct.loc[11, "снег"], 1)
 
 ## task: heatmap | Тепловая карта | star
 
-Постройте тепловую карту доли опозданий: строки — день недели (`dt.dayofweek`, 0 — понедельник), столбцы — час. Нарисуйте её через `ax.imshow(pv.values, aspect="auto", cmap="Reds")`, добавьте шкалу цветов `fig.colorbar(...)`, подпишите столбцы часами (`ax.set_xticks`, `ax.set_xticklabels`). Сохраните таблицу в `pv`, а в `worst_cell` — пару `(день, час)` с наибольшей долей опозданий.
+Постройте тепловую карту доли опозданий: строки — день недели (`dt.dayofweek`, 0 — понедельник), столбцы — час. Нарисуйте её через `ax.imshow(pv.values, aspect="auto", cmap="Reds")`, добавьте шкалу цветов `fig.colorbar(...)`, подпишите столбцы часами (`ax.set_xticks`, `ax.set_xticklabels`). Сохраните таблицу долей в `pv` и таблицу размеров ячеек в `n` (та же сводная с `aggfunc="size"`). По правилу урока доля без размера группы — не вывод, поэтому в `worst_cell` сохраните пару `(день, час)` с наибольшей долей опозданий **среди ячеек, где 30 доставок и больше**, а в `worst_n` — сколько доставок в этой ячейке.
 
 ### starter
 ```python
@@ -874,16 +881,23 @@ assert ax.images[0].get_array().shape == want.shape
 assert len(figs[0].axes) == 2, 'Добавьте шкалу цветов: fig.colorbar(im, ax=ax).'
 labels = [t.get_text() for t in ax.get_xticklabels()]
 assert labels == [str(h) for h in want.columns], f'Подписи по X: {labels[:4]}… — часы по порядку.'
-st = want.stack()
-k = st.idxmax()
-assert tuple(int(x) for x in need('worst_cell')) == (int(k[0]), int(k[1])), f'worst_cell = {need("worst_cell")}, а нужно {k}.'
+nw = o.pivot_table(index=o['created'].dt.dayofweek, columns=o['created'].dt.hour, values='late', aggfunc='size')
+nn = need('n', _pd.DataFrame)
+assert nn.shape == nw.shape and int(nn.fillna(0).values.sum()) == int(nw.fillna(0).values.sum()), 'n — та же сводная, но aggfunc="size": сколько доставок в каждой ячейке.'
+k0 = want.stack().idxmax()
+k = want.where(nw >= 30).stack().idxmax()
+wc = tuple(int(x) for x in need('worst_cell'))
+if wc == (int(k0[0]), int(k0[1])):
+    raise AssertionError(f'worst_cell = {wc} — это максимум по всем ячейкам, а в ней всего {int(nw.loc[k0])} доставок. Ищите только среди ячеек, где n >= 30.')
+assert wc == (int(k[0]), int(k[1])), f'worst_cell = {wc}, а нужно ({int(k[0])}, {int(k[1])}): максимум доли среди ячеек с n >= 30.'
+assert int(need('worst_n')) == int(nw.loc[k]), f'worst_n = {need("worst_n")}: n в ячейке worst_cell.'
 ```
 
 ### hint
 `pv = ok.pivot_table(index="dow", columns="hour", values="late", aggfunc="mean")`; `im = ax.imshow(pv.values, aspect="auto", cmap="Reds")`; `fig.colorbar(im, ax=ax)`.
 
 ### hint
-Подписи: `ax.set_xticks(range(len(pv.columns)))` и `ax.set_xticklabels(pv.columns)`. Наибольшая ячейка: `pv.stack().idxmax()` — вернёт пару (день, час).
+Подписи: `ax.set_xticks(range(len(pv.columns)))` и `ax.set_xticklabels(pv.columns)`. Маленькие ячейки уберите: `pv.where(n >= 30)` оставляет долю там, где условие верно, а в остальных ставит `NaN`. Затем `.stack().idxmax()` — вернёт пару (день, час), `NaN` пропускаются.
 
 ### solution
 ```python
@@ -905,8 +919,11 @@ ax.set_xticklabels(pv.columns)
 ax.set_yticks(range(7))
 ax.set_yticklabels(["пн", "вт", "ср", "чт", "пт", "сб", "вс"])
 ax.set_title("Опоздания: день недели × час")
-worst_cell = pv.stack().idxmax()
+n = ok.pivot_table(index="dow", columns="hour", values="late", aggfunc="size")
+worst_cell = pv.where(n >= 30).stack().idxmax()
+worst_n = n.loc[worst_cell]
+print(worst_cell, worst_n)
 ```
 
 ### explain
-В ячейках тепловой карты бывает всего по 10–20 доставок, поэтому отдельные «горячие» клетки могут быть случайностью. Смотрите на полосы и пятна — например, тёмные столбцы обеда и вечера через всю неделю. Это устойчивая картина; одиночная яркая клетка — нет.
+В ячейках тепловой карты от 4 до 40 доставок, в половине — 20 и меньше. Самая яркая клетка карты — воскресенье, 20 часов: 53 % опозданий, но это 8 из 15 доставок, одна-две доставки сдвинут долю на 7–13 пунктов. Среди 15 ячеек, где 30 доставок и больше, лидер — пятница, 13 часов: 16 из 31, 51.6 %. Это обеденный пик, и он совпадает с тёмным столбцом обеда через всю неделю — такой картине верить можно. Смотрите на полосы и пятна, а не на одиночные клетки.

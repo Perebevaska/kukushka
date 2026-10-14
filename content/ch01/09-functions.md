@@ -7,7 +7,6 @@ recap:
   - "Параметры по умолчанию: `def fmt(x, decimals=0)` — второй аргумент можно не передавать."
   - "Переменные внутри функции — локальные: снаружи их не видно."
   - "Аннотации типов `def avg(revenue: float, orders: int) -> float:` — подсказка для людей и редактора, Python их не проверяет."
-  - "PEP 8: имена — `snake_case`, константы — `ЗАГЛАВНЫМИ`, отступ 4 пробела, пробелы вокруг `=` и операторов, но `ndigits=2` в аргументе — слитно. `ruff format` расставит пробелы сам, имена — ваша работа."
 ---
 
 ## Зачем свои функции
@@ -67,7 +66,7 @@ print("b =", b)
 После `return` функция сразу завершается: строки ниже в ней не выполнятся.
 
 ::: tip Аналогия
-Попросили коллегу посчитать средний чек. `print` — он прочитал число вслух: вы услышали, но вставить в отчёт нечего. `return` — он отдал листок с числом: его можно сложить, сравнить, передать дальше. Хромает аналогия в одном: функция может и сказать вслух, и отдать листок — `print` и `return` друг другу не мешают.
+Попросили коллегу посчитать средний чек. `print` — он прочитал число вслух: вы услышали, но вставить в отчёт нечего. `return` — он отдал листок с числом: его можно сложить, сравнить, передать дальше. Одно другому не мешает: функция может и прочитать вслух, и отдать листок.
 :::
 
 ::: predict
@@ -168,7 +167,7 @@ print(rub(1314000.456, decimals=1))
 
 Последний вызов передаёт аргумент **по имени**. Так понятнее, что значит число, особенно когда параметров много.
 
-{{practice: rub}}
+{{practice: pct}}
 
 ## Локальные переменные
 
@@ -246,78 +245,6 @@ Python аннотации **не проверяет** — они подсказ�
 :::
 
 {{practice: clean-city}}
-
-## Стиль кода: PEP 8
-
-Код читают чаще, чем пишут: коллега, ревьюер вашего проекта, вы сами через месяц. Если в одном файле встречаются `TotalRevenue`, `total_rev` и `totalrevenue`, отступы то по два пробела, то по четыре, а `if` то в одну строку, то в две, — читатель тратит внимание на форму вместо смысла. Поэтому у Python есть общий для всех стиль — **PEP 8** (*Python Enhancement Proposal* № 8, документ-соглашение о том, как оформлять код).
-
-::: tip Аналогия
-Отчёт по корпоративному шаблону: те же цифры, но заголовки, шрифты и таблицы на привычных местах, и глаз сразу находит нужное. Хромает аналогия в одном: код «не по шаблону» всё равно работает — PEP 8 нарушает только удобство, а не правильность.
-:::
-
-**Пример руками.** Две версии одной функции — среднего чека. Обе работают и выводят одно и то же:
-
-```python
-def AvgCheck(Revenue,Orders):
-  if Orders==0: return 0
-  return round(Revenue/Orders,ndigits = 2)
-print(AvgCheck(84530,260))
-```
-
-```python
-def avg_check(revenue, orders):
-    if orders == 0:
-        return 0
-    return round(revenue / orders, ndigits=2)
-
-
-print(avg_check(84530, 260))
-```
-
-Что изменилось во второй версии — по строкам:
-
-- `AvgCheck(Revenue,Orders)` → `avg_check(revenue, orders)`: имена функций и переменных — маленькими буквами через подчёркивание (*snake_case*). Слова с заглавной буквы (`AvgCheck`) в Python оставляют для особых случаев, в своих функциях их не используют. После запятой — пробел.
-- Отступ — **4 пробела**, а не 2.
-- `if Orders==0: return 0` → две строки: условие отдельно, действие с отступом под ним. Вокруг `==` — пробелы.
-- `Revenue/Orders` → `revenue / orders`: пробелы вокруг арифметики делают выражение читаемым.
-- `ndigits = 2` → `ndigits=2`: у **именованного аргумента** пробелов вокруг `=` как раз нет. Это единственное место, где `=` пишут слитно.
-- Две пустые строки после функции отделяют её от остального кода.
-
-Главные правила одной таблицей:
-
-| что | не так | так |
-|---|---|---|
-| имена переменных и функций | `TotalRevenue`, `avgCheck` | `total_revenue`, `avg_check` |
-| константы — значения, которые не меняются | `vat = 0.2` | `VAT_RATE = 0.2` (заглавные) |
-| отступ | 2 пробела или табуляция | 4 пробела |
-| присваивание и сравнение | `x=a+b`, `if x==0:` | `x = a + b`, `if x == 0:` |
-| именованный аргумент | `round(x, ndigits = 2)` | `round(x, ndigits=2)` |
-| запятая | `f(a,b)` | `f(a, b)` |
-| инструкции | `if x: return 0` | `if x:` и `return 0` на новой строке |
-| длина строки | 150 символов | до 79–88 символов; длинное выражение — в скобках на несколько строк |
-
-Следить за пробелами руками на своём компьютере не придётся: это делает программа-форматтер **ruff** — она расставит пробелы, отступы и переносы сама. Её поставим в уроке «Своё рабочее место — uv и Jupyter», где появится терминал. Имена форматтер не трогает: `AvgCheck` останется `AvgCheck`, переименовать — решение человека. Поэтому правила полезно один раз пройти руками — для этого задачи ниже.
-
-::: warn Типичные ошибки
-- **Пробелы вокруг `=` в аргументе.** `round(x, ndigits = 2)` работает, но нарушает PEP 8 — правильно `ndigits=2`. Для присваивания наоборот: `x = 2`.
-- **Смешанные отступы.** Табуляция в одной строке и пробелы в соседней дают `TabError` или `IndentationError: unindent does not match any outer indentation level`.
-- **«Красивый, значит правильный».** Стиль не проверяет логику: аккуратно оформленная функция может считать неверно.
-:::
-
-::: quiz
-Какая строка написана по PEP 8?
-
-- [x] `month_revenue = round(total / days, ndigits=2)`
-  > Имя в snake_case, пробелы вокруг `=` присваивания и `/`, у именованного аргумента `ndigits=2` пробелов нет.
-- [ ] `MonthRevenue = round(total / days, ndigits=2)`
-  > Слова с заглавной буквы в своих переменных не используют; переменная — `month_revenue`.
-- [ ] `month_revenue=round(total/days, ndigits = 2)`
-  > Наоборот: вокруг присваивания и `/` пробелы нужны, а вокруг `=` именованного аргумента — нет.
-- [ ] `month_revenue = round(total / days,ndigits=2)`
-  > После запятой нужен пробел.
-:::
-
-{{practice: snake, tidy}}
 
 ## Практика
 
@@ -493,43 +420,48 @@ def avg_check(revenue, orders):
 ### explain
 Проверка на ноль — первой строкой: если заказов нет, до деления дело не доходит. «Защитные» проверки в начале функции избавляют от `ZeroDivisionError` в отчёте за пустой день.
 
-## task: rub | Рубли для отчёта | base
+## task: pct | Доля в процентах | base
 
-Напишите `rub(amount, decimals=0)` — строку с пробелами между тысячами и знаком рубля. По умолчанию без копеек:
+Напишите `pct(part, total, decimals=1)` — строку с долей `part` от `total` в процентах. Знаков после точки — `decimals`, по умолчанию один; после числа — пробел и `%`. Если `total` равен 0, делить нельзя: верните строку `"—"`.
 
-- `rub(1314000.456)` → `"1 314 000 ₽"`;
-- `rub(1314000.456, 2)` → `"1 314 000.46 ₽"`.
+- `pct(412, 1247)` → `"33.0 %"`;
+- `pct(412, 1247, 0)` → `"33 %"`;
+- `pct(412, 1247, decimals=2)` → `"33.04 %"`;
+- `pct(5, 0)` → `"—"`.
 
 ### starter
 ```python
-def rub(amount, decimals=0):
+def pct(part, total, decimals=1):
     ...
 
 ```
 
 ### check
 ```python
-f = need('rub')
-assert f(1314000.456) == '1 314 000 ₽', f'rub(1314000.456) = {f(1314000.456)!r}.'
-assert f(1314000.456, 2) == '1 314 000.46 ₽', f'rub(1314000.456, 2) = {f(1314000.456, 2)!r}.'
-assert f(950) == '950 ₽', f'rub(950) = {f(950)!r}.'
+f = need('pct')
+assert f(412, 1247) == '33.0 %', f'pct(412, 1247) = {f(412, 1247)!r}, а нужно "33.0 %". Доля — part / total * 100, по умолчанию один знак.'
+assert f(412, 1247, 0) == '33 %', f'pct(412, 1247, 0) = {f(412, 1247, 0)!r}. Число знаков должно браться из параметра decimals.'
+assert f(412, 1247, decimals=2) == '33.04 %', f'pct(412, 1247, decimals=2) = {f(412, 1247, decimals=2)!r}.'
+assert f(1, 3, 2) == '33.33 %', f'pct(1, 3, 2) = {f(1, 3, 2)!r}.'
+assert f(5, 0) == '—', f'pct(5, 0) = {f(5, 0)!r}. При total == 0 верните "—" до деления.'
 ```
 
 ### hint
-Ширину дробной части можно подставить внутрь формата: `f"{amount:,.{decimals}f}"`. Пример есть в теории.
+Сначала условие: `if total == 0: return "—"` — до деления. Потом доля `part / total * 100` и f-строка.
 
 ### hint
-Далее `.replace(",", " ")` и `+ " ₽"` — или всё одной f-строкой.
+Число знаков подставляется внутрь формата так же, как в `rub` из теории: `f"{x:.{decimals}f} %"`.
 
 ### solution
 ```python
-def rub(amount, decimals=0):
-    text = f"{amount:,.{decimals}f}".replace(",", " ")
-    return text + " ₽"
+def pct(part, total, decimals=1):
+    if total == 0:
+        return "—"
+    return f"{part / total * 100:.{decimals}f} %"
 ```
 
 ### explain
-Параметр по умолчанию `decimals=0` делает частый случай коротким (`rub(x)`), а редкий — возможным (`rub(x, 2)`). Так устроены почти все функции pandas.
+Параметр по умолчанию `decimals=1` делает частый случай коротким (`pct(a, b)`), а редкий — возможным (`pct(a, b, 2)` или понятнее — `pct(a, b, decimals=2)`). Так устроены почти все функции pandas. Проверка на ноль стоит до деления: `return "—"` сразу завершает функцию, и до `part / total` дело не доходит.
 
 ## task: count-above | Сколько дней выше порога | base
 
@@ -726,158 +658,6 @@ print(report_line("Пермь", 84530, 260))
 
 ### explain
 Функция `report_line` ничего не считает сама: денежный формат даёт `rub`, деление с защитой от нуля — `avg_check`. Если завтра формат денег поменяется (например, понадобятся копейки через запятую), правка будет в одном месте, а все отчёты подхватят её автоматически. Обратите внимание на `return`, а не `print`: функция отдаёт строку, и дальше её можно напечатать, записать в файл или склеить с другими строками.
-
-## task: snake | Имена по PEP 8 | warmup
-
-Код считает средний чек правильно, но имена переменных написаны в стиле других языков. Переименуйте их по PEP 8: `TotalRevenue` → `total_revenue`, `OrdersCount` → `orders_count`, `avgCheck` → `avg_check`. Число `0.2` — ставка НДС, она не меняется: сделайте его константой `VAT_RATE` и посчитайте через неё `vat` — НДС, входящий в средний чек (`avg_check * VAT_RATE / (1 + VAT_RATE)`, округлить до двух знаков).
-
-### starter
-```python
-TotalRevenue = 84530
-OrdersCount = 260
-avgCheck = round(TotalRevenue / OrdersCount, 2)
-vat = round(avgCheck * 0.2 / (1 + 0.2), 2)
-print(avgCheck, vat)
-```
-
-### check
-```python
-import ast as _ast
-_tree = _ast.parse(_code)
-_names = {n.id for n in _ast.walk(_tree) if isinstance(n, _ast.Name) and isinstance(n.ctx, _ast.Store)}
-_bad = sorted(x for x in _names if x != x.lower() and x != x.upper())
-assert not _bad, f'Остались имена не в snake_case: {_bad}. Маленькие буквы и подчёркивание между словами.'
-assert {'total_revenue', 'orders_count', 'avg_check', 'VAT_RATE', 'vat'} <= _names, f'Нужны переменные total_revenue, orders_count, avg_check, VAT_RATE и vat. Сейчас присваиваются: {sorted(_names)}.'
-assert need('VAT_RATE') == 0.2, f'VAT_RATE = {need("VAT_RATE")!r}. Ставка НДС — 0.2.'
-assert need('avg_check') == 325.12, f'avg_check = {need("avg_check")!r}. Переименование не должно менять расчёт.'
-assert need('vat') == 54.19, f'vat = {need("vat")!r}. Формула та же, только вместо 0.2 — VAT_RATE.'
-assert '0.2' not in _code.replace('VAT_RATE = 0.2', '').replace('VAT_RATE=0.2', ''), 'Число 0.2 должно встречаться только один раз — в объявлении VAT_RATE. Дальше используйте константу.'
-```
-
-### hint
-Переменные — snake_case: маленькие буквы, слова через `_`. Константы — заглавными: `VAT_RATE`. Переименовывать нужно везде, где имя встречается, а не только при объявлении.
-
-### hint
-Первой строкой объявите `VAT_RATE = 0.2`, а в формуле НДС замените оба `0.2` на `VAT_RATE`.
-
-### hint
-```python
-VAT_RATE = 0.2
-total_revenue = 84530
-orders_count = ...
-avg_check = round(... / ..., 2)
-vat = round(avg_check * VAT_RATE / (1 + ...), 2)
-```
-
-### solution
-```python
-VAT_RATE = 0.2
-total_revenue = 84530
-orders_count = 260
-avg_check = round(total_revenue / orders_count, 2)
-vat = round(avg_check * VAT_RATE / (1 + VAT_RATE), 2)
-print(avg_check, vat)
-```
-
-## task: tidy | Причешите функцию | base
-
-Функция работает, но оформлена против всех правил PEP 8. Приведите её к PEP 8 и переименуйте по правилам. Один раз руками — чтобы запомнить правила; дальше на своём компьютере это будет делать форматтер.
-
-- функция — `avg_check`, параметры — `revenue` и `orders`;
-- отступы — по 4 пробела;
-- `if` и `return 0` — на разных строках;
-- пробел после каждой запятой и вокруг `==`, `/` и `=` присваивания; у именованного аргумента `ndigits=2` пробелов вокруг `=` нет.
-
-Логику не меняйте: `avg_check(84530, 260)` → `325.12`, `avg_check(500, 0)` → `0`.
-
-### starter
-```python
-def AvgCheck(Revenue,Orders):
-  if Orders==0: return 0
-  return round(Revenue/Orders,ndigits = 2)
-result=AvgCheck(84530,260)
-print(result)
-```
-
-### check
-```python
-import ast as _ast, io as _io, tokenize as _tk
-try:
-    _tree = _ast.parse(_code)
-except SyntaxError as _e:
-    raise AssertionError(f'Код не разбирается: {_e.msg} (строка {_e.lineno}). Проверьте отступы и двоеточия.')
-_fns = [n for n in _ast.walk(_tree) if isinstance(n, _ast.FunctionDef)]
-assert len(_fns) == 1, 'Должна остаться одна функция — переименованная AvgCheck.'
-_f = _fns[0]
-assert _f.name == 'avg_check', f'Функция называется {_f.name}. По PEP 8 — avg_check.'
-assert [a.arg for a in _f.args.args] == ['revenue', 'orders'], f'Параметры: {[a.arg for a in _f.args.args]}. Нужны revenue и orders.'
-_g = need('avg_check')
-assert _g(84530, 260) == 325.12 and _g(500, 0) == 0, 'Логика функции изменилась: avg_check(84530, 260) должна вернуть 325.12, avg_check(500, 0) — 0.'
-for _n in _ast.walk(_tree):
-    if isinstance(_n, _ast.If):
-        assert _n.body[0].lineno != _n.lineno, f'Строка {_n.lineno}: условие и действие в одной строке. Перенесите return 0 на новую строку с отступом.'
-for _i, _ln in enumerate(_code.splitlines(), 1):
-    if not _ln.strip():
-        continue
-    assert '\t' not in _ln[:len(_ln) - len(_ln.lstrip())], f'Строка {_i}: в отступе табуляция. Нужны пробелы.'
-    _ind = len(_ln) - len(_ln.lstrip(' '))
-    assert _ind % 4 == 0, f'Строка {_i}: отступ {_ind} пробела. По PEP 8 — кратно 4.'
-_toks = [t for t in _tk.generate_tokens(_io.StringIO(_code).readline) if t.type not in (_tk.COMMENT, _tk.NL, _tk.NEWLINE, _tk.INDENT, _tk.DEDENT, _tk.ENDMARKER)]
-_depth = 0
-for _k, _t in enumerate(_toks):
-    if _t.type != _tk.OP:
-        continue
-    if _t.string in '([{':
-        _depth += 1
-    elif _t.string in ')]}':
-        _depth -= 1
-    _prev = _toks[_k - 1] if _k else None
-    _next = _toks[_k + 1] if _k + 1 < len(_toks) else None
-    _gap_l = _prev is not None and _prev.end[0] == _t.start[0] and _prev.end[1] < _t.start[1]
-    _gap_r = _next is not None and _next.start[0] == _t.end[0] and _next.start[1] > _t.end[1]
-    _where = f'Строка {_t.start[0]}'
-    if _t.string == ',' and _next is not None and _next.string not in ')]}' and _next.start[0] == _t.end[0]:
-        assert _gap_r, f'{_where}: после запятой нужен пробел.'
-    if _t.string in ('==', '!=', '/', '<', '>', '<=', '>='):
-        assert _gap_l and _gap_r, f'{_where}: вокруг {_t.string} нужны пробелы с обеих сторон.'
-    if _t.string == '=' and _depth > 0:
-        assert not _gap_l and not _gap_r, f'{_where}: у именованного аргумента пробелов вокруг = нет: ndigits=2.'
-    if _t.string == '=' and _depth == 0:
-        assert _gap_l and _gap_r, f'{_where}: вокруг = в присваивании нужны пробелы.'
-```
-
-### hint
-Начните с имён: `def avg_check(revenue, orders):` — и не забудьте переименовать их в теле и в вызове. Потом — отступы по 4 пробела.
-
-### hint
-`if orders == 0:` — отдельной строкой, под ней с отступом `return 0`. В `round(...)` — пробелы вокруг `/`, после запятой, а `ndigits=2` пишется слитно.
-
-### hint
-```python
-def avg_check(revenue, orders):
-    if orders == 0:
-        return ...
-    return round(revenue / orders, ndigits=2)
-
-
-result = avg_check(..., ...)
-print(result)
-```
-
-### solution
-```python
-def avg_check(revenue, orders):
-    if orders == 0:
-        return 0
-    return round(revenue / orders, ndigits=2)
-
-
-result = avg_check(84530, 260)
-print(result)
-```
-
-### explain
-Логика не изменилась — функция по-прежнему возвращает 325.12, — а читается заметно легче: имя говорит, что считается, отступы показывают вложенность, пробелы отделяют операнды. Пробелы и отступы на работе расставляет `ruff format`, но имена ни один форматтер за вас не придумает. Если бы вы переименовали функцию только в `def`, а в вызове оставили `AvgCheck(...)`, код упал бы с `NameError: name 'AvgCheck' is not defined` — переименование всегда делают во всех местах сразу.
 
 ## task: count-by | Универсальный подсчёт | star
 

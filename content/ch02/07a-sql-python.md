@@ -54,6 +54,22 @@ con.close()                                 # линию с базой боль�
 
 Как читать результат: в базе шесть таблиц — `shops`, `menu`, `guests`, `promos`, `orders`, `order_items`, а кофеен шесть, по две в Перми и Казани и по одной в Тюмени и Уфе.
 
+Заказы лежат в двух таблицах: в `orders` — «шапка» заказа (кофейня, время, канал, гость), в `order_items` — его позиции. Посмотрим по три строки каждой, чтобы знать столбцы:
+
+```python
+import sqlite3
+import pandas as pd
+
+con = sqlite3.connect("zerno.db")
+print(pd.read_sql_query("SELECT * FROM orders LIMIT 3", con))
+print(pd.read_sql_query("SELECT * FROM order_items LIMIT 3", con))
+con.close()
+```
+
+Как читать: в `orders` — `order_id`, `guest_id` (пусто у заказов без карты), `shop_id`, время `ordered_at`, `channel` и `promo_id`. В `order_items` — `order_id`, позиция меню `item_id`, количество `qty` и цена `price`; у заказа Z000001 две позиции. Суммы заказа в базе нет: выручку считают как `SUM(qty * price)` по позициям, соединив их с заказами по `order_id`.
+
+{{practice: items-peek}}
+
 ### Даты в SQLite — это текст
 
 Зачем: отчёты почти всегда «за месяц», а в SQLite нет отдельного типа для даты. Время заказа `ordered_at` хранится строкой: `'2026-03-01 08:36:18'`. Отсюда два правила:
@@ -227,9 +243,93 @@ with engine.connect() as conn:     # подключение закроется �
 - **Разные заполнители у разных баз.** SQLite понимает `?` и `:имя`; в SQLAlchemy с `text()` — `:имя` для любой базы. Не смешивайте стили в одном запросе.
 :::
 
-{{practice: sqlite-read, sqlite-func}}
+{{practice: p-sqlite, sqlite-read, delivery-month, sqlite-func}}
 
 ## Практика
+
+## task: items-peek | Что лежит в базе | warmup
+
+Подключитесь к `zerno.db` и сохраните:
+
+- `orders_cols` — список названий столбцов таблицы `orders`;
+- `n_items` — число строк в таблице `order_items` (посчитайте запросом `COUNT(*)`).
+
+В конце закройте подключение.
+
+### starter
+```python
+import sqlite3
+import pandas as pd
+
+```
+
+### check
+```python
+import sqlite3 as _sq
+_c = _sq.connect('zerno.db')
+_cols = [d[0] for d in _c.execute('SELECT * FROM orders LIMIT 1').description]
+_n = _c.execute('SELECT COUNT(*) FROM order_items').fetchone()[0]
+_c.close()
+assert list(need('orders_cols')) == _cols, f'orders_cols = {list(need("orders_cols"))}, а в orders столбцы {_cols}.'
+assert int(need('n_items')) == _n, f'n_items = {need("n_items")} — это не число строк order_items.'
+assert 'COUNT' in _code.upper(), 'Посчитайте строки запросом: SELECT COUNT(*) FROM order_items.'
+assert calls('close') >= 1, 'Закройте подключение: con.close().'
+```
+
+### hint
+Столбцы — у результата `pd.read_sql_query("SELECT * FROM orders LIMIT 3", con)`: `.columns.tolist()`. Число строк — отдельный запрос с `COUNT(*)`.
+
+### hint
+```python
+con = sqlite3.connect("zerno.db")
+orders_cols = pd.read_sql_query("SELECT * FROM orders LIMIT 3", con).columns.tolist()
+n_items = int(pd.read_sql_query("SELECT COUNT(*) AS n FROM order_items", con)["n"].iloc[0])
+con.close()
+```
+
+### solution
+```python
+import sqlite3
+import pandas as pd
+
+con = sqlite3.connect("zerno.db")
+orders_cols = pd.read_sql_query("SELECT * FROM orders LIMIT 3", con).columns.tolist()
+n_items = int(pd.read_sql_query("SELECT COUNT(*) AS n FROM order_items", con)["n"].iloc[0])
+con.close()
+```
+
+### explain
+В `orders` шесть столбцов, суммы среди них нет. Позиций — 22 813 на 14 510 заказов, в среднем около полутора позиций на заказ. `LIMIT 3` — привычка, которая пригодится на рабочей базе: чтобы узнать столбцы, не нужно тянуть всю таблицу.
+
+## task: p-sqlite | Соберите запрос с параметром | warmup
+
+Соберите программу: она считает заказы апреля 2026 года в базе `zerno.db`, передавая месяц через параметр, и выводит число.
+
+### parsons
+```python
+import sqlite3
+import pandas as pd
+con = sqlite3.connect("zerno.db")
+query = "SELECT COUNT(*) AS n FROM orders WHERE substr(ordered_at, 1, 7) = ?"
+t = pd.read_sql_query(query, con, params=("2026-04",))
+con.close()
+print(t["n"].iloc[0])
+```
+
+### check
+```python
+import sqlite3 as _sq
+_c = _sq.connect('zerno.db')
+_n = _c.execute("SELECT COUNT(*) FROM orders WHERE substr(ordered_at, 1, 7) = '2026-04'").fetchone()[0]
+_c.close()
+assert _lines == [str(_n)], f'Должно вывестись {_n}. Сейчас: {_lines}'
+```
+
+### hint
+Схема урока: подключение → текст запроса с `?` → `read_sql_query` с `params=` → закрыть подключение → вывести.
+
+### hint
+`params=("2026-04",)` — кортеж из одного значения, с запятой.
 
 ## task: sqlite-read | Меню из базы | base
 
@@ -292,9 +392,65 @@ food
 ### explain
 Еды в меню четыре позиции: сэндвич (260 ₽), сырники (240 ₽), чизкейк (220 ₽) и круассан (140 ₽). Поменяйте `cat = "не кофе"` — запрос тот же, а результат другой. Так и работают параметризованные отчёты. Если написать `params=(cat)` без запятой, `sqlite3` получит строку из трёх букв и пожалуется: `Incorrect number of bindings supplied`. Тот же результат в pandas без базы дал бы `menu[menu["category"] == cat].sort_values("price", ascending=False)`, но для этого пришлось бы сначала выгрузить всё меню.
 
+## task: delivery-month | Доля доставки за месяц | base
+
+Сохраните в `month = "2026-08"` месяц, а в `share` — долю заказов с каналом `доставка` среди всех заказов этого месяца в базе `zerno.db`, в процентах с одним знаком. Месяц передайте в запрос через `params=`, не вписывая его в текст SQL. Считать долю можно в SQL или в pandas — как удобнее.
+
+### starter
+```python
+import sqlite3
+import pandas as pd
+
+month = "2026-08"
+
+```
+
+### check
+```python
+import sqlite3 as _sq
+_c = _sq.connect('zerno.db')
+_t = _c.execute("SELECT AVG(channel = 'доставка') FROM orders WHERE substr(ordered_at, 1, 7) = '2026-08'").fetchone()[0]
+_all = _c.execute("SELECT AVG(channel = 'доставка') FROM orders").fetchone()[0]
+_c.close()
+_want = round(_t * 100, 1)
+assert 'params' in _code, 'Передайте месяц через params=.'
+assert "'2026-08'" not in _code, 'Месяц вписан в текст запроса. Оставьте в SQL заполнитель ?, а значение — в params.'
+assert not close(need('share'), round(_all * 100, 1), 0.05), f'share = {need("share")} — это доля за все шесть месяцев. Отфильтруйте заказы месяца: substr(ordered_at, 1, 7) = ?.'
+assert not close(need('share'), round(_t, 3), 0.001), f'share = {need("share")}. Нужны проценты: умножьте долю на 100.'
+assert close(need('share'), _want, 0.05), f'share = {need("share")} — не та доля. Числитель — заказы доставки месяца, знаменатель — все заказы месяца.'
+```
+
+### hint
+Месяц заказа — `substr(ordered_at, 1, 7)`. Достаньте из базы каналы заказов нужного месяца: `SELECT channel FROM orders WHERE substr(ordered_at, 1, 7) = ?`.
+
+### hint
+```python
+con = sqlite3.connect("zerno.db")
+t = pd.read_sql_query("SELECT channel FROM orders WHERE substr(ordered_at, 1, 7) = ?",
+                      con, params=(month,))
+con.close()
+share = round((t["channel"] == ...).mean() * 100, 1)
+```
+
+### solution
+```python
+import sqlite3
+import pandas as pd
+
+month = "2026-08"
+con = sqlite3.connect("zerno.db")
+t = pd.read_sql_query("SELECT channel FROM orders WHERE substr(ordered_at, 1, 7) = ?",
+                      con, params=(month,))
+con.close()
+share = round((t["channel"] == "доставка").mean() * 100, 1)
+```
+
+### explain
+В августе доставка — 20.6 % заказов, в марте и июле — 19.0 %. Поменяйте `month` — и тот же код ответит про другой месяц. В SQL ту же долю даёт `AVG(channel = 'доставка')`: в SQLite сравнение возвращает 1 или 0, и среднее от них — доля, как `mean()` от True/False в pandas.
+
 ## task: sqlite-func | Функция-отчёт с параметрами | plus
 
-Напишите функцию `city_revenue(con, city, month)`: она возвращает выручку города за месяц (`month` — строка вида `"2026-06"`) по базе `zerno.db` целым числом, а если заказов нет — `0`. Выручка — сумма `qty * price` по позициям заказов (`order_items`); город берётся из `shops`. Город и месяц передавайте через параметры — функция не должна ломаться даже на названии с апострофом. Дата заказа в базе — текст (см. «Даты в SQLite — это текст»).
+Напишите функцию `city_revenue(con, city, month)`: она возвращает выручку города за месяц (`month` — строка вида `"2026-06"`) по базе `zerno.db` целым числом, а если заказов нет — `0`. Выручка — сумма `qty * price` по позициям заказов (`order_items`: `order_id`, `qty`, `price`); кофейня заказа — `orders.shop_id`, время — `orders.ordered_at`, город — `shops.city`. Город и месяц передавайте через параметры — функция не должна ломаться даже на названии с апострофом. Дата заказа в базе — текст (см. «Даты в SQLite — это текст»).
 
 ### starter
 ```python

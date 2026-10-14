@@ -37,10 +37,10 @@
    "setup": "",
    "check": "import numpy as _np\nz0 = _np.array([-1.5, 0.0, 0.3, 2.0, -0.2])\nassert _np.allclose(need('r'), _np.maximum(0, z0)), f'r = {need(\"r\")}.'\nassert list(_np.asarray(need('dr')).astype(int)) == [0, 0, 1, 1, 0], f'dr = {need(\"dr\")}.'",
    "starter": "import numpy as np\nz = np.array([-1.5, 0.0, 0.3, 2.0, -0.2])",
-   "solution": "import numpy as np\nz = np.array([-1.5, 0.0, 0.3, 2.0, -0.2])\nr = np.maximum(0, z)\ndr = (z > 0).astype(int)",
+   "solution": "import numpy as np\nz = np.array([-1.5, 0.0, 0.3, 2.0, -0.2])\n\ndef relu(z):\n    return np.maximum(0, z)\n\nr = relu(z)\ndr = (z > 0).astype(int)",
    "hints": [
     "ReLU пропускает положительное и обнуляет отрицательное; её наклон (производная) — 1 справа от нуля и 0 слева.",
-    "`np.maximum(0, z)`; производная — `(z > 0).astype(int)`."
+    "`def relu(z): return np.maximum(0, z)`; производная — `(z > 0).astype(int)`."
    ],
    "explain": "Производная ReLU понадобится в следующем уроке: при обучении сигнал ошибки проходит только через нейроны, которые были «включены» (z > 0)."
   },
@@ -188,10 +188,10 @@
    "starter": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nX = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])\ny = np.array([0, 1, 1, 0])\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nW1 = np.array([[20.0, 20.0], [20.0, 20.0]])\nb1 = np.array([-10.0, -30.0])\nw2 = np.array([20.0, -40.0])\nb2 = -10.0",
    "solution": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nX = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])\ny = np.array([0, 1, 1, 0])\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nW1 = np.array([[20.0, 20.0], [20.0, 20.0]])\nb1 = np.array([-10.0, -30.0])\nw2 = np.array([20.0, -40.0])\nb2 = -10.0\n\nacc_logit = (LogisticRegression().fit(X, y).predict(X) == y).mean()\nout = sigmoid(sigmoid(X @ W1 + b1) @ w2 + b2)\nacc_net = ((out > 0.5) == y).mean()",
    "hints": [
-    "Для логистической регрессии используйте `LogisticRegression().fit(X, y).score(X, y)` — даже на обучении она не сможет превысить 0.75.",
+    "Для логистической регрессии используйте `LogisticRegression().fit(X, y).score(X, y)` — даже на обучении она не превысит 0.75, а на этих четырёх точках выйдет 0.5: все её вероятности ровно 0.5, симметрия «креста» не оставляет ей наклона.",
     "Для сети: `H = sigmoid(X @ W1 + b1)`, `out = sigmoid(H @ w2 + b2)`, затем `((out > 0.5) == y).mean()`."
    ],
-   "explain": "Логистическая регрессия проводит одну прямую и на «кресте» угадывает не больше трёх точек из четырёх (здесь — половину). Сети хватило двух скрытых нейронов: они превратили задачу в такую, где прямая работает."
+   "explain": "Логистическая регрессия проводит одну прямую и на «кресте» угадывает не больше трёх точек из четырёх. Здесь — половину: все четыре её вероятности ровно 0.5, из-за симметрии точек лучший наклон — нулевой, и модель ничего не выучила. Сети хватило двух скрытых нейронов: они превратили задачу в такую, где прямая работает."
   },
   "ch11/01-neuron/feature-net": {
    "chapter": "ch11",
@@ -212,7 +212,7 @@
     "Новые признаки — выход скрытого слоя `H`; логистическая регрессия на `H` вместо `X` — это и есть «последний слой» сети.",
     "Обучайте на неокруглённом `H`, а в переменную сохраните округлённый."
    ],
-   "explain": "В новых признаках «хотя бы одно» и «оба» классы разделяются прямой, и обычная логистическая регрессия справляется. В этом вся суть скрытых слоёв: сеть сама придумывает признаки, в которых задача становится простой. Раньше (глава 7) признаки придумывали мы."
+   "explain": "В новых признаках «хотя бы одно» и «оба» классы разделяются прямой, и обычная логистическая регрессия справляется. Если напечатать `predict_proba`, вероятности класса 1 будут всего 0.445 и 0.555: регуляризация по умолчанию (`C=1`) держит веса маленькими, и модель разделяет классы с минимальным запасом. С `LogisticRegression(C=100)` — 0.056 и 0.944. В этом вся суть скрытых слоёв: сеть сама придумывает признаки, в которых задача становится простой. Раньше (глава 7) признаки придумывали мы."
   },
   "ch11/02-backprop/logloss": {
    "chapter": "ch11",
@@ -374,14 +374,14 @@
    "files": [],
    "display": true,
    "setup": "",
-   "check": "import numpy as _np\nfrom sklearn.datasets import make_moons as _mm\nfrom sklearn.model_selection import train_test_split as _tts\nX0, y0 = _mm(600, noise=0.3, random_state=1); a, b, c, d = _tts(X0, y0, test_size=0.5, random_state=0)\nwant = {}\nfor h in (1, 2, 4, 16, 64):\n    pr = train(a, c, h, 0.5, 2000, 0)\n    want[h] = round(((predict(pr, b) > 0.5) == d).mean(), 3)\ngot = need('acc_test', dict)\nfor h, v in want.items():\n    assert h in got and close(got[h], v), f'acc_test[{h}] = {got.get(h)}, а нужно {v}.'\nbest = min(want, key=lambda h: (-want[h], h))\nassert need('best_hidden') == best, f'best_hidden = {need(\"best_hidden\")}, а нужно {best}.'",
+   "check": "import numpy as _np\nfrom sklearn.datasets import make_moons as _mm\nfrom sklearn.model_selection import train_test_split as _tts\nX0, y0 = _mm(600, noise=0.3, random_state=1); a, b, c, d = _tts(X0, y0, test_size=0.5, random_state=0)\nwant = {}\nfor h in (1, 2, 4, 16, 64):\n    pr = train(a, c, h, 0.5, 2000, 0)\n    want[h] = round(((predict(pr, b) > 0.5) == d).mean(), 3)\ngot = need('acc_test', dict)\nfor h, v in want.items():\n    assert h in got and close(got[h], v), f'acc_test[{h}] = {got.get(h)}, а нужно {v}.'\nbest = min(want, key=lambda h: (-want[h], h))\nassert need('best_hidden') == best, f'best_hidden = {need(\"best_hidden\")}, а нужно {best}.'\na2, b2, c2, d2 = _tts(X0, y0, train_size=30, random_state=0)\nsm = need('small', dict)\nfor h in (4, 64):\n    pr = train(a2, c2, h, 0.5, 2000, 0)\n    w = (round(((predict(pr, a2) > 0.5) == c2).mean(), 3), round(((predict(pr, b2) > 0.5) == d2).mean(), 3))\n    assert h in sm and len(sm[h]) == 2 and close(sm[h][0], w[0]) and close(sm[h][1], w[1]), f'small[{h}] = {sm.get(h)}, а нужно {w}: обучение на 30 точках (train_size=30), первое число — доля верных на X_train этой выборки, второе — на остальных 570.'",
    "starter": "import numpy as np\nfrom sklearn.datasets import make_moons\nfrom sklearn.model_selection import train_test_split\n\ndef train(X, y, hidden, lr, steps, seed):\n    rng = np.random.default_rng(seed)\n    W1 = rng.normal(size=(X.shape[1], hidden)) * 0.5\n    b1 = np.zeros(hidden)\n    w2 = rng.normal(size=hidden) * 0.5\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 > 0)\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2\n\ndef predict(params, X):\n    W1, b1, w2, b2 = params\n    return 1 / (1 + np.exp(-(np.maximum(0, X @ W1 + b1) @ w2 + b2)))\n\nX, y = make_moons(600, noise=0.3, random_state=1)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)",
-   "solution": "import numpy as np\nfrom sklearn.datasets import make_moons\nfrom sklearn.model_selection import train_test_split\n\ndef train(X, y, hidden, lr, steps, seed):\n    rng = np.random.default_rng(seed)\n    W1 = rng.normal(size=(X.shape[1], hidden)) * 0.5\n    b1 = np.zeros(hidden)\n    w2 = rng.normal(size=hidden) * 0.5\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 > 0)\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2\n\ndef predict(params, X):\n    W1, b1, w2, b2 = params\n    return 1 / (1 + np.exp(-(np.maximum(0, X @ W1 + b1) @ w2 + b2)))\n\nX, y = make_moons(600, noise=0.3, random_state=1)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)\n\nacc_test = {}\nfor h in (1, 2, 4, 16, 64):\n    params = train(X_train, y_train, h, 0.5, 2000, 0)\n    acc_test[h] = round(((predict(params, X_test) > 0.5) == y_test).mean(), 3)\nbest_hidden = min(acc_test, key=lambda h: (-acc_test[h], h))",
+   "solution": "import numpy as np\nfrom sklearn.datasets import make_moons\nfrom sklearn.model_selection import train_test_split\n\ndef train(X, y, hidden, lr, steps, seed):\n    rng = np.random.default_rng(seed)\n    W1 = rng.normal(size=(X.shape[1], hidden)) * 0.5\n    b1 = np.zeros(hidden)\n    w2 = rng.normal(size=hidden) * 0.5\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 > 0)\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2\n\ndef predict(params, X):\n    W1, b1, w2, b2 = params\n    return 1 / (1 + np.exp(-(np.maximum(0, X @ W1 + b1) @ w2 + b2)))\n\nX, y = make_moons(600, noise=0.3, random_state=1)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)\n\nacc_test = {}\nfor h in (1, 2, 4, 16, 64):\n    params = train(X_train, y_train, h, 0.5, 2000, 0)\n    acc_test[h] = round(((predict(params, X_test) > 0.5) == y_test).mean(), 3)\nbest_hidden = min(acc_test, key=lambda h: (-acc_test[h], h))\n\nXs_tr, Xs_te, ys_tr, ys_te = train_test_split(X, y, train_size=30, random_state=0)\nsmall = {}\nfor h in (4, 64):\n    params = train(Xs_tr, ys_tr, h, 0.5, 2000, 0)\n    small[h] = (round(((predict(params, Xs_tr) > 0.5) == ys_tr).mean(), 3),\n                round(((predict(params, Xs_te) > 0.5) == ys_te).mean(), 3))\nprint(acc_test, best_hidden, small)",
    "hints": [
     "Цикл по размерам, `params = train(X_train, y_train, h, 0.5, 2000, 0)`, затем `predict(params, X_test)`.",
-    "Доля верных — `(pred == y_test).mean()`; лучший размер — ключ с наибольшим значением."
+    "Доля верных — `(pred == y_test).mean()`; лучший размер — ключ с наибольшим значением. Для второй части заведите новые имена: `Xs_tr, Xs_te, ys_tr, ys_te = train_test_split(X, y, train_size=30, random_state=0)` и для каждого `h` из (4, 64) посчитайте долю верных и на `Xs_tr`, и на `Xs_te`."
    ],
-   "explain": "Один и два нейрона дают почти прямую или ломаную из двух кусков границу, поэтому качество на уровне линейной модели (0.863). С 16 нейронами граница уже огибает полумесяцы (0.907), а 64 почти ничего не добавляют (0.91). Шум здесь большой (`noise=0.3`), и часть точек лежит «на чужой стороне» — их не разделит никакая сеть. Размер 4 вышел даже чуть хуже, чем 2: при маленьком слое результат заметно зависит от начальных весов, так что разница в пределах случайности. Поэтому размер слоя подбирают по тестовой (а лучше валидационной) выборке, а не «чем больше, тем лучше»."
+   "explain": "Один и два нейрона дают почти прямую или ломаную из двух кусков границу, поэтому качество на уровне линейной модели (0.863). С 16 нейронами граница уже огибает полумесяцы (0.907), а 64 почти ничего не добавляют (0.91). Шум здесь большой (`noise=0.3`), и часть точек лежит «на чужой стороне» — их не разделит никакая сеть. Размер 4 вышел даже чуть хуже, чем 2: при маленьком слое результат заметно зависит от начальных весов, так что разница в пределах случайности. На 300 обучающих точках 64 нейронам просто нечего «запоминать» сверх формы полумесяцев. На 30 точках картина другая: 4 нейрона дают 0.933 на обучении и 0.8 на тесте, а 64 — 1.0 на обучении и 0.782 на тесте. Большой слой выучил обучающие точки наизусть, включая шумные, и на новых данных стал хуже — это и есть переобучение, о котором говорит теория. Поэтому размер слоя подбирают по тестовой (а лучше валидационной) выборке, а не «чем больше, тем лучше»."
   },
   "ch11/02-backprop/backprop-check": {
    "chapter": "ch11",
@@ -426,6 +426,29 @@
     "Формула руками: `e_num = -2.0 * 1.5 + 4.0 - 3.0`, `manual_w = 2 * e_num * 1.5`. Для второй функции: `w2, x2 = Value(-2.0), Value(1.5)`, `f = w2 * x2 + w2 * w2`, `f.backward()`, ответ — `w2.grad`."
    ],
    "explain": "Прямой проход: $u = -3$, $z = 1$, $e = -2$, $L = 4$. Назад: $\\partial L / \\partial e = 2e = -4$; сложение и вычитание пропускают −4 без изменений к $b$ и к $u$; умножение отдаёт $w$ градиент $-4 \\cdot x = -6$, а $x$ — $-4 \\cdot w = 8$. Формула главы 10 даёт те же −6. Для $f = wx + w^2$ к $w$ ведут три пути: через $w \\cdot x$ (вклад $x = 1.5$) и дважды через $w \\cdot w$ (по $w = -2$), сумма $1.5 - 2 - 2 = -2.5$ — это и есть $x + 2w$. Новые `Value` нужны потому, что `grad` копится: если переиспользовать `w` из первого графа, к −2.5 прибавятся старые −6 и выйдет −8.5 — ровно та ошибка, от которой в PyTorch спасает `zero_grad()`."
+  },
+  "ch11/02b-graph/he-layers": {
+   "chapter": "ch11",
+   "lesson": "02b-graph",
+   "lesson_title": "Граф вычислений, инициализация и обрезка градиента",
+   "id": "he-layers",
+   "title": "Свой масштаб для каждого слоя",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nn_in = [784, 128, 64]\nh = [round(float(_np.sqrt(2 / n)), 3) for n in n_in]\ngot = [float(v) for v in need('he')]\nassert len(got) == 3, f'В he должно быть 3 числа — по одному на слой с весами (входы 784, 128, 64), сейчас {len(got)}.'\nassert all(close(a, b, 0.0011) for a, b in zip(got, h)), f'he = {got}, а нужно {h}: n_in — число входов слоя, то есть sizes[:-1].'\nmh = [float(v) for v in need('mult_he')]\nassert len(mh) == 3 and all(close(v, 1.414, 0.0011) for v in mh), f'mult_he = {mh}: у каждого слоя √n_in · √(2 / n_in) = √2 ≈ 1.414.'\ns0 = _np.sqrt(2 / 784)\nmo = [round(float(_np.sqrt(n) * s0), 3) for n in n_in]\ng1 = [float(v) for v in need('mult_one')]\nassert len(g1) == 3 and all(close(a, b, 0.0011) for a, b in zip(g1, mo)), f'mult_one = {g1}, а нужно {mo}: масштаб один и тот же, np.sqrt(2 / 784), а n_in у слоёв разный.'\nsh = round(float(_np.prod([_np.sqrt(n) * s0 for n in n_in]) / _np.sqrt(2) ** 3), 3)\nassert close(need('shrink'), sh, 0.0011), f'shrink = {need(\"shrink\")}, а нужно {sh}: np.prod(mult_one) / np.prod(mult_he) по неокруглённым числам.'",
+   "starter": "import numpy as np\nsizes = [784, 128, 64, 10]",
+   "solution": "import numpy as np\nsizes = [784, 128, 64, 10]\n\nn_in = sizes[:-1]\ns_he = [np.sqrt(2 / n) for n in n_in]\nm_he = [np.sqrt(n) * s for n, s in zip(n_in, s_he)]\nm_one = [np.sqrt(n) * s_he[0] for n in n_in]\n\nhe = [round(float(s), 3) for s in s_he]\nmult_he = [round(float(m), 3) for m in m_he]\nmult_one = [round(float(m), 3) for m in m_one]\nshrink = round(float(np.prod(m_one) / np.prod(m_he)), 3)\nprint(he, mult_he, mult_one, shrink)",
+   "hints": [
+    "Входы слоёв — все размеры, кроме последнего: `sizes[:-1]`. Для каждого `n` масштаб He — `np.sqrt(2 / n)`, множитель слоя — `np.sqrt(n) * s`.",
+    "Посчитайте неокруглённые списки, например `s_he = [np.sqrt(2 / n) for n in sizes[:-1]]` и `m_one = [np.sqrt(n) * s_he[0] for n in sizes[:-1]]`, а округляйте только при сохранении. `shrink = np.prod(m_one) / np.prod(m_he)`."
+   ],
+   "explain": "Масштабы He — 0.051, 0.125 и 0.177: чем меньше входов у слоя, тем крупнее его веса. С ними каждый слой умножает разброс на одно и то же $\\sqrt{2} \\approx 1.414$ — ровно столько, сколько потом «съедает» ReLU, обнуляя половину значений, так что сигнал держится. Если взять масштаб первого слоя 0.051 для всех, множители станут 1.414, 0.571 и 0.404: второй и третий слои получают слишком мелкие веса, и к выходу сигнал в 9 раз слабее, чем надо (`shrink` = 0.115). Это ошибка «один масштаб на все слои» из раздела: формула зависит от $n_{in}$ конкретного слоя."
   },
   "ch11/02b-graph/init-scale": {
    "chapter": "ch11",
@@ -475,6 +498,29 @@
    ],
    "explain": "У `[3, −12, 4]` норма $\\sqrt{9 + 144 + 16} = 13$, порог 6.5 — вектор уменьшается ровно вдвое и сохраняет направление: `[1.5, −6, 2]`, его норма теперь 6.5. Если бы вы обрезали каждое число через `np.clip(g, -6.5, 6.5)`, получилось бы `[3, −6.5, 4]` — другое направление и норма 8.2 вместо 6.5."
   },
+  "ch11/02b-graph/p-clip-order": {
+   "chapter": "ch11",
+   "lesson": "02b-graph",
+   "lesson_title": "Граф вычислений, инициализация и обрезка градиента",
+   "id": "p-clip-order",
+   "title": "Где место обрезки",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "deliveries.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "assert len(_lines) == 1, f'Должна напечататься одна строка, сейчас: {_lines}.'\ni_g, i_n, i_c, i_s = (_code.find(s) for s in ('g = 2 * X.T', 'n = np.linalg.norm', 'g = g * (max_norm', 'w = w - lr'))\nassert min(i_g, i_n, i_c, i_s) >= 0, 'Используйте все строки.'\nassert i_g < i_n < i_c < i_s, 'Порядок внутри цикла: градиент → его норма → обрезка → шаг. Обрезать можно только посчитанный градиент, и до того, как он сдвинул веса.'\nassert _lines == ['[1.815, 1.408] 8'], f'Сейчас: {_lines}. Проверьте отступы: обрезка и clipped += 1 — внутри if, шаг w = w - lr * g — внутри цикла, но не внутри if.'",
+   "starter": "",
+   "solution": "import numpy as np\nX = np.array([[1.0, 0.5], [2.0, 1.0], [3.0, -1.0], [4.0, 2.0]])\ny = np.array([3.0, 5.0, 4.0, 10.0])\nw, lr, max_norm, clipped = np.zeros(2), 0.05, 5.0, 0\nfor step in range(40):\n    g = 2 * X.T @ (X @ w - y) / len(y)\n    n = np.linalg.norm(g)\n    if n > max_norm:\n        g = g * (max_norm / n)\n        clipped += 1\n    w = w - lr * g\nprint(w.round(3).tolist(), clipped)",
+   "hints": [
+    "Как в PyTorch: `loss.backward()` (градиент) → `clip_grad_norm_` (обрезка) → `optimizer.step()` (шаг). Здесь backward — строка с `g = 2 * X.T ...`.",
+    "Внутри цикла четыре уровня: градиент, норма, `if` с двумя строками под ним (обрезка и счётчик), затем шаг на уровне цикла. `print` — после цикла, без отступа."
+   ],
+   "explain": "Обрезка стоит строго между градиентом и шагом: до него обрезать нечего (или обрежется старый градиент прошлого шага), после — веса уже сдвинуты полным шагом. Здесь обрезка сработала на первых 8 шагах, пока веса далеки от решения и градиент большой; дальше норма опускается ниже 5, и шаги идут без изменений. Если поставить обрезку после шага, она сработает только 2 раза и уже ничего не защитит: большие шаги к тому времени сделаны."
+  },
   "ch11/02b-graph/explode": {
    "chapter": "ch11",
    "lesson": "02b-graph",
@@ -497,7 +543,7 @@
     "Внутри условия: `g = g * (max_norm / norms[-1])` и `clipped += 1`. Доля шагов — `clipped / len(mae)`.",
     "Цикл по порогам: `for mn in [None, 50, 20, 5]: mae, norms, clipped = sgd(0.1, mn)`, затем `res[mn] = (round(float(mae[len(mae) // 2:].max()), 2), round(float(mae[-1]), 2), round(clipped / len(mae), 3))`. Медиана — `np.median(norms)` для запуска без обрезки."
    ],
-   "explain": "Без обрезки худшая MAE во второй половине — 14.74 минуты: шаги с аномалиями то и дело отбрасывают модель. Порог 50 срезает самые большие шаги (8 % шагов) — худшая MAE 10.64; порог 20 (13 % шагов) — 8.14; порог 5 — 7.26, но он срабатывает на двух шагах из трёх: это уже не страховка, а другой алгоритм — почти все шаги одинаковой длины. Здесь, на линейной модели с одним минимумом, это сошло с рук, а в сети слишком низкий порог замедляет обучение. Практичное правило — порог в несколько раз выше типичной нормы: медиана здесь около 8, порог 20–50 срабатывает редко и только по делу. MAE после последнего шага почти одинакова у всех вариантов: 7.01 без обрезки и с порогами 50 и 20, 6.96 с порогом 5. Обрезка защищает не конец обучения, а путь к нему: в сети один такой «выброс» мог бы убить ReLU-нейроны, и восстановиться было бы уже нельзя."
+   "explain": "Без обрезки худшая MAE во второй половине — 14.74 минуты: шаги с аномалиями то и дело отбрасывают модель. Порог 50 срезает самые большие шаги (8 % шагов) — худшая MAE 10.64. Из 24 срабатываний первые три — самые первые шаги: веса стартуют с нулей, ошибка огромна на любом батче, и градиент велик у всех; остальные 21 — батчи с ошибочными записями. Порог 20 (13 % шагов) даёт худшую MAE 8.14, порог 5 — 7.26, но он срабатывает на двух шагах из трёх: это уже не страховка, а другой алгоритм — почти все шаги одинаковой длины. Здесь, на линейной модели с одним минимумом, это сошло с рук, а в сети слишком низкий порог замедляет обучение. Практичное правило — порог в несколько раз выше типичной нормы: медиана здесь около 8, порог 20–50 срабатывает редко — на старте обучения и на аномальных батчах. MAE после последнего шага почти одинакова у всех вариантов: 7.01 без обрезки и с порогами 50 и 20, 6.96 с порогом 5. Обрезка защищает не конец обучения, а путь к нему: в сети один такой «выброс» мог бы убить ReLU-нейроны, и восстановиться было бы уже нельзя."
   },
   "ch11/03-mlp/first-mlp": {
    "chapter": "ch11",
@@ -593,7 +639,7 @@
     "Для каждого alpha создайте новый конвейер со `StandardScaler` и `MLPClassifier(alpha=...)`; AUC считают по `predict_proba(...)[:, 1]`.",
     "Цикл по alpha, внутри — обучение и два AUC; строки — словари в список, потом DataFrame."
    ],
-   "explain": "При слабой регуляризации разрыв обучение − тест около 0.04, при alpha = 10 он становится отрицательным: модель настолько проста, что на обучении не лучше, чем на тесте. Лучшее — посередине. Это та же история «смещение против разброса», что и с глубиной дерева."
+   "explain": "При слабой регуляризации разрыв обучение − тест около 0.04, при alpha = 10 он становится отрицательным: модель настолько проста, что на обучении не лучше, чем на тесте. Лучшее — посередине. По округлённым AUC alpha = 0.1 и alpha = 1 дают одинаковые 0.910, и правило «при равенстве — меньший» выбирает 0.1. Без округления чуть выше alpha = 1 (0.9101 против 0.9098), но разница в четвёртом знаке — это шум одного разбиения: на тесте эти два варианта неразличимы. Поэтому проверка и просит выбирать по `res`. Это та же история «смещение против разброса», что и с глубиной дерева."
   },
   "ch11/03-mlp/loss-curve": {
    "chapter": "ch11",
@@ -706,14 +752,14 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts, GridSearchCV as _GS\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.neural_network import MLPClassifier as _MLP\nfrom sklearn.metrics import roc_auc_score as _auc\ng = _pd.read_csv('guests_churn.csv'); y = g['churned']\nX0 = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\na, b, c, d = _tts(X0, y, test_size=0.25, random_state=42, stratify=y)\ngs = _GS(_mp(_SS(), _MLP(max_iter=300, random_state=0)), {'mlpclassifier__hidden_layer_sizes': [(16,), (32, 16)], 'mlpclassifier__alpha': [0.1, 1.0]}, cv=3, scoring='roc_auc').fit(a, c)\nassert dict(need('best_params')) == gs.best_params_, f'best_params = {need(\"best_params\")}, а нужно {gs.best_params_}.'\nassert close(need('cv_auc'), round(gs.best_score_, 3), 0.002), f'cv_auc = {need(\"cv_auc\")}.'\nassert close(need('test_auc'), round(_auc(d, gs.predict_proba(b)[:, 1]), 3), 0.002), f'test_auc = {need(\"test_auc\")}.'",
+   "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts, GridSearchCV as _GS\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.neural_network import MLPClassifier as _MLP\nfrom sklearn.metrics import roc_auc_score as _auc\ng = _pd.read_csv('guests_churn.csv'); y = g['churned']\nX0 = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\na, b, c, d = _tts(X0, y, test_size=0.25, random_state=42, stratify=y)\ngs = _GS(_mp(_SS(), _MLP(max_iter=300, random_state=0)), {'mlpclassifier__hidden_layer_sizes': [(16,), (32, 16)], 'mlpclassifier__alpha': [0.1, 1.0]}, cv=3, scoring='roc_auc').fit(a, c)\nassert dict(need('best_params')) == gs.best_params_, f'best_params = {need(\"best_params\")}, а нужно {gs.best_params_}.'\nassert close(need('cv_auc'), round(gs.best_score_, 3), 0.002), f'cv_auc = {need(\"cv_auc\")}.'\nassert close(need('test_auc'), round(_auc(d, gs.predict_proba(b)[:, 1]), 3), 0.002), f'test_auc = {need(\"test_auc\")}.'\nfrom sklearn.ensemble import HistGradientBoostingClassifier as _HGB\nhw = round(_auc(d, _HGB(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0).fit(a, c).predict_proba(b)[:, 1]), 3)\nassert close(need('hgb_auc'), hw, 0.002), f'hgb_auc = {need(\"hgb_auc\")}, а нужно {hw}: бустинг с параметрами из условия на X_train, AUC на X_test.'",
    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, GridSearchCV\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)",
-   "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, GridSearchCV\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\npipe = make_pipeline(StandardScaler(), MLPClassifier(max_iter=300, random_state=0))\ngrid = GridSearchCV(pipe, {\"mlpclassifier__hidden_layer_sizes\": [(16,), (32, 16)],\n                           \"mlpclassifier__alpha\": [0.1, 1.0]}, cv=3, scoring=\"roc_auc\")\ngrid.fit(X_train, y_train)\nbest_params = grid.best_params_\ncv_auc = round(grid.best_score_, 3)\ntest_auc = round(roc_auc_score(y_test, grid.predict_proba(X_test)[:, 1]), 3)",
+   "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, GridSearchCV\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\npipe = make_pipeline(StandardScaler(), MLPClassifier(max_iter=300, random_state=0))\ngrid = GridSearchCV(pipe, {\"mlpclassifier__hidden_layer_sizes\": [(16,), (32, 16)],\n                           \"mlpclassifier__alpha\": [0.1, 1.0]}, cv=3, scoring=\"roc_auc\")\ngrid.fit(X_train, y_train)\nbest_params = grid.best_params_\ncv_auc = round(grid.best_score_, 3)\ntest_auc = round(roc_auc_score(y_test, grid.predict_proba(X_test)[:, 1]), 3)\n\nfrom sklearn.ensemble import HistGradientBoostingClassifier\nhgb = HistGradientBoostingClassifier(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0)\nhgb.fit(X_train, y_train)\nhgb_auc = round(roc_auc_score(y_test, hgb.predict_proba(X_test)[:, 1]), 3)\nprint(best_params, cv_auc, test_auc, hgb_auc)",
    "hints": [
     "Имена параметров в конвейере из `make_pipeline` — имя класса строчными буквами, два подчёркивания, параметр (глава 7).",
-    "Сетка: `{\"mlpclassifier__hidden_layer_sizes\": [...], \"mlpclassifier__alpha\": [...]}`; лучшие параметры — `grid.best_params_`."
+    "Сетка: `{\"mlpclassifier__hidden_layer_sizes\": [...], \"mlpclassifier__alpha\": [...]}`; лучшие параметры — `grid.best_params_`, AUC кросс-валидации — `grid.best_score_`. Бустинг: `from sklearn.ensemble import HistGradientBoostingClassifier`, `.fit(X_train, y_train)` и `roc_auc_score` по `predict_proba(X_test)[:, 1]`."
    ],
-   "explain": "Лучшей оказывается простая сеть с заметной регуляризацией — на 1 800 строках глубина не нужна. Даже после подбора сеть не обгоняет бустинг из главы 10: для табличных данных это нормальный итог."
+   "explain": "Лучшей оказывается простая сеть с заметной регуляризацией — один слой из 16 нейронов и alpha = 1: на 1 800 строках глубина не нужна. AUC кросс-валидации (0.879) ниже, чем на тесте (0.91), и это не ошибка: в каждом фолде сеть учится на 1 200 строках вместо 1 800, а сами фолды заметно различаются (от 0.863 до 0.895) — тестовая четверть на этом разбиении просто «удобнее» средней. У бустинга то же самое: на тех же трёх фолдах его AUC от 0.881 до 0.921, а на тесте 0.93. Сравнивать модели честно на одной и той же схеме — и на тесте бустинг даёт 0.93 против 0.91 у сети: даже после подбора сеть его не обгоняет, для табличных данных это нормальный итог."
   },
   "ch11/04-pytorch/p-torch-order": {
    "chapter": "ch11",
@@ -737,6 +783,29 @@
     "Шаг нельзя сделать до того, как посчитан градиент, а градиент — до того, как посчитана потеря."
    ],
    "explain": ""
+  },
+  "ch11/04-pytorch/zero-grad": {
+   "chapter": "ch11",
+   "lesson": "04-pytorch",
+   "lesson_title": "PyTorch: то же самое, но в промышленном масштабе",
+   "id": "zero-grad",
+   "title": "Забытый zero_grad",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nk0 = _np.array([1.0, 2.0, 3.0, 4.5, 6.0]); m0 = _np.array([18.0, 25.0, 34.0, 44.0, 55.0])\ndef _run(z):\n    w, g = 5.0, 0.0; L = []\n    for _ in range(30):\n        if z:\n            g = 0.0\n        p = w * k0; L.append(float(_np.mean((p - m0) ** 2)))\n        g += _np.mean(2 * (p - m0) * k0); w = w - 0.01 * g\n    return w, L\nf = need('run')\nwo, lo = f(True)\nassert close(wo, _run(True)[0], 0.001), f'run(True) даёт w = {wo:.3f}, а нужно {_run(True)[0]:.3f}: при zero_grad=True в начале каждого шага grad = 0.0.'\nwb, lb = f(False)\nassert close(wb, _run(False)[0], 0.001), f'run(False) даёт w = {wb:.3f}, а нужно {_run(False)[0]:.3f}: без обнуления код не должен меняться.'\nassert close(need('w_ok'), round(_run(True)[0], 3), 0.0011) and close(need('w_bug'), round(_run(False)[0], 3), 0.0011), f'w_ok, w_bug = {need(\"w_ok\")}, {need(\"w_bug\")}.'\nassert close(need('final_ok'), round(_run(True)[1][-1], 1), 0.051) and close(need('final_bug'), round(_run(False)[1][-1], 1), 0.051), f'final_ok, final_bug = {need(\"final_ok\")}, {need(\"final_bug\")}: последние элементы списков потерь, 1 знак.'\nL = _run(False)[1]\nfu = [k for k in range(1, len(L)) if L[k] > L[k - 1]][0]\nassert need('first_up') == fu, f'first_up = {need(\"first_up\")}, а нужно {fu}: первый k, для которого losses[k] > losses[k - 1], в запуске без обнуления.'",
+   "starter": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef run(zero_grad, lr=0.01, steps=30):\n    w, grad = 5.0, 0.0\n    losses = []\n    for step in range(steps):\n        # здесь — обнуление grad, если zero_grad\n        pred = w * km\n        losses.append(float(np.mean((pred - minutes) ** 2)))\n        grad += np.mean(2 * (pred - minutes) * km)    # как loss.backward(): градиент копится\n        w = w - lr * grad                             # как optimizer.step()\n    return w, losses",
+   "solution": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef run(zero_grad, lr=0.01, steps=30):\n    w, grad = 5.0, 0.0\n    losses = []\n    for step in range(steps):\n        if zero_grad:\n            grad = 0.0\n        pred = w * km\n        losses.append(float(np.mean((pred - minutes) ** 2)))\n        grad += np.mean(2 * (pred - minutes) * km)\n        w = w - lr * grad\n    return w, losses\n\nw_ok, losses_ok = run(True)\nw_bug, losses_bug = run(False)\nw_ok, w_bug = round(w_ok, 3), round(w_bug, 3)\nfinal_ok, final_bug = round(losses_ok[-1], 1), round(losses_bug[-1], 1)\nfirst_up = [k for k in range(1, len(losses_bug)) if losses_bug[k] > losses_bug[k - 1]][0]\nprint(w_ok, w_bug, final_ok, final_bug, first_up)",
+   "hints": [
+    "Одна строка в начале тела цикла: `if zero_grad: grad = 0.0` (можно в две строки с отступом). Остальной код не трогайте.",
+    "`w_ok, losses_ok = run(True)`, `w_bug, losses_bug = run(False)`. Первый рост: `[k for k in range(1, len(losses_bug)) if losses_bug[k] > losses_bug[k - 1]][0]`."
+   ],
+   "explain": "С обнулением потеря ровно падает с 368.4 до 26.1, вес приходит к 9.936. Без обнуления первые три шага выглядят нормально (368.4 → 203.1 → 45.2), а на шаге 3 потеря растёт до 59.8: накопленный градиент — сумма всех прошлых — продолжает толкать вес вправо, хотя минимум уже пройден. Дальше потеря качается между ≈ 26 и ≈ 394, и к 30-му шагу оказывается 389.1 при весе 13.994 — хуже, чем на старте. Симптом в журнале обучения узнаваемый: потеря сначала падает, а потом начинает «качаться» с растущим размахом. Первое, что проверять в этом случае, — есть ли `optimizer.zero_grad()` в начале шага."
   },
   "ch11/04-pytorch/float32": {
    "chapter": "ch11",
@@ -784,6 +853,29 @@
     "После класса: `net = TinyNet([4, 16, 8, 1])`, `z = net.forward(X[:5])`, `p = (1 / (1 + np.exp(-z))).round(3)`."
    ],
    "explain": "225 параметров: 4·16 + 16 = 80, 16·8 + 8 = 136, 8·1 + 1 = 9. Сеть ещё не обучена, поэтому вероятности ухода у пяти гостей — 0.29…0.41: случайные веса дают случайные, но умеренные ответы, без 0 и 1 — так и должно быть при He-инициализации и стандартизованных признаках. Списки `self.Ws` и `self.bs` — numpy-аналог регистрации слоёв: всё, что лежит в них, попадает в `n_params()`, и оптимизатор знал бы, что обновлять. В PyTorch роль такого списка играет `nn.ModuleList`; если сложить слои в обычный Python-список, `model.parameters()` их не увидит. Последний слой без ReLU — иначе отрицательные логиты обнулялись бы, и вероятность никогда не опускалась бы ниже 0.5."
+  },
+  "ch11/04-pytorch/state-shapes": {
+   "chapter": "ch11",
+   "lesson": "04-pytorch",
+   "lesson_title": "PyTorch: то же самое, но в промышленном масштабе",
+   "id": "state-shapes",
+   "title": "Что лежит в state_dict",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "f = need('state_shapes')\nassert f([2, 16, 1]) == {\"0.weight\": (16, 2), \"0.bias\": (16,), \"2.weight\": (1, 16), \"2.bias\": (1,)}, f'state_shapes([2, 16, 1]) = {f([2, 16, 1])}. Ключи — позиции 0 и 2 (на позиции 1 — ReLU), формы — кортежи, веса выходы × входы.'\nwant = {\"0.weight\": (32, 8), \"0.bias\": (32,), \"2.weight\": (16, 32), \"2.bias\": (16,), \"4.weight\": (1, 16), \"4.bias\": (1,)}\ngot = need('shapes', dict)\nassert got == want, f'shapes = {got}, а нужно {want}.'\nassert need('n_total') == 833, f'n_total = {need(\"n_total\")}: перемножьте числа в каждой форме и сложите.'",
+   "starter": "import numpy as np\n\ndef state_shapes(sizes):\n    out = {}\n    ...\n    return out",
+   "solution": "import numpy as np\n\ndef state_shapes(sizes):\n    out = {}\n    for i, (a, b) in enumerate(zip(sizes[:-1], sizes[1:])):\n        out[f\"{2 * i}.weight\"] = (b, a)\n        out[f\"{2 * i}.bias\"] = (b,)\n    return out\n\nshapes = state_shapes([8, 32, 16, 1])\nn_total = sum(int(np.prod(s)) for s in shapes.values())\nprint(shapes, n_total)",
+   "hints": [
+    "Линейный слой номер `i` (с нуля) стоит в `nn.Sequential` на позиции `2 * i`: перед ним `i` слоёв `Linear` и `i` слоёв `ReLU`. Пары размеров — `zip(sizes[:-1], sizes[1:])`.",
+    "В цикле `for i, (a, b) in enumerate(zip(sizes[:-1], sizes[1:])):` — `out[f\"{2 * i}.weight\"] = (b, a)` и `out[f\"{2 * i}.bias\"] = (b,)`. Число элементов формы — `int(np.prod(shape))`."
+   ],
+   "explain": "Для `[2, 16, 1]` получается ровно то, что печатает `list(model.state_dict())` в блокноте, — 65 чисел. Для `[8, 32, 16, 1]` — шесть тензоров и 833 числа: 256 + 32 весов и сдвигов первого слоя, 512 + 16 второго, 16 + 1 выходного. Эти же формы PyTorch печатает в ошибке `size mismatch`, когда архитектура при загрузке не совпала: увидев `torch.Size([16, 2])`, вы сразу понимаете, что это веса слоя «2 входа → 16 нейронов». В своём блокноте сверьте с PyTorch: `{k: tuple(v.shape) for k, v in model.state_dict().items()}` даёт тот же словарь."
   },
   "ch11/04b-softmax/softmax": {
    "chapter": "ch11",
@@ -978,6 +1070,29 @@
    ],
    "explain": "Выключено около 30 % значений, но среднее осталось около 1: оставшиеся выросли в 1 / 0.7 раза. Без этого масштабирования на прогнозе (когда dropout выключен) сеть видела бы «слишком громкие» сигналы."
   },
+  "ch11/04c-debug/dropout-net": {
+   "chapter": "ch11",
+   "lesson": "04c-debug",
+   "lesson_title": "Dropout, BatchNorm и smoke-test",
+   "id": "dropout-net",
+   "title": "Dropout против переобучения",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "import numpy as np\nfrom sklearn.datasets import make_moons\nfrom sklearn.model_selection import train_test_split\nX, y = make_moons(600, noise=0.3, random_state=1)\nX_train, X_test, y_train, y_test = train_test_split(X, y, train_size=60, random_state=0)\n\ndef accuracy(params, X, y):\n    W1, b1, w2, b2 = params\n    return round(float(((np.maximum(0, X @ W1 + b1) @ w2 + b2 > 0) == y).mean()), 3)",
+   "check": "import numpy as _np\nXa, Xb, ya, yb = need('X_train'), need('X_test'), need('y_train'), need('y_test')\ndef _tr(rate):\n    r = _np.random.default_rng(0)\n    W1 = r.normal(size=(2, 64)) * 0.5; b1 = _np.zeros(64); w2 = r.normal(size=64) * 0.5; b2 = 0.0\n    for _ in range(2000):\n        Z1 = Xa @ W1 + b1; H = _np.maximum(0, Z1)\n        if rate > 0:\n            M = (r.random(H.shape) >= rate) / (1 - rate); H = H * M\n        else:\n            M = 1.0\n        p = 1 / (1 + _np.exp(-(H @ w2 + b2))); d2 = (p - ya) / len(ya)\n        dH = _np.outer(d2, w2) * (Z1 > 0) * M\n        w2 = w2 - 0.5 * H.T @ d2; b2 = b2 - 0.5 * d2.sum(); W1 = W1 - 0.5 * Xa.T @ dH; b1 = b1 - 0.5 * dH.sum(axis=0)\n    P = (W1, b1, w2, b2)\n    return accuracy(P, Xa, ya), accuracy(P, Xb, yb)\nwant = {r: _tr(r) for r in (0, 0.3, 0.5)}\ngot = need('res', dict)\nfor r, v in want.items():\n    g = got.get(r)\n    assert g is not None and len(g) == 2, f'В res нет пары для rate = {r}.'\n    assert close(g[0], v[0], 0.0011) and close(g[1], v[1], 0.0011), f'res[{r}] = {tuple(g)}, а нужно {v}. Маску берите из того же генератора rng, что и веса, сразу после ReLU; в dH умножьте на M.'\nassert need('best_rate') == max(want, key=lambda r: want[r][1]), f'best_rate = {need(\"best_rate\")}.'",
+   "starter": "import numpy as np\n\ndef train_drop(X, y, hidden, lr, steps, seed, rate=0.0):\n    rng = np.random.default_rng(seed)\n    W1 = rng.normal(size=(X.shape[1], hidden)) * 0.5\n    b1 = np.zeros(hidden)\n    w2 = rng.normal(size=hidden) * 0.5\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        # здесь — маска dropout M (или M = 1.0 при rate = 0)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 > 0)\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2\n\nres = {}",
+   "solution": "import numpy as np\n\ndef train_drop(X, y, hidden, lr, steps, seed, rate=0.0):\n    rng = np.random.default_rng(seed)\n    W1 = rng.normal(size=(X.shape[1], hidden)) * 0.5\n    b1 = np.zeros(hidden)\n    w2 = rng.normal(size=hidden) * 0.5\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        if rate > 0:\n            M = (rng.random(H.shape) >= rate) / (1 - rate)\n            H = H * M\n        else:\n            M = 1.0\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 > 0) * M\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2\n\nres = {}\nfor rate in (0, 0.3, 0.5):\n    params = train_drop(X_train, y_train, 64, 0.5, 2000, 0, rate)\n    res[rate] = (accuracy(params, X_train, y_train), accuracy(params, X_test, y_test))\nbest_rate = max(res, key=lambda r: res[r][1])\nprint(res, best_rate)",
+   "hints": [
+    "После строки с ReLU: `if rate > 0:` → `M = (rng.random(H.shape) >= rate) / (1 - rate)` и `H = H * M`; `else:` → `M = 1.0`. Генератор — тот же `rng`, что создавал веса.",
+    "В обратном проходе добавьте `* M` в конец строки `dH = ...`. Затем цикл: `for rate in (0, 0.3, 0.5): params = train_drop(X_train, y_train, 64, 0.5, 2000, 0, rate)` и `res[rate] = (accuracy(params, X_train, y_train), accuracy(params, X_test, y_test))`."
+   ],
+   "explain": "Без dropout сеть почти зазубрила 60 точек (0.983 на обучении) и угадывает 0.85 на тесте. С `rate = 0.3` на тесте 0.876, с 0.5 — 0.883, а доля верных на обучении почти не изменилась (0.983 и 0.967): сеть больше не может опираться на отдельные нейроны, и граница получается глаже. Это не случайность одного запуска: при `seed` от 0 до 4 без dropout на тесте выходит от 0.850 до 0.863, с `rate = 0.5` — от 0.878 до 0.893. На 600 точках эффект был бы меньше: dropout, как `alpha`, нужен там, где данных мало для размера сети, и долю подбирают по валидации."
+  },
   "ch11/04c-debug/batchnorm": {
    "chapter": "ch11",
    "lesson": "04c-debug",
@@ -1000,6 +1115,29 @@
     "Два вызова подряд, каждый раз перезаписывая скользящие средние: `out1, run_mean, run_var = batchnorm_train(B[:3], gamma, beta, run_mean, run_var)`, потом то же для `B[3:]`. Округлять — только при сохранении результатов."
    ],
    "explain": "В первом батче у каждого столбца после нормировки среднее 0, а масштаб задают `gamma` и `beta`: второй столбец растянут вдвое и сдвинут на 1. Третий столбец — жалобы — у всех шести гостей нулевой: дисперсия 0, и без `eps` было бы деление 0 / 0 = `nan`; с `eps` выход равен просто `beta` = −1. Скользящие средние после двух батчей ещё далеки от правды: среднее визитов 0.64 при настоящем 3.33 — от стартового нуля ушли только на $1 - 0.9^2 = 19\\%$ пути. Поэтому `pred` для первого гостя (2.44 и 1.43) совсем не похож на его же выход в режиме обучения (0.981 и −1.172). Это та же картина, что у PyTorch в теории: режим прогноза BN честен только после многих батчей обучения."
+  },
+  "ch11/04c-debug/start-loss": {
+   "chapter": "ch11",
+   "lesson": "04c-debug",
+   "lesson_title": "Dropout, BatchNorm и smoke-test",
+   "id": "start-loss",
+   "title": "Разумная стартовая потеря",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "guests_churn.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import numpy as _np\nR = {\"отток\": (2, 0.702), \"цифры в анкетах\": (10, 2.297), \"категории напитков\": (4, 9.81), \"тональность отзывов\": (3, 0.012)}\nref = need('ref', dict)\nfor k, (K, s) in R.items():\n    assert k in ref and close(ref[k], round(float(_np.log(K)), 3), 0.0011), f'ref[{k!r}] = {ref.get(k)}, а нужно {round(float(_np.log(K)), 3)}: натуральный логарифм числа классов, np.log(K).'\nwant = [k for k, (K, s) in R.items() if abs(s - _np.log(K)) > 0.25 * _np.log(K)]\nassert list(need('suspicious')) == want, f'suspicious = {need(\"suspicious\")}, а нужно {want}.'",
+   "starter": "import numpy as np\nruns = {\n    \"отток\": (2, 0.702),\n    \"цифры в анкетах\": (10, 2.297),\n    \"категории напитков\": (4, 9.81),\n    \"тональность отзывов\": (3, 0.012),\n}",
+   "solution": "import numpy as np\nruns = {\n    \"отток\": (2, 0.702),\n    \"цифры в анкетах\": (10, 2.297),\n    \"категории напитков\": (4, 9.81),\n    \"тональность отзывов\": (3, 0.012),\n}\n\nref = {k: round(float(np.log(K)), 3) for k, (K, s) in runs.items()}\nsuspicious = [k for k, (K, s) in runs.items() if abs(s - np.log(K)) > 0.25 * np.log(K)]\nprint(ref, suspicious)",
+   "hints": [
+    "Натуральный логарифм — `np.log(K)`. Отклонение — `abs(start - np.log(K))`, порог — `0.25 * np.log(K)`.",
+    "`ref = {k: round(float(np.log(K)), 3) for k, (K, s) in runs.items()}`, `suspicious = [k for k, (K, s) in runs.items() if abs(s - np.log(K)) > 0.25 * np.log(K)]`."
+   ],
+   "explain": "Ориентиры: $\\ln 2 = 0.693$, $\\ln 10 = 2.303$, $\\ln 4 = 1.386$, $\\ln 3 = 1.099$. Отток и цифры стартуют как надо — сеть пока «не знает» и раздаёт классам почти равные вероятности. У категорий напитков потеря в 7 раз больше ориентира: сеть с первого шага уверенно ошибается — так бывает при слишком крупных начальных весах или нестандартизованных признаках (урок «Граф вычислений, инициализация и обрезка градиента»). Подозрительна и тональность: потеря почти ноль **до** обучения означает, что сеть уже знает ответ, — чаще всего ответ просочился в признаки (утечка — урок «Категориальные признаки и утечки» главы 6) или во всех строках один и тот же класс. Обе ситуации видно за секунду, ещё до долгого запуска."
   },
   "ch11/04c-debug/smoke-test": {
    "chapter": "ch11",
@@ -1065,7 +1203,7 @@
     "Две модели — логистическая регрессия и kNN — обучаются на `X_train` и проверяются на `X_test`; признаки уже в шкале 0–1 (яркость поделена на 16). Обучайте обе модели без масштабирования: со `StandardScaler` числа не совпадут с проверкой.",
     "`(model.predict(X_test) == y_test).mean()`."
    ],
-   "explain": "Логистическая регрессия — 96 %, ближайшие соседи — больше 98 %. Картинки маленькие, чистые и выровненные по центру, поэтому даже «найди самую похожую картинку из обучения» работает отлично. Это важный ориентир: сеть должна быть не хуже kNN, иначе она не нужна."
+   "explain": "Логистическая регрессия — 96 %, ближайшие соседи — больше 98 %. Картинки маленькие, чистые и выровненные по центру, поэтому даже «найди самую похожую картинку из обучения» работает отлично. Это важный ориентир: сеть должна быть не хуже kNN, иначе она не нужна. Забегая вперёд: MLP в шаге 5 даст почти столько же (0.982 против 0.984), и выбирать между ними придётся не по точности, а по тому, что ещё нужно бизнесу, — об этом итог проекта."
   },
   "ch11/05-project/own-net": {
    "chapter": "ch11",
@@ -1149,7 +1287,7 @@
     "Сдвиг картинки 8 × 8 на пиксель вправо: `np.roll(img, 1, axis=1)` с обнулением первого столбца; для таблицы 64 признаков сначала `reshape(-1, 8, 8)`.",
     "Сдвинутый тест — `shift_right(X_test)`. Обучение с копиями: `np.vstack([X_train, shift_right(X_train)])` и `np.concatenate([y_train, y_train])`."
    ],
-   "explain": "Сдвиг на **один** пиксель — и точность падает с 98 % до 44 %. Для полносвязной сети пиксель (2, 3) и пиксель (2, 4) — совершенно разные признаки; она не знает, что картинка «та же, только левее». Обучение на сдвинутых копиях (**аугментация данных**) возвращает точность — но так пришлось бы перебрать все сдвиги, повороты и наклоны. Свёрточные сети (глава 14) встраивают «одинаково в любом месте картинки» прямо в архитектуру.\n\n## Итог для руководителя отдела лояльности\n\n::: figure nn-operator-flow\nПравило из шага 6 на тестовых цифрах: ответы с максимальной вероятностью ниже 0.9 уходят оператору, остальные — в базу автоматически.\n:::\n\n> **Можно.** На учебном наборе рукописных цифр нейросеть распознаёт около 98 % цифр. Если отправлять оператору только ответы, в которых модель не уверена (около 8 % цифр), три четверти ошибок модели будут исправлены вручную, а остальное пройдёт автоматически.\n>\n> **Подводный камень.** Простая нейросеть чувствительна к положению цифры: если в анкете цифры чуть сдвинуты относительно «клеточки», качество падает вдвое. Для реального внедрения нужна свёрточная сеть и аккуратное вырезание каждой цифры из скана; обучать её надо на наших анкетах, а не на учебном наборе.\n>\n> **Следующий шаг.** Собрать 2–3 тысячи размеченных цифр из наших анкет (оператор и так их перебивает) и проверить модель на них."
+   "explain": "Сдвиг на **один** пиксель — и точность падает с 98 % до 44 %. Для полносвязной сети пиксель (2, 3) и пиксель (2, 4) — совершенно разные признаки; она не знает, что картинка «та же, только левее». Обучение на сдвинутых копиях (**аугментация данных**) возвращает точность — но так пришлось бы перебрать все сдвиги, повороты и наклоны. Свёрточные сети (глава 14) встраивают «одинаково в любом месте картинки» прямо в архитектуру.\n\n## Итог для руководителя отдела лояльности\n\n::: figure nn-operator-flow\nПравило из шага 6 на тестовых цифрах: ответы с максимальной вероятностью ниже 0.9 уходят оператору, остальные — в базу автоматически.\n:::\n\n> **Можно.** На учебном наборе рукописных цифр нейросеть распознаёт около 98 % цифр. Если отправлять оператору только ответы, в которых модель не уверена (около 8 % цифр), три четверти ошибок модели будут исправлены вручную, а остальное пройдёт автоматически.\n>\n> **Почему нейросеть, а не метод попроще.** Метод ближайших соседей («найди самую похожую картинку») на этих данных так же точен — 98.4 % против 98.2 % у сети. Но для нашей схемы с оператором нужна степень уверенности, а у соседей она грубая: при трёх соседях — только «3 из 3» или «2 из 3». С тем же порогом оператору ушло бы 2.7 % цифр, и он поймал бы 3 ошибки из 7, а у сети — 6 из 8. Сеть даёт плавную уверенность, и порог можно настроить под нагрузку операторов.\n>\n> **Подводный камень.** Простая нейросеть чувствительна к положению цифры: если в анкете цифры чуть сдвинуты относительно «клеточки», качество падает вдвое. Для реального внедрения нужна свёрточная сеть и аккуратное вырезание каждой цифры из скана; обучать её надо на наших анкетах, а не на учебном наборе.\n>\n> **Следующий шаг.** Собрать 2–3 тысячи размеченных цифр из наших анкет (оператор и так их перебивает) и проверить модель на них."
   }
  }
 }

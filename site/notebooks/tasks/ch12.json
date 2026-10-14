@@ -62,14 +62,14 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nd0 = s0.resample('D').sum(); w0 = d0.resample('W').mean()\nassert need('daily', _pd.Series).equals(d0), 'daily — s.resample(\"D\").sum().'\nassert _pd.Series(need('weekly_mean')).round(6).equals(w0.round(6)), 'weekly_mean — daily.resample(\"W\").mean().'\nassert need('best_week') == w0.idxmax(), f'best_week = {need(\"best_week\")}.'",
+   "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nd0 = s0.resample('D').sum(); w0 = d0.resample('W').mean()\nassert need('daily', _pd.Series).equals(d0), 'daily — s.resample(\"D\").sum().'\nassert _pd.Series(need('weekly_mean')).round(6).equals(w0.round(6)), 'weekly_mean — daily.resample(\"W\").mean().'\nc0 = d0.resample('W').count()\nassert list(_pd.Series(need('week_days')).values) == list(c0.values), 'week_days — daily.resample(\"W\").count().'\nfull = w0[c0 == 7]\nassert need('best_week') != w0.idxmax(), f'best_week = {need(\"best_week\")}: в эту «неделю» попал один день, 31 августа. Нужна лучшая полная неделя: week_days == 7.'\nassert need('best_week') == full.idxmax(), f'best_week = {need(\"best_week\")}, а нужно {full.idxmax().date()}.'\nassert close(need('best_mean'), round(full.max(), 1), 0.06), f'best_mean = {need(\"best_mean\")}, а нужно {round(float(full.max()), 1)}.'",
    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
-   "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\nweekly_mean = daily.resample(\"W\").mean()\nbest_week = weekly_mean.idxmax()",
+   "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\nweekly_mean = daily.resample(\"W\").mean()\nweek_days = daily.resample(\"W\").count()\nfull = weekly_mean[week_days == 7]\nbest_week = full.idxmax()\nbest_mean = round(full.max(), 1)\nprint(weekly_mean.idxmax(), week_days[weekly_mean.idxmax()], best_week, best_mean)",
    "hints": [
-    "`daily = s.resample(\"D\").sum()`; `weekly_mean.idxmax()`.",
-    "Сначала дневной ряд `s.resample(\"D\").sum()`, потом по нему `resample(\"W\").mean()`. Если взять `s.resample(\"W\").mean()` сразу от часового ряда, получится среднее за час, а не за день."
+    "Сначала дневной ряд `s.resample(\"D\").sum()`, потом по нему `resample(\"W\").mean()`. Если взять `s.resample(\"W\").mean()` сразу от часового ряда, получится среднее за час, а не за день.",
+    "Полные недели — `weekly_mean[week_days == 7]`; у них `.idxmax()` и `.max()`."
    ],
-   "explain": ""
+   "explain": "Если взять `weekly_mean.idxmax()` без фильтра, «лучшей» окажется неделя с меткой 2026-09-06 — среднее 286, но в ней один день, понедельник 31 августа. Это ловушка неполной корзины из блока «Типичные ошибки»: среднее по одному дню нельзя сравнивать со средним по семи. Лучшая полная неделя кончается 16 августа: 265.6 заказа в день. Первая корзина (2026-03-01) тоже неполная — один день."
   },
   "ch12/01-resample/p-roll": {
    "chapter": "ch12",
@@ -131,12 +131,12 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nt = s0.resample('D').sum().rolling(28).mean().dropna()\nf, l = round(t.iloc[0]), round(t.iloc[-1])\nassert need('first_value') == f and need('last_value') == l, f'first_value, last_value = {need(\"first_value\")}, {need(\"last_value\")}, а нужно {f}, {l}.'\nassert close(need('growth_pct'), round((t.iloc[-1] / t.iloc[0] - 1) * 100, 1), 0.06), f'growth_pct = {need(\"growth_pct\")}.'",
+   "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nt = s0.resample('D').sum().rolling(28).mean().dropna()\nf, l = round(t.iloc[0]), round(t.iloc[-1])\nassert need('first_value') == f and need('last_value') == l, f'first_value, last_value = {need(\"first_value\")}, {need(\"last_value\")}, а нужно {f}, {l}.'\nassert close(need('growth_pct'), round((t.iloc[-1] / t.iloc[0] - 1) * 100, 1), 0.06), f'growth_pct = {need(\"growth_pct\")}, а нужно {round(float((t.iloc[-1] / t.iloc[0] - 1) * 100), 1)}: считайте по неокруглённым t.iloc[0] и t.iloc[-1].'",
    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()",
    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\ntrend28 = daily.rolling(28).mean()\nt = trend28.dropna()\nfirst_value, last_value = round(t.iloc[0]), round(t.iloc[-1])\ngrowth_pct = round((t.iloc[-1] / t.iloc[0] - 1) * 100, 1)",
    "hints": [
     "`trend28.dropna()` уберёт первые 27 пропусков; первое и последнее — `.iloc[0]`, `.iloc[-1]`.",
-    "Рост в процентах: `(last - first) / first * 100`, затем `round(..., 1)`."
+    "Рост в процентах считайте по неокруглённым значениям: `(t.iloc[-1] / t.iloc[0] - 1) * 100`, затем `round(..., 1)`. Если взять уже округлённые 171 и 258, получится 50.9 вместо 50.6."
    ],
    "explain": "Скользящее среднее за 28 дней включает ровно четыре полные недели, поэтому недельная сезонность (выходные против будней) в нём взаимно гасится, и остаётся тренд. Первые 27 значений пустые — для них ещё не набралось 28 дней. Поэтому сравниваем первое непустое значение (28 марта, ≈ 171 заказ в день) с последним (31 августа, ≈ 258): рост на 50.6 %. Сравнивать отдельные дни было бы ненадёжно: один дождливый понедельник легко исказил бы результат на десятки процентов."
   },
@@ -347,7 +347,7 @@
     "Тест: `from statsmodels.tsa.stattools import adfuller`; пропусков в ряду быть не должно.",
     "`adfuller(ряд)[1]` — p-value. У разности первые 24 значения — пропуски: `.dropna()`."
    ],
-   "explain": "Часовой ряд за месяц тест признаёт стационарным: на коротком отрезке тренд почти незаметен, а суточные колебания — регулярные и не уходят в сторону. Дневной ряд за полгода — нет: тренд виден. Это напоминание: стационарность — свойство ряда на конкретном отрезке, а тест — инструмент с ошибками I и II рода (глава 5), а не окончательный вердикт."
+   "explain": "Часовой ряд за месяц тест признаёт стационарным, хотя суточный цикл в нём сильный. Противоречия с определением нет, а есть то, о чём сказано в разделе «Стационарность и разности»: тест ищет в первую очередь блуждание уровня и тренд, а регулярную сезонность, которая каждые сутки возвращается к тому же уровню, часто не замечает. На коротком отрезке тренд почти незаметен, вот ряд и проходит тест. Дневной ряд за полгода — нет: тренд виден. Это напоминание: стационарность — свойство ряда на конкретном отрезке, а тест — инструмент с ошибками I и II рода (глава 5), а не окончательный вердикт."
   },
   "ch12/02-decompose/hour-season": {
    "chapter": "ch12",
@@ -416,7 +416,7 @@
     "Месяц — `s[\"2026-03\"]`; профиль — `x.groupby(x.index.hour).mean()`; размах — `p.max() - p.min()`.",
     "Отношения: `amp_growth = amp[\"08\"] / amp[\"03\"]`, `level_growth = level[\"08\"] / level[\"03\"]`. Сравните их: `abs(amp_growth / level_growth - 1) < 0.1`."
    ],
-   "explain": "Уровень вырос примерно в 1.5 раза, и размах суточных колебаний — тоже в 1.5 раза: пики растут пропорционально аудитории. Значит, ряд мультипликативный: в любом месяце размах суток — примерно два средних уровня, то есть колебания описываются «во столько-то раз», а не «на столько-то заказов». Для разложения это `model=\"multiplicative\"`, а для моделей на признаках — повод прогнозировать отношение к уровню или логарифм заказов. Аддитивная модель на таком ряду недооценивает пики в конце периода и переоценивает в начале."
+   "explain": "Уровень вырос примерно в 1.5 раза, и размах суточных колебаний — тоже в 1.5 раза: пики растут пропорционально аудитории. Значит, ряд мультипликативный: в любом месяце размах суток — примерно два средних уровня, то есть колебания описываются «во столько-то раз», а не «на столько-то заказов». Для разложения это `model=\"multiplicative\"`, а для моделей на признаках — повод прогнозировать отношение к уровню или логарифм заказов. Аддитивная модель на таком ряду недооценивает пики в конце периода и переоценивает в начале.\n\nПочему же дальше в главе мы не переходим на мультипликативную запись? Разложение здесь — инструмент анализа, а прогноз строим бустингом на признаках. Лаги вроде «тот же час неделю назад» уже несут нынешний уровень, и пик, выросший в 1.5 раза, модель видит через них. Посмотреть мультипликативное разложение можно одной строкой на дневном ряду: `seasonal_decompose(daily, model=\"multiplicative\", period=7)` — сезонность там множители около 1, а не добавки в заказах: у пятницы 1.078, то есть +7.8 % к тренду. На часовом ряду так не выйдет: в нём есть ночные нули, а мультипликативная модель принимает только положительные значения и падает с ошибкой."
   },
   "ch12/02-decompose/acf-plot": {
    "chapter": "ch12",
@@ -577,7 +577,7 @@
     "Сначала таблица признаков и разбиение по дате (`df.index < \"2026-08-01\"`), потом цикл по наборам столбцов.",
     "Словарь наборов столбцов и цикл; RMSE: `np.sqrt(((y_test - p) ** 2).mean())`."
    ],
-   "explain": "Календарь знает типичный профиль (час, день недели), но не знает, какая сейчас неделя — удачная или нет: RMSE 4.596. Лаги добавляют свежую информацию о самом ряде, и ошибка падает до 4.332. Скользящее среднее за сутки сглаживает шум отдельных часов и даёт ещё немного: 4.256. Сравнение наборов на одном тесте — честный способ решить, нужен ли признак: если ошибка не уменьшается, признак только усложняет модель."
+   "explain": "Календарь знает типичный профиль (час, день недели), но не знает, какая сейчас неделя — удачная или нет: RMSE ≈ 4.596. Лаги добавляют свежую информацию о самом ряде, и ошибка падает до ≈ 4.332. Скользящее среднее за сутки сглаживает шум отдельных часов и даёт ещё немного: ≈ 4.256 (числа из sklearn 1.9; в другой версии третий знак может отличаться — проверка сравнивает с тем, что посчитала ваша среда). Сравнение наборов на одном тесте — честный способ решить, нужен ли признак: если ошибка не уменьшается, признак только усложняет модель."
   },
   "ch12/03-features/leak-test": {
    "chapter": "ch12",
@@ -625,7 +625,7 @@
     "Для каждого набора признаков — одна и та же процедура: `LinearRegression().fit(X[train], y[train]).predict(X[~train])` и RMSE с `y[~train]`.",
     "Признак тренда: `X_onehot.assign(t=np.arange(len(df)))`."
    ],
-   "explain": "Час числом — RMSE около 7.8: прямая не может подняться утром, опуститься днём и снова подняться вечером. Тот же час, закодированный 24 флагами, — около 5.0: у каждого часа свой коэффициент, и профиль описывается точно. Добавленный тренд (номер часа) снимает ещё часть ошибки (около 4.5): заказов в августе больше, чем в среднем за обучение. Это та же мысль, что в главе 7: для линейной модели категория должна быть закодирована, а не записана числом. Деревьям это не так важно — они сами режут «час» на интервалы."
+   "explain": "Час числом — RMSE около 7.8: прямая не может подняться утром, опуститься днём и снова подняться вечером. Тот же час, закодированный 24 флагами, — около 5.0: у каждого часа свой коэффициент, и профиль описывается точно. Добавленный тренд (номер часа) снимает ещё часть ошибки (около 4.5): заказов в августе больше, чем в среднем за обучение. Это та же мысль, что в главе 6: для линейной модели категория должна быть закодирована, а не записана числом. Деревьям это не так важно — они сами режут «час» на интервалы.\n\nПочему здесь 31 столбец без `drop_first` (урок «Категориальные признаки и утечки» главы 6)? Полный набор флагов вместе со свободным членом — мультиколлинеарность: коэффициенты определены неоднозначно, и читать их нельзя. Но прогноз от этого не меняется: с `drop_first=True` получается 29 столбцов и тот же RMSE 5.034. Для прогноза хватает полного набора, для интерпретации коэффициентов берите `drop_first=True`."
   },
   "ch12/03-features/promo-feature": {
    "chapter": "ch12",
@@ -672,7 +672,53 @@
     "`X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, shuffle=False)`; первая тестовая строка — `X_te.index.min()`; RMSE — `np.sqrt(((y_te - p) ** 2).mean())`.",
     "Удобно завернуть обучение и оценку в функцию:\n\n```python\ndef rmse_for(**kw):\n    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, **kw)\n    p = HistGradientBoostingRegressor(random_state=0).fit(X_tr, y_tr).predict(X_te)\n    return X_te.index.min(), round(float(np.sqrt(((y_te - p) ** 2).mean())), 3)\ntest_start, rmse_time = rmse_for(shuffle=False)\n...\n```"
    ],
-   "explain": "Тест по времени начинается 27 июля в 14:00 — это последние 850 часов. На нём RMSE около 4.29, а при перемешивании — около 3.60: оценка «улучшилась» почти на 0.7 заказа в час только из-за того, что модель видела соседние часы до и после каждого тестового. Если бы вы пообещали менеджеру точность 3.6, в августе получили бы 4.3 — и объяснять разницу пришлось бы задним числом. Заметить ошибку просто: у честного разбиения по времени `X_tr.index.max() < X_te.index.min()`."
+   "explain": "Тест по времени начинается 27 июля в 14:00 — это последние 850 часов. На нём RMSE около 4.29, а при перемешивании — около 3.60: оценка «улучшилась» почти на 0.7 заказа в час. Часть этого — оттого, что модель видела соседние часы до и после каждого тестового, а часть — оттого, что август труднее: уровень и шум выше. Сколько приходится на каждую причину, разбирает задача «Тот же период — другая оценка». Если бы вы пообещали менеджеру точность 3.6, в августе получили бы 4.3 — и объяснять разницу пришлось бы задним числом. Заметить ошибку просто: у честного разбиения по времени `X_tr.index.max() < X_te.index.min()`."
+  },
+  "ch12/03b-time-split/check-order": {
+   "chapter": "ch12",
+   "lesson": "03b-time-split",
+   "lesson_title": "Проверка по времени: хвост ряда и TimeSeriesSplit",
+   "id": "check-order",
+   "title": "Проверка честности разбиения",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "app_orders.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\ndef make_features(s):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"lag_1\"] = s.shift(1)\n    df[\"lag_24\"] = s.shift(24)\n    df[\"lag_168\"] = s.shift(168)\n    df[\"roll_24\"] = s.shift(1).rolling(24).mean()\n    return df.dropna()",
+   "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nf = need('is_time_split')\n_i = _pd.date_range('2026-01-01', periods=6, freq='h')\n_a = _pd.DataFrame({'v': range(6)}, index=_i)\nassert f(_a.iloc[:4], _a.iloc[4:]) is not None, 'is_time_split ничего не возвращает: нужен return.'\nassert bool(f(_a.iloc[:4], _a.iloc[4:])) is True, 'Обучение — первые 4 часа, тест — последние 2: функция должна вернуть True.'\nassert bool(f(_a.iloc[[0, 1, 5]], _a.iloc[[2, 3, 4]])) is False, 'Час 05:00 в обучении позже тестовых 02:00–04:00: функция должна вернуть False.'\nassert bool(f(_a.iloc[[3, 1, 0]], _a.iloc[[5, 4]])) is True, 'Порядок строк внутри частей не важен — сравнивайте максимум обучения и минимум теста.'\nd = make_features(need('s')); X0 = d.drop(columns='y')\na, b = _tts(X0, test_size=0.2, random_state=0)\nnl = int((a.index > b.index.min()).sum())\nassert need('honest_ok') == True, f'honest_ok = {need(\"honest_ok\")}: разбиение с shuffle=False честное.'\nassert need('shuffled_ok') == False, f'shuffled_ok = {need(\"shuffled_ok\")}: перемешанное разбиение кладёт будущее в обучение.'\nassert int(need('n_later')) == nl, f'n_later = {need(\"n_later\")}, а нужно {nl}: (X_tr.index > X_te.index.min()).sum() для перемешанного разбиения.'",
+   "starter": "# уже есть: make_features(s)\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\ndef is_time_split(X_tr, X_te):\n    ...",
+   "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\ndef is_time_split(X_tr, X_te):\n    return bool(X_tr.index.max() < X_te.index.min())\n\nX_tr, X_te = train_test_split(X, test_size=0.2, shuffle=False)\nhonest_ok = is_time_split(X_tr, X_te)\nX_tr_s, X_te_s = train_test_split(X, test_size=0.2, random_state=0)\nshuffled_ok = is_time_split(X_tr_s, X_te_s)\nn_later = int((X_tr_s.index > X_te_s.index.min()).sum())\nprint(honest_ok, shuffled_ok, n_later, len(X_tr_s))",
+   "hints": [
+    "Все обучающие строки раньше всех тестовых — значит, самая поздняя обучающая раньше самой ранней тестовой: `X_tr.index.max() < X_te.index.min()`.",
+    "Два разбиения: `train_test_split(X, test_size=0.2, shuffle=False)` и `train_test_split(X, test_size=0.2, random_state=0)` — каждое возвращает пару `X_tr, X_te`. Сравнение даёт `numpy.bool_`; для печати и проверки удобно обернуть в `bool(...)`."
+   ],
+   "explain": "Честное разбиение проходит проверку, перемешанное — нет. В перемешанном первая тестовая строка — 8 марта 01:00, вторая строка таблицы, поэтому позже неё 3397 обучающих строк из 3398: почти всё обучение. Такую проверку стоит ставить в каждый конвейер с рядом одной строкой `assert is_time_split(X_tr, X_te)` — она ловит и перемешивание, и неотсортированную таблицу."
+  },
+  "ch12/03b-time-split/same-period": {
+   "chapter": "ch12",
+   "lesson": "03b-time-split",
+   "lesson_title": "Проверка по времени: хвост ряда и TimeSeriesSplit",
+   "id": "same-period",
+   "title": "Тот же период — другая оценка",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "app_orders.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\ndef make_features(s):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"lag_1\"] = s.shift(1)\n    df[\"lag_24\"] = s.shift(24)\n    df[\"lag_168\"] = s.shift(168)\n    df[\"roll_24\"] = s.shift(1).rolling(24).mean()\n    return df.dropna()",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nd = make_features(need('s')); X0, y0 = d.drop(columns='y'), d['y']\n_r = lambda a, b: float(_np.sqrt(((a - b) ** 2).mean()))\na, b, c, e = _tts(X0, y0, test_size=0.2, shuffle=False); rt = _r(e, _H(random_state=0).fit(a, c).predict(b)); t0 = b.index.min()\na, b, c, e = _tts(X0, y0, test_size=0.2, random_state=0); pb = _H(random_state=0).fit(a, c).predict(b); rs = _r(e, pb)\nm = b.index >= t0; rtail = _r(e[m], pb[m])\nassert close(need('rmse_time'), round(rt, 3), 0.002) and close(need('rmse_shuffled'), round(rs, 3), 0.002), f'rmse_time, rmse_shuffled = {need(\"rmse_time\")}, {need(\"rmse_shuffled\")}, а нужно {round(rt, 3)}, {round(rs, 3)}.'\nassert int(need('n_tail')) == int(m.sum()), f'n_tail = {need(\"n_tail\")}, а нужно {int(m.sum())}: тестовые строки перемешанного разбиения с индексом >= первой строки честного теста.'\nassert close(need('rmse_shuffled_tail'), round(rtail, 3), 0.002), f'rmse_shuffled_tail = {need(\"rmse_shuffled_tail\")}, а нужно {round(rtail, 3)}.'\nassert close(need('part_period'), round(rtail - rs, 3), 0.004) and close(need('part_shuffle'), round(rt - rtail, 3), 0.004), f'part_period, part_shuffle = {need(\"part_period\")}, {need(\"part_shuffle\")}, а нужно {round(rtail - rs, 3)}, {round(rt - rtail, 3)}.'",
+   "starter": "# уже есть: make_features(s)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\ndef rmse(a, b):\n    return float(np.sqrt(((a - b) ** 2).mean()))\n\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, shuffle=False)\np = HistGradientBoostingRegressor(random_state=0).fit(X_tr, y_tr).predict(X_te)\nrmse_time = round(rmse(y_te, p), 3)\ntest_start = X_te.index.min()\n\nX_tr_s, X_te_s, y_tr_s, y_te_s = train_test_split(X, y, test_size=0.2, random_state=0)\np_s = HistGradientBoostingRegressor(random_state=0).fit(X_tr_s, y_tr_s).predict(X_te_s)\nrmse_shuffled = round(rmse(y_te_s, p_s), 3)\n\ntail = X_te_s.index >= test_start\nn_tail = int(tail.sum())\nrmse_shuffled_tail = round(rmse(y_te_s[tail], p_s[tail]), 3)\npart_period = round(rmse_shuffled_tail - rmse_shuffled, 3)\npart_shuffle = round(rmse_time - rmse_shuffled_tail, 3)\nprint(rmse_time, rmse_shuffled, n_tail, rmse_shuffled_tail, part_period, part_shuffle)",
+   "hints": [
+    "Предсказания перемешанной модели сохраните в переменную, а не только RMSE: понадобятся строки по маске. Маска периода — `X_te_s.index >= test_start`, где `test_start = X_te.index.min()` у честного разбиения.",
+    "RMSE на части строк: `np.sqrt(((y_te_s[mask] - p_s[mask]) ** 2).mean())`. Маска — массив `True/False`, им можно отбирать и Series, и массив предсказаний."
+   ],
+   "explain": "На тех же 163 часах конца июля — августа перемешанная модель ошибается на 3.825, а не на 3.597, как на всём своём тесте: примерно 0.23 из разницы — это трудный период, а не перемешивание. Оставшиеся около 0.47 — сам оптимизм перемешивания: на одном и том же периоде честная модель ошибается на 4.293, а подсмотревшая соседние часы — на 3.825. Вывод тот же, что в теории: перемешивание завышает качество, но сравнивать оценки надо на одинаковом периоде, иначе разница смешивает две причины."
   },
   "ch12/03b-time-split/folds": {
    "chapter": "ch12",
@@ -718,7 +764,30 @@
     "Разбиение задаётся объектом: `cv=TimeSeriesSplit(n_splits=5)`.",
     "`cross_val_score` возвращает отрицательные значения для `neg_...` — поменяйте знак."
    ],
-   "explain": "Обычный KFold даёт чуть более оптимистичную оценку: модель обучается и на часах после проверяемых, а соседние часы похожи. Разница здесь небольшая, но на рядах с сильным трендом или сменой режима она бывает огромной. По времени — всегда честнее."
+   "explain": "Обычный KFold даёт более оптимистичную оценку: около 3.73 против 4.03 у `TimeSeriesSplit`, разрыв около 0.3. Модель обучается и на часах после проверяемых, а соседние часы похожи. Заметьте и рост ошибки по фолдам: последний (4.28) хуже первого (4.01) — поздние фолды приходятся на период с бо́льшим уровнем заказов. На рядах с сильным трендом или сменой режима разрыв между KFold и проверкой по времени бывает огромным. По времени — всегда честнее."
+  },
+  "ch12/03b-time-split/month-folds": {
+   "chapter": "ch12",
+   "lesson": "03b-time-split",
+   "lesson_title": "Проверка по времени: хвост ряда и TimeSeriesSplit",
+   "id": "month-folds",
+   "title": "Тесты по месяцам",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "app_orders.csv"
+   ],
+   "display": true,
+   "setup": "import pandas as pd\ndef make_features(s):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"lag_1\"] = s.shift(1)\n    df[\"lag_24\"] = s.shift(24)\n    df[\"lag_168\"] = s.shift(168)\n    df[\"roll_24\"] = s.shift(1).rolling(24).mean()\n    return df.dropna()",
+   "check": "import numpy as _np, pandas as _pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nd = make_features(need('s')); X0, y0 = d.drop(columns='y'), d['y']\nw_r, w_m, w_e = {}, {}, {}\nfor k in ('06', '07', '08'):\n    st = _pd.Timestamp(f'2026-{k}-01'); en = st + _pd.offsets.MonthBegin(1)\n    tr = X0.index < st; te = (X0.index >= st) & (X0.index < en)\n    p = _H(random_state=0).fit(X0[tr], y0[tr]).predict(X0[te]); r = float(_np.sqrt(((y0[te] - p) ** 2).mean()))\n    w_r[k], w_m[k], w_e[k] = round(r, 3), round(float(y0[te].mean()), 2), round(r / float(y0[te].mean()), 3)\ng_r, g_m, g_e = need('month_rmse', dict), need('month_mean', dict), need('rel_error', dict)\nassert sorted(g_r) == ['06', '07', '08'], f'Ключи month_rmse: {sorted(g_r)}, а нужны \"06\", \"07\", \"08\".'\nassert all(close(g_m[k], w_m[k], 0.006) for k in w_m), f'month_mean = {g_m}, а нужно {w_m}: среднее y в строках месяца.'\nassert all(close(g_r[k], w_r[k], 0.002) for k in w_r), f'month_rmse = {g_r}, а нужно {w_r}: обучение — все строки до 1-го числа месяца, тест — строки месяца.'\nassert all(close(g_e[k], w_e[k], 0.002) for k in w_e), f'rel_error = {g_e}, а нужно {w_e}.'",
+   "starter": "# уже есть: make_features(s)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]",
+   "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\nmonth_rmse, month_mean, rel_error = {}, {}, {}\nfor m in [\"06\", \"07\", \"08\"]:\n    start = pd.Timestamp(f\"2026-{m}-01\")\n    end = start + pd.offsets.MonthBegin(1)\n    train = X.index < start\n    test = (X.index >= start) & (X.index < end)\n    p = HistGradientBoostingRegressor(random_state=0).fit(X[train], y[train]).predict(X[test])\n    r = float(np.sqrt(((y[test] - p) ** 2).mean()))\n    month_rmse[m] = round(r, 3)\n    month_mean[m] = round(float(y[test].mean()), 2)\n    rel_error[m] = round(r / float(y[test].mean()), 3)\nprint(month_rmse, month_mean, rel_error)",
+   "hints": [
+    "Границы месяца: `start = pd.Timestamp(\"2026-06-01\")`, конец — `start + pd.offsets.MonthBegin(1)` (1 июля). Маски: `train = X.index < start`, `test = (X.index >= start) & (X.index < end)`.",
+    "Цикл по `[\"06\", \"07\", \"08\"]`, внутри — `pd.Timestamp(f\"2026-{m}-01\")`, обучение на `X[train]`, предсказание на `X[test]` и три числа в три словаря."
+   ],
+   "explain": "RMSE растёт от месяца к месяцу: 3.963, 4.142, 4.256 — хотя обучение каждый раз длиннее. Но и заказов больше: 8.95, 9.73, 10.63 в час. Относительная ошибка, наоборот, падает: 0.443, 0.426, 0.400. Модель не становится хуже — растёт масштаб ряда, а с ним и ошибка в заказах. Это та же поправка, что в теории: август «труднее» в абсолютных числах, поэтому сравнивать RMSE разных периодов напрямую нельзя."
   },
   "ch12/04-forecast/naive": {
    "chapter": "ch12",
@@ -834,7 +903,7 @@
     "Доля недопрогноза — `(m4 < test).mean()`; отношение сумм — `test.sum() / m4.sum()`.",
     "Те же формулы для `adj`; RMSE — `np.sqrt(((test - pred) ** 2).mean())`."
    ],
-   "explain": "«Среднее за 4 недели» смотрит в прошлое, а заказы растут, поэтому в августе он в сумме недооценивает заказы примерно на 6 %: в среднем на 0.6 заказа в час. Для штатного расписания такое смещение важнее разброса — оно систематически оставляет смены без рук (проект главы). Поправка на рост почти убирает смещение, но RMSE не улучшает: случайный шум часов никуда не делся. Смещение и разброс — разные свойства прогноза, и проверять нужно оба."
+   "explain": "«Среднее за 4 недели» смотрит в прошлое, а заказы растут, поэтому в августе он в сумме недооценивает заказы примерно на 6 %: в среднем на 0.6 заказа в час. Для штатного расписания такое смещение важнее разброса — оно систематически оставляет смены без рук (проект главы). Поправка на рост почти убирает смещение, но RMSE не улучшает: случайный шум часов никуда не делся. Смещение и разброс — разные свойства прогноза, и проверять нужно оба.\n\nПочему прогноз ниже факта лишь в 49 % часов, а в сумме недооценивает на 6 %? Ошибки разного размера. Недопрогноз приходится на пиковые часы: в четверти часов с наибольшим фактом прогноз ниже факта в 82 % случаев. Когда прогноз занижен, он в среднем ошибается на 3.7 заказа, а когда завышен — на 2.7: перепрогнозы мельче. Доля часов и сумма ошибок отвечают на разные вопросы."
   },
   "ch12/04-forecast/mean4w": {
    "chapter": "ch12",
@@ -857,7 +926,7 @@
     "Среднее за k прошлых недель — это k сдвинутых рядов (`s.shift(168)`, `s.shift(336)`, …), усреднённых по строке.",
     "`pd.concat([s.shift(168 * j) for j in range(1, k + 1)], axis=1).mean(axis=1)`."
    ],
-   "explain": "Чем больше недель в среднем, тем лучше: случайности отдельных недель усредняются, и даже 8 недель обгоняют 4. Но бесконечно растягивать окно нельзя — оно отстаёт от тренда: старые недели с меньшим числом заказов тянут прогноз вниз. Здесь рост умеренный, и усреднение шума пока важнее. Компромисс между шумом и запаздыванием — то же, что выбор окна скользящего среднего."
+   "explain": "Чем больше недель в среднем, тем лучше: случайности отдельных недель усредняются, и 8 недель (4.14) обгоняют 4 (4.353). Более того, 4.14 лучше бустинга из урока «Признаки для прогноза ряда» (4.256 на том же августе, причём с лагом 1, то есть на час вперёд). Ориентир надо подбирать так же тщательно, как модель: слабый ориентир делает любую модель «победителем». Но бесконечно растягивать окно нельзя — оно отстаёт от тренда: старые недели с меньшим числом заказов тянут прогноз вниз. Здесь рост умеренный, и усреднение шума пока важнее. Компромисс между шумом и запаздыванием — то же, что выбор окна скользящего среднего."
   },
   "ch12/04-forecast/horizon-gap": {
    "chapter": "ch12",
@@ -996,7 +1065,7 @@
     "Каждая модель обучается на `train` и проверяется на `valid` — тест в этом шаге не трогаем.",
     "Словарь моделей и цикл; лучшая — `min(valid_rmse, key=valid_rmse.get)`."
    ],
-   "explain": "Неглубокий бустинг и линейная регрессия почти неразличимы, бустинг по умолчанию — хуже: признаки уже содержат сезонность (`mean4w`, лаги), и сложной модели нечего добавить, кроме шума. В таких случаях выбирают модель попроще — её легче объяснить и поддерживать."
+   "explain": "Неглубокий бустинг (4.059) и линейная регрессия (4.084) почти неразличимы, бустинг по умолчанию — хуже: признаки уже содержат сезонность (`mean4w`, лаги), и сложной модели нечего добавить, кроме шума. При такой разнице обычно берут модель попроще — её легче объяснить и поддерживать. Здесь мы всё же идём дальше с неглубоким бустингом, и причина практическая: у него есть параметры, которые стоит подобрать по времени (шаг 3б), и квантильная версия `loss=\"quantile\"` для шага 6 — план смен по верхней оценке. Обычная `LinearRegression` прогнозирует только середину. По точности выбор почти ничего не стоит: на августе линейная регрессия дала бы те же 4.21 (4.213 против 4.209 у бустинга из шага 4)."
   },
   "ch12/05-project/grid": {
    "chapter": "ch12",
@@ -1089,7 +1158,7 @@
     "Квантильная модель — `HistGradientBoostingRegressor(loss=\"quantile\", quantile=0.8, ...)`; обучение — на тех же данных, что финальная модель.",
     "Покрытие: `(y_test.values <= p).mean()`. План и подсчёт — как в шаге 5."
    ],
-   "explain": "Покрытие около 74 % — меньше заданных 80 %: модель обучена на месяцах, когда заказов было меньше, и рост августа она недооценивает. Тем не менее часов нехватки стало вдвое меньше (около 15 % против 30 % у модели «по середине»), а платим за это примерно 290 лишними бариста-часами за месяц (у плана «по середине» их 120). Какая точка лучше — решает бизнес, сравнивая цену часа бариста с ценой потерянного заказа. Аналитик показывает этот выбор, а не прячет его за одним RMSE.\n\n## Итог для операционного менеджера\n\n> **Модель.** Прогноз заказов на каждый час завтрашнего дня строится в 20:00 накануне только по данным, которые к этому времени уже есть. Он ошибается в среднем примерно на 4.2 заказа в час (RMSE) — требование выполнено, правило «среднее за 4 недели» побеждено. Главное в модели — та же логика, что у правила, плюс учёт акций и текущего уровня заказов.\n>\n> **Как планировать смены.** Если ставить людей «по прогнозу», нехватка будет почти в трети рабочих часов (30 %): прогноз нацелен на середину, а заказов в августе больше, чем модель видела в обучении. Предлагаем планировать по верхней оценке: нехватка — в 15 % часов, цена — около 290 бариста-часов в месяц вместо 120.\n>\n> **Что дальше.** Переобучать модель каждую неделю (рост аудитории быстро делает её «осторожной»), заносить даты акций в календарь заранее и следить за прогнозом по мониторингу из главы 8.\n\n::: figure ts-staffing\nОт заказов к людям на одном часе августа и итог за месяц: прогноз «по середине» недобирает бариста почти в трети рабочих часов, план по квантилю 0.8 — вдвое реже, но ценой лишних смен. Числа — из решений шагов 5 и 6.\n:::"
+   "explain": "Покрытие около 74 % — меньше заданных 80 %: модель обучена на месяцах, когда заказов было меньше, и рост августа она недооценивает. Тем не менее часов нехватки стало вдвое меньше (около 15 % против 30 % у модели «по середине»), а платим за это примерно 290 лишними бариста-часами за месяц (у плана «по середине» их 120). Какая точка лучше — решает бизнес, сравнивая цену часа бариста с ценой потерянного заказа. Аналитик показывает этот выбор, а не прячет его за одним RMSE.\n\n## Итог для операционного менеджера\n\n> **Модель.** Прогноз заказов на каждый час завтрашнего дня строится в 20:00 накануне только по данным, которые к этому времени уже есть. Он ошибается в среднем примерно на 4.2 заказа в час (RMSE) против 4.35 у правила «среднее за 4 недели» — требование выполнено. Главное в модели — та же логика, что у правила, плюс учёт акций и текущего уровня заказов.\n>\n> **Как планировать смены.** Три плана на август, по рабочим часам с 7 до 22:\n>\n> | план | часов с нехваткой людей | лишних бариста-часов за месяц |\n> |---|---|---|\n> | нынешнее правило (среднее за 4 недели) | 28.8 % | 142 |\n> | модель «по середине» | 30.4 % | 120 |\n> | модель по верхней оценке (квантиль 0.8) | 14.9 % | 291 |\n>\n> Скажем честно: модель точнее правила по RMSE, но для смен сама по себе выигрыша не даёт — нехватка людей у неё даже чуть чаще, чем у правила. Оба прогноза нацелены на середину, а заказов в августе больше, чем в обучающих месяцах. Выигрыш даёт только план по верхней оценке: нехватка — вдвое реже, цена — около 290 лишних бариста-часов в месяц вместо 120–140. Предлагаем его.\n>\n> **Что дальше.** Переобучать модель каждую неделю (рост аудитории быстро делает её «осторожной»), заносить даты акций в календарь заранее и следить за прогнозом по мониторингу из главы 8.\n\n::: figure ts-staffing\nОт заказов к людям на одном часе августа и итог за месяц: прогноз «по середине» недобирает бариста почти в трети рабочих часов, план по квантилю 0.8 — вдвое реже, но ценой лишних смен. Числа — из решений шагов 5 и 6.\n:::"
   }
  }
 }

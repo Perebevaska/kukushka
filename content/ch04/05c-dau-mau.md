@@ -11,7 +11,7 @@ recap:
 
 ## То же в SQL: DuckDB и сверка с pandas
 
-В работе когорты часто считают прямо в базе — SQL-запросом. DuckDB умеет выполнять SQL по таблице pandas (урок «SQL прямо по датафрейму — DuckDB»). Логика та же: первая дата по гостю, месяц когорты, разница в месяцах, уникальные гости.
+В работе когорты часто считают прямо в базе — SQL-запросом. DuckDB умеет выполнять SQL по таблице pandas (урок «SQL прямо по датафрейму — DuckDB» главы 2). Запрос ниже начинается с `WITH` — это CTE, именованный подзапрос; как он устроен и в каком порядке SQL выполняет части запроса, разобрано в уроке «Подзапросы, CTE и порядок выполнения SQL» главы 2. Логика та же: первая дата по гостю, месяц когорты, разница в месяцах, уникальные гости.
 
 ```python
 import pandas as pd
@@ -49,7 +49,7 @@ DuckDB не понимает столбцы pandas типа `period[M]` и па�
 :::
 
 ::: sql
-Первую дату можно взять и оконной функцией (урок «Оконные функции SQL»): `MIN(date) OVER (PARTITION BY guest_id)` — тогда CTE и JOIN не нужны, дата появится прямо в каждой строке.
+Первую дату можно взять и оконной функцией (урок «Оконные функции SQL: ранги, доли, соседние строки» главы 2): `MIN(date) OVER (PARTITION BY guest_id)` — тогда CTE и JOIN не нужны, дата появится прямо в каждой строке.
 :::
 
 ### Сверка: два расчёта должны совпасть
@@ -57,7 +57,7 @@ DuckDB не понимает столбцы pandas типа `period[M]` и па�
 Один и тот же показатель, посчитанный двумя независимыми способами, — лучшая проверка. Если цифры совпали до гостя, ошибки скорее всего нет ни там, ни там. Если не совпали — одна из реализаций считает не то, что вы думаете.
 
 ::: tip Аналогия
-Вечером кассир сверяет деньги в ящике с отчётом кассы: два независимых счёта одной и той же выручки. Совпали до рубля — можно закрывать смену; разошлись — где-то ошибка, и искать её надо до того, как отчёт уйдёт дальше. Где аналогия хромает: у кассы «правильный» ответ один, а у когорт расхождение бывает и без ошибки в коде — если два расчёта по-разному понимают «месяц жизни».
+Вечером кассир сверяет деньги в ящике с отчётом кассы: два независимых счёта одной и той же выручки. Совпали до рубля — можно закрывать смену; разошлись — где-то ошибка, и искать её надо до того, как отчёт уйдёт дальше. Правда, у кассы «правильный» ответ один, а у когорт расхождение бывает и без ошибки в коде — если два расчёта по-разному понимают «месяц жизни».
 :::
 
 Чтобы сравнить, таблицы нужно привести к одному виду: у pandas индекс — `Period('2026-01')`, у DuckDB — дата `2026-01-01`; у pandas пустые ячейки `NaN` и дробные числа, у DuckDB ячеек просто нет.
@@ -95,7 +95,7 @@ print("гостей в месяце 0:", a[0].sum(), b[0].sum(), "| всего �
 Что здесь происходит:
 
 - `fill_value=0` в обоих `pivot_table` — пустые ячейки становятся нулями, а не `NaN`;
-- `aggfunc="sum"` у `b`: без `aggfunc` таблица `pivot_table` берёт **среднее** (`mean`), а среднее pandas всегда отдаёт дробным — `330.0`, `161.0`, и `fill_value=0` этого не меняет. В длинной таблице SQL на каждую пару (когорта, месяц) ровно одна строка, поэтому и `sum`, и `mean` дают то же число; `sum` просто оставляет его целым. Если увидите `330.0` — это не ошибка, для сравнения дробная запись не мешает;
+- `aggfunc="sum"` у `b`: по умолчанию `pivot_table` берёт среднее и отдаёт дробные `330.0`. На каждую пару (когорта, месяц) в SQL одна строка, так что `sum` даёт то же число, только целым;
 - индексы приводим к строке `'2026-01'`: `astype(str)` для `Period`, `strftime("%Y-%m")` для дат;
 - `a.sub(b, fill_value=0)` — вычитание с выравниванием по когортам и месяцам; если у одной таблицы есть лишний столбец, разница в нём будет видна, а не спрячется в `NaN`;
 - **контрольная сумма**: в месяце 0 каждый гость считается ровно один раз, поэтому сумма столбца 0 обязана равняться числу гостей — 2 210.
@@ -160,7 +160,7 @@ print(sum(len(d) for d in days), len(set().union(*days)))
 - [x] `9 4`
 - `4 4`
 
-Почему: первое число — сумма дневных счётчиков, второе — размер объединения всех множеств, то есть разных гостей за неделю. Сумма DAU не равна WAU.
+Почему: первое число — сумма дневных счётчиков, второе — размер объединения всех множеств, то есть разных гостей за неделю. `*days` передаёт все множества списка в `union` как отдельные аргументы — как если бы их перечислили через запятую. Сумма DAU не равна WAU.
 :::
 
 На реальных данных — по календарным месяцам:
@@ -227,7 +227,7 @@ print((dau / mau28 * 100).round(1).describe())
 - **Активность без определения.** «Открыл приложение» и «сделал заказ» — разные DAU. Пишите в отчёте, что считается активностью.
 :::
 
-{{practice: dau-max, sticky}}
+{{practice: dau-max, sticky, wau-full, sticky-city}}
 
 ## Практика
 
@@ -241,10 +241,8 @@ import pandas as pd
 import duckdb
 raw = pd.read_csv("preorders.csv", parse_dates=["date"])
 sql = duckdb.sql("""
-    WITH f AS (
-        SELECT guest_id, MIN(date) AS first FROM raw GROUP BY guest_id
-    )
-    SELECT ...
+    -- 1) CTE f: первая дата заказа каждого гостя
+    -- 2) заказы + f, группировка по когорте и месяцу жизни
 """).df()
 ```
 
@@ -269,7 +267,7 @@ assert wd.shape == (6, 6), f'wide {wd.shape}, а нужно 6 когорт × 6 
 ```
 
 ### hint
-После CTE `f` соедините заказы с первой датой: `FROM raw AS r JOIN f USING (guest_id)`, сгруппируйте по когорте и месяцу жизни.
+Начните с `WITH f AS (SELECT guest_id, MIN(date) AS first FROM raw GROUP BY guest_id)`. После CTE `f` соедините заказы с первой датой: `FROM raw AS r JOIN f USING (guest_id)`, сгруппируйте по когорте и месяцу жизни.
 
 ### hint
 `date_trunc('month', f.first) AS cohort`, `date_diff('month', date_trunc('month', f.first), date_trunc('month', r.date)) AS age`, `COUNT(DISTINCT r.guest_id) AS guests`, `GROUP BY 1, 2`.
@@ -504,3 +502,114 @@ monthly
 
 ### explain
 Липкость выросла с 8.6 % в январе до 14.5 % в июне: средний гость месяца в июне заказывал около четырёх дней из тридцати. MAU с марта не рос (939 в марте, 874 в июне), а средний DAU рос (99.4 → 127.0) — значит, растёт не аудитория, а привычка. Если бы MAU посчитали суммой DAU, в январе вышло бы 885 вместо 330: постоянный гость посчитался бы по разу за каждый свой день, и липкость стала бы бессмысленной.
+
+## task: wau-full | WAU только по полным неделям | base
+
+На краях выгрузки недели неполные: первая неделя (29 декабря – 4 января) захватывает только 4 дня, последняя (29 июня – 5 июля) — 2. Соберите таблицу `weekly` (индекс — неделя `to_period("W")`) со столбцами `wau` — разные гости за неделю и `days` — сколько разных дат с предзаказами попало в неделю (`nunique()` по столбцу `date`). Оставьте в `full` только строки, где `days == 7`. Сохраните `n_full` — число полных недель и `min_wau` — наименьший WAU среди них.
+
+### starter
+```python
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+week = o["date"].dt.to_period("W")
+
+```
+
+### check
+```python
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date'])
+g = r.groupby(r['date'].dt.to_period('W'))
+w = _pd.DataFrame({'wau': g['guest_id'].nunique(), 'days': g['date'].nunique()})
+wf = w[w['days'] == 7]
+wk = need('weekly', _pd.DataFrame)
+for c in ('wau', 'days'):
+    assert c in wk.columns, f'В weekly нет столбца {c}.'
+assert len(wk) == len(w), f'В weekly {len(wk)} строк, а недель в выгрузке {len(w)}: группируйте по to_period("W").'
+if [int(x) for x in wk['days']] == [int(x) for x in g.size()]:
+    raise AssertionError('days — это число заказов в неделе. Нужно число разных дат: g["date"].nunique().')
+assert [int(x) for x in wk['days']] == [int(x) for x in w['days']], f'days = {[int(x) for x in wk["days"]][:3]}…, а нужно {[int(x) for x in w["days"]][:3]}…: разные даты в неделе — nunique() по date.'
+assert [int(x) for x in wk['wau']] == [int(x) for x in w['wau']], 'wau — разные гости за неделю: nunique() по guest_id.'
+fu = need('full', _pd.DataFrame)
+assert len(fu) == len(wf), f'В full {len(fu)} строк, а полных недель {len(wf)}: оставьте days == 7.'
+assert int(need('n_full')) == len(wf), f'n_full = {need("n_full")}, а полных недель {len(wf)}.'
+assert int(need('min_wau')) == int(wf['wau'].min()), f'min_wau = {need("min_wau")}: наименьший wau среди полных недель.'
+```
+
+### hint
+Сгруппируйте один раз: `g = o.groupby(week)`, затем два столбца — `g["guest_id"].nunique()` и `g["date"].nunique()`; соберите их в `pd.DataFrame({...})`.
+
+### hint
+`full = weekly[weekly["days"] == 7]`, `n_full = len(full)`, `min_wau = full["wau"].min()`.
+
+### solution
+```python
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+week = o["date"].dt.to_period("W")
+g = o.groupby(week)
+weekly = pd.DataFrame({"wau": g["guest_id"].nunique(), "days": g["date"].nunique()})
+full = weekly[weekly["days"] == 7]
+n_full = len(full)
+min_wau = full["wau"].min()
+print(n_full, min_wau)
+weekly.head(3)
+```
+
+### explain
+Недель в выгрузке 27, полных — 25. Отброшены первая (4 дня, WAU 41) и последняя (2 дня, WAU 249). Наименьший WAU полной недели — 79 (5–11 января): база только набиралась. Если бы считали `days` через `size()`, получили бы число заказов, и условие `== 7` не выполнилось бы ни разу. Тот же приём — сначала проверить, сколько дней в периоде, — работает для месяцев и кварталов.
+
+## task: sticky-city | Липкость по городам | star
+
+Город гостя — в справочнике `preorder_guests.csv` (столбец `city`). Посчитайте липкость **июня 2026** по каждому городу: средний DAU за 30 дней июня (DAU — разные гости **этого города** в день; дней без заказов в июне нет ни в одном городе) делить на MAU июня этого города, × 100, округлить до 1 знака. Сохраните Series `city_sticky` (индекс — город) и `best_city` — город с наибольшей липкостью.
+
+### starter
+```python
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+guests = pd.read_csv("preorder_guests.csv")
+
+```
+
+### check
+```python
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date']).merge(_pd.read_csv('preorder_guests.csv'), on='guest_id')
+j = r[r['date'].dt.to_period('M') == _pd.Period('2026-06', 'M')]
+t = j.pivot_table(index='date', columns='city', values='guest_id', aggfunc='nunique')
+mau = j.groupby('city')['guest_id'].nunique()
+w = (t.mean() / mau * 100).round(1)
+s = need('city_sticky', _pd.Series)
+got = {str(k): float(v) for k, v in s.items()}
+assert set(got) == set(w.index), f'Города в city_sticky: {sorted(got)}, а нужно {sorted(w.index)}.'
+dau_all = j.groupby('date')['guest_id'].nunique().mean()
+if all(close(got[c], dau_all / mau[c] * 100, 0.06) for c in got):
+    raise AssertionError('Средний DAU взят по всей сети. Нужен DAU гостей своего города: nunique по паре (дата, город).')
+for c in w.index:
+    assert close(got[c], float(w[c]), 0.051), f'У {c} получилось {got[c]}, ожидалось {float(w[c])}: средний за дни июня DAU города / MAU города × 100.'
+assert str(need('best_city')) == str(w.idxmax()), f'best_city = {need("best_city")!r}.'
+```
+
+### hint
+Сначала `merge` заказов со справочником по `guest_id`, затем фильтр июня: `o["date"].dt.to_period("M") == "2026-06"`. DAU по городам удобно получить сводной: `pivot_table(index="date", columns="city", values="guest_id", aggfunc="nunique")` — строка на день, столбец на город.
+
+### hint
+Средний DAU — `.mean()` этой сводной (по каждому столбцу), MAU — `groupby("city")["guest_id"].nunique()`. Делите Series на Series: pandas выровняет их по городам.
+
+### solution
+```python
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+guests = pd.read_csv("preorder_guests.csv")
+j = o.merge(guests, on="guest_id")
+j = j[j["date"].dt.to_period("M") == "2026-06"]
+dau = j.pivot_table(index="date", columns="city", values="guest_id", aggfunc="nunique")
+mau = j.groupby("city")["guest_id"].nunique()
+city_sticky = (dau.mean() / mau * 100).round(1)
+best_city = city_sticky.idxmax()
+print(mau)
+city_sticky
+```
+
+### explain
+Пермь — 15.3 %, Казань и Тюмень — по 13.9 %: пермский гость июня заказывал в среднем около 4.6 дня из 30, казанский — около 4.2. Разница 1.4 п.п. небольшая, а MAU Тюмени — всего 87 гостей против 391–396 в Казани и Перми, так что её цифра шатается сильнее остальных. Ловушка задачи — взять общий DAU сети и делить на MAU города: общий средний DAU июня — 127 гостей, и у Тюмени выйдет 146 %, у Казани — 32.5 %. Больше 100 % — явный знак ошибки. Для честного сравнения городов числитель и знаменатель должны считаться по одним и тем же гостям.

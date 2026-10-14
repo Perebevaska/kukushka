@@ -114,7 +114,7 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\nwant = (_pd.read_csv('clients_raw.csv').isna().mean() * 100).round(1).sort_values(ascending=False)\ngot = need('miss_pct', _pd.Series)\nassert len(got) == len(want), f'В отчёте {len(got)} столбцов, а нужно все {len(want)}.'\nassert got.to_dict() == want.to_dict(), f'Значения не совпадают: {got.to_dict()}. Проценты = доля × 100, округление до 1 знака.'\nassert list(got.values) == sorted(got.values, reverse=True), 'Отсортируйте по убыванию.'",
+   "check": "import pandas as _pd\nwant = (_pd.read_csv('clients_raw.csv').isna().mean() * 100).round(1).sort_values(ascending=False)\ngot = need('miss_pct', _pd.Series)\nassert len(got) == len(want), f'В отчёте {len(got)} столбцов, а нужно все {len(want)}.'\n_diff = [(k, float(got[k]), float(want[k])) for k in want.index if k in got.index and got[k] != want[k]]\nassert not _diff and set(got.index) == set(want.index), (f'У {_diff[0][0]} получилось {_diff[0][1]}, ожидалось {_diff[0][2]}. Проценты = доля × 100, округление до 1 знака.' if _diff else 'Набор столбцов не совпадает с таблицей.')\nassert list(got.values) == sorted(got.values, reverse=True), 'Отсортируйте по убыванию.'",
    "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")",
    "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")\nmiss_pct = (df.isna().mean() * 100).round(1).sort_values(ascending=False)",
    "hints": [
@@ -409,7 +409,7 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\no = _pd.read_csv('orders_3m.csv')\ntotal = o['amount'].sum()\nwant_nc = o.loc[o['client_id'].isna(), 'amount'].sum()\nb = need('by_client', _pd.Series)\nassert b.sum() != total - want_nc, f'Сумма by_client — {b.sum()}, а всего выручки {total}. Заказы без карты выпали из группировки: у groupby есть параметр dropna.'\nassert b.sum() == total, f'Сумма by_client — {b.sum()}, а должна совпасть с общей выручкой {total}.'\nassert b.index.isna().any(), 'В индексе by_client нет группы-пропуска.'\nnc = need('no_card')\nif isinstance(nc, (_pd.Series, _pd.DataFrame)):\n    raise AssertionError(f'no_card — это {type(nc).__name__} (значений внутри: {len(nc)}), а нужно одно число. Достаньте его из Series: .sum() или .iloc[0].')\nassert nc == want_nc, f'no_card = {nc}. Нужна сумма в группе, где client_id пустой.'\nassert bool(need('ok')) is True, 'ok должен получиться True — сравните сумму by_client с суммой amount.'\nassert not has_literal(True), 'Получите ok сравнением двух сумм, а не вписывайте True.'",
+   "check": "import pandas as _pd\no = _pd.read_csv('orders_3m.csv')\ntotal = o['amount'].sum()\nwant_nc = o.loc[o['client_id'].isna(), 'amount'].sum()\nb = need('by_client', _pd.Series)\nassert b.sum() != total - want_nc, f'Сумма by_client — {b.sum()}, а всего выручки {total}. Заказы без карты выпали из группировки: у groupby есть параметр dropna.'\nassert b.sum() == total, f'Сумма by_client — {b.sum()}, а должна совпасть с общей выручкой {total}.'\nassert b.index.isna().any(), 'В индексе by_client нет группы-пропуска.'\nnc = need('no_card')\nif isinstance(nc, (_pd.Series, _pd.DataFrame)):\n    raise AssertionError(f'no_card — это {type(nc).__name__} (значений внутри: {len(nc)}), а нужно одно число. Достаньте его из Series: .sum() или .iloc[0].')\nassert nc == want_nc, f'no_card = {nc}. Нужна сумма в группе, где client_id пустой.'\nassert bool(need('ok')) is True, 'ok должен получиться True — сравните сумму by_client с суммой amount.'\nimport ast as _ast\n_lit = [n for n in _ast.walk(_ast.parse(_code)) if isinstance(n, _ast.Assign) and isinstance(n.value, _ast.Constant)\n        and any(isinstance(t, _ast.Name) and t.id == 'ok' for t in n.targets)]\nassert not _lit, 'Получите ok сравнением двух сумм, а не вписывайте True.'",
    "starter": "import pandas as pd\norders = pd.read_csv(\"orders_3m.csv\")\nby_client = orders.groupby(\"client_id\")[\"amount\"].sum()",
    "solution": "import pandas as pd\norders = pd.read_csv(\"orders_3m.csv\")\nby_client = orders.groupby(\"client_id\", dropna=False)[\"amount\"].sum()\nno_card = by_client[by_client.index.isna()].sum()\nok = by_client.sum() == orders[\"amount\"].sum()",
    "hints": [
@@ -435,15 +435,14 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\ng = _pd.read_csv('guests_churn.csv')\nwant = g['avg_check'].isna().groupby(g['visits_90d'] == 0).mean()\nm = need('miss_by_zero', _pd.Series)\nassert set(m.index) == {False, True}, f'Индекс miss_by_zero — {list(m.index)}, а нужен False/True: группируйте по условию visits_90d == 0.'\nassert close(m[True], want[True]) and close(m[False], want[False]), f'miss_by_zero = {m.to_dict()}. Нужна доля пропусков, а не их число: mean() от isna().'\nmech = need('mechanism', str).strip().upper()\nassert mech != 'MCAR', 'Пропуск явно зависит от числа визитов, значит, он не «совсем случайный».'\nassert mech != 'MNAR', 'MNAR — когда пропуск зависит от самого пропавшего значения. Здесь причина видна в другом столбце таблицы.'\nassert mech == 'MAR', f'mechanism = {need(\"mechanism\")!r}. Выберите одно из: \"MCAR\", \"MAR\", \"MNAR\".'",
+   "check": "import pandas as _pd\ng = _pd.read_csv('guests_churn.csv')\nwant = g['avg_check'].isna().groupby(g['app']).mean()\nm = need('miss_by_app', _pd.Series)\nassert set(m.index) == {0, 1}, f'Индекс miss_by_app — {list(m.index)}, а нужен 0/1: группируйте маску пропусков по столбцу app.'\nassert close(m[1], want[1]) and close(m[0], want[0]), f'miss_by_app: без приложения {float(m[0]):.3f}, с приложением {float(m[1]):.3f}. Нужна доля пропусков, а не их число: mean() от isna().'\nmech = need('mechanism', str).strip().upper()\nassert mech != 'MCAR', 'Без приложения чек пуст в 8 % случаев, с приложением — в 3 %: пропуск зависит от app, значит, он не «совсем случайный».'\nassert mech != 'MNAR', 'MNAR — когда пропуск зависит от самого пропавшего значения, и по таблице этого не видно. Здесь зависимость видна в другом, известном столбце.'\nassert mech == 'MAR', f'mechanism = {need(\"mechanism\")!r}. Выберите одно из: \"MCAR\", \"MAR\", \"MNAR\".'",
    "starter": "import pandas as pd\nguests = pd.read_csv(\"guests_churn.csv\")",
-   "solution": "import pandas as pd\nguests = pd.read_csv(\"guests_churn.csv\")\nmiss_by_zero = guests[\"avg_check\"].isna().groupby(guests[\"visits_90d\"] == 0).mean()\nmechanism = \"MAR\"",
+   "solution": "import pandas as pd\nguests = pd.read_csv(\"guests_churn.csv\")\nmiss_by_app = guests[\"avg_check\"].isna().groupby(guests[\"app\"]).mean()\nmechanism = \"MAR\"",
    "hints": [
-    "Маска пропусков — `guests[\"avg_check\"].isna()`. Её можно сгруппировать по другой Series того же размера, например по условию `guests[\"visits_90d\"] == 0`.",
-    "`guests[\"avg_check\"].isna().groupby(guests[\"visits_90d\"] == 0).mean()` — доля пропусков в каждой из двух групп.",
-    "Посмотрите на результат: если у всех гостей без визитов чек пуст, а у остальных — нет, пропуск полностью объясняется другим столбцом таблицы."
+    "Маска пропусков — `guests[\"avg_check\"].isna()`. Её можно сгруппировать по другому столбцу той же таблицы: `.groupby(guests[\"app\"])`, — как в разделе «Как проверить на своих данных».",
+    "`guests[\"avg_check\"].isna().groupby(guests[\"app\"]).mean()` — доля пропусков в каждой группе. Разные доли — пропуск зависит от известного столбца."
    ],
-   "explain": "У всех 144 гостей без визитов за 90 дней средний чек пуст, у остальных — заполнен всегда. Пропуск полностью объясняется известным столбцом `visits_90d` — формально это MAR: «от чего зависит пропуск» мы видим в другом столбце. Но по смыслу это особый случай: значение не «есть, но не записано», а **не существует** — нет заказов, нет и среднего чека. Такие пропуски не заполняют, а учитывают отдельно. Заполнять нулём нельзя: «средний чек 0 ₽» — это бессмыслица, и средний чек по всем гостям упадёт. Правильно — считать средний чек по гостям с визитами и отдельно писать, сколько гостей не приходило. Заметьте ловушку: если сгруппировать пропуски по `app`, получится 8.1 % без приложения и 3.4 % с ним. Это не значит, что приложение «чинит» данные, — просто гости с приложением реже пропадают на 90 дней."
+   "explain": "Без приложения средний чек пуст у 8.1 % гостей (108 из 1341), с приложением — у 3.4 % (36 из 1059). Доля пропусков зависит от известного столбца — это MAR, и считать средний чек «в целом» по известным значениям рискованно: гости без приложения в нём недопредставлены.\n\nНо MAR говорит только «зависит от чего-то известного», а не «от чего именно». Сгруппируйте те же пропуски по `guests[\"visits_90d\"] == 0`: у всех 144 гостей без визитов за 90 дней чек пуст, у остальных 2256 — заполнен всегда. Настоящая причина — визиты, а приложение лишь связано с ними: гости с приложением реже пропадают на 90 дней. И это особый случай пропуска: значение не «есть, но не записано», а **не существует** — нет заказов, нет и среднего чека. Такие пропуски не заполняют, тем более нулём («средний чек 0 ₽» уронит среднее по всем). Средний чек считают по гостям с визитами и отдельно пишут, сколько гостей не приходило."
   },
   "ch03/02-missing/flag": {
    "chapter": "ch03",
@@ -515,7 +514,7 @@
    "starter": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\")",
    "solution": "import pandas as pd\ndf = pd.read_csv(\"clients_raw.csv\", na_values=[\"не указано\", \"—\"])\nper_row = df.isna().sum(axis=1)\nn_sparse = (per_row >= 2).sum()",
    "hints": [
-    "`df.isna().sum()` складывает по столбцам. Чтобы сложить по строкам, у `sum` есть параметр `axis=1`.",
+    "`df.isna().sum()` складывает по столбцам. Чтобы сложить по строкам, у `sum` есть параметр `axis=1`: `axis=1` — считать поперёк, внутри каждой строки.",
     "Загрузите с `na_values=[\"не указано\", \"—\"]`, посчитайте пропуски в каждой строке и отберите строки, где их не меньше двух."
    ],
    "explain": "`axis=1` — «по строкам»: для каждой строки складываются значения всех столбцов. По умолчанию `axis=0` — по столбцам. Очень неполные анкеты — кандидаты на отдельную проверку: возможно, они пришли из другого источника или заполнены не до конца."
@@ -771,6 +770,31 @@
    ],
    "explain": ""
   },
+  "ch03/03b-excel/year-check": {
+   "chapter": "ch03",
+   "lesson": "03b-excel",
+   "lesson_title": "Книга Excel: листы, шапка, итоги",
+   "id": "year-check",
+   "title": "Год = сумма месяцев",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "zerno_finance.xlsx",
+    "finance_plan.csv",
+    "finance_fact.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nm = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']\np0 = _pd.read_excel('zerno_finance.xlsx', sheet_name='План', header=3)\nb = p0[p0['Код'] != 'Итого'].set_index('Код')\nwant = b[m].sum(axis=1).round(1)\nassert 'header' in _code and 'skiprows' not in _code, 'Прочитайте лист через header= — номер строки с названиями столбцов, считая с нуля. skiprows здесь не используйте.'\nys = need('year_sum', _pd.Series)\nassert 'Итого' not in ys.index, 'В year_sum попала строка «Итого» — уберите её до расчёта.'\nassert set(ys.index) == set(want.index), f'Индекс year_sum: {sorted(map(str, ys.index))}. Нужны коды кофеен: set_index(\"Код\").'\nbad = [k for k in want.index if not close(ys[k], want[k], 0.051)]\nassert not bad, f'У {bad[0]} year_sum = {float(ys[bad[0]])}, ожидалось {float(want[bad[0]])}. Складывайте 12 месяцев по строке: sum(axis=1).'\nassert close(need('max_gap'), round((b[m].sum(axis=1) - b['Год']).abs().max(), 1), 0.051), f'max_gap = {need(\"max_gap\")}. Это максимум abs() от разности year_sum и столбца «Год».'\nassert need('top') == want.idxmax(), f'top = {need(\"top\")!r}. Ищите код с наибольшей суммой: idxmax().'",
+   "starter": "import pandas as pd\nmonths = [\"Янв\", \"Фев\", \"Мар\", \"Апр\", \"Май\", \"Июн\", \"Июл\", \"Авг\", \"Сен\", \"Окт\", \"Ноя\", \"Дек\"]",
+   "solution": "import pandas as pd\nmonths = [\"Янв\", \"Фев\", \"Мар\", \"Апр\", \"Май\", \"Июн\", \"Июл\", \"Авг\", \"Сен\", \"Окт\", \"Ноя\", \"Дек\"]\nplan = pd.read_excel(\"zerno_finance.xlsx\", sheet_name=\"План\", header=3)\nbody = plan[plan[\"Код\"] != \"Итого\"].set_index(\"Код\")\nyear_sum = body[months].sum(axis=1).round(1)\nmax_gap = round((year_sum - body[\"Год\"]).abs().max(), 1)\ntop = year_sum.idxmax()",
+   "hints": [
+    "`header=3` — «названия столбцов в строке с номером 3, считая с нуля»: на листе над ними три строки. Затем `body = plan[plan[\"Код\"] != \"Итого\"].set_index(\"Код\")`.",
+    "`body[months].sum(axis=1)` — сумма по строке. Расхождение — `(year_sum - body[\"Год\"]).abs().max()`; код с наибольшим значением — `year_sum.idxmax()`."
+   ],
+   "explain": "Расхождение 0.0: «Год» на листе честно равен сумме месяцев у всех семи кофеен. Самый большой годовой план у KZN-1 — 16 097.6 тыс. ₽, у EKB-1 — 2706.6: она работает только с октября. Такая сверка «итоговый столбец = сумма частей» — та же самопроверка, что со строкой «Итого», только по горизонтали. Если в книге кто-то вписал «Год» руками и ошибся, `max_gap` это покажет. `header=3` и `skiprows=3` здесь дают одинаковый результат; разница появится, если строки ниже заголовка тоже надо пропустить, — тогда `skiprows` принимает и список номеров строк."
+  },
   "ch03/03b-excel/xl-total": {
    "chapter": "ch03",
    "lesson": "03b-excel",
@@ -797,6 +821,31 @@
    ],
    "explain": "По кофейням первый квартал — 16 546.5 тыс. ₽, и строка «Итого» даёт то же число. Совпадение значит, что шапка пропущена ровно на нужное число строк и ни одна кофейня не потерялась. Если бы «Итого» осталась в `body`, получилось бы 33 093.0 — ровно вдвое больше: удвоенная сумма — верный признак забытой итоговой строки. Без `usecols` в таблицу попали бы ещё «Кофейня», «Город», «Итого» и текстовый «Комментарий» — для расчёта они не нужны, а `fact.sum()` по текстовым столбцам склеил бы строки. Буквы `\"A,D:F\"` удобны, когда смотришь на лист в Excel, но хрупки: вставят на лист столбец — и под теми же буквами окажутся другие данные. Список имён такую перестановку переживёт."
   },
+  "ch03/03b-excel/p-plan-csv": {
+   "chapter": "ch03",
+   "lesson": "03b-excel",
+   "lesson_title": "Книга Excel: листы, шапка, итоги",
+   "id": "p-plan-csv",
+   "title": "План из CSV",
+   "level": "warmup",
+   "exam": false,
+   "parsons": true,
+   "files": [
+    "zerno_finance.xlsx",
+    "finance_plan.csv",
+    "finance_fact.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\np = need('plan', _pd.DataFrame)\nassert 'Код' in p.columns, f'Столбцы plan: {list(p.columns)[:3]}… Сначала нужно прочитать файл с пропуском шапки.'\nassert _pd.api.types.is_float_dtype(p['Янв']), 'Янв — не число: прочитайте с decimal=\",\".'\nassert 'Итого' not in set(p['Код']), 'Строка «Итого» осталась в plan — фильтр должен идти до суммы.'\nassert close(need('jan'), 5733.1, 0.05), f'jan = {need(\"jan\")}, а по кофейням январь — 5733.1.'",
+   "starter": "",
+   "solution": "import pandas as pd\nplan = pd.read_csv(\"finance_plan.csv\", sep=\";\", decimal=\",\", skiprows=3)\nplan = plan[plan[\"Код\"] != \"Итого\"]\njan = round(plan[\"Янв\"].sum(), 1)\nprint(jan)",
+   "hints": [
+    "Сначала чтение с тремя параметрами: разделитель, десятичный знак, шапка. Потом фильтр, потом сумма.",
+    "Если фильтр «Итого» окажется после суммы, получится 11 466.2 — вдвое больше."
+   ],
+   "explain": ""
+  },
   "ch03/03b-excel/plan-fact": {
    "chapter": "ch03",
    "lesson": "03b-excel",
@@ -822,6 +871,31 @@
     "`done = (f / p * 100).round(1)`, затем `done = done[p > 0]`; `worst = done.idxmin()`."
    ],
    "explain": "Хуже всех KZN-2 — 85.6 %: в марте она была закрыта на ремонт, это видно в «Комментарии» на листе «Факт». В сумме по сети план выполнен на 98.4 %. Важные места решения: у листов разная высота шапки, а CSV-копии нужны ещё `sep=\";\"` и `decimal=\",\"` — без `decimal` месяцы факта остались бы текстом «1232,7», и сумма по строке склеила бы строки; «Итого» убирается до расчёта, иначе в `done` появится «кофейня Итого» с выполнением плана по всей сети (98.4 %); EKB-1 исключается по смыслу — у неё нет плана на эти месяцы, и 0 / 0 даёт `NaN`. Если бы вы сопоставляли план и факт по номеру строки, а не по коду, любая перестановка кофеен в одном из источников дала бы неверные проценты без всякой ошибки."
+  },
+  "ch03/03b-excel/auto-header": {
+   "chapter": "ch03",
+   "lesson": "03b-excel",
+   "lesson_title": "Книга Excel: листы, шапка, итоги",
+   "id": "auto-header",
+   "title": "Высота шапки кодом",
+   "level": "star",
+   "exam": false,
+   "parsons": false,
+   "files": [
+    "zerno_finance.xlsx",
+    "finance_plan.csv",
+    "finance_fact.csv"
+   ],
+   "display": true,
+   "setup": "",
+   "check": "import pandas as _pd\nm = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен']\nc = _code.replace(' ', '')\nassert not ('skiprows=3' in c or 'skiprows=4' in c or 'header=3' in c or 'header=4' in c), 'Высоту шапки нужно найти кодом, а не вписать: ищите строку, где в первом столбце «Код».'\nh = need('heads', dict)\nassert set(h) == {'План', 'Факт'}, f'Ключи heads: {list(h)}. Нужны имена листов «План» и «Факт».'\nassert int(h['План']) == 3 and int(h['Факт']) == 4, f'heads = {{\"План\": {int(h[\"План\"])}, \"Факт\": {int(h[\"Факт\"])}}}. Номер строки — индекс в таблице, прочитанной с header=None.'\nwant = {}\nfor name, sk in [('План', 3), ('Факт', 4)]:\n    t = _pd.read_excel('zerno_finance.xlsx', sheet_name=name, skiprows=sk)\n    want[name] = t[t['Код'] != 'Итого'].set_index('Код')[m].sum(axis=1).round(1)\npf = need('pf', _pd.DataFrame)\nassert list(pf.columns) == ['план', 'факт'], f'Столбцы pf: {list(pf.columns)}. Нужны «план» и «факт».'\nassert 'Итого' not in pf.index and set(pf.index) == set(want['План'].index), f'Индекс pf: {sorted(map(str, pf.index))}. Нужны семь кодов кофеен без «Итого».'\nfor col, name in [('план', 'План'), ('факт', 'Факт')]:\n    bad = [k for k in want[name].index if not close(pf.loc[k, col], want[name][k], 0.051)]\n    assert not bad, f'{col} у {bad[0]}: {float(pf.loc[bad[0], col])}, ожидалось {float(want[name][bad[0]])}.'",
+   "starter": "import pandas as pd\nmonths = [\"Янв\", \"Фев\", \"Мар\", \"Апр\", \"Май\", \"Июн\", \"Июл\", \"Авг\", \"Сен\"]",
+   "solution": "import pandas as pd\nmonths = [\"Янв\", \"Фев\", \"Мар\", \"Апр\", \"Май\", \"Июн\", \"Июл\", \"Авг\", \"Сен\"]\nbook = pd.read_excel(\"zerno_finance.xlsx\", sheet_name=[\"План\", \"Факт\"], header=None)\nheads = {}\nsums = {}\nfor name, sheet in book.items():\n    row = sheet[sheet[0] == \"Код\"].index[0]\n    heads[name] = int(row)\n    t = pd.read_excel(\"zerno_finance.xlsx\", sheet_name=name, skiprows=row)\n    t = t[t[\"Код\"] != \"Итого\"].set_index(\"Код\")\n    sums[name] = t[months].sum(axis=1)\npf = pd.DataFrame({\"план\": sums[\"План\"], \"факт\": sums[\"Факт\"]}).round(1)",
+   "hints": [
+    "`pd.read_excel(книга, sheet_name=[\"План\", \"Факт\"], header=None)` вернёт словарь из двух таблиц; столбцы в них называются 0, 1, 2… Строка с «Код» — `sheet[sheet[0] == \"Код\"].index[0]`.",
+    "Найденный номер подставьте в знакомое чтение: `pd.read_excel(книга, sheet_name=name, skiprows=row)` — дальше как в «Разберём вместе». Пройдите по словарю циклом `for name, sheet in book.items():` и сложите результаты в словари."
+   ],
+   "explain": "Шапка «Плана» — 3 строки, «Факта» — 4, и код нашёл их сам. По `pf` видно то же, что в «Разберём вместе»: у KZN-2 план 7081.4 и факт 6062.7, у EKB-1 оба нуля. С `header=None` pandas не берёт заголовок ни из какой строки и называет столбцы номерами — поэтому первый столбец доступен как `sheet[0]`. Такое чтение стоит держать в запасе для книг, которые присылают каждый месяц: если над таблицей появится строка «Данные предварительные», жёсткий `skiprows=4` превратит всё в `Unnamed`, а поиск «Код» — нет."
   },
   "ch03/04-duplicates/n-exact": {
    "chapter": "ch03",
@@ -996,7 +1070,7 @@
    ],
    "display": true,
    "setup": "",
-   "check": "import pandas as _pd\no = _pd.read_csv('orders_3m.csv')\no['price'] = o['amount'] / o['qty']\nwant = o[['drink', 'size', 'price']].drop_duplicates()\npr = need('prices', _pd.DataFrame)\nassert list(pr.columns) == ['drink', 'size', 'price'], f'Столбцы prices: {list(pr.columns)}. Нужны drink, size, price — в этом порядке.'\nassert len(pr) != len(o), f'В prices {len(pr)} строк — столько же, сколько заказов. Уберите повторы.'\nassert len(pr) == len(want), f'В prices {len(pr)} строк, а разных пар «напиток + размер» — {len(want)}.'\nm = pr.merge(want, on=['drink', 'size'], suffixes=('', '_w'))\nassert len(m) == len(want) and (m['price'] - m['price_w']).abs().max() < 1e-9, 'Цены не совпадают с amount / qty.'\nassert bool(need('ok')) is True, 'ok должен получиться True: проверьте, что пары drink + size не повторяются.'\nassert not has_literal(True), 'Получите ok проверкой (duplicated или is_unique), а не вписывайте True.'",
+   "check": "import pandas as _pd\no = _pd.read_csv('orders_3m.csv')\no['price'] = o['amount'] / o['qty']\nwant = o[['drink', 'size', 'price']].drop_duplicates()\npr = need('prices', _pd.DataFrame)\nassert list(pr.columns) == ['drink', 'size', 'price'], f'Столбцы prices: {list(pr.columns)}. Нужны drink, size, price — в этом порядке.'\nassert len(pr) != len(o), f'В prices {len(pr)} строк — столько же, сколько заказов. Уберите повторы.'\nassert len(pr) == len(want), f'В prices {len(pr)} строк, а разных пар «напиток + размер» — {len(want)}.'\nm = pr.merge(want, on=['drink', 'size'], suffixes=('', '_w'))\nassert len(m) == len(want) and (m['price'] - m['price_w']).abs().max() < 1e-9, 'Цены не совпадают с amount / qty.'\nassert bool(need('ok')) is True, 'ok должен получиться True: проверьте, что пары drink + size не повторяются.'\nimport ast as _ast\n_lit = [n for n in _ast.walk(_ast.parse(_code)) if isinstance(n, _ast.Assign) and isinstance(n.value, _ast.Constant)\n        and any(isinstance(t, _ast.Name) and t.id == 'ok' for t in n.targets)]\nassert not _lit, 'Получите ok проверкой (duplicated или is_unique), а не вписывайте True.'",
    "starter": "import pandas as pd\norders = pd.read_csv(\"orders_3m.csv\")",
    "solution": "import pandas as pd\norders = pd.read_csv(\"orders_3m.csv\")\norders[\"price\"] = orders[\"amount\"] / orders[\"qty\"]\nprices = orders[[\"drink\", \"size\", \"price\"]].drop_duplicates()\nok = not prices.duplicated(subset=[\"drink\", \"size\"]).any()",
    "hints": [
@@ -2148,7 +2222,7 @@
    "starter": "import pandas as pd",
    "solution": "import pandas as pd\nstats = orders.groupby(\"client_id\").agg(orders=(\"order_id\", \"count\"), revenue=(\"amount\", \"sum\"))\nguests = clients.merge(stats, on=\"client_id\", how=\"left\")\nguests[[\"orders\", \"revenue\"]] = guests[[\"orders\", \"revenue\"]].fillna(0)\nactive_pct = round((guests[\"orders\"] > 0).mean() * 100, 1)\nn_orphans = len(set(orders[\"client_id\"].dropna()) - set(clients[\"client_id\"]))\nguests.head()",
    "hints": [
-    "Глава 2, уроки «Группировки: GROUP BY и HAVING» и «Соединения: JOIN и UNION»: `stats = orders.groupby(\"client_id\").agg(orders=(\"order_id\", \"count\"), revenue=(\"amount\", \"sum\"))`, затем `clients.merge(stats, on=\"client_id\", how=\"left\")`.",
+    "Глава 2, уроки «Группировки: GROUP BY и HAVING» и «Соединения: JOIN и ловушка дублей»: `stats = orders.groupby(\"client_id\").agg(orders=(\"order_id\", \"count\"), revenue=(\"amount\", \"sum\"))`, затем `clients.merge(stats, on=\"client_id\", how=\"left\")`.",
     "После LEFT JOIN у гостей без заказов — `NaN`. Здесь пусто действительно значит ноль: `fillna(0)`.",
     "Номера без анкеты — разность множеств: `set(orders[\"client_id\"].dropna()) - set(clients[\"client_id\"])`."
    ],

@@ -1,7 +1,7 @@
 ---
 title: "Группировки: GROUP BY и HAVING"
 lead: "Самая частая операция аналитика — посчитать что-то по группам. В главе 1 для этого был словарь-накопитель, в pandas — groupby. Плюс доли и одна ловушка, на которой ошибаются даже опытные. Метрики на гостя — в следующем уроке, сводные таблицы для руководителя — после него."
-files: [orders_3m.csv, zdb_guests.csv, zdb_orders.csv]
+files: [orders_3m.csv]
 recap:
   - "`df.groupby(\"shop_id\")[\"amount\"].sum()` — сумма по группам; ещё `mean`, `count`, `size`, `nunique`, `median`, `max`."
   - "Несколько агрегатов с именами: `.agg(revenue=(\"amount\", \"sum\"), orders=(\"order_id\", \"count\"))`."

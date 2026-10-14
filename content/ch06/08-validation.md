@@ -182,20 +182,20 @@ print(f"лучшая на валидации: {valid_acc[best]:.3f}, она же
 ```python
 from sklearn.model_selection import KFold
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
-for train_idx, test_idx in kf.split(range(20)):
-    print(test_idx)
+for train_idx, valid_idx in kf.split(range(20)):
+    print(valid_idx)
 ```
 
 - `KFold(n_splits=5)` — правило нарезки на 5 фолдов;
 - `shuffle=True, random_state=42` — перемешать строки перед нарезкой (воспроизводимо);
-- `kf.split(X)` выдаёт пары массивов: номера строк для обучения и для проверки.
+- `kf.split(X)` выдаёт пары массивов: номера строк для обучения и для проверки. Проверочную часть фолда мы называем `valid_idx` (коротко `va`): по роли это валидация, а не отложенный тест. В документации sklearn и в чужом коде её часто зовут `test_idx` — это та же проверочная часть фолда, отложенного теста она не касается.
 
 ::: predict
 ```python static
 from sklearn.model_selection import KFold
 kf = KFold(n_splits=5)
-for train_idx, test_idx in kf.split(range(10)):
-    print(len(train_idx), len(test_idx))
+for train_idx, valid_idx in kf.split(range(10)):
+    print(len(train_idx), len(valid_idx))
 ```
 
 - `2 8 | 2 8 | 2 8 | 2 8 | 2 8`
@@ -250,8 +250,8 @@ print(f"среднее {scores.mean():.3f}, разброс (std) {scores.std():.
 ```python
 from sklearn.model_selection import KFold
 kf = KFold(n_splits=3)
-for i, (train_idx, test_idx) in enumerate(kf.split(range(9)), start=1):
-    print(i, "обучение:", train_idx.tolist(), "проверка:", test_idx.tolist())
+for i, (train_idx, valid_idx) in enumerate(kf.split(range(9)), start=1):
+    print(i, "обучение:", train_idx.tolist(), "проверка:", valid_idx.tolist())
 ```
 
 {{practice: p-cv, folds, cv-depth, rule-cv, grid-cv}}
@@ -278,8 +278,8 @@ kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
 rule = ok["courier"] == "пеший"
 results = {
-    "всегда вовремя": [(~y.iloc[te]).mean() for tr, te in kf.split(X)],
-    "правило «пеший»": [(rule.iloc[te] == y.iloc[te]).mean() for tr, te in kf.split(X)],
+    "всегда вовремя": [(~y.iloc[va]).mean() for tr, va in kf.split(X)],
+    "правило «пеший»": [(rule.iloc[va] == y.iloc[va]).mean() for tr, va in kf.split(X)],
 }
 models = {
     "дерево, глубина 3": DecisionTreeClassifier(max_depth=3, random_state=0),
@@ -295,7 +295,7 @@ table = pd.DataFrame({name: [np.mean(s), np.std(s)] for name, s in results.items
 table.sort_values("mean", ascending=False)
 ```
 
-`y.iloc[te]` — строки по номерам из фолда (`kf.split` выдаёт номера позиций, а не метки индекса).
+`y.iloc[va]` — строки по номерам из фолда (`kf.split` выдаёт номера позиций, а не метки индекса).
 
 Что видно в итоговой таблице:
 
@@ -458,7 +458,7 @@ from sklearn.model_selection import KFold
 ### check
 ```python
 from sklearn.model_selection import KFold as _KF
-_w = [len(te) for tr, te in _KF(n_splits=5, shuffle=True, random_state=42).split(range(1841))]
+_w = [len(va) for tr, va in _KF(n_splits=5, shuffle=True, random_state=42).split(range(1841))]
 _s = [int(v) for v in need('sizes')]
 assert len(_s) == 5, f'В sizes {len(_s)} чисел, а фолдов 5 — по одному числу на фолд.'
 assert _s == _w, f'sizes = {_s}, а ожидалось {_w}. Нужны размеры проверочных частей (второй массив из kf.split).'
@@ -466,7 +466,7 @@ assert need('total') == sum(_w), f'total = {need("total")}, а должна бы
 ```
 
 ### hint
-`for train_idx, test_idx in kf.split(X):` — в цикле добавляйте `len(test_idx)` в список.
+`for train_idx, valid_idx in kf.split(X):` — в цикле добавляйте `len(valid_idx)` в список.
 
 ### hint
 `kf.split(X)` выдаёт пары массивов номеров строк — обучающих и проверочных. Каждая строка попадает в проверочную часть ровно один раз, поэтому `total` должен совпасть с `len(X)`. Размеры фолдов могут отличаться на одну строку, если число строк не делится на 5.
@@ -476,8 +476,8 @@ assert need('total') == sum(_w), f'total = {need("total")}, а должна бы
 from sklearn.model_selection import KFold
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 sizes = []
-for train_idx, test_idx in kf.split(X):
-    sizes.append(len(test_idx))
+for train_idx, valid_idx in kf.split(X):
+    sizes.append(len(valid_idx))
 total = sum(sizes)
 print(sizes, total, len(X))
 ```
@@ -485,9 +485,9 @@ print(sizes, total, len(X))
 ### explain
 Сумма размеров равна числу строк: каждая доставка ровно один раз побывала в проверке. 1841 не делится на 5 нацело, поэтому один фолд на строку больше.
 
-## task: pick-depth | Глубина по валидации | base
+## task: pick-depth | Настройка леса по валидации | base
 
-Данные уже разделены на `X_train`, `X_valid`, `X_test` (и `y_…`) — как в первой задаче. Для глубин от 1 до 10 обучите `DecisionTreeClassifier(max_depth=..., random_state=0)` на обучающей части и сохраните словарь `valid_acc`: глубина → доля правильных на валидации. В `best_depth` — глубина с лучшей валидацией (при равенстве — меньшая). Обучите дерево с этой глубиной на обучающей части и **один раз** посчитайте `test_acc` — долю правильных на тесте (3 знака).
+Данные уже разделены на `X_train`, `X_valid`, `X_test` (и `y_…`) — как в первой задаче. Повторите приём из теории для другой модели и другой настройки: лес `RandomForestClassifier(n_estimators=50, min_samples_leaf=leaf, random_state=0)` для `leaf` из `[1, 5, 20, 50]`. Обучайте на обучающей части и сохраните словарь `valid_acc`: `leaf` → доля правильных на валидации. В `best_leaf` — значение с лучшей валидацией (при равенстве — меньшее). Обучите лес с этим `min_samples_leaf` на обучающей части и **один раз** посчитайте `test_acc` — долю правильных на тесте (3 знака).
 
 ### setup
 ```python
@@ -515,47 +515,47 @@ def _ref():
 
 ### starter
 ```python
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 # X_train, X_valid, X_test, y_train, y_valid, y_test уже готовы
 valid_acc = {}
 ```
 
 ### check
 ```python
-from sklearn.tree import DecisionTreeClassifier as _T
+from sklearn.ensemble import RandomForestClassifier as _RF
 _Xtr, _Xva, _Xte, _ytr, _yva, _yte = _ref()
-_va = {_k: _T(max_depth=_k, random_state=0).fit(_Xtr, _ytr).score(_Xva, _yva) for _k in range(1, 11)}
+_va = {_k: _RF(n_estimators=50, min_samples_leaf=_k, random_state=0).fit(_Xtr, _ytr).score(_Xva, _yva) for _k in [1, 5, 20, 50]}
 _g = dict(need('valid_acc'))
-assert sorted(_g) == list(range(1, 11)), f'Ключи valid_acc: {sorted(_g)}, а нужны глубины от 1 до 10.'
-for _k in range(1, 11):
-    assert close(_g[_k], _va[_k], 0.0006), f'Для глубины {_k} в valid_acc {_g[_k]}, а ожидалось около {_va[_k]:.3f}. Учите на X_train, проверяйте на X_valid.'
+assert sorted(_g) == [1, 5, 20, 50], f'Ключи valid_acc: {sorted(_g)}, а нужны значения min_samples_leaf 1, 5, 20, 50.'
+for _k in _va:
+    assert close(_g[_k], _va[_k], 0.0006), f'Для min_samples_leaf={_k} в valid_acc {_g[_k]}, а ожидалось около {_va[_k]:.3f}. Учите на X_train, проверяйте на X_valid; n_estimators=50, random_state=0.'
 _b = max(_va, key=_va.get)
-assert need('best_depth') == _b, f'best_depth = {need("best_depth")}, а лучшая глубина на валидации — другая. Выбирайте по valid_acc, не по тесту.'
-_t = round(_T(max_depth=_b, random_state=0).fit(_Xtr, _ytr).score(_Xte, _yte), 3)
-assert close(need('test_acc'), _t), f'test_acc = {need("test_acc")}, а ожидалось {_t}: дерево лучшей глубины, обученное на X_train, на X_test.'
+assert need('best_leaf') == _b, f'best_leaf = {need("best_leaf")}, а лучшее значение на валидации — другое. Выбирайте по valid_acc, не по тесту.'
+_t = round(_RF(n_estimators=50, min_samples_leaf=_b, random_state=0).fit(_Xtr, _ytr).score(_Xte, _yte), 3)
+assert close(need('test_acc'), _t), f'test_acc = {need("test_acc")}, а ожидалось {_t}: лес с лучшим min_samples_leaf, обученный на X_train, на X_test.'
 ```
 
 ### hint
-В цикле: `model = DecisionTreeClassifier(max_depth=depth, random_state=0).fit(X_train, y_train)`, затем `valid_acc[depth] = model.score(X_valid, y_valid)`.
+Цикл `for leaf in [1, 5, 20, 50]:` — внутри `model = RandomForestClassifier(n_estimators=50, min_samples_leaf=leaf, random_state=0).fit(X_train, y_train)` и `valid_acc[leaf] = model.score(X_valid, y_valid)`.
 
 ### hint
-`max(valid_acc, key=valid_acc.get)` вернёт первую из лучших глубин — то есть меньшую.
+`max(valid_acc, key=valid_acc.get)` вернёт первое из лучших значений — то есть меньшее, потому что словарь заполнялся по возрастанию.
 
 ### solution
 ```python
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 valid_acc = {}
-for depth in range(1, 11):
-    model = DecisionTreeClassifier(max_depth=depth, random_state=0).fit(X_train, y_train)
-    valid_acc[depth] = model.score(X_valid, y_valid)
-best_depth = max(valid_acc, key=valid_acc.get)
-final = DecisionTreeClassifier(max_depth=best_depth, random_state=0).fit(X_train, y_train)
+for leaf in [1, 5, 20, 50]:
+    model = RandomForestClassifier(n_estimators=50, min_samples_leaf=leaf, random_state=0).fit(X_train, y_train)
+    valid_acc[leaf] = model.score(X_valid, y_valid)
+best_leaf = max(valid_acc, key=valid_acc.get)
+final = RandomForestClassifier(n_estimators=50, min_samples_leaf=best_leaf, random_state=0).fit(X_train, y_train)
 test_acc = round(final.score(X_test, y_test), 3)
-print(best_depth, test_acc)
+print(valid_acc, best_leaf, test_acc)
 ```
 
 ### explain
-Валидация выбрала глубину 4 (0.880), за ней 3 (0.878) — разница в одну доставку из 368. На тесте дерево глубины 4 дало 0.892. То, что тест вышел даже выше валидации, — тоже случайность небольших наборов; важно, что он посчитан один раз и в выборе не участвовал.
+Валидация выбрала `min_samples_leaf=5` (0.878), рядом 20 (0.872) — разница в две доставки из 368. Лес без ограничений (1) отстаёт сильнее — 0.859, а при 50 листья слишком крупные, и лес недообучается (0.834 и на валидации, и около 0.82 на обучении). На тесте выбранный лес дал 0.900. Точные цифры могут чуть отличаться между версиями sklearn — проверка считает их заново. Главное — порядок действий: перебор только по валидации, тест один раз в конце.
 
 ## task: cv-depth | Короткое и глубокое дерево | base
 
@@ -652,30 +652,30 @@ _o = _d[_d['actual_min'].between(1, 299)]
 _y = (_o['actual_min'] > _o['promised_min']).to_numpy()
 _r = (_o['courier'] == 'пеший').to_numpy()
 _f = list(_KF(n_splits=5, shuffle=True, random_state=42).split(_y))
-_rs = [round((_r[te] == _y[te]).mean(), 3) for tr, te in _f]
+_rs = [round((_r[va] == _y[va]).mean(), 3) for tr, va in _f]
 _g = [float(v) for v in need('rule_scores')]
 assert len(_g) == 5, f'В rule_scores {len(_g)} чисел, а фолдов 5.'
-assert all(close(a, b) for a, b in zip(_g, _rs)), f'rule_scores = {_g}, а ожидалось {_rs}. Берите строки фолда по номерам: .iloc[te].'
-_m = round(_np.mean([(_r[te] == _y[te]).mean() for tr, te in _f]), 3)
+assert all(close(a, b) for a, b in zip(_g, _rs)), f'rule_scores = {_g}, а ожидалось {_rs}. Берите строки фолда по номерам: .iloc[va].'
+_m = round(_np.mean([(_r[va] == _y[va]).mean() for tr, va in _f]), 3)
 assert close(need('rule_mean'), _m, 0.0011), f'rule_mean = {need("rule_mean")}, а ожидалось {_m}.'
-_b = round(_np.mean([(~_y[te]).mean() for tr, te in _f]), 3)
+_b = round(_np.mean([(~_y[va]).mean() for tr, va in _f]), 3)
 assert close(need('base_mean'), _b, 0.0011), f'base_mean = {need("base_mean")}, а ожидалось {_b}. «Всегда вовремя» права там, где y == False.'
 ```
 
 ### hint
-`for tr, te in kf.split(X):` — внутри `(rule.iloc[te] == y.iloc[te]).mean()`.
+`for tr, va in kf.split(X):` — внутри `(rule.iloc[va] == y.iloc[va]).mean()`.
 
 ### hint
-Для «всегда вовремя» — `(~y.iloc[te]).mean()`.
+Для «всегда вовремя» — `(~y.iloc[va]).mean()`.
 
 ### solution
 ```python
 import numpy as np
 rule = ok["courier"] == "пеший"
 rule_scores, base_scores = [], []
-for tr, te in kf.split(X):
-    rule_scores.append(round((rule.iloc[te] == y.iloc[te]).mean(), 3))
-    base_scores.append((~y.iloc[te]).mean())
+for tr, va in kf.split(X):
+    rule_scores.append(round((rule.iloc[va] == y.iloc[va]).mean(), 3))
+    base_scores.append((~y.iloc[va]).mean())
 rule_mean = round(np.mean(rule_scores), 3)
 base_mean = round(np.mean(base_scores), 3)
 print(rule_scores, rule_mean, base_mean)
@@ -737,7 +737,7 @@ _k = _KF(n_splits=5, shuffle=True, random_state=42)
 _Xr, _Xt, _yr, _yt = _tts(_X, _y, test_size=0.2, random_state=42)
 _r = _Xr['courier_пеший'] == 1
 _M = {'дерево': _T(max_depth=3, random_state=0), 'лес': _RF(n_estimators=50, random_state=0), 'логрегрессия': _LR(max_iter=2000)}
-_res = {'правило': [(_r.iloc[te] == _yr.iloc[te]).mean() for tr, te in _k.split(_Xr)]}
+_res = {'правило': [(_r.iloc[va] == _yr.iloc[va]).mean() for tr, va in _k.split(_Xr)]}
 for _n, _m in _M.items():
     _res[_n] = _cvs(_m, _Xr, _yr, cv=_k)
 _w = {n: (round(_np.mean(s), 3), round(_np.std(s), 3)) for n, s in _res.items()}
@@ -774,7 +774,7 @@ from sklearn.linear_model import LogisticRegression
 X_rest, X_test, y_rest, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 rule = X_rest["courier_пеший"] == 1
-results = {"правило": [(rule.iloc[te] == y_rest.iloc[te]).mean() for tr, te in kf.split(X_rest)]}
+results = {"правило": [(rule.iloc[va] == y_rest.iloc[va]).mean() for tr, va in kf.split(X_rest)]}
 models = {
     "дерево": DecisionTreeClassifier(max_depth=3, random_state=0),
     "лес": RandomForestClassifier(n_estimators=50, random_state=0),
@@ -797,7 +797,7 @@ table
 ```
 
 ### explain
-По кросс-валидации на `X_rest` лес впереди (0.875), но его отрыв от правила — около 1.5 п.п., примерно как разброс между фолдами. На отложенном тесте лес набрал 0.905, правило — 0.892. Это число и идёт в отчёт: модель выбрали, не глядя в тест, и проверили один раз. Для бизнеса вывод прежний: правило «пеший — опоздает» уже даёт почти всю пользу, а модель стоит внедрять, только если эти полтора пункта чего-то стоят.
+По кросс-валидации на `X_rest` лес впереди (0.875), но его отрыв от правила — около 1.5 п.п., примерно как разброс между фолдами. На отложенном тесте лес набрал 0.905, правило — 0.892. На тесте у обоих выше, чем по фолдам: этот тест «лёгкий» (опозданий в нём 22 % против 24 % в среднем), поэтому сравнивать лес с правилом нужно на одном и том же наборе — 0.905 против 0.892, а не 0.905 против 0.859 по фолдам. Это число и идёт в отчёт: модель выбрали, не глядя в тест, и проверили один раз. Для бизнеса вывод прежний: правило «пеший — опоздает» уже даёт почти всю пользу, а модель стоит внедрять, только если эти полтора пункта чего-то стоят.
 
 ## task: peek | Цена подглядывания | plus
 
@@ -988,7 +988,7 @@ _raw = []
 for _rs in range(10):
     _k = _KF(n_splits=5, shuffle=True, random_state=_rs)
     _f = _cvs(_RF(n_estimators=30, random_state=0), _X, _y, cv=_k).mean()
-    _q = _np.mean([(_r.iloc[te] == _y.iloc[te]).mean() for tr, te in _k.split(_X)])
+    _q = _np.mean([(_r.iloc[va] == _y.iloc[va]).mean() for tr, va in _k.split(_X)])
     _raw.append((_f - _q) * 100)
 _g = [float(v) for v in need('gaps')]
 assert len(_g) == 10, f'В gaps {len(_g)} чисел, а повторов 10 (random_state от 0 до 9).'
@@ -1014,7 +1014,7 @@ gaps = []
 for rs in range(10):
     kf = KFold(n_splits=5, shuffle=True, random_state=rs)
     forest = cross_val_score(RandomForestClassifier(n_estimators=30, random_state=0), X, y, cv=kf).mean()
-    by_rule = np.mean([(rule.iloc[te] == y.iloc[te]).mean() for tr, te in kf.split(X)])
+    by_rule = np.mean([(rule.iloc[va] == y.iloc[va]).mean() for tr, va in kf.split(X)])
     gaps.append(round((forest - by_rule) * 100, 1))
 wins = sum(g > 0 for g in gaps)
 mean_gap = round(np.mean(gaps), 1)

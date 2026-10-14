@@ -33,6 +33,7 @@ recap:
 | `params` | `max_depth=6, n_estimators=200` | чтобы повторить |
 | `seed` | `0` | чтобы повторить точно |
 | `data_md5` | `1d0b70…` | на каких данных |
+| `sklearn` | `1.8.0` | какой версией библиотеки: от неё зависят параметры по умолчанию и результат |
 | `cv_auc_mean`, `cv_auc_std` | `0.905`, `0.013` | результат и его разброс |
 | `note` | «добавил признак is_new» | что изменилось и зачем |
 
@@ -49,6 +50,7 @@ import time
 import json
 import hashlib
 import pandas as pd
+import sklearn
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline, make_pipeline
@@ -76,6 +78,7 @@ def log_run(name, estimator, note=""):
     scores = cross_val_score(make(estimator), X_train, y_train, cv=CV, scoring="roc_auc")
     run = {"run_id": f"run-{len(runs) + 1:03d}", "time": time.strftime("%Y-%m-%d %H:%M"),
            "model": name, "params": json.dumps(estimator.get_params(), default=str), "data_md5": DATA_MD5[:8],
+           "sklearn": sklearn.__version__,
            "cv_auc_mean": round(scores.mean(), 4), "cv_auc_std": round(scores.std(), 4), "note": note}
     runs.append(run)
     return run
@@ -91,7 +94,7 @@ print(journal[["run_id", "model", "cv_auc_mean", "cv_auc_std", "note"]])
 
 - `CV = StratifiedKFold(..., shuffle=True, random_state=0)` — разбиение на фолды задаём **один раз** и используем во всех запусках. Тогда все модели проверяются на одних и тех же кусках данных, и их можно честно сравнивать.
 - `make(estimator)` — конвейер собирается заново для каждого запуска; меняется только модель.
-- `estimator.get_params()` — словарь всех параметров модели (включая значения по умолчанию). `json.dumps(...)` превращает его в JSON-строку, чтобы он поместился в одну ячейку таблицы. Именно JSON, а не `str(...)`: у `str` получатся одинарные кавычки и `None`, это не JSON, и `json.loads` такую строку не прочитает. А из JSON-строки модель можно восстановить: `LogisticRegression(**json.loads(строка))` — это задача «Повторить запуск по журналу». `default=str` — страховка: если среди параметров окажется объект, который JSON не знает, он запишется строкой, а не уронит запуск.
+- `estimator.get_params()` — словарь всех параметров модели (включая значения по умолчанию). `json.dumps(...)` превращает его в JSON-строку, чтобы он поместился в одну ячейку таблицы. Именно JSON, а не `str(...)`: у `str` получатся одинарные кавычки и `None`, это не JSON, и `json.loads` такую строку не прочитает. А из JSON-строки модель можно восстановить: `LogisticRegression(**json.loads(строка))` — это задача «Повторить запуск по журналу». `default=str` — страховка: если среди параметров окажется объект, который JSON не знает, он запишется строкой, а не уронит запуск. Набор параметров зависит от версии sklearn: в новых версиях у логистической регрессии появляются и исчезают параметры, и строка `params` для той же модели выйдет другой. Поэтому версию sklearn тоже пишут в журнал.
 - `DATA_MD5[:8]` — первых восьми символов отпечатка хватает, чтобы различать версии данных на глаз.
 - `cv_auc_std` — разброс AUC по пяти фолдам. Без него среднее мало что значит (ниже увидим почему).
 - `pd.DataFrame(runs)` — список словарей превращается в таблицу; ключи стали столбцами.
@@ -297,6 +300,8 @@ print(f"она же на новых данных:            AUC {new_auc:.3f}")
 
 ```python static
 # uv add mlflow scikit-learn pandas
+# продолжение примера из раздела «Журнал руками»: запускайте в том же файле после него —
+# оттуда берутся make, X_train, y_train, CV, DATA_MD5 и импорт RandomForestClassifier
 import mlflow
 import mlflow.sklearn
 from sklearn.model_selection import cross_val_score
@@ -329,7 +334,7 @@ for depth in [3, 6, None]:
 У MLflow есть `mlflow.sklearn.autolog()`: одна строка перед обучением, и параметры, метрики на обучении и сама модель логируются автоматически. Удобно для старта, но метрики кросс-валидации и отпечаток данных всё равно лучше логировать явно.
 :::
 
-Ещё одна часть MLflow — **реестр моделей** (Model Registry): у выбранного запуска модель получает имя и версию (`churn`, версия 3) и метку стадии — например, «в работе». Сервис на FastAPI из урока «Сервис в работе: пакет, время ответа, FastAPI, тесты» загружает не файл по пути, а «текущую рабочую версию модели churn». Выкатить новую версию или откатиться — значит переставить метку, не трогая код сервиса.
+Ещё одна часть MLflow — **реестр моделей** (Model Registry): у выбранного запуска модель получает имя и версию (`churn`, версия 3) и **псевдоним** (alias) — например, `champion`, «та, что сейчас в работе». Сервис на FastAPI из урока «Сервис в работе: пакет, время ответа, FastAPI, тесты» загружает не файл по пути, а модель по псевдониму: `mlflow.sklearn.load_model("models:/churn@champion")`. Выкатить новую версию или откатиться — значит переставить псевдоним на другую версию, не трогая код сервиса. В старых версиях MLflow вместо псевдонимов были стадии (Staging, Production); сейчас они объявлены устаревшими.
 
 ## Практика
 
@@ -708,6 +713,8 @@ print(diff.round(3), mean_diff, wins, sd_lr, paired_clear)
 ## task: seed-noise | Шум от зерна | plus
 
 Оцените, сколько «шумит» лес из-за случайности. Для `random_state` от 0 до 5 посчитайте среднее AUC кросс-валидации леса `RandomForestClassifier(60, min_samples_leaf=5, random_state=s)` (фолды `CV`). Сохраните `by_seed` — список из 6 средних, `seed_sd` — их стандартное отклонение (4 знака), `seed_range` — размах (макс − мин, 4 знака). Затем сравните с разницей двух глубин из журнала: `depth_gap` — разность средних AUC лесов с `max_depth=6` и `max_depth=3` (оба `random_state=0`, 60 деревьев, `min_samples_leaf=5`), 4 знака. В `gap_within_range` — `True`, если `abs(depth_gap)` меньше `seed_range`, то есть разница глубин укладывается в размах от смены зерна.
+
+Здесь обучается 8 лесов по 5 фолдов — 40 моделей. В браузере расчёт может занять около минуты: это не зависание, дождитесь вывода.
 
 ### setup
 ```python

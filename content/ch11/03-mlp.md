@@ -93,7 +93,7 @@ AUC около 0.91 — уровень логистической регресс
 `loss_curve_` — потеря на обучении после каждой эпохи. С `early_stopping=True` sklearn откладывает 10 % обучающих данных (`validation_fraction`) и останавливается, если качество на них не растёт `n_iter_no_change` эпох подряд (по умолчанию 10):
 
 ::: tip Аналогия
-Новый бариста отрабатывает латте-арт на одних и тех же десяти чашках из учебного набора, а раз в день старший бариста оценивает его рисунок на случайной чашке «из зала». Пока оценки «из зала» растут — тренировка полезна. Если неделю они не растут, хотя учебные чашки получаются всё лучше, — бариста просто привык к учебным чашкам, и тренировку пора заканчивать. Хромает аналогия в одном: sklearn не просто останавливается, а возвращает веса из лучшего дня, как будто последних дней тренировки не было.
+Новый бариста отрабатывает латте-арт на одних и тех же десяти чашках из учебного набора, а раз в день старший бариста оценивает его рисунок на случайной чашке «из зала». Пока оценки «из зала» растут — тренировка полезна. Если неделю они не растут, хотя учебные чашки получаются всё лучше, — бариста просто привык к учебным чашкам, и тренировку пора заканчивать. Разница: sklearn не просто останавливается, а возвращает веса из лучшего дня, как будто последних дней тренировки не было.
 :::
 
 ```python
@@ -175,7 +175,7 @@ print(len(m.hidden_layer_sizes))
 
 | задача | MLP | бустинг |
 |---|---|---|
-| отток, AUC | ≈ 0.91 | ≈ 0.93 (глава 10) |
+| отток, AUC | ≈ 0.91 | ≈ 0.93 (урок «Настройка бустинга» главы 10; пересчитаете в задаче «Архитектура кросс-валидацией») |
 | минуты доставки, MAE | ≈ 4.8 | ≈ 4.2 по умолчанию, ≈ 3.8 у 300 деревьев (глава 10) |
 
 Бустинг выигрывает и требует меньше настройки. Это типичная картина для **табличных** данных: признаки уже осмысленные (дни, жалобы, расстояние), и деревья хорошо ловят пороги и взаимодействия. Сети раскрываются там, где признаков в привычном смысле нет: пиксели изображения, звук, текст. Там скрытые слои строят признаки сами (урок «Нейрон и слои») — и никакой ручной feature engineering не сравнится. Об этом главы 13–14.
@@ -371,7 +371,7 @@ assert _lines and _lines[-1] == 'True', f'Сейчас: {_lines}.'
 
 ## task: alpha-sweep | Подбор регуляризации | base
 
-Для `alpha` в `[0.0001, 0.1, 1.0, 10.0]` обучите `make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=(32,), alpha=..., max_iter=500, random_state=0))` и посчитайте AUC на обучении и на тесте. Сохраните DataFrame `res` (столбцы `alpha`, `train`, `test`, 3 знака), `best_alpha` — наибольший AUC на тесте (при равенстве — меньший alpha), и `gap_small`, `gap_big` — разрыв `train − test` при alpha 0.0001 и 10 (3 знака).
+Для `alpha` в `[0.0001, 0.1, 1.0, 10.0]` обучите `make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=(32,), alpha=..., max_iter=500, random_state=0))` и посчитайте AUC на обучении и на тесте. Сохраните DataFrame `res` (столбцы `alpha`, `train`, `test`, 3 знака), `best_alpha` — alpha с наибольшим AUC на тесте, причём выбирайте **по округлённым значениям из `res`** (при равенстве — меньший alpha), и `gap_small`, `gap_big` — разрыв `train − test` при alpha 0.0001 и 10 (3 знака).
 
 ### starter
 ```python
@@ -449,7 +449,7 @@ gap_big = round(res.loc[3, "train"] - res.loc[3, "test"], 3)
 ```
 
 ### explain
-При слабой регуляризации разрыв обучение − тест около 0.04, при alpha = 10 он становится отрицательным: модель настолько проста, что на обучении не лучше, чем на тесте. Лучшее — посередине. Это та же история «смещение против разброса», что и с глубиной дерева.
+При слабой регуляризации разрыв обучение − тест около 0.04, при alpha = 10 он становится отрицательным: модель настолько проста, что на обучении не лучше, чем на тесте. Лучшее — посередине. По округлённым AUC alpha = 0.1 и alpha = 1 дают одинаковые 0.910, и правило «при равенстве — меньший» выбирает 0.1. Без округления чуть выше alpha = 1 (0.9101 против 0.9098), но разница в четвёртом знаке — это шум одного разбиения: на тесте эти два варианта неразличимы. Поэтому проверка и просит выбирать по `res`. Это та же история «смещение против разброса», что и с глубиной дерева.
 
 ## task: loss-curve | Кривая потерь | base
 
@@ -743,7 +743,7 @@ winner = "сеть" if mae_mlp < mae_hgb else "бустинг"
 
 ## task: arch-grid | Архитектура кросс-валидацией | star
 
-Подберите архитектуру и регуляризацию сети для оттока: `GridSearchCV` по конвейеру `make_pipeline(StandardScaler(), MLPClassifier(max_iter=300, random_state=0))` с сеткой `{"mlpclassifier__hidden_layer_sizes": [(16,), (32, 16)], "mlpclassifier__alpha": [0.1, 1.0]}`, `cv=3`, `scoring="roc_auc"`. Сохраните `best_params`, `cv_auc` и `test_auc` (3 знака).
+Подберите архитектуру и регуляризацию сети для оттока: `GridSearchCV` по конвейеру `make_pipeline(StandardScaler(), MLPClassifier(max_iter=300, random_state=0))` с сеткой `{"mlpclassifier__hidden_layer_sizes": [(16,), (32, 16)], "mlpclassifier__alpha": [0.1, 1.0]}`, `cv=3`, `scoring="roc_auc"`. Сохраните `best_params`, `cv_auc` и `test_auc` (3 знака). Для сравнения обучите на том же `X_train` бустинг из главы 10 — `HistGradientBoostingClassifier(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0)` — и сохраните `hgb_auc`, его AUC на тесте (3 знака). Предупреждения `ConvergenceWarning` во время подбора ожидаемы: на части комбинаций 300 эпох не хватает, чтобы потеря перестала меняться.
 
 ### starter
 ```python
@@ -776,13 +776,16 @@ gs = _GS(_mp(_SS(), _MLP(max_iter=300, random_state=0)), {'mlpclassifier__hidden
 assert dict(need('best_params')) == gs.best_params_, f'best_params = {need("best_params")}, а нужно {gs.best_params_}.'
 assert close(need('cv_auc'), round(gs.best_score_, 3), 0.002), f'cv_auc = {need("cv_auc")}.'
 assert close(need('test_auc'), round(_auc(d, gs.predict_proba(b)[:, 1]), 3), 0.002), f'test_auc = {need("test_auc")}.'
+from sklearn.ensemble import HistGradientBoostingClassifier as _HGB
+hw = round(_auc(d, _HGB(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0).fit(a, c).predict_proba(b)[:, 1]), 3)
+assert close(need('hgb_auc'), hw, 0.002), f'hgb_auc = {need("hgb_auc")}, а нужно {hw}: бустинг с параметрами из условия на X_train, AUC на X_test.'
 ```
 
 ### hint
 Имена параметров в конвейере из `make_pipeline` — имя класса строчными буквами, два подчёркивания, параметр (глава 7).
 
 ### hint
-Сетка: `{"mlpclassifier__hidden_layer_sizes": [...], "mlpclassifier__alpha": [...]}`; лучшие параметры — `grid.best_params_`.
+Сетка: `{"mlpclassifier__hidden_layer_sizes": [...], "mlpclassifier__alpha": [...]}`; лучшие параметры — `grid.best_params_`, AUC кросс-валидации — `grid.best_score_`. Бустинг: `from sklearn.ensemble import HistGradientBoostingClassifier`, `.fit(X_train, y_train)` и `roc_auc_score` по `predict_proba(X_test)[:, 1]`.
 
 ### solution
 ```python
@@ -805,7 +808,13 @@ grid.fit(X_train, y_train)
 best_params = grid.best_params_
 cv_auc = round(grid.best_score_, 3)
 test_auc = round(roc_auc_score(y_test, grid.predict_proba(X_test)[:, 1]), 3)
+
+from sklearn.ensemble import HistGradientBoostingClassifier
+hgb = HistGradientBoostingClassifier(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0)
+hgb.fit(X_train, y_train)
+hgb_auc = round(roc_auc_score(y_test, hgb.predict_proba(X_test)[:, 1]), 3)
+print(best_params, cv_auc, test_auc, hgb_auc)
 ```
 
 ### explain
-Лучшей оказывается простая сеть с заметной регуляризацией — на 1 800 строках глубина не нужна. Даже после подбора сеть не обгоняет бустинг из главы 10: для табличных данных это нормальный итог.
+Лучшей оказывается простая сеть с заметной регуляризацией — один слой из 16 нейронов и alpha = 1: на 1 800 строках глубина не нужна. AUC кросс-валидации (0.879) ниже, чем на тесте (0.91), и это не ошибка: в каждом фолде сеть учится на 1 200 строках вместо 1 800, а сами фолды заметно различаются (от 0.863 до 0.895) — тестовая четверть на этом разбиении просто «удобнее» средней. У бустинга то же самое: на тех же трёх фолдах его AUC от 0.881 до 0.921, а на тесте 0.93. Сравнивать модели честно на одной и той же схеме — и на тесте бустинг даёт 0.93 против 0.91 у сети: даже после подбора сеть его не обгоняет, для табличных данных это нормальный итог.

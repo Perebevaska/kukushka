@@ -98,7 +98,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert printed_line('Чашек продано: 120'), 'Ожидалась строка «Чашек продано: 120». Подсказка: пробел между значениями print поставит сам.'\nassert has_literal(120), 'Число 120 должно быть числом, а не частью текста в кавычках.'",
+   "check": "assert printed_line('Чашек продано: 120'), f'Ожидалась строка «Чашек продано: 120». Сейчас вывод: {_lines}. Пробел между значениями print поставит сам — лишний пробел в конце текста даст два пробела подряд.'\nassert has_literal(120), 'Число 120 должно быть числом, а не частью текста в кавычках.'",
    "starter": "",
    "solution": "print(\"Чашек продано:\", 120)",
    "hints": [
@@ -1072,7 +1072,7 @@
     "Пройдите по номерам позиций: `for i in range(len(revenue)):`.",
     "Внутри: `avg_checks.append(round(revenue[i] / orders[i]))` — один и тот же `i` для обоих списков."
    ],
-   "explain": "Средний чек по дням — 317, 321, 322, 337 ₽. Цикл по номерам позиций — способ пройти два списка «в ногу»; позже для этого будет `zip`."
+   "explain": "Средний чек по дням — 317, 321, 322, 337 ₽. Цикл по номерам позиций — способ пройти два списка «в ногу»; позже для этого появится способ короче."
   },
   "ch01/05-for/cumsum": {
    "chapter": "ch01",
@@ -1914,26 +1914,26 @@
    ],
    "explain": "Проверка на ноль — первой строкой: если заказов нет, до деления дело не доходит. «Защитные» проверки в начале функции избавляют от `ZeroDivisionError` в отчёте за пустой день."
   },
-  "ch01/09-functions/rub": {
+  "ch01/09-functions/pct": {
    "chapter": "ch01",
    "lesson": "09-functions",
    "lesson_title": "Функции",
-   "id": "rub",
-   "title": "Рубли для отчёта",
+   "id": "pct",
+   "title": "Доля в процентах",
    "level": "base",
    "exam": false,
    "parsons": false,
    "files": [],
    "display": false,
    "setup": "",
-   "check": "f = need('rub')\nassert f(1314000.456) == '1 314 000 ₽', f'rub(1314000.456) = {f(1314000.456)!r}.'\nassert f(1314000.456, 2) == '1 314 000.46 ₽', f'rub(1314000.456, 2) = {f(1314000.456, 2)!r}.'\nassert f(950) == '950 ₽', f'rub(950) = {f(950)!r}.'",
-   "starter": "def rub(amount, decimals=0):\n    ...",
-   "solution": "def rub(amount, decimals=0):\n    text = f\"{amount:,.{decimals}f}\".replace(\",\", \" \")\n    return text + \" ₽\"",
+   "check": "f = need('pct')\nassert f(412, 1247) == '33.0 %', f'pct(412, 1247) = {f(412, 1247)!r}, а нужно \"33.0 %\". Доля — part / total * 100, по умолчанию один знак.'\nassert f(412, 1247, 0) == '33 %', f'pct(412, 1247, 0) = {f(412, 1247, 0)!r}. Число знаков должно браться из параметра decimals.'\nassert f(412, 1247, decimals=2) == '33.04 %', f'pct(412, 1247, decimals=2) = {f(412, 1247, decimals=2)!r}.'\nassert f(1, 3, 2) == '33.33 %', f'pct(1, 3, 2) = {f(1, 3, 2)!r}.'\nassert f(5, 0) == '—', f'pct(5, 0) = {f(5, 0)!r}. При total == 0 верните \"—\" до деления.'",
+   "starter": "def pct(part, total, decimals=1):\n    ...",
+   "solution": "def pct(part, total, decimals=1):\n    if total == 0:\n        return \"—\"\n    return f\"{part / total * 100:.{decimals}f} %\"",
    "hints": [
-    "Ширину дробной части можно подставить внутрь формата: `f\"{amount:,.{decimals}f}\"`. Пример есть в теории.",
-    "Далее `.replace(\",\", \" \")` и `+ \" ₽\"` — или всё одной f-строкой."
+    "Сначала условие: `if total == 0: return \"—\"` — до деления. Потом доля `part / total * 100` и f-строка.",
+    "Число знаков подставляется внутрь формата так же, как в `rub` из теории: `f\"{x:.{decimals}f} %\"`."
    ],
-   "explain": "Параметр по умолчанию `decimals=0` делает частый случай коротким (`rub(x)`), а редкий — возможным (`rub(x, 2)`). Так устроены почти все функции pandas."
+   "explain": "Параметр по умолчанию `decimals=1` делает частый случай коротким (`pct(a, b)`), а редкий — возможным (`pct(a, b, 2)` или понятнее — `pct(a, b, decimals=2)`). Так устроены почти все функции pandas. Проверка на ноль стоит до деления: `return \"—\"` сразу завершает функцию, и до `part / total` дело не доходит."
   },
   "ch01/09-functions/count-above": {
    "chapter": "ch01",
@@ -2019,50 +2019,6 @@
    ],
    "explain": "Функция `report_line` ничего не считает сама: денежный формат даёт `rub`, деление с защитой от нуля — `avg_check`. Если завтра формат денег поменяется (например, понадобятся копейки через запятую), правка будет в одном месте, а все отчёты подхватят её автоматически. Обратите внимание на `return`, а не `print`: функция отдаёт строку, и дальше её можно напечатать, записать в файл или склеить с другими строками."
   },
-  "ch01/09-functions/snake": {
-   "chapter": "ch01",
-   "lesson": "09-functions",
-   "lesson_title": "Функции",
-   "id": "snake",
-   "title": "Имена по PEP 8",
-   "level": "warmup",
-   "exam": false,
-   "parsons": false,
-   "files": [],
-   "display": false,
-   "setup": "",
-   "check": "import ast as _ast\n_tree = _ast.parse(_code)\n_names = {n.id for n in _ast.walk(_tree) if isinstance(n, _ast.Name) and isinstance(n.ctx, _ast.Store)}\n_bad = sorted(x for x in _names if x != x.lower() and x != x.upper())\nassert not _bad, f'Остались имена не в snake_case: {_bad}. Маленькие буквы и подчёркивание между словами.'\nassert {'total_revenue', 'orders_count', 'avg_check', 'VAT_RATE', 'vat'} <= _names, f'Нужны переменные total_revenue, orders_count, avg_check, VAT_RATE и vat. Сейчас присваиваются: {sorted(_names)}.'\nassert need('VAT_RATE') == 0.2, f'VAT_RATE = {need(\"VAT_RATE\")!r}. Ставка НДС — 0.2.'\nassert need('avg_check') == 325.12, f'avg_check = {need(\"avg_check\")!r}. Переименование не должно менять расчёт.'\nassert need('vat') == 54.19, f'vat = {need(\"vat\")!r}. Формула та же, только вместо 0.2 — VAT_RATE.'\nassert '0.2' not in _code.replace('VAT_RATE = 0.2', '').replace('VAT_RATE=0.2', ''), 'Число 0.2 должно встречаться только один раз — в объявлении VAT_RATE. Дальше используйте константу.'",
-   "starter": "TotalRevenue = 84530\nOrdersCount = 260\navgCheck = round(TotalRevenue / OrdersCount, 2)\nvat = round(avgCheck * 0.2 / (1 + 0.2), 2)\nprint(avgCheck, vat)",
-   "solution": "VAT_RATE = 0.2\ntotal_revenue = 84530\norders_count = 260\navg_check = round(total_revenue / orders_count, 2)\nvat = round(avg_check * VAT_RATE / (1 + VAT_RATE), 2)\nprint(avg_check, vat)",
-   "hints": [
-    "Переменные — snake_case: маленькие буквы, слова через `_`. Константы — заглавными: `VAT_RATE`. Переименовывать нужно везде, где имя встречается, а не только при объявлении.",
-    "Первой строкой объявите `VAT_RATE = 0.2`, а в формуле НДС замените оба `0.2` на `VAT_RATE`.",
-    "```python\nVAT_RATE = 0.2\ntotal_revenue = 84530\norders_count = ...\navg_check = round(... / ..., 2)\nvat = round(avg_check * VAT_RATE / (1 + ...), 2)\n```"
-   ],
-   "explain": ""
-  },
-  "ch01/09-functions/tidy": {
-   "chapter": "ch01",
-   "lesson": "09-functions",
-   "lesson_title": "Функции",
-   "id": "tidy",
-   "title": "Причешите функцию",
-   "level": "base",
-   "exam": false,
-   "parsons": false,
-   "files": [],
-   "display": false,
-   "setup": "",
-   "check": "import ast as _ast, io as _io, tokenize as _tk\ntry:\n    _tree = _ast.parse(_code)\nexcept SyntaxError as _e:\n    raise AssertionError(f'Код не разбирается: {_e.msg} (строка {_e.lineno}). Проверьте отступы и двоеточия.')\n_fns = [n for n in _ast.walk(_tree) if isinstance(n, _ast.FunctionDef)]\nassert len(_fns) == 1, 'Должна остаться одна функция — переименованная AvgCheck.'\n_f = _fns[0]\nassert _f.name == 'avg_check', f'Функция называется {_f.name}. По PEP 8 — avg_check.'\nassert [a.arg for a in _f.args.args] == ['revenue', 'orders'], f'Параметры: {[a.arg for a in _f.args.args]}. Нужны revenue и orders.'\n_g = need('avg_check')\nassert _g(84530, 260) == 325.12 and _g(500, 0) == 0, 'Логика функции изменилась: avg_check(84530, 260) должна вернуть 325.12, avg_check(500, 0) — 0.'\nfor _n in _ast.walk(_tree):\n    if isinstance(_n, _ast.If):\n        assert _n.body[0].lineno != _n.lineno, f'Строка {_n.lineno}: условие и действие в одной строке. Перенесите return 0 на новую строку с отступом.'\nfor _i, _ln in enumerate(_code.splitlines(), 1):\n    if not _ln.strip():\n        continue\n    assert '\\t' not in _ln[:len(_ln) - len(_ln.lstrip())], f'Строка {_i}: в отступе табуляция. Нужны пробелы.'\n    _ind = len(_ln) - len(_ln.lstrip(' '))\n    assert _ind % 4 == 0, f'Строка {_i}: отступ {_ind} пробела. По PEP 8 — кратно 4.'\n_toks = [t for t in _tk.generate_tokens(_io.StringIO(_code).readline) if t.type not in (_tk.COMMENT, _tk.NL, _tk.NEWLINE, _tk.INDENT, _tk.DEDENT, _tk.ENDMARKER)]\n_depth = 0\nfor _k, _t in enumerate(_toks):\n    if _t.type != _tk.OP:\n        continue\n    if _t.string in '([{':\n        _depth += 1\n    elif _t.string in ')]}':\n        _depth -= 1\n    _prev = _toks[_k - 1] if _k else None\n    _next = _toks[_k + 1] if _k + 1 < len(_toks) else None\n    _gap_l = _prev is not None and _prev.end[0] == _t.start[0] and _prev.end[1] < _t.start[1]\n    _gap_r = _next is not None and _next.start[0] == _t.end[0] and _next.start[1] > _t.end[1]\n    _where = f'Строка {_t.start[0]}'\n    if _t.string == ',' and _next is not None and _next.string not in ')]}' and _next.start[0] == _t.end[0]:\n        assert _gap_r, f'{_where}: после запятой нужен пробел.'\n    if _t.string in ('==', '!=', '/', '<', '>', '<=', '>='):\n        assert _gap_l and _gap_r, f'{_where}: вокруг {_t.string} нужны пробелы с обеих сторон.'\n    if _t.string == '=' and _depth > 0:\n        assert not _gap_l and not _gap_r, f'{_where}: у именованного аргумента пробелов вокруг = нет: ndigits=2.'\n    if _t.string == '=' and _depth == 0:\n        assert _gap_l and _gap_r, f'{_where}: вокруг = в присваивании нужны пробелы.'",
-   "starter": "def AvgCheck(Revenue,Orders):\n  if Orders==0: return 0\n  return round(Revenue/Orders,ndigits = 2)\nresult=AvgCheck(84530,260)\nprint(result)",
-   "solution": "def avg_check(revenue, orders):\n    if orders == 0:\n        return 0\n    return round(revenue / orders, ndigits=2)\n\n\nresult = avg_check(84530, 260)\nprint(result)",
-   "hints": [
-    "Начните с имён: `def avg_check(revenue, orders):` — и не забудьте переименовать их в теле и в вызове. Потом — отступы по 4 пробела.",
-    "`if orders == 0:` — отдельной строкой, под ней с отступом `return 0`. В `round(...)` — пробелы вокруг `/`, после запятой, а `ndigits=2` пишется слитно.",
-    "```python\ndef avg_check(revenue, orders):\n    if orders == 0:\n        return ...\n    return round(revenue / orders, ndigits=2)\n\n\nresult = avg_check(..., ...)\nprint(result)\n```"
-   ],
-   "explain": "Логика не изменилась — функция по-прежнему возвращает 325.12, — а читается заметно легче: имя говорит, что считается, отступы показывают вложенность, пробелы отделяют операнды. Пробелы и отступы на работе расставляет `ruff format`, но имена ни один форматтер за вас не придумает. Если бы вы переименовали функцию только в `def`, а в вызове оставили `AvgCheck(...)`, код упал бы с `NameError: name 'AvgCheck' is not defined` — переименование всегда делают во всех местах сразу."
-  },
   "ch01/09-functions/count-by": {
    "chapter": "ch01",
    "lesson": "09-functions",
@@ -2138,7 +2094,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('top2_sum') == 2430, f'top2_sum = {need(\"top2_sum\")}. Два крупнейших — 1280 и 1150.'\nassert not has_literal(1280) or _code.count('1280') == 1, 'Найдите крупнейшие чеки кодом.'",
+   "check": "assert need('top2_sum') == 2430, f'top2_sum = {need(\"top2_sum\")}. Два крупнейших — 1280 и 1150.'\nassert not has_literal(2430) and _code.count('1280') == 1 and _code.count('1150') == 1, 'Найдите крупнейшие чеки кодом: числа 1280, 1150 и 2430 не нужно писать вручную — они должны получиться из списка checks.'",
    "starter": "checks = [450, 1280, 320, 990, 610, 1150]",
    "solution": "checks = [450, 1280, 320, 990, 610, 1150]\ntop2_sum = sum(sorted(checks, reverse=True)[:2])",
    "hints": [
@@ -2335,6 +2291,113 @@
     "Внутри функции: `city, cups, price = line.split(\";\")`, затем верните список с `int(...)`."
    ],
    "explain": "Пустая строка после `strip()` — это `\"\"`, поэтому условие `line.strip() != \"\"` её пропускает. Короче то же самое пишут `if line.strip():` — пустая строка в условии считается ложью. Позже (в уроке про исключения) встретится и другая запись: `if not line.strip(): continue` — «пропусти остаток тела и переходи к следующей строке»."
+  },
+  "ch01/09b-style/spaces": {
+   "chapter": "ch01",
+   "lesson": "09b-style",
+   "lesson_title": "Стиль кода: PEP 8",
+   "id": "spaces",
+   "title": "Расставьте пробелы",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": false,
+   "setup": "",
+   "check": "import io as _io, tokenize as _tk\nassert need('revenue') == 84460 and need('share') == 6.4, f'Расчёт изменился: revenue = {need(\"revenue\")!r}, share = {need(\"share\")!r}. Должно быть 84460 и 6.4 — меняются только пробелы.'\n_toks = [t for t in _tk.generate_tokens(_io.StringIO(_code).readline) if t.type not in (_tk.COMMENT, _tk.NL, _tk.NEWLINE, _tk.INDENT, _tk.DEDENT, _tk.ENDMARKER)]\n_depth = 0\nfor _k, _t in enumerate(_toks):\n    if _t.type != _tk.OP:\n        continue\n    if _t.string in '([{':\n        _depth += 1\n    elif _t.string in ')]}':\n        _depth -= 1\n    _prev = _toks[_k - 1] if _k else None\n    _next = _toks[_k + 1] if _k + 1 < len(_toks) else None\n    _gap_l = _prev is not None and _prev.end[0] == _t.start[0] and _prev.end[1] < _t.start[1]\n    _gap_r = _next is not None and _next.start[0] == _t.end[0] and _next.start[1] > _t.end[1]\n    _where = f'Строка {_t.start[0]}'\n    if _t.string == ',' and _next is not None and _next.string not in ')]}' and _next.start[0] == _t.end[0]:\n        assert _gap_r, f'{_where}: после запятой нужен пробел.'\n    if _t.string in ('*', '/', '+', '-') and _prev is not None and _prev.type in (_tk.NAME, _tk.NUMBER) or _t.string in ('*', '/', '+', '-') and _prev is not None and _prev.string == ')':\n        assert _gap_l and _gap_r, f'{_where}: вокруг {_t.string} нужны пробелы с обеих сторон.'\n    if _t.string == '=' and _depth > 0:\n        assert not _gap_l and not _gap_r, f'{_where}: у именованного аргумента пробелов вокруг = нет: ndigits=1.'\n    if _t.string == '=' and _depth == 0:\n        assert _gap_l and _gap_r, f'{_where}: вокруг = в присваивании нужны пробелы.'",
+   "starter": "cups=412\nprice=205\nrevenue=cups*price\nshare=round(revenue/1314000*100,ndigits = 1)\nprint(revenue,share)",
+   "solution": "cups = 412\nprice = 205\nrevenue = cups * price\nshare = round(revenue / 1314000 * 100, ndigits=1)\nprint(revenue, share)",
+   "hints": [
+    "По таблице: `x = a * b` — пробелы вокруг `=` и арифметики, `f(a, b)` — пробел после запятой.",
+    "Единственное слитное `=` — в аргументе: `round(..., ndigits=1)`. Строка с долей целиком: `share = round(revenue / 1314000 * 100, ndigits=1)`."
+   ],
+   "explain": "Пермь дала 84 460 ₽ — 6.4 % выручки сети. Пробелы ничего не изменили в расчёте, зато в последней строке теперь видно, где деление, где умножение, а где аргумент функции. Слитное `ndigits=1` — сигнал глазу: это не присваивание, а имя аргумента."
+  },
+  "ch01/09b-style/snake": {
+   "chapter": "ch01",
+   "lesson": "09b-style",
+   "lesson_title": "Стиль кода: PEP 8",
+   "id": "snake",
+   "title": "Имена по PEP 8",
+   "level": "warmup",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": false,
+   "setup": "",
+   "check": "import ast as _ast\n_tree = _ast.parse(_code)\n_names = {n.id for n in _ast.walk(_tree) if isinstance(n, _ast.Name) and isinstance(n.ctx, _ast.Store)}\n_bad = sorted(x for x in _names if x != x.lower() and x != x.upper())\nassert not _bad, f'Остались имена не в snake_case: {_bad}. Маленькие буквы и подчёркивание между словами.'\nassert {'total_revenue', 'orders_count', 'avg_check', 'VAT_RATE', 'vat'} <= _names, f'Нужны переменные total_revenue, orders_count, avg_check, VAT_RATE и vat. Сейчас присваиваются: {sorted(_names)}.'\nassert need('VAT_RATE') == 0.2, f'VAT_RATE = {need(\"VAT_RATE\")!r}. Ставка НДС — 0.2.'\nassert need('avg_check') == 325.12, f'avg_check = {need(\"avg_check\")!r}. Переименование не должно менять расчёт.'\nassert need('vat') == 54.19, f'vat = {need(\"vat\")!r}. Формула та же, только вместо 0.2 — VAT_RATE.'\nassert '0.2' not in _code.replace('VAT_RATE = 0.2', '').replace('VAT_RATE=0.2', ''), 'Число 0.2 должно встречаться только один раз — в объявлении VAT_RATE. Дальше используйте константу.'",
+   "starter": "TotalRevenue = 84530\nOrdersCount = 260\navgCheck = round(TotalRevenue / OrdersCount, 2)\nvat = round(avgCheck * 0.2 / (1 + 0.2), 2)\nprint(avgCheck, vat)",
+   "solution": "VAT_RATE = 0.2\ntotal_revenue = 84530\norders_count = 260\navg_check = round(total_revenue / orders_count, 2)\nvat = round(avg_check * VAT_RATE / (1 + VAT_RATE), 2)\nprint(avg_check, vat)",
+   "hints": [
+    "Переменные — snake_case: маленькие буквы, слова через `_`. Константы — заглавными: `VAT_RATE`. Переименовывать нужно везде, где имя встречается, а не только при объявлении.",
+    "Первой строкой объявите `VAT_RATE = 0.2`, а в формуле НДС замените оба `0.2` на `VAT_RATE`.",
+    "```python\nVAT_RATE = 0.2\ntotal_revenue = 84530\norders_count = ...\navg_check = round(... / ..., 2)\nvat = round(avg_check * VAT_RATE / (1 + ...), 2)\n```"
+   ],
+   "explain": ""
+  },
+  "ch01/09b-style/long-line": {
+   "chapter": "ch01",
+   "lesson": "09b-style",
+   "lesson_title": "Стиль кода: PEP 8",
+   "id": "long-line",
+   "title": "Длинная сумма",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": false,
+   "setup": "",
+   "check": "_long = [(i, len(ln)) for i, ln in enumerate(_code.splitlines(), 1) if len(ln) > 79]\nassert not _long, f'Слишком длинные строки (номер, длина): {_long}. По PEP 8 — не длиннее 79 символов.'\nassert '\\\\' not in _code, 'Перенос через обратную косую черту не нужен: откройте круглую скобку, и Python сам поймёт, что выражение продолжается.'\nassert need('total_revenue') == 424182, f'total_revenue = {need(\"total_revenue\")!r}, а должно быть 424182. Перенос не должен терять слагаемые.'\nassert 'total_revenue = (' in _code or 'total_revenue=(' in _code, 'Сумму нужно взять в круглые скобки: total_revenue = ( ... ).'",
+   "starter": "perm_revenue = 84460\nkazan_revenue = 106524\ntyumen_revenue = 63558\nufa_revenue = 71230\nekb_revenue = 98410\ntotal_revenue = perm_revenue + kazan_revenue + tyumen_revenue + ufa_revenue + ekb_revenue\nprint(total_revenue)",
+   "solution": "perm_revenue = 84460\nkazan_revenue = 106524\ntyumen_revenue = 63558\nufa_revenue = 71230\nekb_revenue = 98410\ntotal_revenue = (\n    perm_revenue + kazan_revenue + tyumen_revenue\n    + ufa_revenue + ekb_revenue\n)\nprint(total_revenue)",
+   "hints": [
+    "Сразу после `=` откройте скобку `(` и закончите строку. Слагаемые — на следующих строках с отступом 4 пробела, в конце — закрывающая `)` на отдельной строке.",
+    "```python\ntotal_revenue = (\n    perm_revenue + kazan_revenue + tyumen_revenue\n    + ...\n)\n```"
+   ],
+   "explain": "Итог тот же — 424 182 ₽: пока скобка открыта, Python читает несколько строк как одно выражение. Исходная строка занимала 89 символов; после переноса каждая часть читается без прокрутки, а `+` в начале строки сразу показывает, что это продолжение суммы."
+  },
+  "ch01/09b-style/tidy": {
+   "chapter": "ch01",
+   "lesson": "09b-style",
+   "lesson_title": "Стиль кода: PEP 8",
+   "id": "tidy",
+   "title": "Причешите функцию",
+   "level": "base",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": false,
+   "setup": "",
+   "check": "import ast as _ast, io as _io, tokenize as _tk\ntry:\n    _tree = _ast.parse(_code)\nexcept SyntaxError as _e:\n    raise AssertionError(f'Код не разбирается: {_e.msg} (строка {_e.lineno}). Проверьте отступы и двоеточия.')\n_fns = [n for n in _ast.walk(_tree) if isinstance(n, _ast.FunctionDef)]\nassert len(_fns) == 1, 'Должна остаться одна функция — переименованная AvgCheck.'\n_f = _fns[0]\nassert _f.name == 'avg_check', f'Функция называется {_f.name}. По PEP 8 — avg_check.'\nassert [a.arg for a in _f.args.args] == ['revenue', 'orders'], f'Параметры: {[a.arg for a in _f.args.args]}. Нужны revenue и orders.'\n_g = need('avg_check')\nassert _g(84530, 260) == 325.12 and _g(500, 0) == 0, 'Логика функции изменилась: avg_check(84530, 260) должна вернуть 325.12, avg_check(500, 0) — 0.'\nfor _n in _ast.walk(_tree):\n    if isinstance(_n, _ast.If):\n        assert _n.body[0].lineno != _n.lineno, f'Строка {_n.lineno}: условие и действие в одной строке. Перенесите return 0 на новую строку с отступом.'\nfor _i, _ln in enumerate(_code.splitlines(), 1):\n    if not _ln.strip():\n        continue\n    assert '\\t' not in _ln[:len(_ln) - len(_ln.lstrip())], f'Строка {_i}: в отступе табуляция. Нужны пробелы.'\n    _ind = len(_ln) - len(_ln.lstrip(' '))\n    assert _ind % 4 == 0, f'Строка {_i}: отступ {_ind} пробела. По PEP 8 — кратно 4.'\n_toks = [t for t in _tk.generate_tokens(_io.StringIO(_code).readline) if t.type not in (_tk.COMMENT, _tk.NL, _tk.NEWLINE, _tk.INDENT, _tk.DEDENT, _tk.ENDMARKER)]\n_depth = 0\nfor _k, _t in enumerate(_toks):\n    if _t.type != _tk.OP:\n        continue\n    if _t.string in '([{':\n        _depth += 1\n    elif _t.string in ')]}':\n        _depth -= 1\n    _prev = _toks[_k - 1] if _k else None\n    _next = _toks[_k + 1] if _k + 1 < len(_toks) else None\n    _gap_l = _prev is not None and _prev.end[0] == _t.start[0] and _prev.end[1] < _t.start[1]\n    _gap_r = _next is not None and _next.start[0] == _t.end[0] and _next.start[1] > _t.end[1]\n    _where = f'Строка {_t.start[0]}'\n    if _t.string == ',' and _next is not None and _next.string not in ')]}' and _next.start[0] == _t.end[0]:\n        assert _gap_r, f'{_where}: после запятой нужен пробел.'\n    if _t.string in ('==', '!=', '/', '<', '>', '<=', '>='):\n        assert _gap_l and _gap_r, f'{_where}: вокруг {_t.string} нужны пробелы с обеих сторон.'\n    if _t.string == '=' and _depth > 0:\n        assert not _gap_l and not _gap_r, f'{_where}: у именованного аргумента пробелов вокруг = нет: ndigits=2.'\n    if _t.string == '=' and _depth == 0:\n        assert _gap_l and _gap_r, f'{_where}: вокруг = в присваивании нужны пробелы.'",
+   "starter": "def AvgCheck(Revenue,Orders):\n  if Orders==0: return 0\n  return round(Revenue/Orders,ndigits = 2)\nresult=AvgCheck(84530,260)\nprint(result)",
+   "solution": "def avg_check(revenue, orders):\n    if orders == 0:\n        return 0\n    return round(revenue / orders, ndigits=2)\n\n\nresult = avg_check(84530, 260)\nprint(result)",
+   "hints": [
+    "Начните с имён: `def avg_check(revenue, orders):` — и не забудьте переименовать их в теле и в вызове. Потом — отступы по 4 пробела.",
+    "`if orders == 0:` — отдельной строкой, под ней с отступом `return 0`. В `round(...)` — пробелы вокруг `/`, после запятой, а `ndigits=2` пишется слитно.",
+    "```python\ndef avg_check(revenue, orders):\n    if orders == 0:\n        return ...\n    return round(revenue / orders, ndigits=2)\n\n\nresult = avg_check(..., ...)\nprint(result)\n```"
+   ],
+   "explain": "Логика не изменилась — функция по-прежнему возвращает 325.12, — а читается заметно легче: имя говорит, что считается, отступы показывают вложенность, пробелы отделяют операнды. Пробелы и отступы на работе расставляет форматтер, но имена ни один форматтер за вас не придумает. Если бы вы переименовали функцию только в `def`, а в вызове оставили `AvgCheck(...)`, код упал бы с `NameError: name 'AvgCheck' is not defined` — переименование всегда делают во всех местах сразу."
+  },
+  "ch01/09b-style/review": {
+   "chapter": "ch01",
+   "lesson": "09b-style",
+   "lesson_title": "Стиль кода: PEP 8",
+   "id": "review",
+   "title": "Найдите нарушения",
+   "level": "plus",
+   "exam": false,
+   "parsons": false,
+   "files": [],
+   "display": false,
+   "setup": "",
+   "check": "_b = need('bad')\nassert isinstance(_b, (list, tuple, set)), 'bad — список номеров строк, например [1, 4].'\n_got = sorted(int(x) for x in _b)\n_hint = {\n    1: 'Строка 1 в порядке: константа заглавными, пробелы вокруг =.',\n    2: 'Строка 2: avgCheck — имя не в snake_case, нужно avg_check.',\n    3: 'Строка 3: у именованного аргумента ndigits = 2 лишние пробелы — нужно ndigits=2.',\n    4: 'Строка 4 в порядке: пробел после каждой запятой.',\n    5: 'Строка 5: if и действие в одной строке — print нужно перенести на новую строку с отступом.',\n    6: 'Строка 6 в порядке: имена в snake_case.',\n}\nfor _n in [1, 2, 3, 4, 5, 6]:\n    if (_n in _got) != (_n in (2, 3, 5)):\n        raise AssertionError(_hint[_n] + f' Сейчас bad = {_got}.')\nassert _got == [2, 3, 5], f'bad = {_got}. Каждый номер — один раз.'",
+   "starter": "bad = []",
+   "solution": "bad = [2, 3, 5]",
+   "hints": [
+    "Пройдите по таблице правил строка за строкой: имена, пробелы вокруг `=` в присваивании и в аргументе, запятые, `if` в одну строку.",
+    "Нарушений три. Одно — в имени, одно — в пробелах у именованного аргумента, одно — в записи `if`."
+   ],
+   "explain": "Строка 2 — имя в стиле других языков (`avgCheck` → `avg_check`). Строка 3 — пробелы вокруг `=` у именованного аргумента (`ndigits=2`). Строка 5 — условие и действие в одной строке. Строки 1, 4 и 6 оформлены верно: `VAT_RATE` — константа, поэтому заглавными. Найти нарушения глазами — тот же навык, что нужен на ревью чужого кода: форматтер исправил бы пробелы в строках 3 и 5, но имя в строке 2 осталось бы прежним."
   },
   "ch01/10-tuples-sets/unpack": {
    "chapter": "ch01",
@@ -2838,7 +2901,7 @@
     "Это пример из «Разберём вместе».",
     "Цикл, в нём `try: total += int(x)` и `except ValueError: bad += 1`."
    ],
-   "explain": "Хорошие суммы — 450, 320, 1 180, 275, 640: итого 2 865. Плохих строк три: пустая, прочерк и «1 250» с пробелом. Последняя на самом деле число: в работе её стоило бы почистить через `replace`, как в уроке «Строки и f-строки», — здесь условие нарочно просило считать её битой."
+   "explain": "Хорошие суммы — 450, 320, 1 180, 275, 640: итого 2 865. Плохих строк три: пустая, прочерк и «1 250» с пробелом. Последнюю можно было бы починить через `replace`, как в уроке «Строки и f-строки», но пробел внутри числа значит, что выгрузка нарушила свой формат. Молча чинить такое — прятать проблему, поэтому условие просит отложить строку и посчитать её; так же поступим в уроке «Файлы, CSV и модули» и в мини-проекте."
   },
   "ch01/12-errors/to-float": {
    "chapter": "ch01",
@@ -3077,14 +3140,14 @@
    ],
    "display": false,
    "setup": "",
-   "check": "import csv as _csv\nt, b = 0, 0\nfor r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        t += int(r['amount'])\n    except ValueError:\n        b += 1\nassert need('total') == t, f'total = {need(\"total\")}, а должно быть {t}.'\nassert need('bad') == b, f'bad = {need(\"bad\")}, а битых сумм {b}.'",
+   "check": "import csv as _csv\nt, b = 0, 0\nfor r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        t += int(r['amount'])\n    except ValueError:\n        b += 1\nassert need('total') != t + 1250, f'total = {need(\"total\")}: похоже, сумма «1 250» починена и учтена. В этом уроке её считаем битой — пропустите и посчитайте в bad.'\nassert need('total') == t, f'total = {need(\"total\")}, а должно быть {t}.'\nassert need('bad') == b, f'bad = {need(\"bad\")}, а битых сумм {b}.'",
    "starter": "import csv",
    "solution": "import csv\ntotal = 0\nbad = 0\nwith open(\"orders.csv\", encoding=\"utf-8\") as f:\n    for row in csv.DictReader(f):\n        try:\n            total += int(row[\"amount\"])\n        except ValueError:\n            bad += 1",
    "hints": [
     "Сумма — строка: `int(row[\"amount\"])`. Обёртка `try/except ValueError` из прошлого урока.",
     "Два накопителя до `with`: `total = 0`, `bad = 0`; в `except` — `bad += 1`."
    ],
-   "explain": "Хорошие заказы дают 16 820 ₽, битых сумм — 3. Счётчик плохих строк — часть результата: «выручка 16 820, не разобрано 3 строки» честнее, чем просто «16 820»."
+   "explain": "Хорошие заказы дают 16 820 ₽, битых сумм — 3: пустая, прочерк и `1 250`. Счётчик плохих строк — часть результата: «выручка 16 820, не разобрано 3 строки» честнее, чем просто «16 820»."
   },
   "ch01/13-files/by-city": {
    "chapter": "ch01",
@@ -3101,7 +3164,7 @@
    ],
    "display": false,
    "setup": "",
-   "check": "import csv as _csv\nwant = {}\nfor r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        a = int(r['amount'])\n    except ValueError:\n        continue\n    want[r['city']] = want.get(r['city'], 0) + a\nassert need('by_city') == want, f'by_city = {need(\"by_city\")}, а должно быть {want}.'",
+   "check": "import csv as _csv\nwant = {}\nfor r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        a = int(r['amount'])\n    except ValueError:\n        continue\n    want[r['city']] = want.get(r['city'], 0) + a\n_alt = dict(want); _alt['Тюмень'] += 1250\nassert need('by_city') != _alt, f'by_city = {need(\"by_city\")}: у Тюмени учтена сумма «1 250». В этом уроке её считаем битой (int() не берёт её как есть) — пропустите строку.'\nassert need('by_city') == want, f'by_city = {need(\"by_city\")}, а должно быть {want}.'",
    "starter": "import csv",
    "solution": "import csv\nby_city = {}\nwith open(\"orders.csv\", encoding=\"utf-8\") as f:\n    for row in csv.DictReader(f):\n        try:\n            amount = int(row[\"amount\"])\n        except ValueError:\n            continue\n        by_city[row[\"city\"]] = by_city.get(row[\"city\"], 0) + amount",
    "hints": [
@@ -3149,7 +3212,7 @@
    ],
    "display": false,
    "setup": "",
-   "check": "import csv as _csv, datetime as _dt\nwant = {}\nfor r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        a = int(r['amount'])\n    except ValueError:\n        continue\n    k = _dt.date.fromisoformat(r['date']).weekday()\n    want[k] = want.get(k, 0) + a\nassert need('by_weekday') == want, f'by_weekday = {need(\"by_weekday\")}, а должно быть {want}.'\nassert need('best_weekday') == max(want, key=want.get), f'best_weekday = {need(\"best_weekday\")}.'",
+   "check": "import csv as _csv, datetime as _dt\nwant = {}\nfor r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        a = int(r['amount'])\n    except ValueError:\n        continue\n    k = _dt.date.fromisoformat(r['date']).weekday()\n    want[k] = want.get(k, 0) + a\n_alt = dict(want); _alt[_dt.date(2026, 9, 24).weekday()] += 1250\nassert need('by_weekday') != _alt, 'В by_weekday учтена сумма «1 250» (четверг, 24 сентября). В этом уроке её считаем битой — пропустите строку.'\nassert need('by_weekday') == want, f'by_weekday = {need(\"by_weekday\")}, а должно быть {want}.'\nassert need('best_weekday') == max(want, key=want.get), f'best_weekday = {need(\"best_weekday\")}.'",
    "starter": "import csv\nimport datetime as dt",
    "solution": "import csv\nimport datetime as dt\nby_weekday = {}\nwith open(\"orders.csv\", encoding=\"utf-8\") as f:\n    for row in csv.DictReader(f):\n        try:\n            amount = int(row[\"amount\"])\n        except ValueError:\n            continue\n        day = dt.date.fromisoformat(row[\"date\"]).weekday()\n        by_weekday[day] = by_weekday.get(day, 0) + amount\nbest_weekday = max(by_weekday, key=by_weekday.get)",
    "hints": [
@@ -3173,7 +3236,7 @@
    ],
    "display": false,
    "setup": "",
-   "check": "import csv as _csv, datetime as _dt\ngood = []\nfor r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        good.append(int(r['amount']))\n    except ValueError:\n        pass\no = need('load_orders')('orders.csv')\nassert len(o) == len(good), f'Загружено {len(o)} заказов, а хороших строк {len(good)}.'\nassert isinstance(o[0]['amount'], int), 'amount должен быть int.'\nassert isinstance(o[0]['date'], _dt.date), 'date должна быть датой (dt.date.fromisoformat).'\nassert need('avg_check') == round(sum(good) / len(good)), f'avg_check = {need(\"avg_check\")}.'",
+   "check": "import csv as _csv, datetime as _dt\ngood = []\nfor r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        good.append(int(r['amount']))\n    except ValueError:\n        pass\no = need('load_orders')('orders.csv')\nassert len(o) != len(good) + 1, f'Загружено {len(o)} заказов — на один больше, чем нужно. Похоже, сумма «1 250» починена; в этом уроке её считаем битой и в результат не кладём.'\nassert len(o) == len(good), f'Загружено {len(o)} заказов, а хороших строк {len(good)}.'\nassert isinstance(o[0]['amount'], int), 'amount должен быть int.'\nassert isinstance(o[0]['date'], _dt.date), 'date должна быть датой (dt.date.fromisoformat).'\nassert need('avg_check') == round(sum(good) / len(good)), f'avg_check = {need(\"avg_check\")}.'",
    "starter": "import csv\nimport datetime as dt\n\ndef load_orders(path):\n    ...\n\norders = load_orders(\"orders.csv\")",
    "solution": "import csv\nimport datetime as dt\n\ndef load_orders(path):\n    result = []\n    with open(path, encoding=\"utf-8\") as f:\n        for row in csv.DictReader(f):\n            try:\n                row[\"amount\"] = int(row[\"amount\"])\n            except ValueError:\n                continue\n            row[\"date\"] = dt.date.fromisoformat(row[\"date\"])\n            result.append(row)\n    return result\n\norders = load_orders(\"orders.csv\")\navg_check = round(sum(o[\"amount\"] for o in orders) / len(orders))",
    "hints": [
