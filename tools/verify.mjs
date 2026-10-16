@@ -18,6 +18,9 @@ const py = await loadPyodide({ indexURL: pyDir });
 py.FS.writeFile('/home/pyodide/_dsc_harness.py', readFileSync(join(root, 'site/assets/harness.py'), 'utf-8'));
 py.runPython('import sys; sys.path.insert(0, "/home/pyodide"); import _dsc_harness');
 const run = py.pyimport('_dsc_harness').run;
+// заведомо неверные решения (tools/negatives.json): каждое должно отклоняться проверкой
+const negatives = JSON.parse(readFileSync(join(root, 'tools/negatives.json'), 'utf-8'));
+const negUsed = new Set();
 
 const written = new Set();
 function putFiles(files) {
@@ -75,6 +78,14 @@ for (const it of items) {
   cleanCwd();
   const start = await exec(it.starter, it.check, it.setup, it.display);
   if (start.check?.passed) { bad++; console.log(`✗ ${tag}: заготовка проходит проверку`); }
+  const key = `${it.lesson}/${it.id}`;
+  for (const w of negatives[key] || []) {
+    negUsed.add(key); cleanCwd();
+    const r = await exec(w.code, it.check, it.setup, it.display);
+    if (r.check?.passed) { bad++; console.log(`✗ ${tag}: неверное решение принято (${w.why})`); }
+  }
 }
+const lessons = new Set(items.map((x) => x.lesson));
+for (const k of Object.keys(negatives)) if (lessons.has(k.slice(0, k.lastIndexOf('/'))) && !negUsed.has(k)) { bad++; console.log(`✗ negatives.json: задача ${k} не найдена`); }
 console.log(`${bad ? '✗' : '✓'} проверено: ${n}, проблем: ${bad}`);
 process.exit(bad ? 1 : 0);

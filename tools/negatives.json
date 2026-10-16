@@ -1,0 +1,32 @@
+{
+ "ch01/14-project/dedupe": [
+  {
+   "why": "сумма испорчена при дедупликации",
+   "code": "clean = []\nseen = set()\nn_dupes = 0\nfor o in orders:\n    if o['order_id'] in seen:\n        n_dupes += 1\n    else:\n        seen.add(o['order_id'])\n        clean.append(dict(o, amount=0))\n"
+  },
+  {
+   "why": "orders испорчен на месте",
+   "code": "for o in orders:\n    o['amount'] = 0\nclean = []\nseen = set()\nn_dupes = 0\nfor o in orders:\n    if o['order_id'] in seen:\n        n_dupes += 1\n    else:\n        seen.add(o['order_id'])\n        clean.append(o)\n"
+  }
+ ],
+ "ch01/exam-1/price-growth": [
+  {
+   "why": "while только в комментарии",
+   "code": "price = 200\n# while\nyears = 6\n"
+  },
+  {
+   "why": "мёртвый цикл рядом с готовым ответом",
+   "code": "price = 200\nwhile False:\n    pass\nyears = 6\n"
+  },
+  {
+   "why": "цикл по готовому числу лет",
+   "code": "price = 200\nyears = 0\nwhile years < 6:\n    years += 1\n"
+  }
+ ],
+ "ch05/09-project/decision": [
+  {
+   "why": "старое правило «выручка значимо не упала» без порога δ",
+   "code": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef share_test(x, col):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    z, p = proportions_ztest([g.loc[\"B\", \"sum\"], g.loc[\"A\", \"sum\"]], [g.loc[\"B\", \"size\"], g.loc[\"A\", \"size\"]])\n    return g.loc[\"B\", \"mean\"] - g.loc[\"A\", \"mean\"], p\n\ndef promise_report(ab):\n    srm_p = stats.chisquare(ab[\"group\"].value_counts()).pvalue\n    late_d, late_p = share_test(ab[ab[\"ordered\"] == 1], \"late\")\n    conv_d, conv_p = share_test(ab[ab[\"distance_km\"] < 2], \"ordered\")\n    A = ab.loc[ab[\"group\"] == \"A\", \"amount\"]\n    B = ab.loc[ab[\"group\"] == \"B\", \"amount\"]\n    rev_d = B.mean() - A.mean()\n    rev_p = stats.ttest_ind(B, A, equal_var=False).pvalue\n    ok = srm_p >= 0.01 and late_p < 0.05 and late_d < 0 and not (rev_p < 0.05 and rev_d < 0)\n    return {\n        \"srm_ok\": bool(srm_p >= 0.01),\n        \"late_diff_pp\": round(late_d * 100, 1), \"late_p\": late_p,\n        \"conv_short_diff_pp\": round(conv_d * 100, 2), \"conv_short_p\": conv_p,\n        \"rev_diff\": round(rev_d, 1), \"rev_p\": rev_p,\n        \"decision\": \"внедрять\" if ok else \"не внедрять\",\n    }\n\nab = pd.read_csv(\"ab_promise.csv\", parse_dates=[\"ts\"])\npromise_report(ab)\n"
+  }
+ ]
+}

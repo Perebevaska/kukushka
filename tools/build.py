@@ -679,8 +679,10 @@ def build(check_only: bool = False, export_path: Path | None = None) -> int:
             write_chapter_pages(course, ch, ch['_extra'], index_data)
     write_index(course, index_data)
     write_aux(course, index_data)
-    # задачи, переехавшие при делении урока: старый ключ прогресса → новый
-    moved = {}
+    # задачи, переехавшие при делении урока: старый ключ прогресса → новый.
+    # Исторические переезды хранятся в content/moved.json и не теряются при пересборке;
+    # к ним добавляются новые из split_from в course.yaml.
+    moved = json.loads((CONTENT / 'moved.json').read_text(encoding='utf-8'))
     for ch in course['chapters']:
         tasks_of = {l['id']: l.get('tasks', []) for c in index_data if c['id'] == ch['id'] for l in c['lessons']}
         for ls in ch.get('lessons', []):
@@ -688,12 +690,36 @@ def build(check_only: bool = False, export_path: Path | None = None) -> int:
             if m:
                 for t in tasks_of.get(ls['id'], []):
                     moved[f"{ch['id']}/{m.group(1)}/{t['id']}"] = f"{ch['id']}/{ls['id']}/{t['id']}"
+    moved = resolve_moved(moved, {f"{c['id']}/{l['id']}/{t['id']}"
+                                  for c in index_data for l in c['lessons'] for t in l.get('tasks', [])})
     (SITE / 'assets' / 'course.js').write_text(
         'window.DSC_COURSE = ' + json.dumps(index_data, ensure_ascii=False) + ';\n'
         'window.DSC_MOVED = ' + json.dumps(moved, ensure_ascii=False) + ';\n', encoding='utf-8')
     n = sum(len(v['tasks']) for v in built.values())
     print(f'Готово: уроков {len(built)}, задач {n} → site/')
     return 0
+
+
+def resolve_moved(moved: dict, live: set) -> dict:
+    """Схлопывает цепочки переездов (a→b→c ⇒ a→c) и проверяет карту.
+
+    Старый ключ не должен совпадать с существующей задачей (иначе её прогресс
+    перезапишется), а конечный ключ должен существовать.
+    """
+    out = {}
+    for old in moved:
+        seen, cur = {old}, moved[old]
+        while cur in moved:
+            if cur in seen:
+                raise SystemExit(f'moved.json: цикл переездов через {cur}')
+            seen.add(cur)
+            cur = moved[cur]
+        if old in live:
+            raise SystemExit(f'moved.json: старый ключ {old} совпадает с существующей задачей')
+        if cur not in live:
+            raise SystemExit(f'moved.json: задача-адресат {cur} (для {old}) не найдена')
+        out[old] = cur
+    return dict(sorted(out.items()))
 
 
 def _slug(text: str, used: set) -> str:
