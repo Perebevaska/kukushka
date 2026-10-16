@@ -571,7 +571,7 @@ n_born = born.notna().sum()
 
 ## task: age | Возраст гостей | star
 
-Посчитайте возраст гостей на 1 декабря 2026 года: число дней между датой рождения и этой датой, делённое на 365.25 и округлённое вниз до целого. Сохраните в `median_age` медианный возраст.
+Посчитайте возраст гостей на 1 декабря 2026 года в полных годах: разница лет `2026 - год рождения` и минус один, если день рождения в 2026 году ещё не наступил (родился позже 1 декабря). Сохраните в `median_age` медианный возраст.
 
 Подвох: среди дат есть те, что не могут быть датой рождения гостя кофейни. Их в расчёт не включайте — считайте только возрасты от 14 до 100 лет.
 
@@ -587,13 +587,13 @@ df = pd.read_csv("clients_raw.csv")
 import pandas as _pd
 b = _pd.read_csv('clients_raw.csv')['birth_date']
 born = _pd.to_datetime(b, format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(b, format='%d.%m.%Y', errors='coerce'))
-age = ((_pd.Timestamp('2026-12-01') - born).dt.days // 365.25)
+age = (2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201'))
 want = age[age.between(14, 100)].median()
 assert close(need('median_age'), want), f'median_age = {need("median_age")}, а нужно {want}. Отфильтровали возрасты вне 14–100?'
 ```
 
 ### hint
-Разница дат — `pd.Timestamp("2026-12-01") - born`, в днях — `.dt.days`. Округление вниз при делении — `//`.
+Год — `born.dt.year`. «День рождения ещё не наступил» — месяц и день позже 1 декабря: `born.dt.strftime("%m%d") > "1201"`. Строки «ММДД» одинаковой длины сравниваются как числа, а `True` при вычитании считается за 1. Деление числа дней на 365.25 почти всегда даёт то же, но ошибается в сам день рождения: 01.12.2012 → 13 вместо 14.
 
 ### hint
 Посмотрите на `age.describe()`: минимальный и максимальный возраст подскажут, что не так. Отфильтруйте маской `age.between(14, 100)`.
@@ -605,7 +605,7 @@ df = pd.read_csv("clients_raw.csv")
 iso = pd.to_datetime(df["birth_date"], format="%Y-%m-%d", errors="coerce")
 ru = pd.to_datetime(df["birth_date"], format="%d.%m.%Y", errors="coerce")
 born = iso.fillna(ru)
-age = (pd.Timestamp("2026-12-01") - born).dt.days // 365.25
+age = 2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")
 median_age = age[age.between(14, 100)].median()
 ```
 

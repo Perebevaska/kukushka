@@ -617,7 +617,7 @@ src.value_counts(dropna=False)
 
 ## task: age-groups | Возрастные группы | plus
 
-Посчитайте возраст гостей на 1 декабря 2026 года, как в уроке «Типы: из текста в числа и даты» (дата рождения в двух форматах, `дни // 365.25`). Разложите по группам через `pd.cut` с `right=False`: 14–24, 25–34, 35–44, 45–59, 60–99 — с подписями `"14–24"`, `"25–34"` и т. д. (можно писать через обычный дефис: `"14-24"`, проверка примет оба варианта). Возрасты вне этих интервалов станут пропусками. Сохраните в `groups` словарь «группа → число анкет».
+Посчитайте возраст гостей на 1 декабря 2026 года, как в уроке «Типы: из текста в числа и даты» (дата рождения в двух форматах, полные годы: `2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")`). Разложите по группам через `pd.cut` с `right=False`: 14–24, 25–34, 35–44, 45–59, 60–99 — с подписями `"14–24"`, `"25–34"` и т. д. (можно писать через обычный дефис: `"14-24"`, проверка примет оба варианта). Возрасты вне этих интервалов станут пропусками. Сохраните в `groups` словарь «группа → число анкет».
 
 ### starter
 ```python
@@ -634,7 +634,7 @@ born = iso.fillna(ru)
 import pandas as _pd
 b = _pd.read_csv('clients_raw.csv')['birth_date']
 born = _pd.to_datetime(b, format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(b, format='%d.%m.%Y', errors='coerce'))
-age = (_pd.Timestamp('2026-12-01') - born).dt.days // 365.25
+age = 2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')
 labels = ['14–24', '25–34', '35–44', '45–59', '60–99']
 g = _pd.cut(age, bins=[14, 25, 35, 45, 60, 100], labels=labels, right=False)
 want = {k: int(v) for k, v in g.value_counts().items()}
@@ -647,7 +647,7 @@ assert got == want, f'groups = {got}, а нужно {want}.'
 Границы: `[14, 25, 35, 45, 60, 100]` — на одну больше, чем подписей.
 
 ### hint
-Возраст: `age = (pd.Timestamp("2026-12-01") - born).dt.days // 365.25`. С `right=False` гость 25 лет попадает уже в «25–34», а не в «14–24».
+Возраст: `age = 2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")`. С `right=False` гость 25 лет попадает уже в «25–34», а не в «14–24».
 
 ### solution
 ```python
@@ -656,7 +656,7 @@ df = pd.read_csv("clients_raw.csv")
 iso = pd.to_datetime(df["birth_date"], format="%Y-%m-%d", errors="coerce")
 ru = pd.to_datetime(df["birth_date"], format="%d.%m.%Y", errors="coerce")
 born = iso.fillna(ru)
-age = (pd.Timestamp("2026-12-01") - born).dt.days // 365.25
+age = 2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")
 df["age_group"] = pd.cut(age, bins=[14, 25, 35, 45, 60, 100],
                          labels=["14–24", "25–34", "35–44", "45–59", "60–99"], right=False)
 groups = dict(df["age_group"].value_counts())

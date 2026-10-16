@@ -682,7 +682,7 @@ avg_without = round(total[~pos["suspicious"]].mean(), 2)
 
 ## task: age-sane | Правдоподобный возраст | plus
 
-Посчитайте возраст на 1 декабря 2026 (`дни // 365.25`) и замените на `NaN` возрасты вне диапазона 14–100 лет (через `mask` или `where`). Сохраните возраст в `age`, а в `n_valid` — число анкет с правдоподобным возрастом.
+Посчитайте возраст на 1 декабря 2026 в полных годах, как в уроке «Типы: из текста в числа и даты», и замените на `NaN` возрасты вне диапазона 14–100 лет (через `mask` или `where`). Сохраните возраст в `age`, а в `n_valid` — число анкет с правдоподобным возрастом.
 
 ### starter
 ```python
@@ -699,7 +699,7 @@ born = iso.fillna(ru)
 import pandas as _pd
 b = _pd.read_csv('clients_raw.csv')['birth_date']
 born = _pd.to_datetime(b, format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(b, format='%d.%m.%Y', errors='coerce'))
-a = (_pd.Timestamp('2026-12-01') - born).dt.days // 365.25
+a = 2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')
 want = a.where(a.between(14, 100))
 got = need('age', _pd.Series)
 assert len(got) == len(b), 'Строки не удаляйте — заменяйте значения на NaN.'
@@ -708,7 +708,7 @@ assert need('n_valid') == want.notna().sum(), f'n_valid = {need("n_valid")}.'
 ```
 
 ### hint
-Возраст: `(pd.Timestamp("2026-12-01") - born).dt.days // 365.25`.
+Возраст: `2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")`.
 
 ### hint
 `age.where(age.between(14, 100))` — оставить, где возраст правдоподобный, остальное — `NaN`.
@@ -720,7 +720,7 @@ df = pd.read_csv("clients_raw.csv")
 iso = pd.to_datetime(df["birth_date"], format="%Y-%m-%d", errors="coerce")
 ru = pd.to_datetime(df["birth_date"], format="%d.%m.%Y", errors="coerce")
 born = iso.fillna(ru)
-age = (pd.Timestamp("2026-12-01") - born).dt.days // 365.25
+age = 2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")
 age = age.where(age.between(14, 100))
 n_valid = age.notna().sum()
 ```

@@ -28,5 +28,17 @@
    "why": "старое правило «выручка значимо не упала» без порога δ",
    "code": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef share_test(x, col):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    z, p = proportions_ztest([g.loc[\"B\", \"sum\"], g.loc[\"A\", \"sum\"]], [g.loc[\"B\", \"size\"], g.loc[\"A\", \"size\"]])\n    return g.loc[\"B\", \"mean\"] - g.loc[\"A\", \"mean\"], p\n\ndef promise_report(ab):\n    srm_p = stats.chisquare(ab[\"group\"].value_counts()).pvalue\n    late_d, late_p = share_test(ab[ab[\"ordered\"] == 1], \"late\")\n    conv_d, conv_p = share_test(ab[ab[\"distance_km\"] < 2], \"ordered\")\n    A = ab.loc[ab[\"group\"] == \"A\", \"amount\"]\n    B = ab.loc[ab[\"group\"] == \"B\", \"amount\"]\n    rev_d = B.mean() - A.mean()\n    rev_p = stats.ttest_ind(B, A, equal_var=False).pvalue\n    ok = srm_p >= 0.01 and late_p < 0.05 and late_d < 0 and not (rev_p < 0.05 and rev_d < 0)\n    return {\n        \"srm_ok\": bool(srm_p >= 0.01),\n        \"late_diff_pp\": round(late_d * 100, 1), \"late_p\": late_p,\n        \"conv_short_diff_pp\": round(conv_d * 100, 2), \"conv_short_p\": conv_p,\n        \"rev_diff\": round(rev_d, 1), \"rev_p\": rev_p,\n        \"decision\": \"внедрять\" if ok else \"не внедрять\",\n    }\n\nab = pd.read_csv(\"ab_promise.csv\", parse_dates=[\"ts\"])\npromise_report(ab)\n"
   }
+ ],
+ "ch07/03b-money-threshold/honest-t": [
+  {
+   "why": "порог выбран по тесту",
+   "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nX_fit, X_val, y_fit, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=0, stratify=y_train)\nmodel = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_fit, y_fit)\np_test = model.predict_proba(X_test)[:, 1]\ndef profit(y_true, p, t):\n    bonus = p >= t\n    return int((y_true[bonus] == 1).sum()) * 1000 - int(bonus.sum()) * 200\ngrid = np.arange(0.05, 1, 0.05).round(2)\nt_val = float(grid[int(np.argmax([profit(y_test, p_test, t) for t in grid]))])\nprofit_test = profit(y_test, p_test, t_val)\nprofit_05 = profit(y_test, p_test, 0.5)\n"
+  }
+ ],
+ "ch15/06-final-project/target": [
+  {
+   "why": "окно pd.DateOffset(months=3) теряет уход 31.12",
+   "code": "import pandas as pd\ncuts = [\"2025-09-30\", \"2025-12-31\", \"2026-03-31\", \"2026-06-30\"]\n\ndef build_target(cutoff, months=3):\n    c = pd.Timestamp(cutoff)\n    active = base[(base[\"start_date\"] <= c) & (base[\"end_date\"].isna() | (base[\"end_date\"] > c))]\n    left = active[\"end_date\"].notna() & (active[\"end_date\"] <= c + pd.DateOffset(months=months))\n    return pd.Series(left.astype(int).values, index=active[\"client_id\"].values, name=\"churn\")\n\nrates = {}\nfor cut in cuts:\n    y = build_target(cut)\n    rates[cut] = (len(y), round(float(y.mean()), 3))\nprint(rates)\n"
+  }
  ]
 }
