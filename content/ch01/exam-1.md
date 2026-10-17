@@ -168,7 +168,20 @@ price = 200
 ### check
 ```python
 assert need('years') == 6, f'years = {need("years")}. Через 5 лет цена ровно 250 — это ещё не «больше 250»; больше она станет через 6 лет (260).'
-assert 'while' in _code, 'Используйте while.'
+import ast as _ast, contextlib as _cl, io as _io
+_t = _ast.parse(_code)
+assert any(isinstance(_n, _ast.While) for _n in _ast.walk(_t)), 'Посчитайте циклом while: слово while в комментарии не считается.'
+# тот же код с другими условиями: цена 230, порог 300 → 8 лет. Так ловится ответ, записанный вручную.
+class _Swap(_ast.NodeTransformer):
+    def visit_Constant(self, n):
+        if type(n.value) is int and n.value in (200, 250):
+            return _ast.copy_location(_ast.Constant({200: 230, 250: 300}[n.value]), n)
+        return n
+_ns = {}
+with _cl.redirect_stdout(_io.StringIO()):
+    exec(compile(_ast.fix_missing_locations(_Swap().visit(_t)), '<проверка>', 'exec'), _ns)
+assert _ns.get('years') == 8, ('С ценой 230 и порогом 300 ваш код даёт years = ' + repr(_ns.get('years')) +
+                               ', а должно быть 8. Пусть цикл сам считает годы, пока цена не больше порога, — без готового числа.')
 ```
 
 ### hint

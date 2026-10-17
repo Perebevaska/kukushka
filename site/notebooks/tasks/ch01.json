@@ -2157,7 +2157,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('years') == 6, f'years = {need(\"years\")}. Через 5 лет цена ровно 250 — это ещё не «больше 250»; больше она станет через 6 лет (260).'\nassert 'while' in _code, 'Используйте while.'",
+   "check": "assert need('years') == 6, f'years = {need(\"years\")}. Через 5 лет цена ровно 250 — это ещё не «больше 250»; больше она станет через 6 лет (260).'\nimport ast as _ast, contextlib as _cl, io as _io\n_t = _ast.parse(_code)\nassert any(isinstance(_n, _ast.While) for _n in _ast.walk(_t)), 'Посчитайте циклом while: слово while в комментарии не считается.'\n# тот же код с другими условиями: цена 230, порог 300 → 8 лет. Так ловится ответ, записанный вручную.\nclass _Swap(_ast.NodeTransformer):\n    def visit_Constant(self, n):\n        if type(n.value) is int and n.value in (200, 250):\n            return _ast.copy_location(_ast.Constant({200: 230, 250: 300}[n.value]), n)\n        return n\n_ns = {}\nwith _cl.redirect_stdout(_io.StringIO()):\n    exec(compile(_ast.fix_missing_locations(_Swap().visit(_t)), '<проверка>', 'exec'), _ns)\nassert _ns.get('years') == 8, ('С ценой 230 и порогом 300 ваш код даёт years = ' + repr(_ns.get('years')) +\n                               ', а должно быть 8. Пусть цикл сам считает годы, пока цена не больше порога, — без готового числа.')",
    "starter": "price = 200",
    "solution": "price = 200\nyears = 0\nwhile price <= 250:\n    price += 10\n    years += 1",
    "hints": [
@@ -3282,7 +3282,7 @@
    ],
    "display": false,
    "setup": "import csv as _csv, datetime as _dt\norders = []\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        continue\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    orders.append(_r)",
-   "check": "ids = [o['order_id'] for o in orders]\nc = need('clean', list)\nassert [o['order_id'] for o in c] == list(dict.fromkeys(ids)), 'В clean каждый номер заказа должен встречаться один раз, в исходном порядке.'\nassert need('n_dupes') == len(ids) - len(set(ids)), f'n_dupes = {need(\"n_dupes\")}, а лишних строк {len(ids) - len(set(ids))}.'",
+   "check": "import csv as _csv, datetime as _dt\n# эталон строим заново из файла: правки orders в решении не должны влиять на проверку\n_orig = []\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        continue\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    _orig.append(_r)\n_first = {}\nfor _o in _orig:\n    _first.setdefault(_o['order_id'], _o)\nids = [o['order_id'] for o in _orig]\nc = need('clean', list)\nassert [o['order_id'] for o in c] == list(_first), 'В clean каждый номер заказа должен встречаться один раз, в исходном порядке.'\nfor _got, _want in zip(c, _first.values()):\n    assert _got == _want, (f'Заказ {_want[\"order_id\"]} в clean отличается от первого вхождения в выгрузке: '\n                           f'{_got} вместо {_want}. Дедупликация должна убирать лишние строки, не меняя сами записи.')\nassert need('n_dupes') == len(ids) - len(set(ids)), f'n_dupes = {need(\"n_dupes\")}, а лишних строк {len(ids) - len(set(ids))}.'",
    "starter": "# orders уже загружен\nprint(len(orders))",
    "solution": "clean = []\nseen = set()\nn_dupes = 0\nfor o in orders:\n    if o[\"order_id\"] in seen:\n        n_dupes += 1\n    else:\n        seen.add(o[\"order_id\"])\n        clean.append(o)",
    "hints": [
@@ -3412,7 +3412,7 @@
    "lesson_title": "Мини-проект: отчёт по заказам",
    "id": "file",
    "title": "Шаг 8. Отчёт в файл и проблемы данных",
-   "level": "star",
+   "level": "plus",
    "exam": false,
    "parsons": false,
    "files": [

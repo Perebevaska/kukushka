@@ -153,7 +153,7 @@ def _ref_clients():
 def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
-    a = (_pd0.Timestamp('2026-12-01') - c['birth_date']).dt.days // 365.25
+    a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
     return a, g
 def _ref_lump(s):
@@ -183,7 +183,9 @@ def clean_city(s):
              .replace({"екб": "екатеринбург"}).str.capitalize())
 
 def clean_phone(s):
-    return s.str.replace(r"\D", "", regex=True).str[-10:]
+    digits = s.str.replace(r"\D", "", regex=True)
+    ok = digits.str.fullmatch(r"[78]?\d{10}")      # 10 цифр или 11 с кодом 7/8
+    return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
     return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
@@ -242,7 +244,9 @@ def clean_city(s):
              .replace({"екб": "екатеринбург"}).str.capitalize())
 
 def clean_phone(s):
-    return s.str.replace(r"\D", "", regex=True).str[-10:]
+    digits = s.str.replace(r"\D", "", regex=True)
+    ok = digits.str.fullmatch(r"[78]?\d{10}")      # 10 цифр или 11 с кодом 7/8
+    return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
     return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
@@ -310,7 +314,7 @@ def _ref_clients():
 def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
-    a = (_pd0.Timestamp('2026-12-01') - c['birth_date']).dt.days // 365.25
+    a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
     return a, g
 def _ref_lump(s):
@@ -367,7 +371,7 @@ missing_pct
 
 ## task: age | Шаг 3. Портрет по возрасту и городам | base
 
-Добавьте в `clients` столбцы `age` (полных лет на 1 декабря 2026: `дни // 365.25`) и `age_group` (`pd.cut` с `right=False`, границы 14, 25, 35, 45, 60, 100 и подписи `"14–24"`, `"25–34"`, `"35–44"`, `"45–59"`, `"60–99"`). Сохраните:
+Добавьте в `clients` столбцы `age` (полных лет на 1 декабря 2026: `2026 - год рождения`, минус один, если день рождения ещё не наступил) и `age_group` (`pd.cut` с `right=False`, границы 14, 25, 35, 45, 60, 100 и подписи `"14–24"`, `"25–34"`, `"35–44"`, `"45–59"`, `"60–99"`). Сохраните:
 
 - `median_age` — медианный возраст;
 - `age_counts` — словарь «группа → число анкет»;
@@ -398,7 +402,7 @@ def _ref_clients():
 def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
-    a = (_pd0.Timestamp('2026-12-01') - c['birth_date']).dt.days // 365.25
+    a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
     return a, g
 def _ref_lump(s):
@@ -438,7 +442,7 @@ assert gc == {k: int(v) for k, v in c['city'].value_counts().items()}, f'by_city
 ```
 
 ### hint
-Уроки «Типы: из текста в числа и даты» и «Категоризация: CASE WHEN в pandas»: `(pd.Timestamp("2026-12-01") - clients["birth_date"]).dt.days // 365.25`, затем `pd.cut(...)`.
+Уроки «Типы: из текста в числа и даты» и «Категоризация: CASE WHEN в pandas»: `2026 - clients["birth_date"].dt.year - (clients["birth_date"].dt.strftime("%m%d") > "1201")`, затем `pd.cut(...)`.
 
 ### hint
 Словари — `dict(clients["age_group"].value_counts())` и то же для города.
@@ -446,7 +450,7 @@ assert gc == {k: int(v) for k, v in c['city'].value_counts().items()}, f'by_city
 ### solution
 ```python
 import pandas as pd
-clients["age"] = (pd.Timestamp("2026-12-01") - clients["birth_date"]).dt.days // 365.25
+clients["age"] = 2026 - clients["birth_date"].dt.year - (clients["birth_date"].dt.strftime("%m%d") > "1201")
 clients["age_group"] = pd.cut(clients["age"], bins=[14, 25, 35, 45, 60, 100],
                               labels=["14–24", "25–34", "35–44", "45–59", "60–99"], right=False)
 median_age = clients["age"].median()
@@ -490,7 +494,7 @@ def _ref_clients():
 def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
-    a = (_pd0.Timestamp('2026-12-01') - c['birth_date']).dt.days // 365.25
+    a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
     return a, g
 def _ref_lump(s):
@@ -589,7 +593,7 @@ def _ref_clients():
 def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
-    a = (_pd0.Timestamp('2026-12-01') - c['birth_date']).dt.days // 365.25
+    a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
     return a, g
 def _ref_lump(s):
@@ -699,7 +703,7 @@ def _ref_clients():
 def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
-    a = (_pd0.Timestamp('2026-12-01') - c['birth_date']).dt.days // 365.25
+    a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
     return a, g
 def _ref_lump(s):
@@ -797,7 +801,7 @@ def _ref_clients():
 def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
-    a = (_pd0.Timestamp('2026-12-01') - c['birth_date']).dt.days // 365.25
+    a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
     return a, g
 def _ref_lump(s):
@@ -909,7 +913,7 @@ def _ref_clients():
 def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
-    a = (_pd0.Timestamp('2026-12-01') - c['birth_date']).dt.days // 365.25
+    a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
     return a, g
 def _ref_lump(s):
@@ -939,7 +943,9 @@ def clean_city(s):
              .replace({"екб": "екатеринбург"}).str.capitalize())
 
 def clean_phone(s):
-    return s.str.replace(r"\D", "", regex=True).str[-10:]
+    digits = s.str.replace(r"\D", "", regex=True)
+    ok = digits.str.fullmatch(r"[78]?\d{10}")      # 10 цифр или 11 с кодом 7/8
+    return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
     return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
@@ -1013,7 +1019,9 @@ def clean_city(s):
              .replace({"екб": "екатеринбург"}).str.capitalize())
 
 def clean_phone(s):
-    return s.str.replace(r"\D", "", regex=True).str[-10:]
+    digits = s.str.replace(r"\D", "", regex=True)
+    ok = digits.str.fullmatch(r"[78]?\d{10}")      # 10 цифр или 11 с кодом 7/8
+    return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
     return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
@@ -1048,7 +1056,7 @@ def report(raw, orders):
     stats = orders.groupby("client_id").agg(orders=("order_id", "count"), revenue=("amount", "sum"))
     guests = clients.merge(stats, on="client_id", how="left")
     guests[["orders", "revenue"]] = guests[["orders", "revenue"]].fillna(0)
-    age = (pd.Timestamp("2026-12-01") - guests["birth_date"]).dt.days // 365.25
+    age = 2026 - guests["birth_date"].dt.year - (guests["birth_date"].dt.strftime("%m%d") > "1201")
     active = guests[guests["orders"] > 0]
     return {
         "clients": len(guests),

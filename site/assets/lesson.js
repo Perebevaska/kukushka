@@ -120,17 +120,48 @@
       }
     });
   }
+  // Tab внутри редактора ставит отступ. Чтобы редактор не был клавиатурной ловушкой (WCAG 2.1.2),
+  // Esc переключает режим: следующий Tab / Shift+Tab уводит фокус к соседним элементам.
+  // Режим сбрасывается при каждом новом входе в редактор и при любом вводе.
   function mountEditor(host, value, keys) {
-    var extra = { Tab: function (cm) { cm.somethingSelected() ? cm.indentSelection('add') : cm.replaceSelection('    ', 'end'); },
-                  'Shift-Tab': function (cm) { cm.indentSelection('subtract'); } };
+    var leave = false;
+    var extra = { Tab: function (cm) { if (leave) return focusNear(cm, 1);
+                    cm.somethingSelected() ? cm.indentSelection('add') : cm.replaceSelection('    ', 'end'); },
+                  'Shift-Tab': function (cm) { if (leave) return focusNear(cm, -1); cm.indentSelection('subtract'); },
+                  Esc: function (cm) { leave = true; hint.textContent = HINT_OUT;
+                    if (cm.somethingSelected()) cm.setCursor(cm.getCursor('head')); } };
     extra[D.isMac ? 'Cmd-Enter' : 'Ctrl-Enter'] = keys.run; extra['Ctrl-Enter'] = keys.run;
     extra[D.isMac ? 'Cmd-/' : 'Ctrl-/'] = toggleComment;
     if (keys.check) extra['Shift-Enter'] = keys.check;
-    return CodeMirror(host, {
+    var hint = el('div', 'cm-kbd-hint', HINT_IN);
+    hint.id = 'cm-hint-' + (++hintSeq);
+    var cm = CodeMirror(host, {
       value: value, mode: 'python', indentUnit: 4, tabSize: 4, lineWrapping: false, matchBrackets: true,
-      autoCloseBrackets: true, viewportMargin: Infinity, extraKeys: extra, inputStyle: 'contenteditable', spellcheck: false
+      autoCloseBrackets: true, viewportMargin: Infinity, extraKeys: extra, inputStyle: 'contenteditable', spellcheck: false,
+      screenReaderLabel: 'Редактор кода. Tab ставит отступ; чтобы выйти, нажмите Esc, затем Tab.'
     });
+    host.appendChild(hint);
+    var input = cm.getInputField();
+    if (input) input.setAttribute('aria-describedby', hint.id);
+    cm.on('focus', function () { leave = false; hint.textContent = HINT_IN; });
+    cm.on('change', function () { if (leave) { leave = false; hint.textContent = HINT_IN; } });
+    return cm;
   }
+  // фокус на следующий / предыдущий фокусируемый элемент страницы за пределами редактора
+  function focusNear(cm, dir) {
+    var wrap = cm.getWrapperElement();
+    var all = $$('a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"]), [contenteditable=true]')
+      .filter(function (e) { return e.offsetParent !== null || e === document.activeElement; });
+    var inside = function (e) { return wrap.contains(e); };
+    var i = all.findIndex(inside);
+    if (i < 0) return;
+    if (dir > 0) { while (i < all.length && inside(all[i])) i++; } else { i--; }
+    var t = all[i];
+    if (t) { cm.getInputField().blur(); t.focus(); }
+  }
+  var hintSeq = 0;
+  var HINT_IN = 'Tab — отступ · Esc, затем Tab — выйти из редактора';
+  var HINT_OUT = 'Tab / Shift+Tab — перейти к соседним элементам';
 
   function renderResult(out, res, opts) {
     out.textContent = '';

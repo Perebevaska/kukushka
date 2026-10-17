@@ -37,7 +37,9 @@ def clean_city(s):
              .str.capitalize())
 
 def clean_phone(s):
-    return s.str.replace(r"\D", "", regex=True).str[-10:]
+    digits = s.str.replace(r"\D", "", regex=True)
+    ok = digits.str.fullmatch(r"[78]?\d{10}")      # 10 цифр или 11 с кодом 7/8
+    return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 test = pd.Series([" г. Пермь", "ЕКБ", None])
 print(clean_city(test).tolist())
@@ -367,7 +369,9 @@ def clean_city(s):
              .replace({"екб": "екатеринбург"}).str.capitalize())
 
 def clean_phone(s):
-    return s.str.replace(r"\D", "", regex=True).str[-10:]
+    digits = s.str.replace(r"\D", "", regex=True)
+    ok = digits.str.fullmatch(r"[78]?\d{10}")      # 10 цифр или 11 с кодом 7/8
+    return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
     return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
@@ -831,7 +835,9 @@ def clean_city(s):
              .replace({"екб": "екатеринбург"}).str.capitalize())
 
 def clean_phone(s):
-    return s.str.replace(r"\D", "", regex=True).str[-10:]
+    digits = s.str.replace(r"\D", "", regex=True)
+    ok = digits.str.fullmatch(r"[78]?\d{10}")      # 10 цифр или 11 с кодом 7/8
+    return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
     return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
@@ -900,7 +906,9 @@ def clean_city(s):
              .replace({"екб": "екатеринбург"}).str.capitalize())
 
 def clean_phone(s):
-    return s.str.replace(r"\D", "", regex=True).str[-10:]
+    digits = s.str.replace(r"\D", "", regex=True)
+    ok = digits.str.fullmatch(r"[78]?\d{10}")      # 10 цифр или 11 с кодом 7/8
+    return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
     return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})

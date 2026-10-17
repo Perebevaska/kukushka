@@ -162,9 +162,25 @@ print(len(orders))
 
 ### check
 ```python
-ids = [o['order_id'] for o in orders]
+import csv as _csv, datetime as _dt
+# эталон строим заново из файла: правки orders в решении не должны влиять на проверку
+_orig = []
+for _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):
+    try:
+        _r['amount'] = int(_r['amount'])
+    except ValueError:
+        continue
+    _r['date'] = _dt.date.fromisoformat(_r['date'])
+    _orig.append(_r)
+_first = {}
+for _o in _orig:
+    _first.setdefault(_o['order_id'], _o)
+ids = [o['order_id'] for o in _orig]
 c = need('clean', list)
-assert [o['order_id'] for o in c] == list(dict.fromkeys(ids)), 'В clean каждый номер заказа должен встречаться один раз, в исходном порядке.'
+assert [o['order_id'] for o in c] == list(_first), 'В clean каждый номер заказа должен встречаться один раз, в исходном порядке.'
+for _got, _want in zip(c, _first.values()):
+    assert _got == _want, (f'Заказ {_want["order_id"]} в clean отличается от первого вхождения в выгрузке: '
+                           f'{_got} вместо {_want}. Дедупликация должна убирать лишние строки, не меняя сами записи.')
 assert need('n_dupes') == len(ids) - len(set(ids)), f'n_dupes = {need("n_dupes")}, а лишних строк {len(ids) - len(set(ids))}.'
 ```
 
@@ -417,7 +433,7 @@ best_day_revenue = by_day[best]
 Лучший город: Казань (5 770 ₽)
 ```
 
-Числа считайте внутри функции из `orders` — тогда функция подойдёт для любого месяца. Разделитель тысяч — пробел: `f"{x:,}"` ставит его сам и только у чисел от 1000, поэтому «442 ₽» остаётся без разделителя.
+Числа считайте внутри функции из `orders` — тогда функция подойдёт для любого месяца. Разделитель тысяч — пробел: `f"{x:,}"` ставит запятую (`16,370`), поэтому её заменяют: `f"{x:,}".replace(",", " ")` → `16 370`. Разделитель появляется только у чисел от 1000, так что «442 ₽» остаётся как есть.
 
 ### setup
 ```python
@@ -492,7 +508,7 @@ print(build_report(clean))
 ### explain
 Внутри функции можно объявить ещё одну маленькую функцию (`rub`) — она видна только внутри `build_report`.
 
-## task: file | Шаг 8. Отчёт в файл и проблемы данных | star
+## task: file | Шаг 8. Отчёт в файл и проблемы данных | plus
 
 Запишите в файл `report.md` отчёт для руководителя: заголовок `# Отчёт за сентябрь`, пустая строка, затем текст из `build_report(clean)`, пустая строка и раздел `## Качество данных` со строками `- Битых строк: N` и `- Дублей: M`. Числа `n_bad` и `n_dupes` даны.
 
