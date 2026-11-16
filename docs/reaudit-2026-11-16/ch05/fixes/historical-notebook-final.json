@@ -1,0 +1,76 @@
+{
+  "version": "314.0.7",
+  "source": "notebook catalog",
+  "rows": [
+    {
+      "lesson": "05-hypotheses",
+      "id": "perm-snow",
+      "name": "all-null-permutations",
+      "expected": false,
+      "actual": false,
+      "response": "diffs должны получаться перестановкой групп с сохранением их размеров; проверьте разницу долей, а не п.п. или нулевую заготовку.",
+      "check_sha256": "057053b1392d6b7fd445a358b2a454542146c86622c168099b02632162dbf2d9",
+      "code": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate = (ok[\"actual_min\"] > ok[\"promised_min\"]).to_numpy()\nsnow = (ok[\"weather\"] == \"снег\").to_numpy()\nrng = np.random.default_rng(0)\nobserved = late[snow].mean() - late[~snow].mean()\ndiffs = []\nfor _ in range(3000):\n    s = rng.permutation(snow)\n    diffs.append(late[s].mean() - late[~s].mean())\ndiffs = np.array(diffs)\nk = np.count_nonzero(np.abs(diffs) >= abs(observed) - 1e-12)\np_value = (k + 1) / (len(diffs) + 1)\ndiffs=np.zeros(3000);p_value=0.0"
+    },
+    {
+      "lesson": "05-hypotheses",
+      "id": "perm-fn",
+      "name": "wrong-reported-difference",
+      "expected": false,
+      "actual": false,
+      "response": "res на авто и вело: разница — среднее a минус среднее b, а не подставленное число.",
+      "check_sha256": "4dffb0913f90002909a2d0b877f34937a89e3d96a1df645fea136a606ff71980",
+      "code": "import numpy as np\nimport pandas as pd\n\ndef perm_test(a, b, n_perm=2000, seed=0):\n    rng = np.random.default_rng(seed)\n    observed = a.mean() - b.mean()\n    pooled = np.concatenate([a, b])\n    k = len(a)\n    count = 0\n    for _ in range(n_perm):\n        perm = rng.permutation(pooled)\n        if abs(perm[:k].mean() - perm[k:].mean()) >= abs(observed) - 1e-12:\n            count += 1\n    return observed, (count + 1) / (n_perm + 1)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nauto = ok.loc[ok[\"courier\"] == \"авто\", \"actual_min\"].to_numpy()\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"].to_numpy()\nres = perm_test(auto, velo)\nres\nres=(999.,.47)"
+    },
+    {
+      "lesson": "05-hypotheses",
+      "id": "perm-fn",
+      "name": "monte-carlo-positive-at-zero-exceedances",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "4dffb0913f90002909a2d0b877f34937a89e3d96a1df645fea136a606ff71980",
+      "code": "import numpy as np\nimport pandas as pd\n\ndef perm_test(a, b, n_perm=2000, seed=0):\n    rng = np.random.default_rng(seed)\n    observed = a.mean() - b.mean()\n    pooled = np.concatenate([a, b])\n    k = len(a)\n    count = 0\n    for _ in range(n_perm):\n        perm = rng.permutation(pooled)\n        if abs(perm[:k].mean() - perm[k:].mean()) >= abs(observed) - 1e-12:\n            count += 1\n    return observed, (count + 1) / (n_perm + 1)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nauto = ok.loc[ok[\"courier\"] == \"авто\", \"actual_min\"].to_numpy()\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"].to_numpy()\nres = perm_test(auto, velo)\nres\nassert perm_test(np.arange(12),np.arange(100,112),2000,0)[1] > 0, \"Ноль при 2000 случайных перестановках\""
+    },
+    {
+      "lesson": "05-hypotheses",
+      "id": "perm-fn",
+      "name": "finite-monte-carlo-correction",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "4dffb0913f90002909a2d0b877f34937a89e3d96a1df645fea136a606ff71980",
+      "code": "import numpy as np\nimport pandas as pd\n\ndef perm_test(a, b, n_perm=2000, seed=0):\n    rng = np.random.default_rng(seed)\n    observed = a.mean() - b.mean()\n    pooled = np.concatenate([a, b])\n    k = len(a)\n    count = 0\n    for _ in range(n_perm):\n        perm = rng.permutation(pooled)\n        if abs(perm[:k].mean() - perm[k:].mean()) >= abs(observed) - 1e-12:\n            count += 1\n    return observed, (count + 1) / (n_perm + 1)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nauto = ok.loc[ok[\"courier\"] == \"авто\", \"actual_min\"].to_numpy()\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"].to_numpy()\nres = perm_test(auto, velo)\nres"
+    },
+    {
+      "lesson": "09-project",
+      "id": "late",
+      "name": "negative-p",
+      "expected": false,
+      "actual": false,
+      "response": "p_late — вероятность от 0 до 1.",
+      "check_sha256": "4dcc1e5e795ef1a0da81c5dd12fb543dc7203c8c50c69fa67702f3a8333b4309",
+      "code": "import numpy as np\nfrom statsmodels.stats.proportion import proportions_ztest\ng = orders.groupby(\"group\")[\"late\"].agg([\"sum\", \"size\", \"mean\"])\na, b = g.loc[\"A\"], g.loc[\"B\"]\nlate_a, late_b = round(a[\"mean\"], 4), round(b[\"mean\"], 4)\nd = b[\"mean\"] - a[\"mean\"]\nse = np.sqrt(a[\"mean\"] * (1 - a[\"mean\"]) / a[\"size\"] + b[\"mean\"] * (1 - b[\"mean\"]) / b[\"size\"])\ndiff_pp = round(d * 100, 1)\nci = (round((d - 1.96 * se) * 100, 1), round((d + 1.96 * se) * 100, 1))\nz, p_late = proportions_ztest([b[\"sum\"], a[\"sum\"]], [b[\"size\"], a[\"size\"]])\ng\np_late=-0.00001"
+    },
+    {
+      "lesson": "09-project",
+      "id": "cities",
+      "name": "unadjusted-p-replaced",
+      "expected": false,
+      "actual": false,
+      "response": "Казань: пересчитайте исходное p-value до поправки Холма.",
+      "check_sha256": "742a5b5ad1b45fb0fb7322fc793edd2a4a039aa838f61629c09c9f3a16ac6aea",
+      "code": "import pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nfrom statsmodels.stats.multitest import multipletests\nrows = []\nfor city, x in orders.groupby(\"city\"):\n    g = x.groupby(\"group\")[\"late\"].agg([\"sum\", \"size\", \"mean\"])\n    z, p = proportions_ztest([g.loc[\"B\", \"sum\"], g.loc[\"A\", \"sum\"]], [g.loc[\"B\", \"size\"], g.loc[\"A\", \"size\"]])\n    rows.append({\"city\": city, \"late_a\": g.loc[\"A\", \"mean\"], \"late_b\": g.loc[\"B\", \"mean\"],\n                 \"diff_pp\": (g.loc[\"B\", \"mean\"] - g.loc[\"A\", \"mean\"]) * 100, \"p\": p})\nby_city = pd.DataFrame(rows).set_index(\"city\")\nby_city[\"p_holm\"] = multipletests(by_city[\"p\"], method=\"holm\")[1]\nall_cities = bool((by_city[\"p_holm\"] < 0.05).all())\nby_city.round(4)\nby_city[\"p\"]=1."
+    },
+    {
+      "lesson": "07-ab",
+      "id": "ztest",
+      "name": "unrounded-pooled-p",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "42b569f658e9aabdadcff47f5e31a83295ae07f449f5148f3201f527ee22c394",
+      "code": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nab = pd.read_csv(\"ab_push.csv\")\na = ab.loc[ab[\"group\"] == \"A\", \"ordered\"]\nb = ab.loc[ab[\"group\"] == \"B\", \"ordered\"]\nz, p = proportions_ztest([b.sum(), a.sum()], [len(b), len(a)])\np_value = round(p, 4)\ndiff = b.mean() - a.mean()\nse = np.sqrt(a.mean() * (1 - a.mean()) / len(a) + b.mean() * (1 - b.mean()) / len(b))\nci_lo = round((diff - 1.96 * se) * 100, 2)\nci_hi = round((diff + 1.96 * se) * 100, 2)\nfrom statsmodels.stats.proportion import proportions_ztest\nimport pandas as pd\ndf=pd.read_csv(\"ab_push.csv\")\ng=df.groupby(\"group\").ordered.agg([\"sum\",\"size\"])\np_value=proportions_ztest(g[\"sum\"],g[\"size\"])[1]"
+    }
+  ]
+}

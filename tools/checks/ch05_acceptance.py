@@ -96,3 +96,9 @@ p_perm=hypergeom.pmf(counts,len(late),total,n_b)[np.abs(permuted)>=abs(obs)-1e-1
     c.probe('07-ab','ab-report',code=source.replace('"p": round(p, 4)','"p": p'),expected=True)
     c.probe('07-ab','ab-report',code=source.replace('"srm_p": srm_p','"srm_p": round(srm_p,4)'),expected=True)
     c.probe('07-ab','ab-report',code=source.replace('p < 0.05 and srm_p >= 0.01','p < 0.05'))
+
+    # E05-09: intro and task both permit full precision or four decimal places.
+    source=c.tasks['07-ab','ztest']['solution']
+    c.probe('07-ab','ztest',code=source,expected=True)
+    c.probe('07-ab','ztest',code=source.replace('p_value = round(p, 4)', 'p_value = p'),expected=True)
+    c.probe('07-ab','ztest',code=source+'\np_value=0.07')

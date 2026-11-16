@@ -389,6 +389,39 @@ CH04_TEMPLATE = [
 ]
 
 
+CH05_TEMPLATE = [
+    ('md', """# ✎ Эксперимент с обещанием доставки
+
+Сохраните копию как `promise.ipynb`. Поместите `ab_promise.csv` в папку `data/` рядом с блокнотом. Заполните план до вычисления различий между группами. Перед передачей выполните Restart Kernel and Run All Cells и сохраните выводы."""),
+    ('md', """## План до анализа
+
+✎ Назовите единицу назначения, главную гипотезу, защитную метрику и допустимую потерю. Запишите дату единственного анализа и правило для трёх решений. Какие данные позволят проверить соблюдение дизайна?"""),
+    ('code', ANALYTICS_IMPORTS + '\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest, proportion_confint\nfrom IPython.display import Markdown, display\n\nEXPERIMENT_FILE = "ab_promise.csv"\nDATA = data_folder(EXPERIMENT_FILE)\nab = pd.read_csv(DATA / EXPERIMENT_FILE, parse_dates=["ts"])'),
+    ('md', """## Данные и дизайн
+
+✎ Укажите происхождение учебных данных, период и единицу строки. Проверьте число сессий, распределение групп, SRM и соблюдение обещаний по расстоянию. Какие проверки ограничены отсутствием постоянного ID гостя?"""),
+    ('code', ''),
+    ('md', '✎ Вывод о соблюдении дизайна и границах анализа.'),
+    ('md', """## Основная и защитная метрики
+
+✎ Для каждого шага проекта добавьте раздел. Перед расчётом назовите знаменатель. Покажите оценки в A и B, разницу B−A, интервал, p-value и метод расчёта. Для решения сохраните неокруглённые границы интервала, а округление примените при выводе."""),
+    ('code', ''),
+    ('md', '✎ Что позволяет заключить результат и какое ограничение остаётся?'),
+    ('md', """## Графики и дополнительные срезы
+
+✎ Подпишите группы, единицы, период и смысл усов. Интервал разницы приведите отдельно. Обозначьте заранее выбранные сравнения и поисковые. Укажите, к кому относятся оценки и доля опозданий после назначения варианта."""),
+    ('code', ''),
+    ('md', '✎ Вывод по графикам и дополнительным сравнениям.'),
+    ('md', """## Решение руководителю
+
+✎ Сформулируйте решение по записанному правилу, численную опору и ограничение. Для неопределённого исхода опишите, что нужно согласовать до следующего просмотра данных. Если написана `promise_report`, вызовите её для всей выгрузки и каждого города."""),
+    ('code', ''),
+    ('md', """✎ Итоговые выводы и следующий шаг.
+
+Проверьте сохранённый текст после изменения входного файла. Для вычисляемых чисел можно использовать `display(Markdown(f"..."))`. Запустите `python check_notebook.py promise.ipynb` перед передачей."""),
+]
+
+
 def make_template(sections=TEMPLATE, name='template') -> dict:
     cells = []
     for i, (kind, src) in enumerate(sections):
@@ -437,7 +470,7 @@ def main() -> int:
     if write_if_changed(OUT / 'project-template.ipynb', tpl):
         changed += 1
         print('project-template.ipynb — обновлён')
-    for cid, sections in [('ch02', CH02_TEMPLATE), ('ch03', CH03_TEMPLATE), ('ch04', CH04_TEMPLATE)]:
+    for cid, sections in [('ch02', CH02_TEMPLATE), ('ch03', CH03_TEMPLATE), ('ch04', CH04_TEMPLATE), ('ch05', CH05_TEMPLATE)]:
         name = f'{cid}-project-template.ipynb'
         chapter_template = make_template(sections, f'{cid}-template')
         if write_if_changed(OUT / name, json.dumps(chapter_template, ensure_ascii=False, indent=1) + '\n'):

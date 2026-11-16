@@ -484,7 +484,8 @@ def _nb_tasks(cid: str) -> int:
 def _nb_tools(root: str, cid: str = '') -> str:
     outlines = {'ch02': 'цель → данные → гипотезы или вопросы → выводы',
                 'ch03': 'цель → данные → журнал очистки → качество данных → портрет гостей',
-                'ch04': 'главный вывод → журнал очистки → графики → проверка рекомендаций'}
+                'ch04': 'главный вывод → журнал очистки → графики → проверка рекомендаций',
+                'ch05': 'план до анализа → дизайн → метрики с интервалами → решение'}
     filename = f'{cid}-project-template.ipynb' if cid in outlines else 'project-template.ipynb'
     outline = outlines.get(cid, 'цель → данные → предобработка → анализ и модели → выводы, с чек-листом')
     if not (NB_DIR / filename).exists():

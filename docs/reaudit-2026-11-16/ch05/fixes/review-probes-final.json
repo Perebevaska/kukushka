@@ -1,0 +1,216 @@
+{
+  "version": "314.0.7",
+  "source": "published HTML",
+  "rows": [
+    {
+      "lesson": "01-probability",
+      "id": "two-late",
+      "name": "alternative",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "3c6f8f978c7ebd723268213faf453f66fee5be9e32c6faac24184593fd968af2",
+      "code": "from math import comb\np=.24\nout=[comb(2,k)*p**k*(1-p)**(2-k) for k in range(3)]\nnone,exactly_one,both=map(lambda v: round(v,3),out)"
+    },
+    {
+      "lesson": "01-probability",
+      "id": "two-late",
+      "name": "error",
+      "expected": false,
+      "actual": false,
+      "response": "exactly_one = 0.182. Ровно одна — первая да и вторая нет, или наоборот.",
+      "check_sha256": "3c6f8f978c7ebd723268213faf453f66fee5be9e32c6faac24184593fd968af2",
+      "code": "from math import comb\np=.24\nout=[comb(2,k)*p**k*(1-p)**(2-k) for k in range(3)]\nnone,exactly_one,both=map(lambda v: round(v,3),out)\nexactly_one=round(exactly_one/2,3)"
+    },
+    {
+      "lesson": "02-distributions",
+      "id": "tail",
+      "name": "alternative",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "28352647f9efd6d55a8fbc7b09f492bf154eaf3c9bb7c6d9675d33567d9d91f5",
+      "code": "from scipy.stats import binom\np_bad=round(sum(binom.pmf(range(8,21),20,.24)),4)"
+    },
+    {
+      "lesson": "02-distributions",
+      "id": "tail",
+      "name": "error",
+      "expected": false,
+      "actual": false,
+      "response": "sf(8, …) — это «больше 8», то есть 9 и больше. «8 и больше» = sf(7, …).",
+      "check_sha256": "28352647f9efd6d55a8fbc7b09f492bf154eaf3c9bb7c6d9675d33567d9d91f5",
+      "code": "from scipy.stats import binom\np_bad=round(sum(binom.pmf(range(8,21),20,.24)),4)\np_bad=round(sum(binom.pmf(range(9,21),20,.24)),4)"
+    },
+    {
+      "lesson": "02b-normal",
+      "id": "norm-approx",
+      "name": "alternative",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "ce6951c7a3620e7f4060b68574da971efc47e69553d6abd916e9e3fb9bea655c",
+      "code": "from scipy.stats import norm,binom\nn,p,k=500,.24,140\ne=1-binom.cdf(k-1,n,p)\nscale=(n*p*(1-p))**.5\na=1-norm.cdf((k-.5-n*p)/scale)\nexact,approx=round(e,4),round(a,4)\nrel_err=round(abs(a/e-1),3)\nrule_ok=min(n*p,n*(1-p))>=10"
+    },
+    {
+      "lesson": "02b-normal",
+      "id": "norm-approx",
+      "name": "error",
+      "expected": false,
+      "actual": false,
+      "response": "Это приближение без поправки. Столбик «140» начинается с 139.5 — возьмите norm.sf(k - 0.5, …).",
+      "check_sha256": "ce6951c7a3620e7f4060b68574da971efc47e69553d6abd916e9e3fb9bea655c",
+      "code": "from scipy.stats import norm,binom\nn,p,k=500,.24,140\ne=1-binom.cdf(k-1,n,p)\nscale=(n*p*(1-p))**.5\na=1-norm.cdf((k-.5-n*p)/scale)\nexact,approx=round(e,4),round(a,4)\nrel_err=round(abs(a/e-1),3)\nrule_ok=min(n*p,n*(1-p))>=10\napprox=round(1-norm.cdf((k-n*p)/scale),4)"
+    },
+    {
+      "lesson": "03-sampling",
+      "id": "se-fn",
+      "name": "alternative",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "c3d0ae5449ba1040f8f623fb30f19a5570080d267639dd458eb296c2029512a1",
+      "code": "def se(sigma,n):\n    return (sigma**2/n)**.5\nses=[round(se(11, sample),2) for sample in [25,100,400]]"
+    },
+    {
+      "lesson": "03-sampling",
+      "id": "se-fn",
+      "name": "error",
+      "expected": false,
+      "actual": false,
+      "response": "se(sigma, n) = sigma / √n.",
+      "check_sha256": "c3d0ae5449ba1040f8f623fb30f19a5570080d267639dd458eb296c2029512a1",
+      "code": "def se(sigma,n):\n    return (sigma**2/n)**.5\nses=[round(se(11, sample),2) for sample in [25,100,400]]\ndef se(sigma,n): return sigma/n"
+    },
+    {
+      "lesson": "04-confidence",
+      "id": "errorbars",
+      "name": "numeric-x-with-labels",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "57edf1d6760dcc18822c0878967dd3cc4b9f5b3aeb2b07273d4f3c358681be2f",
+      "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"shop_id\")[\"late\"].agg([\"sum\", \"size\", \"mean\"]).sort_values(\"mean\")\nlo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n\nfig, ax = plt.subplots(figsize=(7, 3.5))\nax.errorbar(range(len(g)), g[\"mean\"], yerr=[g[\"mean\"] - lo, hi - g[\"mean\"]], fmt=\"o\", capsize=4)\nax.set_ylabel(\"доля опозданий\")\nax.set_title(\"Опоздания по кофейням с 95 % интервалами\")\nax.set_xticks(range(len(g)),g.index)"
+    },
+    {
+      "lesson": "04-confidence",
+      "id": "errorbars",
+      "name": "reassigned-shop-labels",
+      "expected": false,
+      "actual": false,
+      "response": "Кофейни на оси X должны идти по возрастанию доли опозданий.",
+      "check_sha256": "57edf1d6760dcc18822c0878967dd3cc4b9f5b3aeb2b07273d4f3c358681be2f",
+      "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"shop_id\")[\"late\"].agg([\"sum\", \"size\", \"mean\"]).sort_values(\"mean\")\nlo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n\nfig, ax = plt.subplots(figsize=(7, 3.5))\nax.errorbar(g.index, g[\"mean\"], yerr=[g[\"mean\"] - lo, hi - g[\"mean\"]], fmt=\"o\", capsize=4)\nax.set_ylabel(\"доля опозданий\")\nax.set_title(\"Опоздания по кофейням с 95 % интервалами\")\nax.set_xticks(range(len(g)), g.index[::-1])"
+    },
+    {
+      "lesson": "05-hypotheses",
+      "id": "observed",
+      "name": "alternative",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "169b0632f596ce50b746d6776e4cdbf3eb08dd61ed5223176199ffbdcd2fb243",
+      "code": "import pandas as pd\ndf=pd.read_csv('deliveries.csv').query('1 <= actual_min <= 299')\ng=df.assign(is_late=df.actual_min.gt(df.promised_min)).groupby(df.weather.eq('снег')).is_late.mean()\nobserved=round(100*(g[True]-g[False]),1)"
+    },
+    {
+      "lesson": "05-hypotheses",
+      "id": "observed",
+      "name": "error",
+      "expected": false,
+      "actual": false,
+      "response": "observed = -11.4, а нужно 11.4.",
+      "check_sha256": "169b0632f596ce50b746d6776e4cdbf3eb08dd61ed5223176199ffbdcd2fb243",
+      "code": "import pandas as pd\ndf=pd.read_csv('deliveries.csv').query('1 <= actual_min <= 299')\ng=df.assign(is_late=df.actual_min.gt(df.promised_min)).groupby(df.weather.eq('снег')).is_late.mean()\nobserved=round(100*(g[True]-g[False]),1)\nobserved=-observed"
+    },
+    {
+      "lesson": "06-tests",
+      "id": "paired",
+      "name": "alternative",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "7025e7aec3847e3c0d0f1834c79c887909445ec2a8424e76c92dbef04d3f5fdd",
+      "code": "import pandas as pd\nfrom scipy.stats import ttest_1samp\ndf=pd.read_csv('deliveries.csv',parse_dates=['created']).query('1 <= actual_min <= 299')\ntab=df.actual_min.gt(df.promised_min).groupby([df.shop_id,df.created.dt.month]).mean().unstack()\nchange=tab[11]-tab[10]\nmean_change=round(change.mean()*100,1)\np_value=round(ttest_1samp(change,0).pvalue,3)"
+    },
+    {
+      "lesson": "06-tests",
+      "id": "paired",
+      "name": "error",
+      "expected": false,
+      "actual": false,
+      "response": "p_value = 0.286, а нужно 0.186. Тест — ttest_rel(ноябрь, октябрь).",
+      "check_sha256": "7025e7aec3847e3c0d0f1834c79c887909445ec2a8424e76c92dbef04d3f5fdd",
+      "code": "import pandas as pd\nfrom scipy.stats import ttest_1samp\ndf=pd.read_csv('deliveries.csv',parse_dates=['created']).query('1 <= actual_min <= 299')\ntab=df.actual_min.gt(df.promised_min).groupby([df.shop_id,df.created.dt.month]).mean().unstack()\nchange=tab[11]-tab[10]\nmean_change=round(change.mean()*100,1)\np_value=round(ttest_1samp(change,0).pvalue,3)\nfrom scipy.stats import ttest_ind\np_value=round(ttest_ind(tab[11],tab[10],equal_var=False).pvalue,3)"
+    },
+    {
+      "lesson": "07-ab",
+      "id": "srm",
+      "name": "alternative",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "c79781c4b03d9c89ab5f3be37334b6ab4faa384c47ec0f758a6e0f9149d4908f",
+      "code": "import pandas as pd\nfrom scipy.stats import chi2\nx=pd.read_csv('ab_push.csv')\nsizes=x.groupby('group').size().sort_index(ascending=False)\nexpected=len(x)/len(sizes)\nsrm_p=chi2.sf(((sizes-expected)**2/expected).sum(),len(sizes)-1)\nsrm_ok=srm_p>=.01"
+    },
+    {
+      "lesson": "07-ab",
+      "id": "srm",
+      "name": "error",
+      "expected": false,
+      "actual": false,
+      "response": "sizes = {'A': 3024, 'B': 2976}.",
+      "check_sha256": "c79781c4b03d9c89ab5f3be37334b6ab4faa384c47ec0f758a6e0f9149d4908f",
+      "code": "import pandas as pd\nfrom scipy.stats import chi2\nx=pd.read_csv('ab_push.csv')\nsizes=x.groupby('group').size().sort_index(ascending=False)\nexpected=len(x)/len(sizes)\nsrm_p=chi2.sf(((sizes-expected)**2/expected).sum(),len(sizes)-1)\nsrm_ok=srm_p>=.01\nsizes.index=sizes.index[::-1]"
+    },
+    {
+      "lesson": "08-pitfalls",
+      "id": "practical",
+      "name": "alternative",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "e93a72521993b6c9c61acd0b1433c6335b1e81698272947c430fe827d446402c",
+      "code": "from scipy.stats import chi2_contingency\nn=2_000_000\na,b=400_000,402_400\np_value=chi2_contingency([[a,n-a],[b,n-b]],correction=False).pvalue\ndiff_pp=round((b-a)/n*100,2)\nrel_pct=round((b-a)/a*100,1)\nworth_it=bool(p_value<.05 and rel_pct>=2)"
+    },
+    {
+      "lesson": "08-pitfalls",
+      "id": "practical",
+      "name": "error",
+      "expected": false,
+      "actual": false,
+      "response": "Рост 0.6 % меньше порога 2 % — не стоит, хотя p маленькое.",
+      "check_sha256": "e93a72521993b6c9c61acd0b1433c6335b1e81698272947c430fe827d446402c",
+      "code": "from scipy.stats import chi2_contingency\nn=2_000_000\na,b=400_000,402_400\np_value=chi2_contingency([[a,n-a],[b,n-b]],correction=False).pvalue\ndiff_pp=round((b-a)/n*100,2)\nrel_pct=round((b-a)/a*100,1)\nworth_it=bool(p_value<.05 and rel_pct>=2)\nworth_it=bool(p_value<.05)"
+    },
+    {
+      "lesson": "09-project",
+      "id": "chart",
+      "name": "valid-reversed-display",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "0ffab39e33a090ca71de2630915c2260e56ac9f865c8b385ae386318bbc3be70",
+      "code": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\ndef panel(ax, x, col, title):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"]).sort_index(ascending=False)\n    lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n    bars = ax.bar(g.index, g[\"mean\"] * 100, yerr=[(g[\"mean\"] - lo) * 100, (hi - g[\"mean\"]) * 100],\n                  capsize=6, color=[\"lightgray\", \"tab:blue\"])\n    ax.bar_label(bars, fmt=\"%.1f\", padding=8)\n    ax.set_ylabel(\"%\")\n    ax.set_title(title)\n    ax.spines[[\"top\", \"right\"]].set_visible(False)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.8))\npanel(axes[0], orders, \"late\", \"Опозданий вдвое меньше\")\npanel(axes[1], ab[ab[\"distance_km\"] < 2], \"ordered\", \"До 2 км заказывают чуть реже\")\nfig.tight_layout()"
+    },
+    {
+      "lesson": "09-project",
+      "id": "chart",
+      "name": "swapped-tick-labels",
+      "expected": false,
+      "actual": false,
+      "response": "B: высота столбца должна соответствовать фактической подписи группы на оси X.",
+      "check_sha256": "0ffab39e33a090ca71de2630915c2260e56ac9f865c8b385ae386318bbc3be70",
+      "code": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\ndef panel(ax, x, col, title):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n    bars = ax.bar(g.index, g[\"mean\"] * 100, yerr=[(g[\"mean\"] - lo) * 100, (hi - g[\"mean\"]) * 100],\n                  capsize=6, color=[\"lightgray\", \"tab:blue\"])\n    ax.bar_label(bars, fmt=\"%.1f\", padding=8)\n    ax.set_ylabel(\"%\")\n    ax.set_title(title)\n    ax.spines[[\"top\", \"right\"]].set_visible(False)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.8))\npanel(axes[0], orders, \"late\", \"Опозданий вдвое меньше\")\npanel(axes[1], ab[ab[\"distance_km\"] < 2], \"ordered\", \"До 2 км заказывают чуть реже\")\nfig.tight_layout()\nfor ax in axes: ax.set_xticks([0,1],[\"B\",\"A\"])"
+    },
+    {
+      "lesson": "09-project",
+      "id": "chart",
+      "name": "invisible-whiskers",
+      "expected": false,
+      "actual": false,
+      "response": "A: нужны видимые усы 95% интервала Уилсона этой группы.",
+      "check_sha256": "0ffab39e33a090ca71de2630915c2260e56ac9f865c8b385ae386318bbc3be70",
+      "code": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\ndef panel(ax, x, col, title):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n    bars = ax.bar(g.index, g[\"mean\"] * 100, yerr=[(g[\"mean\"] - lo) * 100, (hi - g[\"mean\"]) * 100],\n                  capsize=6, color=[\"lightgray\", \"tab:blue\"])\n    ax.bar_label(bars, fmt=\"%.1f\", padding=8)\n    ax.set_ylabel(\"%\")\n    ax.set_title(title)\n    ax.spines[[\"top\", \"right\"]].set_visible(False)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.8))\npanel(axes[0], orders, \"late\", \"Опозданий вдвое меньше\")\npanel(axes[1], ab[ab[\"distance_km\"] < 2], \"ordered\", \"До 2 км заказывают чуть реже\")\nfig.tight_layout()\nfor ax in axes:\n    for col in ax.collections: col.set_visible(False)\n    for line in ax.lines: line.set_visible(False)"
+    }
+  ]
+}

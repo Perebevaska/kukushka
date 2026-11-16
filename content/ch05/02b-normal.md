@@ -520,6 +520,36 @@ t = d.loc[d['actual_min'].between(1, 299), 'actual_min']
 assert close(need('skew_raw'), round(t.skew(), 2)) and close(need('skew_log'), round(_np.log(t).skew(), 2)), f'skew_raw, skew_log = {need("skew_raw")}, {need("skew_log")}.'
 assert len(figs) == 1 and len(figs[0].axes) == 2, 'Две гистограммы рядом: plt.subplots(1, 2).'
 assert [a.get_title() for a in figs[0].axes] == ['минуты', 'log(минуты)'], 'Заголовки: «минуты» и «log(минуты)».'
+# Compare binned data, accepting any bin count and either counts or density.
+from matplotlib.patches import Rectangle as _Rectangle
+for _ax, _data, _label in zip(figs[0].axes, (t, _np.log(t)), ('минуты', 'log(минуты)')):
+    _patches = [p for p in _ax.patches if p.get_visible() and (p.get_alpha() is None or p.get_alpha() > 0)]
+    _parts = []
+    for _patch in _patches:
+        if isinstance(_patch, _Rectangle):
+            _parts.append((_patch.get_x(), _patch.get_x() + _patch.get_width(), _patch.get_height()))
+        else:
+            # histtype='step'/'stepfilled' and stairs expose horizontal bin tops.
+            _vertices = _patch.get_path().vertices
+            if hasattr(_patch, 'get_xy'):
+                _vertices = _np.asarray(_patch.get_xy())
+            for _left, _right in zip(_vertices[:-1], _vertices[1:]):
+                if _right[0] > _left[0] and close(_left[1], _right[1]):
+                    _parts.append((_left[0], _right[0], _left[1]))
+    assert _parts, f'{_label}: нарисуйте гистограмму соответствующих данных.'
+    _parts.sort()
+    _edges = _np.array([v[0] for v in _parts] + [_parts[-1][1]])
+    assert _np.all(_np.diff(_edges) > 0) and _np.allclose([v[1] for v in _parts[:-1]], _edges[1:-1]), f'{_label}: интервалы гистограммы должны идти подряд.'
+    # Patch x+width can differ from a bin edge by one floating-point ULP.
+    if _np.isclose(_edges[0], _np.min(_data), rtol=0, atol=1e-12):
+        _edges[0] = _np.min(_data)
+    if _np.isclose(_edges[-1], _np.max(_data), rtol=0, atol=1e-12):
+        _edges[-1] = _np.max(_data)
+    assert _edges[0] <= _np.min(_data) and _edges[-1] >= _np.max(_data), f'{_label}: гистограмма должна охватывать все значения.'
+    _counts, _ = _np.histogram(_data, bins=_edges)
+    _heights = _np.array([v[2] for v in _parts])
+    _density = _counts / len(_data) / _np.diff(_edges)
+    assert _np.allclose(_heights, _counts) or _np.allclose(_heights, _density), f'{_label}: высоты не соответствуют данным; справа нужен именно np.log(t).'
 ```
 
 ### hint

@@ -436,6 +436,11 @@ assert len(m) == 3000, f'В means {len(m)} значений, а нужно 3000.
 f = round(t.std() / 30 ** 0.5, 2)
 assert close(need('se_formula'), f), f'se_formula = {need("se_formula")}, а нужно {f}.'
 assert abs(need('se_sim') - f) < 0.15, f'se_sim = {need("se_sim")} — должно быть близко к {f}.'
+m = _np.asarray(m, dtype=float)
+assert m.shape == (3000,) and _np.isfinite(m).all(), 'means — одномерный массив 3000 конечных выборочных средних.'
+assert m.min() >= t.min() and m.max() <= t.max(), 'Выборочное среднее лежит в пределах исходных времён; проверьте mean(), а не sum().'
+assert abs(m.mean() - t.mean()) <= 6 * t.std() / (30 * len(m)) ** 0.5, 'Среднее выборочных средних должно быть близко к среднему исходных данных.'
+assert close(need('se_sim'), m.std(), 0.0051), 'se_sim — стандартное отклонение именно массива means, округлённое до двух знаков.'
 ```
 
 ### hint

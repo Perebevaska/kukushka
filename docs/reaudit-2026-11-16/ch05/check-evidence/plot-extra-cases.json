@@ -1,0 +1,66 @@
+[
+  {
+    "lesson": "ch05/09-project",
+    "id": "chart",
+    "name": "numeric-spaced-bars",
+    "expected": true,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\ndef panel(ax, x, col, title):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n    bars = ax.bar(np.arange(len(g))*5+2, g[\"mean\"] * 100, yerr=[(g[\"mean\"] - lo) * 100, (hi - g[\"mean\"]) * 100],\n                  capsize=6, color=[\"lightgray\", \"tab:blue\"])\n    ax.bar_label(bars, fmt=\"%.1f\", padding=8)\n    ax.set_xticks(np.arange(len(g))*5+2, g.index)\n    ax.set_ylabel(\"%\")\n    ax.set_title(title)\n    ax.spines[[\"top\", \"right\"]].set_visible(False)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.8))\npanel(axes[0], orders, \"late\", \"Опозданий вдвое меньше\")\npanel(axes[1], ab[ab[\"distance_km\"] < 2], \"ordered\", \"До 2 км заказывают чуть реже\")\nfig.tight_layout()",
+    "why": "Additional representation/visibility control on the same two corrected cards."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "chart",
+    "name": "separate-vlines-whiskers",
+    "expected": true,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\nfig,axes=plt.subplots(1,2)\nfor ax,data,col in [(axes[0],orders,'late'),(axes[1],ab[ab.distance_km<2],'ordered')]:\n g=data.groupby('group')[col].agg(['sum','size','mean']).iloc[::-1]\n low,high=proportion_confint(g['sum'],g['size'],method='wilson')\n pos=np.array([2,7])\n ax.bar(pos,g['mean']*100)\n ax.vlines(pos,low*100,high*100)\n for p,v in zip(pos,g['mean']*100):ax.text(p,v+.8,f'{v:.1f}',ha='center')\n ax.set_xticks(pos,g.index)\n ax.set_title('Сравнение групп')\n",
+    "why": "Additional representation/visibility control on the same two corrected cards."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "chart",
+    "name": "alpha-zero-whiskers",
+    "expected": false,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\ndef panel(ax, x, col, title):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n    bars = ax.bar(g.index, g[\"mean\"] * 100, yerr=[(g[\"mean\"] - lo) * 100, (hi - g[\"mean\"]) * 100],\n                  capsize=6, color=[\"lightgray\", \"tab:blue\"])\n    ax.bar_label(bars, fmt=\"%.1f\", padding=8)\n    ax.set_ylabel(\"%\")\n    ax.set_title(title)\n    ax.spines[[\"top\", \"right\"]].set_visible(False)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.8))\npanel(axes[0], orders, \"late\", \"Опозданий вдвое меньше\")\npanel(axes[1], ab[ab[\"distance_km\"] < 2], \"ordered\", \"До 2 км заказывают чуть реже\")\nfig.tight_layout()\nfor ax in axes:\n    for col in ax.collections: col.set_alpha(0)",
+    "why": "Additional representation/visibility control on the same two corrected cards."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "chart",
+    "name": "transparent-whiskers",
+    "expected": false,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\ndef panel(ax, x, col, title):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n    bars = ax.bar(g.index, g[\"mean\"] * 100, yerr=[(g[\"mean\"] - lo) * 100, (hi - g[\"mean\"]) * 100],\n                  capsize=6, color=[\"lightgray\", \"tab:blue\"])\n    ax.bar_label(bars, fmt=\"%.1f\", padding=8)\n    ax.set_ylabel(\"%\")\n    ax.set_title(title)\n    ax.spines[[\"top\", \"right\"]].set_visible(False)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.8))\npanel(axes[0], orders, \"late\", \"Опозданий вдвое меньше\")\npanel(axes[1], ab[ab[\"distance_km\"] < 2], \"ordered\", \"До 2 км заказывают чуть реже\")\nfig.tight_layout()\nfor ax in axes:\n    for col in ax.collections: col.set_color((0,0,0,0))",
+    "why": "Additional representation/visibility control on the same two corrected cards."
+  },
+  {
+    "lesson": "ch05/04-confidence",
+    "id": "errorbars",
+    "name": "numeric-spaced-points",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"shop_id\")[\"late\"].agg([\"sum\", \"size\", \"mean\"]).sort_values(\"mean\")\nlo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n\nfig, ax = plt.subplots(figsize=(7, 3.5))\nax.errorbar(np.arange(len(g))*3+5, g[\"mean\"], yerr=[g[\"mean\"] - lo, hi - g[\"mean\"]], fmt=\"o\", capsize=4)\nax.set_ylabel(\"доля опозданий\")\nax.set_title(\"Опоздания по кофейням с 95 % интервалами\")\nax.set_xticks(np.arange(len(g))*3+5,g.index)",
+    "why": "Additional representation/visibility control on the same two corrected cards."
+  },
+  {
+    "lesson": "ch05/04-confidence",
+    "id": "errorbars",
+    "name": "separate-line-whiskers",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"shop_id\")[\"late\"].agg([\"sum\", \"size\", \"mean\"]).sort_values(\"mean\")\nlo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n\nfig, ax = plt.subplots(figsize=(7, 3.5))\npos=np.arange(len(g))*3+5\nax.plot(pos,g['mean'],'o')\nfor x,low,high in zip(pos,lo,hi):ax.plot([x,x],[low,high])\nax.set_xticks(pos,g.index)\nax.set_ylabel(\"доля опозданий\")\nax.set_title(\"Опоздания по кофейням с 95 % интервалами\")",
+    "why": "Additional representation/visibility control on the same two corrected cards."
+  },
+  {
+    "lesson": "ch05/04-confidence",
+    "id": "errorbars",
+    "name": "invisible-whiskers",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"shop_id\")[\"late\"].agg([\"sum\", \"size\", \"mean\"]).sort_values(\"mean\")\nlo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n\nfig, ax = plt.subplots(figsize=(7, 3.5))\nax.errorbar(g.index, g[\"mean\"], yerr=[g[\"mean\"] - lo, hi - g[\"mean\"]], fmt=\"o\", capsize=4)\nax.set_ylabel(\"доля опозданий\")\nax.set_title(\"Опоздания по кофейням с 95 % интервалами\")\nfor col in ax.collections:col.set_visible(False)",
+    "why": "Additional representation/visibility control on the same two corrected cards."
+  },
+  {
+    "lesson": "ch05/04-confidence",
+    "id": "errorbars",
+    "name": "invisible-points",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"shop_id\")[\"late\"].agg([\"sum\", \"size\", \"mean\"]).sort_values(\"mean\")\nlo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n\nfig, ax = plt.subplots(figsize=(7, 3.5))\nax.errorbar(g.index, g[\"mean\"], yerr=[g[\"mean\"] - lo, hi - g[\"mean\"]], fmt=\"o\", capsize=4)\nax.set_ylabel(\"доля опозданий\")\nax.set_title(\"Опоздания по кофейням с 95 % интервалами\")\nax.lines[0].set_visible(False)",
+    "why": "Additional representation/visibility control on the same two corrected cards."
+  }
+]

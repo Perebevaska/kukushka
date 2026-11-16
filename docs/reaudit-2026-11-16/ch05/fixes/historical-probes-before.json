@@ -1,0 +1,76 @@
+{
+  "version": "314.0.7",
+  "source": "published HTML",
+  "rows": [
+    {
+      "lesson": "05-hypotheses",
+      "id": "perm-snow",
+      "name": "all-null-permutations",
+      "expected": false,
+      "actual": true,
+      "response": null,
+      "check_sha256": "eb68db6b3fcc0a587bb56b4d5c26aba03ffb918aa514fb514b667af5af5b9a1a",
+      "code": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nlate = (ok[\"actual_min\"] > ok[\"promised_min\"]).to_numpy()\nsnow = (ok[\"weather\"] == \"снег\").to_numpy()\nrng = np.random.default_rng(0)\nobserved = late[snow].mean() - late[~snow].mean()\ndiffs = []\nfor _ in range(3000):\n    s = rng.permutation(snow)\n    diffs.append(late[s].mean() - late[~s].mean())\ndiffs = np.array(diffs)\np_value = (np.abs(diffs) >= abs(observed)).mean()\ndiffs=np.zeros(3000);p_value=0.0"
+    },
+    {
+      "lesson": "05-hypotheses",
+      "id": "perm-fn",
+      "name": "wrong-reported-difference",
+      "expected": false,
+      "actual": true,
+      "response": null,
+      "check_sha256": "288c6a9d04eded47a645ab230df4e3aa89215ff19cdf9ee3ee58639f4cf2eb88",
+      "code": "import numpy as np\nimport pandas as pd\n\ndef perm_test(a, b, n_perm=2000, seed=0):\n    rng = np.random.default_rng(seed)\n    observed = a.mean() - b.mean()\n    pooled = np.concatenate([a, b])\n    k = len(a)\n    count = 0\n    for _ in range(n_perm):\n        perm = rng.permutation(pooled)\n        if abs(perm[:k].mean() - perm[k:].mean()) >= abs(observed):\n            count += 1\n    return observed, count / n_perm\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nauto = ok.loc[ok[\"courier\"] == \"авто\", \"actual_min\"].to_numpy()\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"].to_numpy()\nres = perm_test(auto, velo)\nres\nres=(999.,.47)"
+    },
+    {
+      "lesson": "05-hypotheses",
+      "id": "perm-fn",
+      "name": "monte-carlo-positive-at-zero-exceedances",
+      "expected": true,
+      "actual": false,
+      "response": "Код завершился с ошибкой — сначала исправьте её (сообщение выше).",
+      "check_sha256": "288c6a9d04eded47a645ab230df4e3aa89215ff19cdf9ee3ee58639f4cf2eb88",
+      "code": "import numpy as np\nimport pandas as pd\n\ndef perm_test(a, b, n_perm=2000, seed=0):\n    rng = np.random.default_rng(seed)\n    observed = a.mean() - b.mean()\n    pooled = np.concatenate([a, b])\n    k = len(a)\n    count = 0\n    for _ in range(n_perm):\n        perm = rng.permutation(pooled)\n        if abs(perm[:k].mean() - perm[k:].mean()) >= abs(observed):\n            count += 1\n    return observed, count / n_perm\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nauto = ok.loc[ok[\"courier\"] == \"авто\", \"actual_min\"].to_numpy()\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"].to_numpy()\nres = perm_test(auto, velo)\nres\nassert perm_test(np.arange(12),np.arange(100,112),2000,0)[1] > 0, \"Ноль при 2000 случайных перестановках\""
+    },
+    {
+      "lesson": "05-hypotheses",
+      "id": "perm-fn",
+      "name": "finite-monte-carlo-correction",
+      "expected": true,
+      "actual": true,
+      "response": null,
+      "check_sha256": "288c6a9d04eded47a645ab230df4e3aa89215ff19cdf9ee3ee58639f4cf2eb88",
+      "code": "import numpy as np\nimport pandas as pd\n\ndef perm_test(a, b, n_perm=2000, seed=0):\n    rng = np.random.default_rng(seed)\n    observed = a.mean() - b.mean()\n    pooled = np.concatenate([a, b])\n    k = len(a)\n    count = 0\n    for _ in range(n_perm):\n        perm = rng.permutation(pooled)\n        if abs(perm[:k].mean() - perm[k:].mean()) >= abs(observed):\n            count += 1\n    return observed, (count+1)/(n_perm+1)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nauto = ok.loc[ok[\"courier\"] == \"авто\", \"actual_min\"].to_numpy()\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"].to_numpy()\nres = perm_test(auto, velo)\nres"
+    },
+    {
+      "lesson": "09-project",
+      "id": "late",
+      "name": "negative-p",
+      "expected": false,
+      "actual": false,
+      "response": "p_late — вероятность от 0 до 1.",
+      "check_sha256": "4dcc1e5e795ef1a0da81c5dd12fb543dc7203c8c50c69fa67702f3a8333b4309",
+      "code": "import numpy as np\nfrom statsmodels.stats.proportion import proportions_ztest\ng = orders.groupby(\"group\")[\"late\"].agg([\"sum\", \"size\", \"mean\"])\na, b = g.loc[\"A\"], g.loc[\"B\"]\nlate_a, late_b = round(a[\"mean\"], 4), round(b[\"mean\"], 4)\nd = b[\"mean\"] - a[\"mean\"]\nse = np.sqrt(a[\"mean\"] * (1 - a[\"mean\"]) / a[\"size\"] + b[\"mean\"] * (1 - b[\"mean\"]) / b[\"size\"])\ndiff_pp = round(d * 100, 1)\nci = (round((d - 1.96 * se) * 100, 1), round((d + 1.96 * se) * 100, 1))\nz, p_late = proportions_ztest([b[\"sum\"], a[\"sum\"]], [b[\"size\"], a[\"size\"]])\ng\np_late=-0.00001"
+    },
+    {
+      "lesson": "09-project",
+      "id": "cities",
+      "name": "unadjusted-p-replaced",
+      "expected": false,
+      "actual": false,
+      "response": "Казань: пересчитайте исходное p-value до поправки Холма.",
+      "check_sha256": "742a5b5ad1b45fb0fb7322fc793edd2a4a039aa838f61629c09c9f3a16ac6aea",
+      "code": "import pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nfrom statsmodels.stats.multitest import multipletests\nrows = []\nfor city, x in orders.groupby(\"city\"):\n    g = x.groupby(\"group\")[\"late\"].agg([\"sum\", \"size\", \"mean\"])\n    z, p = proportions_ztest([g.loc[\"B\", \"sum\"], g.loc[\"A\", \"sum\"]], [g.loc[\"B\", \"size\"], g.loc[\"A\", \"size\"]])\n    rows.append({\"city\": city, \"late_a\": g.loc[\"A\", \"mean\"], \"late_b\": g.loc[\"B\", \"mean\"],\n                 \"diff_pp\": (g.loc[\"B\", \"mean\"] - g.loc[\"A\", \"mean\"]) * 100, \"p\": p})\nby_city = pd.DataFrame(rows).set_index(\"city\")\nby_city[\"p_holm\"] = multipletests(by_city[\"p\"], method=\"holm\")[1]\nall_cities = bool((by_city[\"p_holm\"] < 0.05).all())\nby_city.round(4)\nby_city[\"p\"]=1."
+    },
+    {
+      "lesson": "07-ab",
+      "id": "ztest",
+      "name": "unrounded-pooled-p",
+      "expected": true,
+      "actual": false,
+      "response": "p_value = 0.00856026498422051, а нужно 0.0086.",
+      "check_sha256": "3d1e90edfcaa407cc6a41362d60d8d43207c971734d7600ad603b283f55c1977",
+      "code": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nab = pd.read_csv(\"ab_push.csv\")\na = ab.loc[ab[\"group\"] == \"A\", \"ordered\"]\nb = ab.loc[ab[\"group\"] == \"B\", \"ordered\"]\nz, p = proportions_ztest([b.sum(), a.sum()], [len(b), len(a)])\np_value = round(p, 4)\ndiff = b.mean() - a.mean()\nse = np.sqrt(a.mean() * (1 - a.mean()) / len(a) + b.mean() * (1 - b.mean()) / len(b))\nci_lo = round((diff - 1.96 * se) * 100, 2)\nci_hi = round((diff + 1.96 * se) * 100, 2)\nfrom statsmodels.stats.proportion import proportions_ztest\nimport pandas as pd\ndf=pd.read_csv(\"ab_push.csv\")\ng=df.groupby(\"group\").ordered.agg([\"sum\",\"size\"])\np_value=proportions_ztest(g[\"sum\"],g[\"size\"])[1]"
+    }
+  ]
+}

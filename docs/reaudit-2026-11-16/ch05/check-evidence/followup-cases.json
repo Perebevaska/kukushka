@@ -1,0 +1,466 @@
+[
+  {
+    "lesson": "ch05/01-probability",
+    "id": "snow-table",
+    "name": "direct-mask-denominators",
+    "expected": true,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nsnow = ok.weather.eq('снег')\nt = pd.crosstab(snow, ok.late, margins=True)\nn_snow_late = int(ok.loc[snow, 'late'].sum())\np_late_snow = round(n_snow_late / snow.sum(),3)\np_snow_late = round(n_snow_late / ok.late.sum(),3)\ne = snow.sum()*ok.late.sum()/len(ok)\nextra = round(e,1)\nadded = round(n_snow_late-e,1)\n",
+    "why": "Independent counts retain the two distinct conditional denominators."
+  },
+  {
+    "lesson": "ch05/01-probability",
+    "id": "snow-table",
+    "name": "wrong-conditional-denominator",
+    "expected": false,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\n\nt = pd.crosstab(ok[\"weather\"] == \"снег\", ok[\"late\"], margins=True)\nn_snow_late = int(t.loc[True, True])\np_late_snow = round(t.loc[True, True] / t.loc[True, \"All\"], 3)\np_snow_late = p_late_snow\nextra = round(t.loc[True, \"All\"] * ok[\"late\"].mean(), 1)\nadded = round(n_snow_late - t.loc[True, \"All\"] * ok[\"late\"].mean(), 1)",
+    "why": "Confuses P(snow|late) with P(late|snow)."
+  },
+  {
+    "lesson": "ch05/02-distributions",
+    "id": "pmf-plot",
+    "name": "reverse-keyed-bars",
+    "expected": true,
+    "code": "import math\nimport numpy as np\nimport matplotlib.pyplot as plt\nn,p=30,.24\nk=np.arange(n,-1,-1)\ny=np.array([math.comb(n,int(i))*p**i*(1-p)**(n-i) for i in k])\nfig,ax=plt.subplots()\nax.bar(k,y)\nax.plot([n*p,n*p],[0,y.max()])\n",
+    "why": "Same (k,probability) pairs, independently calculated and reversed insertion order."
+  },
+  {
+    "lesson": "ch05/02-distributions",
+    "id": "pmf-plot",
+    "name": "off-by-one-x",
+    "expected": false,
+    "code": "from scipy import stats\nimport matplotlib.pyplot as plt\nn, p = 30, 0.24\nk = range(0, n + 1)\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.bar(range(1,n+2), stats.binom.pmf(k, n, p))\nax.axvline(n * p, color=\"tab:red\", linestyle=\"--\")\nax.set_title(\"n = 30, p = 0.24\")",
+    "why": "Common chart off-by-one: probabilities plotted at 1..31 rather than 0..30."
+  },
+  {
+    "lesson": "ch05/02b-normal",
+    "id": "log",
+    "name": "histogram-different-bins",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nskew_raw=round(pd.Series(t).skew(),2)\nskew_log=round(pd.Series(np.log(t)).skew(),2)\nfig,axes=plt.subplots(1,2)\nfor ax,values,title in zip(axes,[t,np.log(t)],['минуты','log(минуты)']):\n ax.hist(values,bins='auto')\n ax.set_title(title)\n",
+    "why": "Bin selection is not specified; values and titles retain the contract."
+  },
+  {
+    "lesson": "ch05/02b-normal",
+    "id": "log",
+    "name": "raw-values-under-log-title",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nskew_raw = round(t.skew(), 2)\nskew_log = round(np.log(t).skew(), 2)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.5))\naxes[0].hist(t, bins=40)\naxes[0].set_title(\"минуты\")\naxes[1].hist(t, bins=40)\naxes[1].set_title(\"log(минуты)\")\nfig.tight_layout()",
+    "why": "Copy/paste draws raw time twice while correctly calculating the two skews."
+  },
+  {
+    "lesson": "ch05/03-sampling",
+    "id": "se-check",
+    "name": "vectorized-index-resampling",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].to_numpy()\nrng = np.random.default_rng(2)\nmeans=t[rng.integers(0,len(t),size=(3000,30))].mean(axis=1)\nse_sim=round(means.std(),2)\nse_formula=round(pd.Series(t).std()/30**.5,2)\n",
+    "why": "Array indexing instead of choice; same means, alternative sigma ddof=1 as visible text says."
+  },
+  {
+    "lesson": "ch05/03-sampling",
+    "id": "se-check",
+    "name": "stored-sums-instead-of-means",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].to_numpy()\nrng = np.random.default_rng(2)\nmeans = np.array([rng.choice(t, size=30).sum() for _ in range(3000)])\nse_sim = round(means.std()/30, 2)\nse_formula = round(t.std() / np.sqrt(30), 2)",
+    "why": "SE scalar repaired by /30, but requested means stores sums, 30 times too large."
+  },
+  {
+    "lesson": "ch05/04-confidence",
+    "id": "courier-ci",
+    "name": "vectorized-reset-index",
+    "expected": true,
+    "code": "import pandas as pd\nfrom statsmodels.stats.proportion import proportion_confint\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng=ok.groupby('courier').late.agg(n='size',late='mean',hits='sum')\nlo,hi=proportion_confint(g.hits,g.n,method='wilson')\nci=g[['n','late']].assign(lo=lo,hi=hi).round(3).reset_index()\nci=ci.iloc[::-1]\n",
+    "why": "Vectorized Wilson plus explicit courier column and reversed row order."
+  },
+  {
+    "lesson": "ch05/04-confidence",
+    "id": "courier-ci",
+    "name": "wrong-labels-only",
+    "expected": false,
+    "code": "import pandas as pd\nfrom statsmodels.stats.proportion import proportion_confint\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"courier\")[\"late\"].agg([\"sum\", \"size\"])\nrows = []\nfor name, r in g.iterrows():\n    lo, hi = proportion_confint(r[\"sum\"], r[\"size\"], method=\"wilson\")\n    rows.append({\"courier\": name, \"n\": r[\"size\"], \"late\": round(r[\"sum\"] / r[\"size\"], 3),\n                 \"lo\": round(lo, 3), \"hi\": round(hi, 3)})\nci = pd.DataFrame(rows).set_index(\"courier\")\nci\nci.index = list(ci.index)[::-1]",
+    "why": "Reverses labels alone: counts and Wilson intervals belong to different couriers."
+  },
+  {
+    "lesson": "ch05/05-hypotheses",
+    "id": "perm-fn",
+    "name": "exact-independent-combinations",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nfrom itertools import combinations\nfrom math import comb\n\ndef perm_test(a,b,n_perm=2000,seed=0):\n a,b=np.asarray(a),np.asarray(b)\n obs=a.mean()-b.mean(); pool=np.r_[a,b]; n=len(a)\n if comb(len(pool),n)<=10000:\n  hits=total=0\n  for inds in combinations(range(len(pool)),n):\n   mask=np.zeros(len(pool),bool);mask[list(inds)]=True\n   diff=pool[mask].mean()-pool[~mask].mean()\n   hits+=abs(diff)>=abs(obs)-1e-12;total+=1\n  return obs,hits/total\n rng=np.random.default_rng(seed)\n diffs=[]\n for _ in range(n_perm):\n  mask=rng.permutation(len(pool))\n  diffs.append(pool[mask[:n]].mean()-pool[mask[n:]].mean())\n return obs,(np.count_nonzero(np.abs(diffs)>=abs(obs)-1e-12)+1)/(n_perm+1)\nd=pd.read_csv('deliveries.csv');ok=d[d.actual_min.between(1,299)]\nres=perm_test(ok.loc[ok.courier=='авто','actual_min'].to_numpy(),ok.loc[ok.courier=='вело','actual_min'].to_numpy())\n",
+    "why": "Exact label partitions for small samples and independent Monte Carlo for larger ones; +1 is valid."
+  },
+  {
+    "lesson": "ch05/05-hypotheses",
+    "id": "perm-fn",
+    "name": "one-sided-instead-of-two",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\n\ndef perm_test(a, b, n_perm=2000, seed=0):\n    rng = np.random.default_rng(seed)\n    observed = a.mean() - b.mean()\n    pooled = np.concatenate([a, b])\n    k = len(a)\n    count = 0\n    for _ in range(n_perm):\n        perm = rng.permutation(pooled)\n        if perm[:k].mean() - perm[k:].mean() >= observed:\n            count += 1\n    return observed, count / n_perm\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nauto = ok.loc[ok[\"courier\"] == \"авто\", \"actual_min\"].to_numpy()\nvelo = ok.loc[ok[\"courier\"] == \"вело\", \"actual_min\"].to_numpy()\nres = perm_test(auto, velo)\nres",
+    "why": "One-sided tail substituted for required two-sided permutation probability."
+  },
+  {
+    "lesson": "ch05/06-tests",
+    "id": "chi2",
+    "name": "reverse-rows-and-columns",
+    "expected": true,
+    "code": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nct=ok.groupby(['weather','late']).size().unstack(fill_value=0).iloc[::-1,::-1]\nchi2,chi2_p,dof,expected=stats.chi2_contingency(ct)\ngap=ct[True]-expected[:,ct.columns.get_loc(True)]\nmax_gap_weather=gap.idxmax()\n",
+    "why": "Groupby instead of crosstab, both axes reversed with keys preserved."
+  },
+  {
+    "lesson": "ch05/06-tests",
+    "id": "chi2",
+    "name": "weather-label-permutation",
+    "expected": false,
+    "code": "import pandas as pd\nfrom scipy import stats\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nct = pd.crosstab(ok[\"weather\"], ok[\"late\"])\nchi2, chi2_p, dof, expected = stats.chi2_contingency(ct)\ngap = ct[True] - expected[:, 1]\nmax_gap_weather = gap.idxmax()\nct.index = list(ct.index)[::-1]",
+    "why": "Counts retained but weather labels no longer identify their rows."
+  },
+  {
+    "lesson": "ch05/07-ab",
+    "id": "per-buyer",
+    "name": "manual-aggregate",
+    "expected": true,
+    "code": "import pandas as pd\nfrom scipy import stats\nab = pd.read_csv(\"ab_push.csv\")\narpu={g:round(x.revenue.sum()/len(x),1) for g,x in ab.groupby('group')}\nbuy=ab[ab.ordered.eq(1)]\nper_buyer={g:round(x.revenue.sum()/len(x),1) for g,x in buy.groupby('group')}\na,b=[buy.loc[buy.group.eq(g),'revenue'] for g in ['A','B']]\np_buyer=round(stats.ttest_ind(a,b,equal_var=False).pvalue,3)\n",
+    "why": "Independent denominator calculation; Welch two-sided p unchanged by A/B order."
+  },
+  {
+    "lesson": "ch05/07-ab",
+    "id": "per-buyer",
+    "name": "arpu-as-buyer-revenue",
+    "expected": false,
+    "code": "import pandas as pd\nfrom scipy import stats\nab = pd.read_csv(\"ab_push.csv\")\narpu = ab.groupby(\"group\")[\"revenue\"].mean().round(1).to_dict()\nbuy = ab[ab[\"ordered\"] == 1]\nper_buyer = arpu.copy()\np_buyer = round(stats.ttest_ind(buy.loc[buy[\"group\"] == \"B\", \"revenue\"],\n                                buy.loc[buy[\"group\"] == \"A\", \"revenue\"], equal_var=False).pvalue, 3)",
+    "why": "Reuses all-guests denominator for requested buyer-only revenue."
+  },
+  {
+    "lesson": "ch05/08-pitfalls",
+    "id": "holm",
+    "name": "manual-stepdown",
+    "expected": true,
+    "code": "from statsmodels.stats.multitest import multipletests\npvals = [0.001, 0.004, 0.008, 0.02, 0.03, 0.04, 0.3, 0.6]\norder=sorted(range(len(pvals)),key=pvals.__getitem__)\nreject=[False]*len(pvals)\nfor rank,i in enumerate(order):\n if pvals[i] > .05/(len(pvals)-rank):break\n reject[i]=True\nn_holm=sum(reject)\n",
+    "why": "Own Holm stepdown implementation, maintaining original indices."
+  },
+  {
+    "lesson": "ch05/08-pitfalls",
+    "id": "holm",
+    "name": "bonferroni-as-holm",
+    "expected": false,
+    "code": "from statsmodels.stats.multitest import multipletests\npvals = [0.001, 0.004, 0.008, 0.02, 0.03, 0.04, 0.3, 0.6]\nreject, p_adj, _, _ = multipletests(pvals, alpha=0.05, method=\"bonferroni\")\nreject = list(reject)\nn_holm = sum(reject)",
+    "why": "Treats Holm as single Bonferroni threshold and misses the third rejection."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "decision",
+    "name": "round-interval-before-decision",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef share_test(x, col):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    z, p = proportions_ztest([g.loc[\"B\", \"sum\"], g.loc[\"A\", \"sum\"]], [g.loc[\"B\", \"size\"], g.loc[\"A\", \"size\"]])\n    return g.loc[\"B\", \"mean\"] - g.loc[\"A\", \"mean\"], p\n\ndef promise_report(ab):\n    srm_p = stats.chisquare(ab[\"group\"].value_counts()).pvalue\n    late_d, late_p = share_test(ab[ab[\"ordered\"] == 1], \"late\")\n    conv_d, conv_p = share_test(ab[ab[\"distance_km\"] < 2], \"ordered\")\n    A = ab.loc[ab[\"group\"] == \"A\", \"amount\"]\n    B = ab.loc[ab[\"group\"] == \"B\", \"amount\"]\n    rev_d = B.mean() - A.mean()\n    rev_p = stats.ttest_ind(B, A, equal_var=False).pvalue\n    se = np.sqrt(A.var() / len(A) + B.var() / len(B))\n    rev_lo, rev_hi = round(rev_d - 1.96 * se,1), round(rev_d + 1.96 * se,1)\n    DELTA = 10  # допустимое снижение выручки на сессию, ₽ — зафиксировано до теста\n    if srm_p < 0.01 or not (late_p < 0.05 and late_d < 0) or rev_hi < -DELTA:\n        decision = \"не внедрять\"\n    elif rev_lo > -DELTA:\n        decision = \"внедрять\"\n    else:\n        decision = \"неопределённо\"\n    return {\n        \"srm_ok\": bool(srm_p >= 0.01),\n        \"late_diff_pp\": round(late_d * 100, 1), \"late_p\": late_p,\n        \"conv_short_diff_pp\": round(conv_d * 100, 2), \"conv_short_p\": conv_p,\n        \"rev_diff\": round(rev_d, 1), \"rev_p\": rev_p,\n        \"rev_lo\": round(rev_lo, 1), \"rev_hi\": round(rev_hi, 1),\n        \"decision\": decision,\n    }\n\nab = pd.read_csv(\"ab_promise.csv\", parse_dates=[\"ts\"])\npromise_report(ab)",
+    "why": "Comparing displayed −10.0 loses which side of −10 the raw limit lies."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "decision",
+    "name": "significance-only",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef share_test(x, col):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    z, p = proportions_ztest([g.loc[\"B\", \"sum\"], g.loc[\"A\", \"sum\"]], [g.loc[\"B\", \"size\"], g.loc[\"A\", \"size\"]])\n    return g.loc[\"B\", \"mean\"] - g.loc[\"A\", \"mean\"], p\n\ndef promise_report(ab):\n    srm_p = stats.chisquare(ab[\"group\"].value_counts()).pvalue\n    late_d, late_p = share_test(ab[ab[\"ordered\"] == 1], \"late\")\n    conv_d, conv_p = share_test(ab[ab[\"distance_km\"] < 2], \"ordered\")\n    A = ab.loc[ab[\"group\"] == \"A\", \"amount\"]\n    B = ab.loc[ab[\"group\"] == \"B\", \"amount\"]\n    rev_d = B.mean() - A.mean()\n    rev_p = stats.ttest_ind(B, A, equal_var=False).pvalue\n    se = np.sqrt(A.var() / len(A) + B.var() / len(B))\n    rev_lo, rev_hi = rev_d - 1.96 * se, rev_d + 1.96 * se\n    DELTA = 10  # допустимое снижение выручки на сессию, ₽ — зафиксировано до теста\n    if srm_p < 0.01 or not (late_p < 0.05 and late_d < 0) or rev_hi < -DELTA:\n        decision = \"не внедрять\"\n    elif rev_p >= .05:\n        decision = \"внедрять\"\n    else:\n        decision = \"неопределённо\"\n    return {\n        \"srm_ok\": bool(srm_p >= 0.01),\n        \"late_diff_pp\": round(late_d * 100, 1), \"late_p\": late_p,\n        \"conv_short_diff_pp\": round(conv_d * 100, 2), \"conv_short_p\": conv_p,\n        \"rev_diff\": round(rev_d, 1), \"rev_p\": rev_p,\n        \"rev_lo\": round(rev_lo, 1), \"rev_hi\": round(rev_hi, 1),\n        \"decision\": decision,\n    }\n\nab = pd.read_csv(\"ab_promise.csv\", parse_dates=[\"ts\"])\npromise_report(ab)",
+    "why": "Mistakes nonsignificant revenue test for noninferiority guardrail."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "decision",
+    "name": "independent-pearson-z",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef share_test(x, col):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    counts=g.loc[[\"B\",\"A\"],\"sum\"].to_numpy()\n    sizes=g.loc[[\"B\",\"A\"],\"size\"].to_numpy()\n    p=stats.chi2_contingency(np.column_stack([counts,sizes-counts]),correction=False).pvalue\n    z=None\n    return g.loc[\"B\", \"mean\"] - g.loc[\"A\", \"mean\"], p\n\ndef promise_report(ab):\n    srm_p = stats.chisquare(ab[\"group\"].value_counts()).pvalue\n    late_d, late_p = share_test(ab[ab[\"ordered\"] == 1], \"late\")\n    conv_d, conv_p = share_test(ab[ab[\"distance_km\"] < 2], \"ordered\")\n    A = ab.loc[ab[\"group\"] == \"A\", \"amount\"]\n    B = ab.loc[ab[\"group\"] == \"B\", \"amount\"]\n    rev_d = B.mean() - A.mean()\n    rev_p = stats.ttest_ind(B, A, equal_var=False).pvalue\n    se = np.sqrt(A.var() / len(A) + B.var() / len(B))\n    rev_lo, rev_hi = rev_d - 1.96 * se, rev_d + 1.96 * se\n    DELTA = 10  # допустимое снижение выручки на сессию, ₽ — зафиксировано до теста\n    if srm_p < 0.01 or not (late_p < 0.05 and late_d < 0) or rev_hi < -DELTA:\n        decision = \"не внедрять\"\n    elif rev_lo > -DELTA:\n        decision = \"внедрять\"\n    else:\n        decision = \"неопределённо\"\n    return {\n        \"srm_ok\": bool(srm_p >= 0.01),\n        \"late_diff_pp\": round(late_d * 100, 1), \"late_p\": late_p,\n        \"conv_short_diff_pp\": round(conv_d * 100, 2), \"conv_short_p\": conv_p,\n        \"rev_diff\": round(rev_d, 1), \"rev_p\": rev_p,\n        \"rev_lo\": round(rev_lo, 1), \"rev_hi\": round(rev_hi, 1),\n        \"decision\": decision,\n    }\n\nab = pd.read_csv(\"ab_promise.csv\", parse_dates=[\"ts\"])\npromise_report(ab)",
+    "why": "Uncorrected Pearson 2×2 chi-square is equivalent to squared two-sided pooled z."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "ratings",
+    "name": "rating-equivalent-rank-test",
+    "expected": true,
+    "code": "import pandas as pd\nfrom scipy import stats\nr = orders.dropna(subset=[\"rating\"])\nm = r.groupby(\"group\")[\"rating\"].mean()\nrating_a, rating_b = round(m[\"A\"], 2), round(m[\"B\"], 2)\nlow = (r[\"rating\"] <= 4).groupby(r[\"group\"]).mean()\nlow_a, low_b = round(low[\"A\"], 3), round(low[\"B\"], 3)\np_rating = stats.mannwhitneyu(r.loc[r[\"group\"] == \"A\", \"rating\"], r.loc[r[\"group\"] == \"B\", \"rating\"], alternative=\"two-sided\").pvalue",
+    "why": "Two-sided rank test is symmetric to swapping groups."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "ratings",
+    "name": "rating-low-cutoff-strict",
+    "expected": false,
+    "code": "import pandas as pd\nfrom scipy import stats\nr = orders.dropna(subset=[\"rating\"])\nm = r.groupby(\"group\")[\"rating\"].mean()\nrating_a, rating_b = round(m[\"A\"], 2), round(m[\"B\"], 2)\nlow = (r[\"rating\"] < 4).groupby(r[\"group\"]).mean()\nlow_a, low_b = round(low[\"A\"], 3), round(low[\"B\"], 3)\np_rating = stats.mannwhitneyu(r.loc[r[\"group\"] == \"B\", \"rating\"], r.loc[r[\"group\"] == \"A\", \"rating\"]).pvalue",
+    "why": "Excludes exactly-four ratings from requested non-five share."
+  },
+  {
+    "lesson": "ch05/01-probability",
+    "id": "running",
+    "name": "hlines-and-one-based-index",
+    "expected": true,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nrng = np.random.default_rng(11)\nlate = rng.random(5000) < 0.24\nrunning = late.cumsum() / np.arange(1, 5001)\nafter_100 = abs(running[99] - 0.24)\nafter_5000 = abs(running[-1] - 0.24)\n\nfig, ax = plt.subplots(figsize=(8, 3))\nax.plot(np.arange(1,5001),running)\nax.hlines(.24,1,5000)",
+    "why": "Correct line collection and one-based delivery indices."
+  },
+  {
+    "lesson": "ch05/01-probability",
+    "id": "running",
+    "name": "wrong-reference-level",
+    "expected": false,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nrng = np.random.default_rng(11)\nlate = rng.random(5000) < 0.24\nrunning = late.cumsum() / np.arange(1, 5001)\nafter_100 = abs(running[99] - 0.24)\nafter_5000 = abs(running[-1] - 0.24)\n\nfig, ax = plt.subplots(figsize=(8, 3))\nax.plot(running)\nax.axhline(0.24, color=\"tab:red\", linestyle=\"--\")\nax.lines[1].set_ydata([.25,.25])",
+    "why": "Shows .25 rather than known .24."
+  },
+  {
+    "lesson": "ch05/06-tests",
+    "id": "agree",
+    "name": "hypergeometric-permutation",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nx = ok[ok[\"shop_id\"].isin([\"KZN-2\", \"KZN-1\"])]\nlate = (x[\"actual_min\"] > x[\"promised_min\"]).to_numpy()\ngrp = (x[\"shop_id\"] == \"KZN-2\").to_numpy()\nrng = np.random.default_rng(2)\nz, p_z = proportions_ztest([late[grp].sum(), late[~grp].sum()], [grp.sum(), (~grp).sum()])\nobserved = late[grp].mean() - late[~grp].mean()\n\nfrom scipy.stats import hypergeom\nn_b,n_a=int(grp.sum()),int((~grp).sum());total=int(late.sum())\ncounts=np.arange(max(0,total-n_a),min(n_b,total)+1)\npossible=counts/n_b-(total-counts)/n_a\np_perm=hypergeom.pmf(counts,n_a+n_b,total,n_b)[np.abs(possible)>=abs(observed)-1e-12].sum()\ndiff_pp=round(observed*100,1)\n",
+    "why": "Exact hypergeometric null, mathematically same assignments; no copied RNG stream."
+  },
+  {
+    "lesson": "ch05/06-tests",
+    "id": "agree",
+    "name": "asymptotic-p-as-permutation",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\nfrom statsmodels.stats.proportion import proportions_ztest\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nx = ok[ok[\"shop_id\"].isin([\"KZN-2\", \"KZN-1\"])]\nlate = (x[\"actual_min\"] > x[\"promised_min\"]).to_numpy()\ngrp = (x[\"shop_id\"] == \"KZN-2\").to_numpy()\nrng = np.random.default_rng(2)\nz, p_z = proportions_ztest([late[grp].sum(), late[~grp].sum()], [grp.sum(), (~grp).sum()])\nobserved = late[grp].mean() - late[~grp].mean()\ndiffs = np.array([late[s].mean() - late[~s].mean() for s in (rng.permutation(grp) for _ in range(4000))])\nk = np.count_nonzero(np.abs(diffs) >= abs(observed) - 1e-12)\np_perm = (k + 1) / (4000 + 1)\ndiff_pp = round(observed * 100, 1)\np_perm=p_z",
+    "why": "Same large-sample approximation cannot replace finite permutation distribution."
+  },
+  {
+    "lesson": "ch05/07-ab",
+    "id": "ab-report",
+    "name": "unrounded-p",
+    "expected": true,
+    "code": "import pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef ab_report(df, metric):\n    a = df.loc[df[\"group\"] == \"A\", metric]\n    b = df.loc[df[\"group\"] == \"B\", metric]\n    srm_p = stats.chisquare([len(a), len(b)]).pvalue\n    z, p = proportions_ztest([b.sum(), a.sum()], [len(b), len(a)])\n    return {\n        \"n_a\": len(a), \"n_b\": len(b), \"srm_p\": srm_p,\n        \"a\": round(a.mean(), 4), \"b\": round(b.mean(), 4),\n        \"diff_pp\": round((b.mean() - a.mean()) * 100, 2),\n        \"p\": p,\n        \"significant\": bool(p < 0.05 and srm_p >= 0.01),\n    }\n\nab = pd.read_csv(\"ab_push.csv\")\nreport = ab_report(ab, \"ordered\")\nreport",
+    "why": "Visible contract accepts raw p and rounded p."
+  },
+  {
+    "lesson": "ch05/07-ab",
+    "id": "ab-report",
+    "name": "metric-name-ignored",
+    "expected": false,
+    "code": "import pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef ab_report(df, metric):\n    metric=\"ordered\"\n    a = df.loc[df[\"group\"] == \"A\", metric]\n    b = df.loc[df[\"group\"] == \"B\", metric]\n    srm_p = stats.chisquare([len(a), len(b)]).pvalue\n    z, p = proportions_ztest([b.sum(), a.sum()], [len(b), len(a)])\n    return {\n        \"n_a\": len(a), \"n_b\": len(b), \"srm_p\": srm_p,\n        \"a\": round(a.mean(), 4), \"b\": round(b.mean(), 4),\n        \"diff_pp\": round((b.mean() - a.mean()) * 100, 2),\n        \"p\": round(p, 4),\n        \"significant\": bool(p < 0.05 and srm_p >= 0.01),\n    }\n\nab = pd.read_csv(\"ab_push.csv\")\nreport = ab_report(ab, \"ordered\")\nreport",
+    "why": "Returned function must use its metric argument on another dataset."
+  },
+  {
+    "lesson": "ch05/07-ab",
+    "id": "ab-report",
+    "name": "round-p-before-significance",
+    "expected": false,
+    "code": "import pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef ab_report(df, metric):\n    a = df.loc[df[\"group\"] == \"A\", metric]\n    b = df.loc[df[\"group\"] == \"B\", metric]\n    srm_p = stats.chisquare([len(a), len(b)]).pvalue\n    z, p = proportions_ztest([b.sum(), a.sum()], [len(b), len(a)])\n    p=round(p,4)\n    return {\n        \"n_a\": len(a), \"n_b\": len(b), \"srm_p\": srm_p,\n        \"a\": round(a.mean(), 4), \"b\": round(b.mean(), 4),\n        \"diff_pp\": round((b.mean() - a.mean()) * 100, 2),\n        \"p\": round(p, 4),\n        \"significant\": bool(p < 0.05 and srm_p >= 0.01),\n    }\n\nab = pd.read_csv(\"ab_push.csv\")\nreport = ab_report(ab, \"ordered\")\nreport",
+    "why": "p just below .05 must remain significant even if shown as .0500."
+  },
+  {
+    "lesson": "ch05/07-ab",
+    "id": "ab-report",
+    "name": "round-srm-before-decision",
+    "expected": false,
+    "code": "import pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef ab_report(df, metric):\n    a = df.loc[df[\"group\"] == \"A\", metric]\n    b = df.loc[df[\"group\"] == \"B\", metric]\n    srm_p = round(stats.chisquare([len(a), len(b)]).pvalue,4)\n    z, p = proportions_ztest([b.sum(), a.sum()], [len(b), len(a)])\n    return {\n        \"n_a\": len(a), \"n_b\": len(b), \"srm_p\": srm_p,\n        \"a\": round(a.mean(), 4), \"b\": round(b.mean(), 4),\n        \"diff_pp\": round((b.mean() - a.mean()) * 100, 2),\n        \"p\": round(p, 4),\n        \"significant\": bool(p < 0.05 and srm_p >= 0.01),\n    }\n\nab = pd.read_csv(\"ab_push.csv\")\nreport = ab_report(ab, \"ordered\")\nreport",
+    "why": "SRM p just below .01 remains a failed randomization even if printed .0100."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "decision",
+    "name": "round-late-p-before-decision",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.proportion import proportions_ztest\n\ndef share_test(x, col):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    z, p = proportions_ztest([g.loc[\"B\", \"sum\"], g.loc[\"A\", \"sum\"]], [g.loc[\"B\", \"size\"], g.loc[\"A\", \"size\"]])\n    return g.loc[\"B\", \"mean\"] - g.loc[\"A\", \"mean\"], p\n\ndef promise_report(ab):\n    srm_p = stats.chisquare(ab[\"group\"].value_counts()).pvalue\n    late_d, late_p = share_test(ab[ab[\"ordered\"] == 1], \"late\")\n    late_p=round(late_p,4)\n    conv_d, conv_p = share_test(ab[ab[\"distance_km\"] < 2], \"ordered\")\n    A = ab.loc[ab[\"group\"] == \"A\", \"amount\"]\n    B = ab.loc[ab[\"group\"] == \"B\", \"amount\"]\n    rev_d = B.mean() - A.mean()\n    rev_p = stats.ttest_ind(B, A, equal_var=False).pvalue\n    se = np.sqrt(A.var() / len(A) + B.var() / len(B))\n    rev_lo, rev_hi = rev_d - 1.96 * se, rev_d + 1.96 * se\n    DELTA = 10  # допустимое снижение выручки на сессию, ₽ — зафиксировано до теста\n    if srm_p < 0.01 or not (late_p < 0.05 and late_d < 0) or rev_hi < -DELTA:\n        decision = \"не внедрять\"\n    elif rev_lo > -DELTA:\n        decision = \"внедрять\"\n    else:\n        decision = \"неопределённо\"\n    return {\n        \"srm_ok\": bool(srm_p >= 0.01),\n        \"late_diff_pp\": round(late_d * 100, 1), \"late_p\": late_p,\n        \"conv_short_diff_pp\": round(conv_d * 100, 2), \"conv_short_p\": conv_p,\n        \"rev_diff\": round(rev_d, 1), \"rev_p\": rev_p,\n        \"rev_lo\": round(rev_lo, 1), \"rev_hi\": round(rev_hi, 1),\n        \"decision\": decision,\n    }\n\nab = pd.read_csv(\"ab_promise.csv\", parse_dates=[\"ts\"])\npromise_report(ab)",
+    "why": "Main metric p below .05 is significant before rounding."
+  },
+  {
+    "lesson": "ch05/02-distributions",
+    "id": "binom-hand",
+    "name": "independent-comb",
+    "expected": true,
+    "code": "from math import comb\nfrom scipy import stats\nways=comb(4,2)\nr=.24**2*.76**2\none=round(r,4)\np_hand=round(ways*r,4)\np_scipy=round(stats.binom.pmf(2,4,.24),4)",
+    "why": "Integer combinations and full precision intermediate probability."
+  },
+  {
+    "lesson": "ch05/02-distributions",
+    "id": "binom-hand",
+    "name": "fractional-ways",
+    "expected": false,
+    "code": "import itertools\nfrom scipy import stats\nways = sum(1 for v in itertools.product(\"ОВ\", repeat=4) if v.count(\"О\") == 2)\none = round(0.24 ** 2 * 0.76 ** 2, 4)\np_hand = round(ways * 0.24 ** 2 * 0.76 ** 2, 4)\np_scipy = round(stats.binom.pmf(2, 4, 0.24), 4)\nways=6.5",
+    "why": "Discrete number of assignments cannot be fractional."
+  },
+  {
+    "lesson": "ch05/02-distributions",
+    "id": "binom-hand",
+    "name": "early-rounded-one",
+    "expected": false,
+    "code": "import itertools\nfrom scipy import stats\nways = sum(1 for v in itertools.product(\"ОВ\", repeat=4) if v.count(\"О\") == 2)\none = round(0.24 ** 2 * 0.76 ** 2, 4)\np_hand = round(ways * 0.24 ** 2 * 0.76 ** 2, 4)\np_scipy = round(stats.binom.pmf(2, 4, 0.24), 4)\np_hand=round(ways*one,4)",
+    "why": "Intermediate rounded probability changes final p_hand. Old wording did not make the required precision explicit; revised wording does."
+  },
+  {
+    "lesson": "ch05/02b-normal",
+    "id": "log",
+    "name": "step-histograms",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nskew_raw = round(t.skew(), 2)\nskew_log = round(np.log(t).skew(), 2)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.5))\naxes[0].hist(t, bins=31, histtype=\"step\")\naxes[0].set_title(\"минуты\")\naxes[1].hist(np.log(t), bins=31, histtype=\"step\")\naxes[1].set_title(\"log(минуты)\")\nfig.tight_layout()",
+    "why": "Histogram bin count, normalization and step/bar rendering do not change the data histogram."
+  },
+  {
+    "lesson": "ch05/02b-normal",
+    "id": "log",
+    "name": "density-histograms",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nskew_raw = round(t.skew(), 2)\nskew_log = round(np.log(t).skew(), 2)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.5))\naxes[0].hist(t, bins=27, density=True)\naxes[0].set_title(\"минуты\")\naxes[1].hist(np.log(t), bins=27, density=True)\naxes[1].set_title(\"log(минуты)\")\nfig.tight_layout()",
+    "why": "Histogram bin count, normalization and step/bar rendering do not change the data histogram."
+  },
+  {
+    "lesson": "ch05/01-probability",
+    "id": "two-late",
+    "name": "review-alternative",
+    "expected": true,
+    "code": "from math import comb\np=.24\nout=[comb(2,k)*p**k*(1-p)**(2-k) for k in range(3)]\nnone,exactly_one,both=map(lambda v: round(v,3),out)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/01-probability",
+    "id": "two-late",
+    "name": "review-error",
+    "expected": false,
+    "code": "from math import comb\np=.24\nout=[comb(2,k)*p**k*(1-p)**(2-k) for k in range(3)]\nnone,exactly_one,both=map(lambda v: round(v,3),out)\nexactly_one=round(exactly_one/2,3)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/02-distributions",
+    "id": "tail",
+    "name": "review-alternative",
+    "expected": true,
+    "code": "from scipy.stats import binom\np_bad=round(sum(binom.pmf(range(8,21),20,.24)),4)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/02-distributions",
+    "id": "tail",
+    "name": "review-error",
+    "expected": false,
+    "code": "from scipy.stats import binom\np_bad=round(sum(binom.pmf(range(8,21),20,.24)),4)\np_bad=round(sum(binom.pmf(range(9,21),20,.24)),4)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/02b-normal",
+    "id": "norm-approx",
+    "name": "review-alternative",
+    "expected": true,
+    "code": "from scipy.stats import norm,binom\nn,p,k=500,.24,140\ne=1-binom.cdf(k-1,n,p)\nscale=(n*p*(1-p))**.5\na=1-norm.cdf((k-.5-n*p)/scale)\nexact,approx=round(e,4),round(a,4)\nrel_err=round(abs(a/e-1),3)\nrule_ok=min(n*p,n*(1-p))>=10",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/02b-normal",
+    "id": "norm-approx",
+    "name": "review-error",
+    "expected": false,
+    "code": "from scipy.stats import norm,binom\nn,p,k=500,.24,140\ne=1-binom.cdf(k-1,n,p)\nscale=(n*p*(1-p))**.5\na=1-norm.cdf((k-.5-n*p)/scale)\nexact,approx=round(e,4),round(a,4)\nrel_err=round(abs(a/e-1),3)\nrule_ok=min(n*p,n*(1-p))>=10\napprox=round(1-norm.cdf((k-n*p)/scale),4)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/03-sampling",
+    "id": "se-fn",
+    "name": "review-alternative",
+    "expected": true,
+    "code": "def se(sigma,n):\n    return (sigma**2/n)**.5\nses=[round(se(11, sample),2) for sample in [25,100,400]]",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/03-sampling",
+    "id": "se-fn",
+    "name": "review-error",
+    "expected": false,
+    "code": "def se(sigma,n):\n    return (sigma**2/n)**.5\nses=[round(se(11, sample),2) for sample in [25,100,400]]\ndef se(sigma,n): return sigma/n",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/04-confidence",
+    "id": "errorbars",
+    "name": "review-numeric-x-with-labels",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"shop_id\")[\"late\"].agg([\"sum\", \"size\", \"mean\"]).sort_values(\"mean\")\nlo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n\nfig, ax = plt.subplots(figsize=(7, 3.5))\nax.errorbar(range(len(g)), g[\"mean\"], yerr=[g[\"mean\"] - lo, hi - g[\"mean\"]], fmt=\"o\", capsize=4)\nax.set_ylabel(\"доля опозданий\")\nax.set_title(\"Опоздания по кофейням с 95 % интервалами\")\nax.set_xticks(range(len(g)),g.index)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/04-confidence",
+    "id": "errorbars",
+    "name": "review-reassigned-shop-labels",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\ng = ok.groupby(\"shop_id\")[\"late\"].agg([\"sum\", \"size\", \"mean\"]).sort_values(\"mean\")\nlo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n\nfig, ax = plt.subplots(figsize=(7, 3.5))\nax.errorbar(g.index, g[\"mean\"], yerr=[g[\"mean\"] - lo, hi - g[\"mean\"]], fmt=\"o\", capsize=4)\nax.set_ylabel(\"доля опозданий\")\nax.set_title(\"Опоздания по кофейням с 95 % интервалами\")\nax.set_xticks(range(len(g)), g.index[::-1])",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/05-hypotheses",
+    "id": "observed",
+    "name": "review-alternative",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('deliveries.csv').query('1 <= actual_min <= 299')\ng=df.assign(is_late=df.actual_min.gt(df.promised_min)).groupby(df.weather.eq('снег')).is_late.mean()\nobserved=round(100*(g[True]-g[False]),1)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/05-hypotheses",
+    "id": "observed",
+    "name": "review-error",
+    "expected": false,
+    "code": "import pandas as pd\ndf=pd.read_csv('deliveries.csv').query('1 <= actual_min <= 299')\ng=df.assign(is_late=df.actual_min.gt(df.promised_min)).groupby(df.weather.eq('снег')).is_late.mean()\nobserved=round(100*(g[True]-g[False]),1)\nobserved=-observed",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/06-tests",
+    "id": "paired",
+    "name": "review-alternative",
+    "expected": true,
+    "code": "import pandas as pd\nfrom scipy.stats import ttest_1samp\ndf=pd.read_csv('deliveries.csv',parse_dates=['created']).query('1 <= actual_min <= 299')\ntab=df.actual_min.gt(df.promised_min).groupby([df.shop_id,df.created.dt.month]).mean().unstack()\nchange=tab[11]-tab[10]\nmean_change=round(change.mean()*100,1)\np_value=round(ttest_1samp(change,0).pvalue,3)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/06-tests",
+    "id": "paired",
+    "name": "review-error",
+    "expected": false,
+    "code": "import pandas as pd\nfrom scipy.stats import ttest_1samp\ndf=pd.read_csv('deliveries.csv',parse_dates=['created']).query('1 <= actual_min <= 299')\ntab=df.actual_min.gt(df.promised_min).groupby([df.shop_id,df.created.dt.month]).mean().unstack()\nchange=tab[11]-tab[10]\nmean_change=round(change.mean()*100,1)\np_value=round(ttest_1samp(change,0).pvalue,3)\nfrom scipy.stats import ttest_ind\np_value=round(ttest_ind(tab[11],tab[10],equal_var=False).pvalue,3)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/07-ab",
+    "id": "srm",
+    "name": "review-alternative",
+    "expected": true,
+    "code": "import pandas as pd\nfrom scipy.stats import chi2\nx=pd.read_csv('ab_push.csv')\nsizes=x.groupby('group').size().sort_index(ascending=False)\nexpected=len(x)/len(sizes)\nsrm_p=chi2.sf(((sizes-expected)**2/expected).sum(),len(sizes)-1)\nsrm_ok=srm_p>=.01",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/07-ab",
+    "id": "srm",
+    "name": "review-error",
+    "expected": false,
+    "code": "import pandas as pd\nfrom scipy.stats import chi2\nx=pd.read_csv('ab_push.csv')\nsizes=x.groupby('group').size().sort_index(ascending=False)\nexpected=len(x)/len(sizes)\nsrm_p=chi2.sf(((sizes-expected)**2/expected).sum(),len(sizes)-1)\nsrm_ok=srm_p>=.01\nsizes.index=sizes.index[::-1]",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/08-pitfalls",
+    "id": "practical",
+    "name": "review-alternative",
+    "expected": true,
+    "code": "from scipy.stats import chi2_contingency\nn=2_000_000\na,b=400_000,402_400\np_value=chi2_contingency([[a,n-a],[b,n-b]],correction=False).pvalue\ndiff_pp=round((b-a)/n*100,2)\nrel_pct=round((b-a)/a*100,1)\nworth_it=bool(p_value<.05 and rel_pct>=2)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/08-pitfalls",
+    "id": "practical",
+    "name": "review-error",
+    "expected": false,
+    "code": "from scipy.stats import chi2_contingency\nn=2_000_000\na,b=400_000,402_400\np_value=chi2_contingency([[a,n-a],[b,n-b]],correction=False).pvalue\ndiff_pp=round((b-a)/n*100,2)\nrel_pct=round((b-a)/a*100,1)\nworth_it=bool(p_value<.05 and rel_pct>=2)\nworth_it=bool(p_value<.05)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "chart",
+    "name": "review-valid-reversed-display",
+    "expected": true,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\ndef panel(ax, x, col, title):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"]).sort_index(ascending=False)\n    lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n    bars = ax.bar(g.index, g[\"mean\"] * 100, yerr=[(g[\"mean\"] - lo) * 100, (hi - g[\"mean\"]) * 100],\n                  capsize=6, color=[\"lightgray\", \"tab:blue\"])\n    ax.bar_label(bars, fmt=\"%.1f\", padding=8)\n    ax.set_ylabel(\"%\")\n    ax.set_title(title)\n    ax.spines[[\"top\", \"right\"]].set_visible(False)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.8))\npanel(axes[0], orders, \"late\", \"Опозданий вдвое меньше\")\npanel(axes[1], ab[ab[\"distance_km\"] < 2], \"ordered\", \"До 2 км заказывают чуть реже\")\nfig.tight_layout()",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "chart",
+    "name": "review-swapped-tick-labels",
+    "expected": false,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\ndef panel(ax, x, col, title):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n    bars = ax.bar(g.index, g[\"mean\"] * 100, yerr=[(g[\"mean\"] - lo) * 100, (hi - g[\"mean\"]) * 100],\n                  capsize=6, color=[\"lightgray\", \"tab:blue\"])\n    ax.bar_label(bars, fmt=\"%.1f\", padding=8)\n    ax.set_ylabel(\"%\")\n    ax.set_title(title)\n    ax.spines[[\"top\", \"right\"]].set_visible(False)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.8))\npanel(axes[0], orders, \"late\", \"Опозданий вдвое меньше\")\npanel(axes[1], ab[ab[\"distance_km\"] < 2], \"ordered\", \"До 2 км заказывают чуть реже\")\nfig.tight_layout()\nfor ax in axes: ax.set_xticks([0,1],[\"B\",\"A\"])",
+    "why": "Independent reviewer probe, saved code unchanged."
+  },
+  {
+    "lesson": "ch05/09-project",
+    "id": "chart",
+    "name": "review-invisible-whiskers",
+    "expected": false,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom statsmodels.stats.proportion import proportion_confint\n\ndef panel(ax, x, col, title):\n    g = x.groupby(\"group\")[col].agg([\"sum\", \"size\", \"mean\"])\n    lo, hi = proportion_confint(g[\"sum\"], g[\"size\"], method=\"wilson\")\n    bars = ax.bar(g.index, g[\"mean\"] * 100, yerr=[(g[\"mean\"] - lo) * 100, (hi - g[\"mean\"]) * 100],\n                  capsize=6, color=[\"lightgray\", \"tab:blue\"])\n    ax.bar_label(bars, fmt=\"%.1f\", padding=8)\n    ax.set_ylabel(\"%\")\n    ax.set_title(title)\n    ax.spines[[\"top\", \"right\"]].set_visible(False)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 3.8))\npanel(axes[0], orders, \"late\", \"Опозданий вдвое меньше\")\npanel(axes[1], ab[ab[\"distance_km\"] < 2], \"ordered\", \"До 2 км заказывают чуть реже\")\nfig.tight_layout()\nfor ax in axes:\n    for col in ax.collections: col.set_visible(False)\n    for line in ax.lines: line.set_visible(False)",
+    "why": "Independent reviewer probe, saved code unchanged."
+  }
+]
