@@ -352,8 +352,10 @@ import numpy as np
 ```python
 import numpy as _np
 d0 = _np.load('showcase.npz')
-assert need('X').shape == (2000, 32, 32), 'X — массив d["X"].'
-assert (need('y') == d0['y']).all(), 'y — массив d["y"].'
+for _name in ('X', 'y', 'classes'):
+    _got = need(_name, _np.ndarray)
+    assert _got.shape == d0[_name].shape, f'{_name}: форма должна совпадать с массивом из showcase.npz.'
+    assert _np.array_equal(_got, d0[_name]), f'{_name}: сохраните все значения массива d["{_name}"] в исходном порядке.'
 w = {str(c): int((d0['y'] == k).sum()) for k, c in enumerate(d0['classes'])}
 got = {str(k): int(v) for k, v in need('counts', dict).items()}
 assert got == w, f'counts = {got}, а нужно {w}.'
@@ -412,7 +414,7 @@ assert im.get_clim() == (0, 255), 'Задайте vmin=0, vmax=255.'
 
 ## task: crop | Центр всех кадров | warmup
 
-Вырежьте центральный квадрат 16 × 16 (строки и столбцы 8…23) у **всех** картинок сразу — одной строкой, без цикла. Результат — `centers`. В `n_numbers` — сколько всего чисел в `centers`, в `share_kept` — какая доля чисел исходного `X` осталась (2 знака).
+Вырежьте центральный квадрат 16 × 16 (строки и столбцы 8…23) у **всех** картинок сразу — векторизованно, без явного цикла Python. Выражение можно переносить по строкам и использовать временный массив. Результат — `centers`. В `n_numbers` — сколько всего чисел в `centers`, в `share_kept` — какая доля чисел исходного `X` осталась (2 знака).
 
 ### setup
 ```python
@@ -435,6 +437,42 @@ assert c.shape == (2000, 16, 16), f'centers.shape = {c.shape}, а нужно (20
 assert (c == X0[:, 8:24, 8:24]).all(), 'centers — строки и столбцы 8…23 у каждой картинки: X[:, 8:24, 8:24].'
 assert need('n_numbers') == c.size, f'n_numbers = {need("n_numbers")}.'
 assert close(need('share_kept'), 0.25, 1e-9), f'share_kept = {need("share_kept")}.'
+
+import ast as _ast
+_tree = _ast.parse(_code)
+def _target_name(_target):
+    while isinstance(_target, (_ast.Subscript, _ast.Attribute)):
+        _target = _target.value
+    return _target.id if isinstance(_target, _ast.Name) else None
+_assignments = []
+for _node in _ast.walk(_tree):
+    if isinstance(_node, (_ast.Assign, _ast.AnnAssign)):
+        _targets = _node.targets if isinstance(_node, _ast.Assign) else [_node.target]
+        _assignments.append(({_target_name(t) for t in _targets}, _node.value))
+_center_line = max((n.lineno for n in _ast.walk(_tree) if isinstance(n, (_ast.Assign, _ast.AnnAssign)) and any(_target_name(t) == 'centers' for t in (n.targets if isinstance(n, _ast.Assign) else [n.target]))), default=0)
+_dependencies = {'centers'}
+for _ in range(len(_assignments) + 1):
+    _old_dependencies = _dependencies.copy()
+    for _targets, _value in _assignments:
+        if _value is not None and _targets & _dependencies:
+            _dependencies.update(n.id for n in _ast.walk(_value) if isinstance(n, _ast.Name))
+    if _dependencies == _old_dependencies:
+        break
+_loop_message = 'centers посчитайте для всего X векторизованно, без явного цикла Python: например, X[:, 8:24, 8:24] или np.take. Цикл для вывода результата допустим.'
+_comprehensions = (_ast.ListComp, _ast.SetComp, _ast.DictComp, _ast.GeneratorExp)
+for _targets, _value in _assignments:
+    if _value is not None and _targets & _dependencies:
+        assert not any(isinstance(n, _comprehensions) for n in _ast.walk(_value)), _loop_message
+for _loop in (n for n in _ast.walk(_tree) if isinstance(n, (_ast.For, _ast.AsyncFor, _ast.While))):
+    for _node in _ast.walk(_loop):
+        if isinstance(_node, (_ast.Assign, _ast.AnnAssign, _ast.AugAssign)):
+            _targets = _node.targets if isinstance(_node, _ast.Assign) else [_node.target]
+            _relevant_names = _dependencies if _loop.lineno <= _center_line else {'centers'}
+            assert not {_target_name(t) for t in _targets} & _relevant_names, _loop_message
+        if isinstance(_node, _ast.Call) and isinstance(_node.func, _ast.Attribute):
+            if _node.func.attr in {'append', 'extend', 'insert', 'put', 'fill', 'resize'}:
+                _relevant_names = _dependencies if _loop.lineno <= _center_line else {'centers'}
+                assert _target_name(_node.func.value) not in _relevant_names, _loop_message
 ```
 
 ### hint
@@ -603,7 +641,33 @@ assert _np.allclose(got, M, atol=1e-6), 'Средние считаются то�
 dist = ((X0[te][:, None] - M[None]) ** 2).sum(axis=(2, 3))
 w = round(float((dist.argmin(1) == y0[te]).mean()), 3)
 assert close(need('centroid_acc'), w, 0.0015), f'centroid_acc = {need("centroid_acc")}, а нужно {w}.'
-assert len(figs) >= 1, 'Нарисуйте средние картинки.'
+from matplotlib.collections import QuadMesh as _QuadMesh
+_seen = set()
+for _fig in figs:
+    for _ax in _fig.axes:
+        if not _ax.get_visible():
+            continue
+        _artists = list(_ax.images) + [a for a in _ax.collections if isinstance(a, _QuadMesh)]
+        for _artist in _artists:
+            if not _artist.get_visible():
+                continue
+            _alpha = _artist.get_alpha()
+            if _alpha is not None and not _np.any(_np.asarray(_alpha) > 0):
+                continue
+            _array = _np.ma.asarray(_artist.get_array())
+            if _array.ndim != 2 or _np.ma.getmaskarray(_array).any():
+                continue
+            _h, _w = _array.shape
+            if _h % 32 or _w % 32:
+                continue
+            # Four separate pictures and tiled mosaics represent the same four means.
+            for _r in range(0, _h, 32):
+                for _c in range(0, _w, 32):
+                    _tile = _array[_r:_r + 32, _c:_c + 32]
+                    for _class in range(4):
+                        if _np.allclose(_tile, M[_class], atol=1e-6):
+                            _seen.add(_class)
+assert _seen == set(range(4)), 'Нарисуйте все четыре средние картинки means: отдельно или мозаикой. На рисунке должны быть сами средние, а не пустые оси.'
 ```
 
 ### hint
@@ -790,7 +854,11 @@ cl = need('cells', list)
 assert len(cl) == 6 and all(_np.asarray(a).shape == (32, 32) for a in cl), 'cells — 6 массивов 32 × 32.'
 assert all((_np.asarray(a) == b).all() for a, b in zip(cl, want)), 'Порядок ячеек: сначала верхний ряд слева направо, потом нижний.'
 ds = [round(float((b < 100).mean()), 3) for b in want]
-assert all(close(a, b, 0.0011) for a, b in zip(need('dark_shares', list), ds)), f'dark_shares = {need("dark_shares")}, а нужно {ds}.'
+_shares = need('dark_shares', list)
+assert len(_shares) == 6, 'dark_shares — ровно шесть долей: по одной на каждую ячейку, слева направо и сверху вниз.'
+assert _np.asarray(_shares).dtype.kind in 'fiu' and _np.isfinite(_shares).all(), 'В dark_shares нужны шесть конечных числовых долей.'
+assert all(close(a, b, 0.0011) for a, b in zip(_shares, ds)), f'dark_shares = {_shares}, а нужно {ds}.'
+assert len(need('empty', list)) == 6, 'empty — ровно шесть признаков пустоты: по одному на ячейку.'
 assert [bool(v) for v in need('empty', list)] == [x < 0.005 for x in [(b < 100).mean() for b in want]], f'empty = {need("empty")}.'
 assert need('n_empty') == sum((b < 100).mean() < 0.005 for b in want), f'n_empty = {need("n_empty")}.'
 ```

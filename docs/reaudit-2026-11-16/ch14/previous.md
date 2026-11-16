@@ -1,0 +1,40 @@
+# Предыдущие замечания главы 14
+
+Разрешена только глава14. Текущий baseline6adf0eb; исходный полный аудит454a62c и последующие редакции различаются. Ни исторический зачёт, ни сообщение о закрытии не заменяют новый запуск. Полные первоисточники побайтно сохранены в historical/ с исходной структурой; текущему студенту они не передаются. Реестр хранит сообщения разных ролей и аспекты составного E14-03 отдельно: это не число независимых дефектов.
+
+| ID | Роль | Замечание | Исторический статус | Источник |
+|---|---|---|---|---|
+| S14-01 | student | Замороженные параметры и изменяемые BatchNorm buffers | подтверждено reviewer; ранее исправлено | [docs/audit-2026-11-13/ch14/student.md](historical/docs/audit-2026-11-13/ch14/student.md) |
+| REVIEW-S14-01 | reviewer | Решение и собственная проба по S14-01 | подтвердить; конкретные критерии в полном источнике | [docs/audit-2026-11-13/ch14/review.md](historical/docs/audit-2026-11-13/ch14/review.md) |
+| S14-02 | student | Округление 0,922→0,940, случайные фильтры и недоказанная следующая тысяча фото | подтверждено reviewer; ранее исправлено | [docs/audit-2026-11-13/ch14/student.md](historical/docs/audit-2026-11-13/ch14/student.md) |
+| REVIEW-S14-02 | reviewer | Решение и собственная проба по S14-02 | подтвердить; конкретные критерии в полном источнике | [docs/audit-2026-11-13/ch14/review.md](historical/docs/audit-2026-11-13/ch14/review.md) |
+| S14-03 | student | Наблюдаемая пустота вместо экономии от партии | подтверждено reviewer; ранее исправлено | [docs/audit-2026-11-13/ch14/student.md](historical/docs/audit-2026-11-13/ch14/student.md) |
+| REVIEW-S14-03 | reviewer | Решение и собственная проба по S14-03 | подтвердить; конкретные критерии в полном источнике | [docs/audit-2026-11-13/ch14/review.md](historical/docs/audit-2026-11-13/ch14/review.md) |
+| M14-01 | methodist | Сценарий целого дня вместо 15 сэкономленных часов | ранее методист принял редакцию; требуется текущая проверка | [docs/audit-2026-11-13/ch14/methodist.md](historical/docs/audit-2026-11-13/ch14/methodist.md) |
+| M14-02 | methodist | Идентичность покадрового прогноза и (time,slot), а не агрегаты | ранее методист принял редакцию; требуется текущая проверка | [docs/audit-2026-11-13/ch14/methodist.md](historical/docs/audit-2026-11-13/ch14/methodist.md) |
+| M14-03 | methodist | Выбор k по цене до независимого дня, пропуски кадров и задержка | ранее методист принял редакцию; требуется текущая проверка | [docs/audit-2026-11-13/ch14/methodist.md](historical/docs/audit-2026-11-13/ch14/methodist.md) |
+| M14-04 | methodist | Сравнение извлекателей/бюджетов на одинаковых кадрах и днях | ранее методист принял редакцию; требуется текущая проверка | [docs/audit-2026-11-13/ch14/methodist.md](historical/docs/audit-2026-11-13/ch14/methodist.md) |
+| M14-05 | methodist | Реалистичный сдвиг с фоном, сохранение метки и BatchNorm | ранее методист принял редакцию; требуется текущая проверка | [docs/audit-2026-11-13/ch14/methodist.md](historical/docs/audit-2026-11-13/ch14/methodist.md) |
+| E14-01 | expert | Наблюдаемые часы и эффект переноса партии | ранее опубликованы критерии; не объявляем автоматически закрытым | [docs/audit-2026-11-13/ch14/expert.md](historical/docs/audit-2026-11-13/ch14/expert.md) |
+| E14-02 | expert | Проверочный день использован для настройки, независимые эпизоды/дни | ранее опубликованы критерии; не объявляем автоматически закрытым | [docs/audit-2026-11-13/ch14/expert.md](historical/docs/audit-2026-11-13/ch14/expert.md) |
+| E14-03 | expert | Покадровые проверки и ошибочные зачёты (детализация ниже) | ранее опубликованы критерии; не объявляем автоматически закрытым | [docs/audit-2026-11-13/ch14/expert.md](historical/docs/audit-2026-11-13/ch14/expert.md) |
+| E14-04 | expert | Политика BatchNorm отдельно от requires_grad | ранее опубликованы критерии; не объявляем автоматически закрытым | [docs/audit-2026-11-13/ch14/expert.md](historical/docs/audit-2026-11-13/ch14/expert.md) |
+| E14-03/fix | expert | Перестановка неверных классов при той же confusion matrix | аспект составного замечания E14-03; сохраняется отдельно | [docs/audit-2026-11-13/ch14/expert.md](historical/docs/audit-2026-11-13/ch14/expert.md) |
+| E14-03/hours | expert | Подмена времени/слота/факта при верной сводной | аспект составного замечания E14-03; сохраняется отдельно | [docs/audit-2026-11-13/ch14/expert.md](historical/docs/audit-2026-11-13/ch14/expert.md) |
+| E14-03/light | expert | Пустой график принимается | аспект составного замечания E14-03; сохраняется отдельно | [docs/audit-2026-11-13/ch14/expert.md](historical/docs/audit-2026-11-13/ch14/expert.md) |
+| E14-03/iou | expert | abs или произведение отрицательных перекрытий у разнесённых рамок | аспект составного замечания E14-03; сохраняется отдельно | [docs/audit-2026-11-13/ch14/expert.md](historical/docs/audit-2026-11-13/ch14/expert.md) |
+| E14-03/normalize | expert | Однородный/чёрный кадр: деление на нулевой std, статус камеры | аспект составного замечания E14-03; сохраняется отдельно | [docs/audit-2026-11-13/ch14/expert.md](historical/docs/audit-2026-11-13/ch14/expert.md) |
+| E14-FEWSHOT | expert | Ненумерованное наблюдение: ResNet лучше на симуляции, это не бюджет фото новой камеры | числа исторические, ограничения сохраняются | [docs/audit-2026-11-13/ch14/expert.md](historical/docs/audit-2026-11-13/ch14/expert.md) |
+| OCT14-BN | expert | Параметры и buffers в train/eval | ранее увязано с S14-01/E14-04 | [docs/audit-2026-10-15/14-computer-vision.md](historical/docs/audit-2026-10-15/14-computer-vision.md) |
+| OCT14-SHIFT | expert | np.roll и движение камеры, край/метка | ранее увязано с M14-05 | [docs/audit-2026-10-15/14-computer-vision.md](historical/docs/audit-2026-10-15/14-computer-vision.md) |
+| REV14-LIGHT | reviewer | Пустой light оставался принят после первоначальной редакции | позднее адресно исправлено; проверить frozen current | [docs/course-improvements/ch14/review.md](historical/docs/course-improvements/ch14/review.md) |
+| RET14-LIGHT-UNITS | student | Два ошибочных отказа правильному bright в шкале 0–255; сообщение не локализовало рисунок | после уточнения шкалы прежний настоящий ряд принят, пустой получает адресный отказ | [docs/course-improvements/ch14/cost-and-light-retest.md](historical/docs/course-improvements/ch14/cost-and-light-retest.md) |
+| RET14-RESTOCK-COST | student | Сравнение партий требует себестоимости выпечки и списаний | внесено в рекомендацию; реальные наблюдения остаются внешними | [docs/course-improvements/ch14/student-retest.md](historical/docs/course-improvements/ch14/student-retest.md) |
+| RET14-K-COST | student | Цена ложного вызова6 вместо45 меняет k; frozen k=1 на новом дне даёт312 | самостоятельная историческая проба, не новый запуск | [docs/course-improvements/ch14/cost-and-light-retest.md](historical/docs/course-improvements/ch14/cost-and-light-retest.md) |
+| S14 | student | Свежий light с первой попытки; явные шкалы устраняют сомнение | reviewer: нет ошибки; сохранить61момент | [docs/course-improvements/reaudit/student/feedback.md](historical/docs/course-improvements/reaudit/student/feedback.md) |
+| REAUDIT14-CODING | methodist | В ручном журнале1=пусто, модель0=пусто: подписать словами и показать мост | ранее принято: [2,0,0]→12:30; без среднего кадра нет сигнала | [docs/course-improvements/reaudit/methodist.md](historical/docs/course-improvements/reaudit/methodist.md) |
+| REAUDIT14-TRANSFER | reviewer | Раздельные исходные кадры, перенос k и разрыв при пропуске | ранее принята проверенная сдача; второй день без помощи ещё внешняя проверка | [docs/course-improvements/reaudit/fixes/review/ch14.md](historical/docs/course-improvements/reaudit/fixes/review/ch14.md) |
+
+Дополнительно в полном приёмочном отчёте сохранены различия CPython/Pyodide для k=1 (1110/1230₽), независимый следующий день, реальные ResNet и BatchNorm, ограничения синтетики, внешние расходы/списания и непроверенный темп людей. Все эти выводы в текущем проходе требуют собственных доказательств соответствующей роли.
+
+Реестр и полные источники: [previous.json](previous.json). Текущие вердикты будут сопоставлены с каждым ID после независимой рецензии.

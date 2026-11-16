@@ -516,6 +516,15 @@ for D in tests:
     assert got is not None and [c for _, c in got] == [c for _, c in _nms(D)], f'nms({D}) оставила {[c for _, c in got] if got else got}, а нужно {[c for _, c in _nms(D)]}. Сначала самые уверенные; рамку выбрасывают, если IoU с уже оставленной больше thr.'
 got = f([((0, 0, 10, 10), 0.9), ((0, 0, 10, 6), 0.8)], thr=0.7)
 assert got is not None and len(got) == 2, 'nms должна учитывать аргумент thr: при thr=0.7 рамки с IoU 0.6 обе остаются.'
+# At exact IoU == thr the second box remains; only a strictly larger overlap suppresses it.
+import numpy as _np
+_boundary = [((0, 0, 10, 10), 0.9), ((0, 0, 5, 10), 0.8)]
+for _thr, _expected in [(0.5, _boundary), (0.49, _boundary[:1])]:
+    _got = f(_boundary, thr=_thr)
+    assert isinstance(_got, (list, tuple)) and len(_got) == len(_expected), f'nms: при IoU=0.5 и thr={_thr} должны остаться {len(_expected)} рамки. Подавляйте только при IoU > thr.'
+    _actual_values = _np.asarray([list(_box) + [_confidence] for _box, _confidence in _got], dtype=float)
+    _expected_values = _np.asarray([list(_box) + [_confidence] for _box, _confidence in _expected], dtype=float)
+    assert _actual_values.shape == _expected_values.shape and _np.allclose(_actual_values, _expected_values, rtol=0, atol=1e-7), 'nms: сохраняйте координаты и уверенности оставленных рамок в порядке убывания уверенности.'
 T = [(2, 3, 30, 29), (34, 2, 62, 30), (66, 4, 94, 31), (1, 34, 29, 62), (33, 35, 63, 61), (65, 33, 95, 63)]
 D = [((4, 2, 31, 28), 0.81), ((66, 5, 93, 31), 0.95), ((35, 36, 62, 60), 0.77), ((3, 4, 30, 30), 0.97),
      ((70, 40, 90, 60), 0.41), ((34, 3, 50, 29), 0.64), ((60, 0, 96, 10), 0.30)]

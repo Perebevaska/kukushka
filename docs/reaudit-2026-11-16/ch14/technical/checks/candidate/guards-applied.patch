@@ -1,0 +1,179 @@
+--- a/content/ch14/05-project.md
++++ b/content/ch14/05-project.md
+@@ -629,7 +629,13 @@
+ assert not _rule(_gap).any().any(), 'Пропущенный11:15: кадры11:00 и11:30 не соседние.'
+ _pair=_pd.DataFrame(dict(time=['11:00','11:15'],slot=[0,0],pred=[0,0]))
+ assert bool(_rule(_pair).loc['11:15',0]), 'Два соседних пустых кадра подтверждают сигнал.'
+-assert _np.array_equal(need('P'),P0) and _np.array_equal(need('T'),T0), 'P/T должны соответствовать keyed прогнозам и истинным меткам.'
++for _name, _expected_table in [('P', P0), ('T', T0)]:
++    _given = need(_name, _pd.DataFrame)
++    assert _given.index.is_unique and _given.columns.is_unique, f'{_name}: каждый time и slot должен встречаться на своей оси ровно один раз.'
++    assert set(_given.index) == set(_expected_table.index), f'{_name}: сохраните все временные ключи первого дня без лишних и пропущенных.'
++    assert set(_given.columns) == set(_expected_table.columns), f'{_name}: сохраните все ключи slot первого дня без лишних и пропущенных.'
++    _aligned = _given.reindex(index=_expected_table.index, columns=_expected_table.columns)
++    assert _np.array_equal(_aligned.to_numpy(), _expected_table.to_numpy()), f'{_name}: пустота (класс 0) должна соответствовать своей паре (time, slot). Переставлять целые строки и столбцы можно, только подписи — нельзя.' 
+ 
+ from sklearn.ensemble import RandomForestClassifier as _RF
+ _nd=_np.load('showcase_day_next.npz');_base=_np.load('showcase.npz')
+@@ -693,7 +699,6 @@
+ _expected = _frame.set_index(["time", "slot"]).sort_index()
+ assert _actual.equals(_expected), "Сверьте исходные кадры, метки и прогноз замороженного леса следующего дня."
+ assert need("next_metrics", dict) == _reference(_frame, _best)[1], "Примените замороженный k к следующему дню и заново посчитайте эпизоды."
+-
+ ```
+ 
+ ### hint
+@@ -806,7 +811,7 @@
+         _stock=_np.maximum(_stock-_demand,0);_empty.append(_stock==0)
+     _empty=_np.array(_empty)[:60]
+     for _key,_value in dict(morning=_empty[16:24].sum()*.25,afternoon=_empty[24:40].sum()*.25,whole_day=_empty.sum()*.25).items():
+-        assert close(_scenarios.loc[_name,_key],_value), f'{_name}/{_key}: сравнивайте наблюдаемую пустоту за весь день; это не потерянные продажи.'
++        assert close(_scenarios.loc[_name,_key],_value), f'Сценарий «{_name}», интервал {dict(morning="[11:00, 13:00)", afternoon="[13:00, 17:00)", whole_day="[07:00, 22:00)")[_key]} ({_key}): посчитайте пустоту в ячейко-часах после пополнения и вычитания спроса — 0.25 часа за пустую ячейку на каждом четвертьчасовом шаге. Это сценарный расчёт, а не измеренная экономия.'
+ 
+ ```
+ 
+--- a/content/ch14/02-filters.md
++++ b/content/ch14/02-filters.md
+@@ -581,6 +581,7 @@
+ Pm, Pa = need('P_max'), need('P_avg')
+ assert Pm.shape == (2000, 8, 8) and Pa.shape == (2000, 8, 8), f'Формы: {Pm.shape}, {Pa.shape}.'
+ assert _np.allclose(Pm, X0.reshape(2000, 8, 4, 8, 4).max(axis=(2, 4))), 'P_max не совпадает.'
++assert _np.allclose(Pa, X0.reshape(2000, 8, 4, 8, 4).mean(axis=(2, 4))), 'P_avg: примените avg_pool(X, 4), в каждом блоке нужно среднее, а не максимум.'
+ assert close(need('ratio'), 16), f'ratio = {need("ratio")}.'
+ ```
+ 
+--- a/content/ch14/03-classic.md
++++ b/content/ch14/03-classic.md
+@@ -302,7 +302,7 @@
+ X0 = _np.load('showcase.npz')['X'] / 255
+ a = need('X2d')
+ assert a.shape == (2000, 1024), f'X2d.shape = {a.shape}.'
+-assert _np.allclose(a[5], X0[5].ravel()), 'Строки X2d — картинки, вытянутые построчно (reshape).'
++assert _np.allclose(a, X0.reshape(len(X0), -1)), 'Каждая из 2000 строк X2d — соответствующая картинка целиком, вытянутая построчно. Проверьте весь набор, а не только первый пакет.' 
+ assert need('n_features') == 1024, f'n_features = {need("n_features")}.'
+ assert _np.asarray(need('back')).shape == (32, 32) and _np.allclose(need('back'), X0[0]), 'back — X2d[0].reshape(32, 32).'
+ ```
+--- a/content/ch14/01-pixels.md
++++ b/content/ch14/01-pixels.md
+@@ -352,8 +352,10 @@
+ ```python
+ import numpy as _np
+ d0 = _np.load('showcase.npz')
+-assert need('X').shape == (2000, 32, 32), 'X — массив d["X"].'
+-assert (need('y') == d0['y']).all(), 'y — массив d["y"].'
++for _name in ('X', 'y', 'classes'):
++    _got = need(_name, _np.ndarray)
++    assert _got.shape == d0[_name].shape, f'{_name}: форма должна совпадать с массивом из showcase.npz.'
++    assert _np.array_equal(_got, d0[_name]), f'{_name}: сохраните все значения массива d["{_name}"] в исходном порядке.' 
+ w = {str(c): int((d0['y'] == k).sum()) for k, c in enumerate(d0['classes'])}
+ got = {str(k): int(v) for k, v in need('counts', dict).items()}
+ assert got == w, f'counts = {got}, а нужно {w}.'
+@@ -435,6 +437,42 @@
+ assert (c == X0[:, 8:24, 8:24]).all(), 'centers — строки и столбцы 8…23 у каждой картинки: X[:, 8:24, 8:24].'
+ assert need('n_numbers') == c.size, f'n_numbers = {need("n_numbers")}.'
+ assert close(need('share_kept'), 0.25, 1e-9), f'share_kept = {need("share_kept")}.'
++
++import ast as _ast
++_tree = _ast.parse(_code)
++def _target_name(_target):
++    while isinstance(_target, (_ast.Subscript, _ast.Attribute)):
++        _target = _target.value
++    return _target.id if isinstance(_target, _ast.Name) else None
++_assignments = []
++for _node in _ast.walk(_tree):
++    if isinstance(_node, (_ast.Assign, _ast.AnnAssign)):
++        _targets = _node.targets if isinstance(_node, _ast.Assign) else [_node.target]
++        _assignments.append(({_target_name(t) for t in _targets}, _node.value))
++_center_line = max((n.lineno for n in _ast.walk(_tree) if isinstance(n, (_ast.Assign, _ast.AnnAssign)) and any(_target_name(t) == 'centers' for t in (n.targets if isinstance(n, _ast.Assign) else [n.target]))), default=0)
++_dependencies = {'centers'}
++for _ in range(len(_assignments) + 1):
++    _old_dependencies = _dependencies.copy()
++    for _targets, _value in _assignments:
++        if _value is not None and _targets & _dependencies:
++            _dependencies.update(n.id for n in _ast.walk(_value) if isinstance(n, _ast.Name))
++    if _dependencies == _old_dependencies:
++        break
++_loop_message = 'centers посчитайте для всего X векторизованно, без явного цикла Python: например, X[:, 8:24, 8:24] или np.take. Цикл для вывода результата допустим.'
++_comprehensions = (_ast.ListComp, _ast.SetComp, _ast.DictComp, _ast.GeneratorExp)
++for _targets, _value in _assignments:
++    if _value is not None and _targets & _dependencies:
++        assert not any(isinstance(n, _comprehensions) for n in _ast.walk(_value)), _loop_message
++for _loop in (n for n in _ast.walk(_tree) if isinstance(n, (_ast.For, _ast.AsyncFor, _ast.While))):
++    for _node in _ast.walk(_loop):
++        if isinstance(_node, (_ast.Assign, _ast.AnnAssign, _ast.AugAssign)):
++            _targets = _node.targets if isinstance(_node, _ast.Assign) else [_node.target]
++            _relevant_names = _dependencies if _loop.lineno <= _center_line else {'centers'}
++            assert not {_target_name(t) for t in _targets} & _relevant_names, _loop_message
++        if isinstance(_node, _ast.Call) and isinstance(_node.func, _ast.Attribute):
++            if _node.func.attr in {'append', 'extend', 'insert', 'put', 'fill', 'resize'}:
++                _relevant_names = _dependencies if _loop.lineno <= _center_line else {'centers'}
++                assert _target_name(_node.func.value) not in _relevant_names, _loop_message
+ ```
+ 
+ ### hint
+@@ -603,7 +641,33 @@
+ dist = ((X0[te][:, None] - M[None]) ** 2).sum(axis=(2, 3))
+ w = round(float((dist.argmin(1) == y0[te]).mean()), 3)
+ assert close(need('centroid_acc'), w, 0.0015), f'centroid_acc = {need("centroid_acc")}, а нужно {w}.'
+-assert len(figs) >= 1, 'Нарисуйте средние картинки.'
++from matplotlib.collections import QuadMesh as _QuadMesh
++_seen = set()
++for _fig in figs:
++    for _ax in _fig.axes:
++        if not _ax.get_visible():
++            continue
++        _artists = list(_ax.images) + [a for a in _ax.collections if isinstance(a, _QuadMesh)]
++        for _artist in _artists:
++            if not _artist.get_visible():
++                continue
++            _alpha = _artist.get_alpha()
++            if _alpha is not None and not _np.any(_np.asarray(_alpha) > 0):
++                continue
++            _array = _np.ma.asarray(_artist.get_array())
++            if _array.ndim != 2 or _np.ma.getmaskarray(_array).any():
++                continue
++            _h, _w = _array.shape
++            if _h % 32 or _w % 32:
++                continue
++            # Four separate pictures and tiled mosaics represent the same four means.
++            for _r in range(0, _h, 32):
++                for _c in range(0, _w, 32):
++                    _tile = _array[_r:_r + 32, _c:_c + 32]
++                    for _class in range(4):
++                        if _np.allclose(_tile, M[_class], atol=1e-6):
++                            _seen.add(_class)
++assert _seen == set(range(4)), 'Нарисуйте все четыре средние картинки means: отдельно или мозаикой. На рисунке должны быть сами средние, а не пустые оси.'
+ ```
+ 
+ ### hint
+@@ -790,7 +854,11 @@
+ assert len(cl) == 6 and all(_np.asarray(a).shape == (32, 32) for a in cl), 'cells — 6 массивов 32 × 32.'
+ assert all((_np.asarray(a) == b).all() for a, b in zip(cl, want)), 'Порядок ячеек: сначала верхний ряд слева направо, потом нижний.'
+ ds = [round(float((b < 100).mean()), 3) for b in want]
+-assert all(close(a, b, 0.0011) for a, b in zip(need('dark_shares', list), ds)), f'dark_shares = {need("dark_shares")}, а нужно {ds}.'
++_shares = need('dark_shares', list)
++assert len(_shares) == 6, 'dark_shares — ровно шесть долей: по одной на каждую ячейку, слева направо и сверху вниз.'
++assert _np.asarray(_shares).dtype.kind in 'fiu' and _np.isfinite(_shares).all(), 'В dark_shares нужны шесть конечных числовых долей.'
++assert all(close(a, b, 0.0011) for a, b in zip(_shares, ds)), f'dark_shares = {_shares}, а нужно {ds}.'
++assert len(need('empty', list)) == 6, 'empty — ровно шесть признаков пустоты: по одному на ячейку.' 
+ assert [bool(v) for v in need('empty', list)] == [x < 0.005 for x in [(b < 100).mean() for b in want]], f'empty = {need("empty")}.'
+ assert need('n_empty') == sum((b < 100).mean() < 0.005 for b in want), f'n_empty = {need("n_empty")}.'
+ ```
+--- a/content/ch14/04c-detection.md
++++ b/content/ch14/04c-detection.md
+@@ -516,6 +516,15 @@
+     assert got is not None and [c for _, c in got] == [c for _, c in _nms(D)], f'nms({D}) оставила {[c for _, c in got] if got else got}, а нужно {[c for _, c in _nms(D)]}. Сначала самые уверенные; рамку выбрасывают, если IoU с уже оставленной больше thr.'
+ got = f([((0, 0, 10, 10), 0.9), ((0, 0, 10, 6), 0.8)], thr=0.7)
+ assert got is not None and len(got) == 2, 'nms должна учитывать аргумент thr: при thr=0.7 рамки с IoU 0.6 обе остаются.'
++# At exact IoU == thr the second box remains; only a strictly larger overlap suppresses it.
++import numpy as _np
++_boundary = [((0, 0, 10, 10), 0.9), ((0, 0, 5, 10), 0.8)]
++for _thr, _expected in [(0.5, _boundary), (0.49, _boundary[:1])]:
++    _got = f(_boundary, thr=_thr)
++    assert isinstance(_got, (list, tuple)) and len(_got) == len(_expected), f'nms: при IoU=0.5 и thr={_thr} должны остаться {len(_expected)} рамки. Подавляйте только при IoU > thr.'
++    _actual_values = _np.asarray([list(_box) + [_confidence] for _box, _confidence in _got], dtype=float)
++    _expected_values = _np.asarray([list(_box) + [_confidence] for _box, _confidence in _expected], dtype=float)
++    assert _actual_values.shape == _expected_values.shape and _np.allclose(_actual_values, _expected_values, rtol=0, atol=1e-7), 'nms: сохраняйте координаты и уверенности оставленных рамок в порядке убывания уверенности.'
+ T = [(2, 3, 30, 29), (34, 2, 62, 30), (66, 4, 94, 31), (1, 34, 29, 62), (33, 35, 63, 61), (65, 33, 95, 63)]
+ D = [((4, 2, 31, 28), 0.81), ((66, 5, 93, 31), 0.95), ((35, 36, 62, 60), 0.77), ((3, 4, 30, 30), 0.97),
+      ((70, 40, 90, 60), 0.41), ((34, 3, 50, 29), 0.64), ((60, 0, 96, 10), 0.30)]

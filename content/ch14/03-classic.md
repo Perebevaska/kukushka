@@ -302,7 +302,7 @@ import numpy as _np
 X0 = _np.load('showcase.npz')['X'] / 255
 a = need('X2d')
 assert a.shape == (2000, 1024), f'X2d.shape = {a.shape}.'
-assert _np.allclose(a[5], X0[5].ravel()), 'Строки X2d — картинки, вытянутые построчно (reshape).'
+assert _np.allclose(a, X0.reshape(len(X0), -1)), 'Каждая из 2000 строк X2d — соответствующая картинка целиком, вытянутая построчно. Проверьте весь набор, а не только первый пакет.'
 assert need('n_features') == 1024, f'n_features = {need("n_features")}.'
 assert _np.asarray(need('back')).shape == (32, 32) and _np.allclose(need('back'), X0[0]), 'back — X2d[0].reshape(32, 32).'
 ```
