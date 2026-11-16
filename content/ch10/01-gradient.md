@@ -284,6 +284,8 @@ print("точный минимум:", round(float((km * minutes).sum() / (km ** 
 
 {{practice: stop-rule}}
 
+Малое изменение веса или MSE ещё не доказывает близость к минимуму: слишком маленький learning_rate тоже даст малый шаг. В истории итераций записывайте вес, градиент, MSE, изменение MSE и причину остановки. Для stop-rule сохраните также `stop_diagnostics` с градиентом, изменением потерь и причиной; при learning_rate=1e-12 причина `small_step_not_minimum`. Если шаг мал, но градиент велик, остановка преждевременна; сравните с градиентным критерием и лимитом итераций.
+
 ## Практика
 
 ## task: loss-at | Потеря в точке | warmup
@@ -552,6 +554,8 @@ plt.show()
 
 Напишите `descend(lr, tol=1e-6, max_steps=10000)` как в разборе урока: спуск из `w = 0`, остановка, когда потеря за шаг изменилась меньше чем на `tol`; вернуть `(w, число шагов)`. Сохраните `steps` — словарь `{lr: число шагов}` для `lr` из `[0.001, 0.01, 0.03]` и `w_found` — словарь `{lr: w}` (4 знака). Затем выясните, что будет при `lr = 0.1`: сохраните `steps_01` и `w_01` (как есть, без округления). При `lr = 0.1` numpy напечатает предупреждения `RuntimeWarning: overflow` — это ожидаемо: числа перестают помещаться в float. Чтобы их не видеть, вызов можно обернуть в `with np.errstate(all="ignore"):`.
 
+Сделайте ещё один шаг из нуля с `learning_rate=1e-12`. Сохраните в словаре `stop_diagnostics` три поля: `gradient` — производная в новой точке, `loss_delta` — абсолютное изменение MSE после шага, `reason` — строка `small_step_not_minimum`, если градиент по модулю больше 0.001, иначе `small_gradient`.
+
 ### setup
 ```python
 import numpy as np
@@ -591,6 +595,12 @@ with _np.errstate(all='ignore'):
     w1 = _d(0.1)
 assert need('steps_01') == w1[1], f'steps_01 = {need("steps_01")}, а нужно {w1[1]}.'
 assert not _np.isfinite(need('w_01')) or abs(need('w_01')) > 1e6, f'w_01 = {need("w_01")}: при lr = 0.1 спуск расходится — вес улетает.'
+_diag = need('stop_diagnostics', dict)
+assert {'gradient', 'loss_delta', 'reason'} <= set(_diag), 'В stop_diagnostics нужны ключи gradient, loss_delta и reason.'
+_tiny, _steps = need('descend')(1e-12)
+assert close(_diag['gradient'],G(_tiny)) and close(_diag['loss_delta'],abs(L(0)-L(_tiny))), 'Диагностика: градиент и изменение MSE после малого шага.'
+assert _diag['reason']=='small_step_not_minimum' and abs(_diag['gradient'])>1, 'Малый шаг остановил спуск далеко от минимума, это не сходимость.'
+
 ```
 
 ### hint
@@ -621,6 +631,9 @@ for lr in [0.001, 0.01, 0.03]:
 with np.errstate(all="ignore"):         # переполнение при lr = 0.1 ожидаемо
     w_01, steps_01 = descend(0.1)
 print(steps, w_found, steps_01, w_01)
+_tiny_w, _tiny_steps = descend(1e-12)
+stop_diagnostics = dict(gradient=float(grad(_tiny_w)), loss_delta=float(abs(loss(0)-loss(_tiny_w))), reason='small_step_not_minimum' if abs(grad(_tiny_w)) > 1e-3 else 'small_gradient')
+
 ```
 
 ### explain

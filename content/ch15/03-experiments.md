@@ -296,10 +296,13 @@ print(f"она же на новых данных:            AUC {new_auc:.3f}")
 
 ## MLflow
 
+Пример проверен с MLflow 3.18.0, scikit-learn 1.8.0 и skops 0.16.0. Вы обучите лес, зарегистрируете его и сравните прогнозы до и после загрузки из реестра.
+
+
 Всё, что мы сделали руками, делает **MLflow** — самый распространённый открытый инструмент учёта экспериментов. Он хранит запуски, параметры, метрики и файлы моделей и показывает их в веб-интерфейсе с таблицами и графиками. В браузере его нет, код — для вашего компьютера.
 
 ```python static
-# uv add mlflow scikit-learn pandas
+# uv add mlflow==3.18.0 scikit-learn==1.8.0 skops==0.16.0 pandas
 # продолжение примера из раздела «Журнал руками»: запускайте в том же файле после него —
 # оттуда берутся make, X_train, y_train, CV, DATA_MD5 и импорт RandomForestClassifier
 import mlflow
@@ -315,7 +318,10 @@ for depth in [3, 6, None]:
         mlflow.log_params({"model": "forest", "max_depth": depth, "seed": 0, "data_md5": DATA_MD5})
         mlflow.log_metrics({"cv_auc_mean": scores.mean(), "cv_auc_std": scores.std()})
         final = make(est).fit(X_train, y_train)
-        mlflow.sklearn.log_model(final, name="model")   # файл модели сохранится рядом с запуском
+        mlflow.sklearn.log_model(
+            final, name="model",
+            skops_trusted_types=["numpy.dtype", "sklearn.tree._tree.Tree"],
+        )  # типы из нашего собственного обученного леса
 
 # в терминале: uv run mlflow ui   → открыть http://127.0.0.1:5000
 ```
@@ -335,6 +341,23 @@ for depth in [3, 6, None]:
 :::
 
 Ещё одна часть MLflow — **реестр моделей** (Model Registry): у выбранного запуска модель получает имя и версию (`churn`, версия 3) и **псевдоним** (alias) — например, `champion`, «та, что сейчас в работе». Сервис на FastAPI из урока «Сервис в работе: пакет, время ответа, FastAPI, тесты» загружает не файл по пути, а модель по псевдониму: `mlflow.sklearn.load_model("models:/churn@champion")`. Выкатить новую версию или откатиться — значит переставить псевдоним на другую версию, не трогая код сервиса. В старых версиях MLflow вместо псевдонимов были стадии (Staging, Production); сейчас они объявлены устаревшими.
+
+Зарегистрируйте лучший завершённый запуск и проверьте двадцать контрольных строк. Храните таблицу с вероятностями вместе с паспортом, если переносите модель на другой компьютер.
+
+```python static
+import numpy as np
+from mlflow.tracking import MlflowClient
+
+runs = mlflow.search_runs(experiment_names=["churn"], filter_string="attributes.status = 'FINISHED'",
+                          order_by=["metrics.cv_auc_mean DESC"])
+uri = f"runs:/{runs.iloc[0].run_id}/model"
+rows = X_train.iloc[:20]
+expected = mlflow.sklearn.load_model(uri).predict_proba(rows)
+version = mlflow.register_model(uri, "churn")
+MlflowClient().set_registered_model_alias("churn", "champion", version.version)
+loaded = mlflow.sklearn.load_model("models:/churn@champion")
+np.testing.assert_allclose(loaded.predict_proba(rows), expected, rtol=0, atol=1e-9)
+```
 
 ## Практика
 
@@ -869,7 +892,7 @@ journal = pd.DataFrame([
     {"run_id": "run-012", "model": "Forest", "params": json.dumps({"n_estimators": 60, "max_depth": 6, "min_samples_leaf": 5}), "seed": 3,
      "cv_auc_mean": _cv(RandomForestClassifier(60, max_depth=6, min_samples_leaf=5, random_state=3))},
     {"run_id": "run-013", "model": "Forest", "params": json.dumps({"n_estimators": 60, "max_depth": 8, "min_samples_leaf": 5}), "seed": 1,
-     "cv_auc_mean": _cv(RandomForestClassifier(60, max_depth=8, min_samples_leaf=5, random_state=4))},
+     "cv_auc_mean": round(_cv(RandomForestClassifier(60, max_depth=8, min_samples_leaf=5, random_state=1)) - 0.01, 4)},
 ])
 ```
 
@@ -933,7 +956,7 @@ print(check_df)
 ```
 
 ### explain
-Запуск `run-013` не воспроизвёлся: в журнале записано зерно 1, а модель на самом деле обучали с другим (так бывает, когда журнал заполняют руками, а не той же функцией, что запускает обучение). Разница маленькая, но это именно та ситуация, когда «лучшую модель» невозможно повторить. Лекарство — записывать параметры из самого объекта модели (`get_params()`) в момент запуска, а не переписывать их в журнал отдельно. MLflow делает это автоматически.
+У `run-013` сохранённый AUC расходится с повторным расчётом на 0.01. Из этой таблицы нельзя узнать, на каком шаге испортили запись. Для нового запуска сохраняйте параметры из обученного объекта, разбиение, отпечаток данных и саму вычисленную метрику вместе.
 
 ## task: honest | Честная финальная оценка | star
 

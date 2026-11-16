@@ -726,9 +726,13 @@ top = pd.Series(model.feature_importances_, index=X.columns).idxmax()
 ### explain
 Опоздание — это ровно `delay > 0`, и дерево находит этот вопрос первым же разбиением. 100 % на тесте и один признак с важностью 1 — классическая картина утечки. Новое имя столбца не меняет сути: `delay` посчитан из `actual_min`, а его в момент заказа нет.
 
-## task: shop-rate | Доля опозданий кофейни без подглядывания | plus
+## task: shop-rate | Среднее точки для новых доставок | plus
 
-Сделайте признак «доля опозданий в кофейне» честно. Разбейте `ok[["shop_id"]]` и `y` (0.25 / 42). Посчитайте долю опозданий по кофейням **только по обучающей части** — `shop_rate` (Series: индекс — `shop_id`). Добавьте в `X_train` и `X_test` столбец `shop_rate` с этой долей для кофейни строки.
+Перед кодом представьте: есть один заказ в новой точке. По каким строкам вы вправе посчитать его признак? На этапе прогноза его исход ещё неизвестен: используйте только метки обучающей части.
+
+Разбейте `ok[["shop_id"]]` и `y` (0.25 / 42). Посчитайте долю опозданий по кофейням **только по обучающей части** — `shop_rate` (Series: индекс — `shop_id`). Добавьте в `X_train` и `X_test` столбец `shop_rate` с этой долей для кофейни строки. Сохраните исходный индекс строки: это ключ заказа; порядок строк можно менять. Если кофейни нет в train, используйте общую долю `y_train.mean()`, а не метки test. Код должен работать и при появлении такой кофейни.
+
+Для обучающей строки её собственная метка входит в среднее своей точки. Это отдельная утечка внутри train: честную оценку кодировщика получают внутри фолдов, вычисляя среднее только по обучающей части соответствующего фолда. В этом упражнении изучаем только границу train/test; высокое качество на самом train ещё ничего не доказывает.
 
 Сохраните также `diff` — наибольшее по модулю расхождение (по всем кофейням) между долей по обучающей части и долей по всем данным, в п.п., 2 знака.
 
@@ -759,14 +763,26 @@ if all(close(s[k], allr[k], 1e-9) for k in r.index) and not all(close(s[k], r[k]
 assert all(close(s[k], r[k], 1e-9) for k in r.index), 'shop_rate — доля опозданий по кофейням в обучающей части.'
 xa, xb = need('X_train', _pd.DataFrame), need('X_test', _pd.DataFrame)
 assert 'shop_rate' in xa.columns and 'shop_rate' in xb.columns, 'Добавьте столбец shop_rate и в X_train, и в X_test.'
-assert len(xb) == len(b) and (xb['shop_rate'].to_numpy() == b['shop_id'].map(r).to_numpy()).all(), 'В X_test shop_rate должен браться из долей обучающей части: map по shop_id.'
-assert (xa['shop_rate'].to_numpy() == a['shop_id'].map(r).to_numpy()).all(), 'В X_train shop_rate не совпал с долями по обучающей части.'
+def _aligned(_got, _source, _label):
+    assert _got.index.is_unique and set(_got.index) == set(_source.index), f'{_label}: сохраните исходные индексы заказов после разбиения.'
+    _got = _got.reindex(_source.index)
+    assert (_got['shop_id'] == _source['shop_id']).all(), f'{_label}: shop_id не соответствует исходному заказу. Сортируйте строки целиком, не отдельный столбец.'
+    _want = _source['shop_id'].map(r).fillna(ya.mean())
+    assert all(close(v, w, 1e-9) for v, w in zip(_got['shop_rate'], _want)), f'{_label}: долю берите по shop_id из train; неизвестной кофейне — y_train.mean().'
+_aligned(xa, a, 'X_train')
+_aligned(xb, b, 'X_test')
 w = round(((r - allr).abs().max()) * 100, 2)
 assert close(need('diff'), w), f'diff = {need("diff")}, а ожидалось {w}.'
+_new = ok.copy()
+_new.loc[b.index[0], 'shop_id'] = 'NEW-SHOP'
+_replay = rerun_with(ok=_new)
+_new_test = b.copy()
+_new_test.loc[b.index[0], 'shop_id'] = 'NEW-SHOP'
+_aligned(_replay['X_test'], _new_test, 'X_test с новой кофейней')
 ```
 
 ### hint
-`y_train.groupby(X_train["shop_id"]).mean()` — доли по обучающей части. Перенести на строки — `X_test["shop_id"].map(shop_rate)`.
+`y_train.groupby(X_train["shop_id"]).mean()` — доли по обучающей части. Перенести на строки — `X_test["shop_id"].map(shop_rate).fillna(y_train.mean())`: для новой точки map вернёт пропуск.
 
 ### hint
 Доли по всем данным — `y.groupby(ok["shop_id"]).mean()`. Разница двух Series выравнивается по индексу: `(shop_rate - all_rate).abs().max()`.
@@ -780,14 +796,14 @@ ok = d[d["actual_min"].between(1, 299)]
 y = ok["actual_min"] > ok["promised_min"]
 X_train, X_test, y_train, y_test = train_test_split(ok[["shop_id"]], y, test_size=0.25, random_state=42)
 shop_rate = y_train.groupby(X_train["shop_id"]).mean()
-X_train = X_train.assign(shop_rate=X_train["shop_id"].map(shop_rate))
-X_test = X_test.assign(shop_rate=X_test["shop_id"].map(shop_rate))
+X_train = X_train.assign(shop_rate=X_train["shop_id"].map(shop_rate).fillna(y_train.mean()))
+X_test = X_test.assign(shop_rate=X_test["shop_id"].map(shop_rate).fillna(y_train.mean()))
 all_rate = y.groupby(ok["shop_id"]).mean()
 diff = round((shop_rate - all_rate).abs().max() * 100, 2)
 ```
 
 ### explain
-Расхождение — около процентного пункта: на шести крупных группах подглядывание почти незаметно. Но привычка важна — на мелких группах (гость, курьер) разница станет огромной, и модель покажет на тесте качество, которого в жизни не будет.
+Расхождение — около процентного пункта: на шести крупных группах подглядывание почти незаметно. Для новой точки среднее по train — запасной вариант. У единственной обучающей строки среднее её кофейни совпадёт с её меткой; при кодировании вне фолда эту строку исключают и берут среднее по оставшейся обучающей части фолда, если точка там неизвестна. Но привычка важна — на мелких группах (гость, курьер) разница станет огромной, и модель покажет на тесте качество, которого в жизни не будет.
 
 ## task: prepare | Одна подготовка для всех данных | star
 

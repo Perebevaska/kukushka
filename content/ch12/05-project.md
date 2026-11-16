@@ -9,7 +9,7 @@ recap:
   - "Параметры для ряда подбирают `GridSearchCV(..., cv=TimeSeriesSplit(n_splits=3))`: каждый фолд обучается на прошлом и проверяется на следующем куске. `cv=3` — обычный KFold, он оптимистичен и может выбрать не те параметры."
   - "Прогноз ряда используют для решения — здесь штатного расписания. Метрика решения (часы нехватки, лишние смены) важнее RMSE."
   - "Обычный прогноз нацелен на среднее и не задаёт, как часто факт окажется выше. Если нехватка дороже избытка, планируют по верхнему квантилю — он задаёт эту долю прямо."
-  - "`HistGradientBoostingRegressor(loss='quantile', quantile=0.8)` прогнозирует значение, которое факт превышает лишь в ~20 % случаев."
+  - "Квантиль 0.8 задаёт цель покрытия 80 %, но фактическое покрытие на новой партии и в рабочих часах проверяют отдельно; округление до сотрудников меняет долю дефицитных часов."
 ---
 
 ## Задача
@@ -22,12 +22,17 @@ recap:
 
 ## План
 
+Момент выпуска — 20:00 накануне; последняя полностью завершённая часовая метка — 19:00. Для первой выдачи на 1 августа исключите из fit ответы 31 июля 20:00–23:00; для июльской валидации аналогично исключите 30 июня 20:00–23:00. Наличие правильных лагов не делает будущие метки доступными для fit.
+
+Подготовка будущих признаков отделяется от y: выпущенный прогноз содержит все 24 часа следующих суток, даже когда их спрос неизвестен. Не вызывайте dropna по неизвестной будущей цели. Даты выдачи, источников лагов, обучающих меток и выходных строк проверяются отдельно.
+
+
 0. Момент прогноза и горизонт: какие признаки законны при решении в 20:00 (раздел ниже).
 1. Признаки для горизонта «завтра» (раздел «Разберём вместе» урока «Прогноз: ориентиры, горизонт и метрики») и признак акции (задача «Признак „день акции“» урока «Признаки для прогноза ряда»); разбиение по времени: обучение — март–июнь, валидация — июль, тест — август.
 2. Ориентир: «среднее за 4 недели» на тесте и проверка требования.
 3. Выбор модели на валидации.
    Затем — подбор параметров победителя кросс-валидацией по времени: `GridSearchCV` с `cv=TimeSeriesSplit(n_splits=3)` на марте–июле. Обычное `cv=3` здесь — ошибка: это KFold, который не знает о времени.
-4. Финальная модель — с параметрами из шага 3б — на обучении + валидации, проверка на тесте.
+4. Финальная модель — с параметрами из шага 3 б — на обучении + валидации, проверка на тесте.
 5. Перевод прогноза в бариста: сколько часов будет нехватка и сколько лишних смен.
 6. План по верхнему квантилю.
 
@@ -45,7 +50,7 @@ recap:
 
 Отсюда признаки. Календарь и флаг акции известны заранее (даты акций — в календаре маркетинга). Из лагов берём 48 (тот же час позавчера) и 168 (тот же час неделю назад). Среднее за сутки сдвигаем на 28 часов: `s.shift(28).rolling(24).mean()` — окно заканчивается не позже 19:00 сегодня для любого часа завтра. `mean4w` строится из сдвигов от 168 часов — он законен. Лаг 24 подошёл бы утренним часам завтра, но ради одной модели на все часы мы от него отказываемся.
 
-Цена честности здесь почти нулевая: финальная модель проекта (шаг 4) с лагом 24 и сдвигом окна 24, то есть с отсечкой в полночь, дала бы на августе те же 4.21 (4.208 против 4.209). Зато наша модель действительно запустится в 20:00: каждый её признак к этому времени уже известен.
+Для единого выпуска в 20:00 выберите признаки, которые уже известны для каждого из 24 будущих часов. Лаг 24 для последнего часа завтрашнего дня обращается к сегодняшним 23:00, которых в момент выпуска ещё нет. Ошибка финального прогноза будет измерена после фиксации модели.
 
 Функция признаков `make(s)` с этими признаками дана в заготовках: календарь, флаг акции, лаги 48 и 168, среднее за сутки со сдвигом 28 и `mean4w` — среднее за этот час в 4 прошлые недели.
 
@@ -80,6 +85,7 @@ recap:
 import pandas as pd
 _promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
 def make(s):
+    s = s.asfreq("h")
     df = pd.DataFrame({"y": s})
     df["hour"] = df.index.hour
     df["dow"] = df.index.dayofweek
@@ -89,7 +95,7 @@ def make(s):
         df[f"lag_{k}"] = s.shift(k)
     df["roll"] = s.shift(28).rolling(24).mean()
     df["mean4w"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)
-    return df.dropna()
+    return df.dropna(subset=df.columns.drop("y"))
 ```
 
 ### starter
@@ -107,6 +113,15 @@ s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetim
 d = make(s0)
 w = {'train': int((d.index < '2026-07-01').sum()), 'valid': int(((d.index >= '2026-07-01') & (d.index < '2026-08-01')).sum()), 'test': int((d.index >= '2026-08-01').sum())}
 assert dict(need('sizes')) == w, f'sizes = {need("sizes")}, а нужно {w}.'
+_df = need('df'); _X = need('X'); _y = need('y')
+assert _X.index.equals(d.index) and list(_X.columns)==list(d.columns.drop('y')), 'X: сверяем схему и даты, target не должен быть признаком.'
+assert _X.equals(d.drop(columns='y')) and _y.equals(d['y']), 'Сверьте все значения признаков/меток по времени.'
+for _name,_mask in [('train',d.index<'2026-07-01'),('valid',(d.index>='2026-07-01')&(d.index<'2026-08-01')),('test',d.index>='2026-08-01')]:
+    assert (need(_name)==_mask).all(), f'{_name}: состав строк не соответствует временной границе.'
+_hidden=s0.copy(); _hidden.loc[_hidden.index>='2026-07-31 20:00']=float('nan')
+_future=make(_hidden).loc['2026-08-01':'2026-08-01 23:00']
+assert len(_future)==24 and _future.drop(columns='y').notna().all().all(), 'make должен строить24 будущие строки без y на1августа.'
+
 ```
 
 ### hint
@@ -143,6 +158,7 @@ sizes = {"train": int(train.sum()), "valid": int(valid.sum()), "test": int(test.
 import pandas as pd
 _promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
 def make(s):
+    s = s.asfreq("h")
     df = pd.DataFrame({"y": s})
     df["hour"] = df.index.hour
     df["dow"] = df.index.dayofweek
@@ -152,7 +168,7 @@ def make(s):
         df[f"lag_{k}"] = s.shift(k)
     df["roll"] = s.shift(28).rolling(24).mean()
     df["mean4w"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)
-    return df.dropna()
+    return df.dropna(subset=df.columns.drop("y"))
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
 df = make(s)
 X, y = df.drop(columns="y"), df["y"]
@@ -201,6 +217,7 @@ base_meets = rmse_base <= 4.3
 import pandas as pd
 _promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
 def make(s):
+    s = s.asfreq("h")
     df = pd.DataFrame({"y": s})
     df["hour"] = df.index.hour
     df["dow"] = df.index.dayofweek
@@ -210,7 +227,7 @@ def make(s):
         df[f"lag_{k}"] = s.shift(k)
     df["roll"] = s.shift(28).rolling(24).mean()
     df["mean4w"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)
-    return df.dropna()
+    return df.dropna(subset=df.columns.drop("y"))
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
 df = make(s)
 X, y = df.drop(columns="y"), df["y"]
@@ -266,9 +283,9 @@ best = min(valid_rmse, key=valid_rmse.get)
 ```
 
 ### explain
-Неглубокий бустинг (4.059) и линейная регрессия (4.084) почти неразличимы, бустинг по умолчанию — хуже: признаки уже содержат сезонность (`mean4w`, лаги), и сложной модели нечего добавить, кроме шума. При такой разнице обычно берут модель попроще — её легче объяснить и поддерживать. Здесь мы всё же идём дальше с неглубоким бустингом, и причина практическая: у него есть параметры, которые стоит подобрать по времени (шаг 3б), и квантильная версия `loss="quantile"` для шага 6 — план смен по верхней оценке. Обычная `LinearRegression` прогнозирует только середину. По точности выбор почти ничего не стоит: на августе линейная регрессия дала бы те же 4.21 (4.213 против 4.209 у бустинга из шага 4).
+Неглубокий бустинг (4.059) и линейная регрессия (4.084) почти неразличимы, бустинг по умолчанию — хуже: признаки уже содержат сезонность (`mean4w`, лаги), и сложной модели нечего добавить, кроме шума. Сравнение модели/признаков и анализ ошибок выполняются на ранних периодах до открытия августа. При такой разнице обычно берут модель попроще — её легче объяснить и поддерживать. Здесь мы всё же идём дальше с неглубоким бустингом, и причина практическая: у него есть параметры, которые стоит подобрать по времени (шаг 3 б), и квантильная версия `loss="quantile"` для шага 6 — план смен по верхней оценке. Обычная `LinearRegression` прогнозирует только середину. По точности выбор почти ничего не стоит: август остаётся финальной оценкой уже выбранной процедуры; его результат не должен выбирать семейство.
 
-## task: grid | Шаг 3б. Подбор параметров по времени | plus
+## task: grid | Шаг 3 б. Подбор параметров по времени | plus
 
 В шаге 3 модель выбрана на одном месяце (июль): впереди неглубокий бустинг, но его параметры взяты наугад. Надёжнее проверить параметры на нескольких кусках прошлого — кросс-валидацией **по времени**. Подберите параметры бустинга на `train | valid` (март–июль) — найденные `best_params` станут параметрами финальной модели в шаге 4:
 
@@ -285,6 +302,7 @@ GridSearchCV(HistGradientBoostingRegressor(random_state=0),
 import pandas as pd
 _promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
 def make(s):
+    s = s.asfreq("h")
     df = pd.DataFrame({"y": s})
     df["hour"] = df.index.hour
     df["dow"] = df.index.dayofweek
@@ -294,7 +312,7 @@ def make(s):
         df[f"lag_{k}"] = s.shift(k)
     df["roll"] = s.shift(28).rolling(24).mean()
     df["mean4w"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)
-    return df.dropna()
+    return df.dropna(subset=df.columns.drop("y"))
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
 df = make(s)
 X, y = df.drop(columns="y"), df["y"]
@@ -310,7 +328,7 @@ import numpy as np
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 
-fit_mask = train | valid
+fit_mask = ((train | valid) & (y.index < "2026-07-31 20:00") & y.notna())
 
 ```
 
@@ -321,15 +339,15 @@ from sklearn.model_selection import GridSearchCV as _GS, TimeSeriesSplit as _TS,
 from sklearn.ensemble import HistGradientBoostingRegressor as _H
 g = need('gs', _GS)
 assert hasattr(g, 'best_params_'), 'gs ещё не обучен: вызовите gs.fit(X[fit_mask], y[fit_mask]).'
-assert isinstance(g.cv, _TS) and g.cv.n_splits == 3, f'cv = {g.cv!r}. Для ряда нужен TimeSeriesSplit(n_splits=3), а не число фолдов: cv=3 означает обычный KFold без учёта времени.'
+assert isinstance(g.cv, _TS) and g.cv.n_splits == 3 and g.cv.gap >= 28, f'cv = {g.cv!r}. Для ряда нужен TimeSeriesSplit(n_splits=3, gap=28), а не число фолдов: cv=3 означает обычный KFold без учёта времени.'
 assert g.scoring == 'neg_root_mean_squared_error', f'scoring = {g.scoring!r}; нужен "neg_root_mean_squared_error".'
 pg = {k: list(v) for k, v in g.param_grid.items()}
 assert pg == {'max_depth': [2, 3, None], 'learning_rate': [0.05, 0.1]}, f'Сетка параметров: {pg}.'
-fm = train | valid
+fm = ((train | valid) & (y.index < "2026-07-31 20:00") & y.notna())
 assert g.n_features_in_ == X.shape[1] and len(g.cv_results_['split0_test_score']) == 6, 'Обучайте gs на X[fit_mask], y[fit_mask].'
 bp = dict(g.best_params_)
-ref = -_cvs(_H(random_state=0, **bp), X[fm], y[fm], cv=_TS(n_splits=3), scoring='neg_root_mean_squared_error').mean()
-assert close(-g.best_score_, ref, 1e-6), 'gs обучен не на train | valid: лучший результат не совпадает с пересчётом на марте–июле.'
+ref = -_cvs(_H(random_state=0, **bp), X[fm], y[fm], cv=_TS(n_splits=3,gap=28), scoring='neg_root_mean_squared_error').mean()
+assert close(-g.best_score_, ref, 1e-6), 'gs обучен не на ((train | valid) & (y.index < "2026-07-31 20:00") & y.notna()): лучший результат не совпадает с пересчётом на марте–июле.'
 assert dict(need('best_params', dict)) == bp, f'best_params = {need("best_params")}, а у gs — {bp}.'
 assert close(need('cv_rmse'), round(float(ref), 3), 0.002), f'cv_rmse = {need("cv_rmse")}, а нужно {ref:.3f}. best_score_ отрицательный — поменяйте знак.'
 pt = _np.clip(_H(random_state=0, **bp).fit(X[fm], y[fm]).predict(X[test]), 0, None)
@@ -359,11 +377,11 @@ import numpy as np
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 
-fit_mask = train | valid
+fit_mask = ((train | valid) & (y.index < "2026-07-31 20:00") & y.notna())
 gs = GridSearchCV(
     HistGradientBoostingRegressor(random_state=0),
     {"max_depth": [2, 3, None], "learning_rate": [0.05, 0.1]},
-    cv=TimeSeriesSplit(n_splits=3),
+    cv=TimeSeriesSplit(n_splits=3, gap=28),
     scoring="neg_root_mean_squared_error",
 )
 gs.fit(X[fit_mask], y[fit_mask])
@@ -381,7 +399,7 @@ print(best_params, cv_rmse, rmse_test_grid)
 
 ## task: final | Шаг 4. Финальная проверка | base
 
-В заготовке `best_params` — параметры бустинга, найденные по времени в шаге 3б. Обучите `HistGradientBoostingRegressor(random_state=0, **best_params)` на `train | valid`, обрежьте прогноз снизу нулём (`np.clip(p, 0, None)`) и посчитайте RMSE на тесте — `rmse_final` (3 знака). Сохраните `pred_test` (массив прогнозов) и `meets` — выполнено ли требование целиком: RMSE ≤ 4.3 **и** лучше ориентира `rmse_base`.
+В заготовке `best_params` — параметры бустинга, найденные по времени в шаге 3 б. Обучите `HistGradientBoostingRegressor(random_state=0, **best_params)` на `train | valid`, обрежьте прогноз снизу нулём (`np.clip(p, 0, None)`) и посчитайте RMSE на тесте — `rmse_final` (3 знака). Сохраните `pred_test` (массив прогнозов) и `meets` — выполнено ли требование целиком: RMSE ≤ 4.3 **и** лучше ориентира `rmse_base`.
 
 ### setup
 ```python
@@ -391,6 +409,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import HistGradientBoostingRegressor
 _promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
 def make(s):
+    s = s.asfreq("h")
     df = pd.DataFrame({"y": s})
     df["hour"] = df.index.hour
     df["dow"] = df.index.dayofweek
@@ -400,7 +419,7 @@ def make(s):
         df[f"lag_{k}"] = s.shift(k)
     df["roll"] = s.shift(28).rolling(24).mean()
     df["mean4w"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)
-    return df.dropna()
+    return df.dropna(subset=df.columns.drop("y"))
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
 df = make(s)
 X, y = df.drop(columns="y"), df["y"]
@@ -423,10 +442,10 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 ### check
 ```python
 import numpy as _np
-fit = train | valid
+fit = ((train | valid) & (y.index < "2026-07-31 20:00") & y.notna())
 p = _np.clip(_ref_model.fit(X[fit], y[fit]).predict(X[test]), 0, None)
 r = round(float(_np.sqrt(((y[test] - p) ** 2).mean())), 3)
-assert _np.allclose(need('pred_test'), p, atol=1e-6), 'pred_test — прогноз HistGradientBoostingRegressor(random_state=0, **best_params), обученного на train | valid, обрезанный нулём.'
+assert _np.allclose(need('pred_test'), p, atol=1e-6), 'pred_test — прогноз HistGradientBoostingRegressor(random_state=0, **best_params), обученного на ((train | valid) & (y.index < "2026-07-31 20:00") & y.notna()), обрезанный нулём.'
 assert close(need('rmse_final'), r, 0.002), f'rmse_final = {need("rmse_final")}, а нужно {r}.'
 assert need('meets') == (r <= 4.3 and r < rmse_base), f'meets = {need("meets")}.'
 ```
@@ -441,7 +460,7 @@ assert need('meets') == (r <= 4.3 and r < rmse_base), f'meets = {need("meets")}.
 ```python
 import numpy as np
 from sklearn.ensemble import HistGradientBoostingRegressor
-fit_mask = train | valid
+fit_mask = ((train | valid) & (y.index < "2026-07-31 20:00") & y.notna())
 model = HistGradientBoostingRegressor(random_state=0, **best_params)
 pred_test = np.clip(model.fit(X[fit_mask], y[fit_mask]).predict(X[test]), 0, None)
 rmse_final = round(float(np.sqrt(((y[test] - pred_test) ** 2).mean())), 3)
@@ -449,16 +468,18 @@ meets = (rmse_final <= 4.3) and (rmse_final < rmse_base)
 ```
 
 ### explain
-Около 4.21 — требование выполнено, и ориентир (4.35) побеждён. Победа скромная, примерно на 0.14 заказа в час, но честная: семейство модели выбрано на июле, параметры — на фолдах по времени внутри марта–июля, а август модель увидела один раз. Победитель шага 3 с параметрами по умолчанию дал бы 4.23: подбор по времени добавил немного, но и это улучшение получено без подглядывания в тест.
+На августе RMSE зафиксированной модели — 4,216 заказа в час, у среднего четырёх прошлых недель — 4,353. Разница около 0,14 заказа в час. Для решения по сменам ещё предстоит сравнить нехватку людей и лишние бариста-часы.
 
 ## task: staffing | Шаг 5. Прогноз в людях | plus
+
+Одна строка — час работы. Мощность одного бариста — шесть заказов в час. Если в 10:00 прогноз равен 7, а спрос — 11 заказам, план предусматривает двух бариста, и фактически нужны двое. План смены достаточен, хотя сам прогноз ниже спроса. Что произойдёт при прогнозе 6 и спросе 7?
 
 Переведите прогноз в бариста: нужно `max(1, ceil(заказы / 6))` человек в час (с 7 до 22 включительно; ночью выдачу не планируем). Посчитайте для теста:
 
 - `needed` — сколько бариста нужно было по факту;
 - план по модели (`pred_test` в заготовке) и план по ориентиру (`mean4w`).
 
-Для каждого плана сохраните в словарь `plans` (`{"модель": {...}, "ориентир": {...}}`) долю часов с нехваткой людей `short` (план < нужного, 3 знака) и число лишних бариста-часов `extra` (сумма положительных `план − нужно`).
+Для каждого плана сохраните в словарь `plans` (`{"модель": {...}, "ориентир": {...}}`) долю часов с нехваткой людей `short` (план < нужного, 3 знака) и число лишних бариста-часов `extra` (сумма положительных `план − нужно`). Добавьте `deficit` — суммарное число недостающих бариста-часов и `coverage_work` — долю рабочих часов, когда прогноз заказов покрыл наблюдаемый спрос (3 знака). Сохраните `needed` для каждого часа теста по порядку; при подсчёте четырёх показателей применяйте маску рабочих часов.
 
 ### setup
 ```python
@@ -467,6 +488,7 @@ import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 _promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
 def make(s):
+    s = s.asfreq("h")
     df = pd.DataFrame({"y": s})
     df["hour"] = df.index.hour
     df["dow"] = df.index.dayofweek
@@ -476,7 +498,7 @@ def make(s):
         df[f"lag_{k}"] = s.shift(k)
     df["roll"] = s.shift(28).rolling(24).mean()
     df["mean4w"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)
-    return df.dropna()
+    return df.dropna(subset=df.columns.drop("y"))
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
 df = make(s)
 X, y = df.drop(columns="y"), df["y"]
@@ -484,7 +506,7 @@ train = df.index < "2026-07-01"
 valid = (df.index >= "2026-07-01") & (df.index < "2026-08-01")
 test = df.index >= "2026-08-01"
 best_params = {"learning_rate": 0.05, "max_depth": 3}   # результат шага 3б
-pred_test = np.clip(HistGradientBoostingRegressor(random_state=0, **best_params).fit(X[train | valid], y[train | valid]).predict(X[test]), 0, None)
+pred_test = np.clip(HistGradientBoostingRegressor(random_state=0, **best_params).fit(X[((train | valid) & (y.index < "2026-07-31 20:00") & y.notna())], y[((train | valid) & (y.index < "2026-07-31 20:00") & y.notna())]).predict(X[test]), 0, None)
 _ref_pred = pred_test.copy()
 ```
 
@@ -503,6 +525,7 @@ open_hours = (y_test.index.hour >= 7) & (y_test.index.hour <= 22)
 import numpy as _np
 yt = y[test]; oh = (yt.index.hour >= 7) & (yt.index.hour <= 22)
 nd = _np.maximum(1, _np.ceil(yt.values / 6))
+assert _np.array_equal(need('needed'), nd), 'Проверьте needed для каждого часа теста по порядку: фактические заказы делим на шесть, округляем вверх и берём не меньше одного.'
 w = {}
 for k, p in [('модель', _ref_pred), ('ориентир', X.loc[test, 'mean4w'].values)]:
     pl = _np.maximum(1, _np.ceil(p / 6))
@@ -511,6 +534,11 @@ got = need('plans', dict)
 for k, (sh, ex) in w.items():
     assert k in got, f'Нет ключа {k!r} в plans.'
     assert close(got[k]['short'], sh, 0.002) and close(got[k]['extra'], ex, 0.5), f'{k}: short, extra = {got[k]["short"]}, {got[k]["extra"]}, а нужно {sh}, {ex}.'
+for _name,_p in [('модель',_ref_pred),('ориентир',X.loc[test,'mean4w'].values)]:
+    _plan=_np.maximum(1,_np.ceil(_p/6))
+    assert close(got[_name]['deficit'],float(_np.clip(nd-_plan,0,None)[oh].sum())), 'deficit: нехватка человеко-часов в рабочее время.'
+    assert close(got[_name]['coverage_work'],round(float((yt.values[oh]<=_p[oh]).mean()),3)), 'coverage_work: покрытие спроса прогнозом в рабочие часы.'
+
 ```
 
 ### hint
@@ -531,7 +559,7 @@ for name, p in [("модель", pred_test), ("ориентир", X.loc[test, "m
     plan = np.maximum(1, np.ceil(p / 6))
     short = round(float(((plan < needed) & open_hours).sum() / open_hours.sum()), 3)
     extra = float(np.clip(plan - needed, 0, None)[open_hours].sum())
-    plans[name] = {"short": short, "extra": extra}
+    plans[name] = {"short": short, "extra": extra, "deficit": float(np.clip(needed-plan,0,None)[open_hours].sum()), "coverage_work": round(float((y_test.values[open_hours]<=p[open_hours]).mean()),3)}
 ```
 
 ### explain
@@ -539,7 +567,9 @@ for name, p in [("модель", pred_test), ("ориентир", X.loc[test, "m
 
 ## task: quantile | Шаг 6. План по верхнему квантилю | star
 
-Если нехватка рук дороже лишней смены, планируют не по середине, а по **верхнему квантилю**: значение, которое факт превышает лишь в ~20 % случаев. Обучите `HistGradientBoostingRegressor(loss="quantile", quantile=0.8, random_state=0, **best_params)` (параметры из шага 3б есть в заготовке) на `train | valid`, обрежьте нулём и постройте план как в шаге 5. Сохраните `coverage` — долю часов теста, где факт не выше прогноза (3 знака), `short_q` (доля часов нехватки, 3 знака) и `extra_q` (лишние бариста-часы) — по рабочим часам.
+Перед сравнением смен задайте стоимость дефицитного и избыточного человеко-часа. Рядом с покрытием спроса и долей часов нехватки покажите суммарную нехватку мощности и лишние бариста-часы **в рабочих часах**; лучшая RMSE сама по себе не выбирает самый выгодный план. Если нехватка рук дороже лишней смены, планируют не по середине, а по **верхнему квантилю**: значение, которое факт превышает лишь в ~20 % случаев. Обучите `HistGradientBoostingRegressor(loss="quantile", quantile=0.8, random_state=0, **best_params)` (параметры из шага 3 б есть в заготовке) на `train | valid`, обрежьте нулём и постройте план как в шаге 5. Сохраните `coverage` — долю часов теста, где факт не выше прогноза (3 знака), `short_q` (доля часов нехватки, 3 знака) и `extra_q` (лишние бариста-часы) — по рабочим часам.
+
+Для рабочих часов с 07:00 до 22:00 включительно отдельно сохраните `coverage_work` — долю исходных фактов не выше квантильного прогноза (три знака) и `deficit_q` — суммарное число недостающих бариста-часов после округления плана до работников. При мощности шесть заказов в час сравните нужное и запланированное число людей отдельно для каждого часа.
 
 ### setup
 ```python
@@ -547,6 +577,7 @@ import numpy as np
 import pandas as pd
 _promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
 def make(s):
+    s = s.asfreq("h")
     df = pd.DataFrame({"y": s})
     df["hour"] = df.index.hour
     df["dow"] = df.index.dayofweek
@@ -556,7 +587,7 @@ def make(s):
         df[f"lag_{k}"] = s.shift(k)
     df["roll"] = s.shift(28).rolling(24).mean()
     df["mean4w"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)
-    return df.dropna()
+    return df.dropna(subset=df.columns.drop("y"))
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
 df = make(s)
 X, y = df.drop(columns="y"), df["y"]
@@ -578,13 +609,16 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 ```python
 import numpy as _np
 from sklearn.ensemble import HistGradientBoostingRegressor as _H
-fm = train | valid
+fm = ((train | valid) & (y.index < "2026-07-31 20:00") & y.notna())
 pq = _np.clip(_H(loss='quantile', quantile=0.8, learning_rate=0.05, max_depth=3, random_state=0).fit(X[fm], y[fm]).predict(X[test]), 0, None)
 yt = y[test]; oh = (yt.index.hour >= 7) & (yt.index.hour <= 22)
 nd = _np.maximum(1, _np.ceil(yt.values / 6)); pl = _np.maximum(1, _np.ceil(pq / 6))
 assert close(need('coverage'), round(float((yt.values <= pq).mean()), 3), 0.002), f'coverage = {need("coverage")}.'
 assert close(need('short_q'), round(float(((pl < nd) & oh).sum() / oh.sum()), 3), 0.002), f'short_q = {need("short_q")}.'
 assert close(need('extra_q'), float(_np.clip(pl - nd, 0, None)[oh].sum()), 0.5), f'extra_q = {need("extra_q")}.'
+assert close(need('deficit_q'),float(_np.clip(nd-pl,0,None)[oh].sum())), 'deficit_q — нехватка человеко-часов.'
+assert close(need('coverage_work'),round(float((yt.values[oh]<=pq[oh]).mean()),3)), 'coverage_work — рабочие часы, а не все24.'
+
 ```
 
 ### hint
@@ -598,7 +632,7 @@ assert close(need('extra_q'), float(_np.clip(pl - nd, 0, None)[oh].sum()), 0.5),
 import numpy as np
 from sklearn.ensemble import HistGradientBoostingRegressor
 
-fit_mask = train | valid
+fit_mask = ((train | valid) & (y.index < "2026-07-31 20:00") & y.notna())
 q = HistGradientBoostingRegressor(loss="quantile", quantile=0.8, random_state=0, **best_params)
 p = np.clip(q.fit(X[fit_mask], y[fit_mask]).predict(X[test]), 0, None)
 y_test = y[test]
@@ -608,27 +642,26 @@ needed = np.maximum(1, np.ceil(y_test.values / 6))
 plan = np.maximum(1, np.ceil(p / 6))
 short_q = round(float(((plan < needed) & open_hours).sum() / open_hours.sum()), 3)
 extra_q = float(np.clip(plan - needed, 0, None)[open_hours].sum())
+deficit_q = float(np.clip(needed-plan,0,None)[open_hours].sum())
+coverage_work = round(float((y_test.values[open_hours]<=p[open_hours]).mean()),3)
+
 ```
 
 ### explain
-Покрытие около 74 % — меньше заданных 80 %: модель обучена на месяцах, когда заказов было меньше, и рост августа она недооценивает. Тем не менее часов нехватки стало вдвое меньше (около 15 % против 30 % у модели «по середине»), а платим за это примерно 290 лишними бариста-часами за месяц (у плана «по середине» их 120). Какая точка лучше — решает бизнес, сравнивая цену часа бариста с ценой потерянного заказа. Аналитик показывает этот выбор, а не прячет его за одним RMSE.
+В августе квантильный прогноз покрывает фактический спрос в 73,9 % всех часов и в 69,8 % рабочих. После пересчёта прогнозов в целое число людей нехватка осталась в 14,9 % рабочих часов. Суммарно недоставало 90 бариста-часов, а избыточно было запланировано 296. Цель квантиля, фактическое покрытие и доля обеспеченных людьми часов здесь различаются.
 
 ## Итог для операционного менеджера
 
-> **Модель.** Прогноз заказов на каждый час завтрашнего дня строится в 20:00 накануне только по данным, которые к этому времени уже есть. Он ошибается в среднем примерно на 4.2 заказа в час (RMSE) против 4.35 у правила «среднее за 4 недели» — требование выполнено. Главное в модели — та же логика, что у правила, плюс учёт акций и текущего уровня заказов.
+> Августовская проверка охватывает 744 часа, из них 496 рабочих (07:00–22:00 включительно). У модели на среднее RMSE 4,216 заказа в час, у ориентира — 4,353. Для смен полезнее посмотреть, сколько сотрудников не хватило и сколько было лишними при мощности шесть заказов на человека в час.
 >
-> **Как планировать смены.** Три плана на август, по рабочим часам с 7 до 22:
+> | План | Покрытие спроса прогнозом в рабочие часы | Рабочих часов с нехваткой людей | Нехватка, бариста-часы | Избыток, бариста-часы |
+> |---|---:|---:|---:|---:|
+> | Среднее четырёх прошлых недель | 49,4 % | 28,8 % | 185 | 142 |
+> | Модель на среднее | 44,0 % | 30,2 % | 192 | 118 |
+> | Квантиль 0,8 | 69,8 % | 14,9 % | 90 | 296 |
 >
-> | план | часов с нехваткой людей | лишних бариста-часов за месяц |
-> |---|---|---|
-> | нынешнее правило (среднее за 4 недели) | 28.8 % | 142 |
-> | модель «по середине» | 30.4 % | 120 |
-> | модель по верхней оценке (квантиль 0.8) | 14.9 % | 291 |
->
-> Скажем честно: модель точнее правила по RMSE, но для смен сама по себе выигрыша не даёт — нехватка людей у неё даже чуть чаще, чем у правила. Оба прогноза нацелены на середину, а заказов в августе больше, чем в обучающих месяцах. Выигрыш даёт только план по верхней оценке: нехватка — вдвое реже, цена — около 290 лишних бариста-часов в месяц вместо 120–140. Предлагаем его.
->
-> **Что дальше.** Переобучать модель каждую неделю (рост аудитории быстро делает её «осторожной»), заносить даты акций в календарь заранее и следить за прогнозом по мониторингу из главы 8.
+> Квантильный план сокращает нехватку против ориентира на 95 бариста-часов и добавляет 154 избыточных. При одинаковой цене недостающего и лишнего часа их сумма у ориентира равна 327, у модели на среднее — 310, у квантиля — 386. Если недостающий час обходится втрое дороже лишнего, условные затраты составят 697, 694 и 566 соответственно. Для письма используйте ставки, выбранные до сравнения, и назовите план, который выбрали бы при этих ставках.
 
 ::: figure ts-staffing
-От заказов к людям на одном часе августа и итог за месяц: прогноз «по середине» недобирает бариста почти в трети рабочих часов, план по квантилю 0.8 — вдвое реже, но ценой лишних смен. Числа — из решений шагов 5 и 6.
+От заказов к людям на одном часе августа и итог за месяц: прогноз «по середине» недобирает бариста почти в трети рабочих часов, план по квантилю 0.8 — вдвое реже, но ценой лишних смен. Числа сверены с решениями шагов 5 и 6.
 :::

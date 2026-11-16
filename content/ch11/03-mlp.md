@@ -240,6 +240,8 @@ print(pd.DataFrame(rows).to_string(index=False))
 Те же замеры каждые 5 эпох на графике: обучающая кривая растёт всё время, тестовая выходит на плато около сотой эпохи, и разрыв между ними — то, что сеть «запомнила» про обучающих гостей.
 :::
 
+До alpha-sweep/epoch-gap/grid резервируйте финальный test. Выборα, эпохи и ширины выполняется на внутренней валидации или CV только оставшейся части. Масштабирование fit — внутри обучения соответствующего фолда. Подмена финальных меток не должна менять выбранные настройки; тест открывают один раз после фиксации конфигурации.
+
 ## Практика
 
 ## task: first-mlp | Первая сеть | warmup
@@ -371,7 +373,7 @@ assert _lines and _lines[-1] == 'True', f'Сейчас: {_lines}.'
 
 ## task: alpha-sweep | Подбор регуляризации | base
 
-Для `alpha` в `[0.0001, 0.1, 1.0, 10.0]` обучите `make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=(32,), alpha=..., max_iter=500, random_state=0))` и посчитайте AUC на обучении и на тесте. Сохраните DataFrame `res` (столбцы `alpha`, `train`, `test`, 3 знака), `best_alpha` — alpha с наибольшим AUC на тесте, причём выбирайте **по округлённым значениям из `res`** (при равенстве — меньший alpha), и `gap_small`, `gap_big` — разрыв `train − test` при alpha 0.0001 и 10 (3 знака).
+Для `alpha` в `[0.0001, 0.1, 1.0, 10.0]` обучите `make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=(32,), alpha=..., max_iter=500, random_state=0))` и посчитайте AUC на обучении и внутренней валидации. Сохраните DataFrame `res` (столбцы `alpha`, `train`, `validation`, 3 знака), `best_alpha` — alpha с наибольшим AUC на валидации, причём выбирайте **по округлённым значениям из `res`** (при равенстве — меньший alpha), и `gap_small`, `gap_big` — разрыв `train − validation` при alpha 0.0001 и 10 (3 знака).
 
 ### starter
 ```python
@@ -385,7 +387,8 @@ from sklearn.metrics import roc_auc_score
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X_development, X_final, y_development, y_final = train_test_split(X,y,test_size=.25,random_state=42,stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(X_development,y_development,test_size=.25,random_state=43,stratify=y_development)
 
 ```
 
@@ -399,16 +402,18 @@ from sklearn.neural_network import MLPClassifier as _MLP
 from sklearn.metrics import roc_auc_score as _auc
 g = _pd.read_csv('guests_churn.csv'); y = g['churned']
 X0 = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})
-a, b, c, d = _tts(X0, y, test_size=0.25, random_state=42, stratify=y)
+_dev,_final,_devy,_finaly = _tts(X0,y,test_size=.25,random_state=42,stratify=y)
+a,b,c,d = _tts(_dev,_devy,test_size=.25,random_state=43,stratify=_devy)
 w = {}
 for al in [0.0001, 0.1, 1.0, 10.0]:
     m = _mp(_SS(), _MLP(hidden_layer_sizes=(32,), alpha=al, max_iter=500, random_state=0)).fit(a, c)
     w[al] = (round(_auc(c, m.predict_proba(a)[:, 1]), 3), round(_auc(d, m.predict_proba(b)[:, 1]), 3))
 r = need('res', _pd.DataFrame)
+assert {'alpha', 'train', 'validation'} <= set(r.columns), 'В res нужны столбцы alpha, train и validation. Для выбора регуляризации берите валидацию.'
 for al, (t1, t2) in w.items():
     row = r[r['alpha'] == al]
     assert len(row) == 1, f'Нет строки для alpha = {al}.'
-    assert close(row['train'].iloc[0], t1, 0.002) and close(row['test'].iloc[0], t2, 0.002), f'alpha = {al}: train, test = {row["train"].iloc[0]}, {row["test"].iloc[0]}, а нужно {t1}, {t2}.'
+    assert close(row['train'].iloc[0], t1, 0.002) and close(row['validation'].iloc[0], t2, 0.002), f'alpha = {al}: train, validation = {row["train"].iloc[0]}, {row["validation"].iloc[0]}, а нужно {t1}, {t2}.'
 best = min(w, key=lambda k: (-w[k][1], k))
 assert need('best_alpha') == best, f'best_alpha = {need("best_alpha")}, а нужно {best}.'
 assert close(need('gap_small'), round(w[0.0001][0] - w[0.0001][1], 3), 0.003) and close(need('gap_big'), round(w[10.0][0] - w[10.0][1], 3), 0.003), f'gap_small, gap_big = {need("gap_small")}, {need("gap_big")}.'
@@ -432,7 +437,8 @@ from sklearn.metrics import roc_auc_score
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X_development, X_final, y_development, y_final = train_test_split(X,y,test_size=.25,random_state=42,stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(X_development,y_development,test_size=.25,random_state=43,stratify=y_development)
 
 rows = []
 for alpha in [0.0001, 0.1, 1.0, 10.0]:
@@ -440,12 +446,12 @@ for alpha in [0.0001, 0.1, 1.0, 10.0]:
     m.fit(X_train, y_train)
     rows.append({"alpha": alpha,
                  "train": round(roc_auc_score(y_train, m.predict_proba(X_train)[:, 1]), 3),
-                 "test": round(roc_auc_score(y_test, m.predict_proba(X_test)[:, 1]), 3)})
+                 "validation": round(roc_auc_score(y_test, m.predict_proba(X_test)[:, 1]), 3)})
 res = pd.DataFrame(rows)
-best = res.sort_values(["test", "alpha"], ascending=[False, True]).iloc[0]
+best = res.sort_values(["validation", "alpha"], ascending=[False, True]).iloc[0]
 best_alpha = best["alpha"]
-gap_small = round(res.loc[0, "train"] - res.loc[0, "test"], 3)
-gap_big = round(res.loc[3, "train"] - res.loc[3, "test"], 3)
+gap_small = round(res.loc[0, "train"] - res.loc[0, "validation"], 3)
+gap_big = round(res.loc[3, "train"] - res.loc[3, "validation"], 3)
 ```
 
 ### explain
@@ -519,7 +525,7 @@ halved_at = next(i + 1 for i, v in enumerate(curve) if v < curve[0] / 2)
 
 ## task: epoch-gap | Разрыв по эпохам | base
 
-Повторите разбор из урока (сеть `MLPClassifier(hidden_layer_sizes=(128,), alpha=0.0001, random_state=0)`, обучение по одной эпохе через `partial_fit` на масштабированных данных из заготовки) на 150 эпохах и сохраните после **каждой** эпохи AUC на обучении и тесте: списки `auc_train`, `auc_test` (длины 150, без округления). Сохраните `best_epoch` — номер эпохи (от 1) с наибольшим AUC на тесте, `best_test` (3 знака) и `gap_end` — разрыв «обучение − тест» после последней эпохи (3 знака).
+Повторите разбор из урока (сеть `MLPClassifier(hidden_layer_sizes=(128,), alpha=0.0001, random_state=0)`, обучение по одной эпохе через `partial_fit` на масштабированных данных из заготовки) на 150 эпохах и сохраните после **каждой** эпохи AUC на обучении и валидации: списки `auc_train`, `auc_validation` (длины 150, без округления). Сохраните `best_epoch` — номер эпохи (от 1) с наибольшим AUC на валидации, `best_validation` (3 знака) и `gap_end` — разрыв «обучение − валидация» после последней эпохи (3 знака).
 
 ### setup
 ```python
@@ -529,9 +535,10 @@ from sklearn.preprocessing import StandardScaler
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X_development, X_test, y_development, y_test = train_test_split(X,y,test_size=.25,random_state=42,stratify=y)
+X_train, X_validation, y_train, y_validation = train_test_split(X_development,y_development,test_size=.25,random_state=43,stratify=y_development)
 sc = StandardScaler().fit(X_train)
-A, B = sc.transform(X_train), sc.transform(X_test)
+A, B = sc.transform(X_train), sc.transform(X_validation)
 ```
 
 ### starter
@@ -541,7 +548,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import roc_auc_score
 
 net = MLPClassifier(hidden_layer_sizes=(128,), alpha=0.0001, random_state=0)
-auc_train, auc_test = [], []
+auc_train, auc_validation = [], []
 
 ```
 
@@ -551,16 +558,16 @@ import numpy as _np
 import warnings as _w
 from sklearn.neural_network import MLPClassifier as _M
 from sklearn.metrics import roc_auc_score as _auc
-A0, B0, ya, yb = need('A'), need('B'), need('y_train'), need('y_test')
+A0, B0, ya, yb = need('A'), need('B'), need('y_train'), need('y_validation')
 n = _M(hidden_layer_sizes=(128,), alpha=0.0001, random_state=0); tr, te = [], []
 with _w.catch_warnings():
     _w.simplefilter('ignore')
     for _ in range(150):
         n.partial_fit(A0, ya, classes=[0, 1]); tr.append(_auc(ya, n.predict_proba(A0)[:, 1])); te.append(_auc(yb, n.predict_proba(B0)[:, 1]))
-assert len(need('auc_train')) == 150 and _np.allclose(need('auc_test'), te, atol=1e-9), 'auc_test — AUC на тесте после каждой из 150 эпох.'
+assert len(need('auc_train')) == 150 and _np.allclose(need('auc_validation'), te, atol=1e-9), 'auc_validation — AUC на тесте после каждой из 150 эпох.'
 be = int(_np.argmax(te)) + 1
 assert need('best_epoch') == be, f'best_epoch = {need("best_epoch")}, а нужно {be}.'
-assert close(need('best_test'), round(max(te), 3), 0.0011), f'best_test = {need("best_test")}.'
+assert close(need('best_validation'), round(max(te), 3), 0.0011), f'best_validation = {need("best_validation")}.'
 assert close(need('gap_end'), round(tr[-1] - te[-1], 3), 0.0011), f'gap_end = {need("gap_end")}.'
 ```
 
@@ -577,15 +584,15 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import roc_auc_score
 
 net = MLPClassifier(hidden_layer_sizes=(128,), alpha=0.0001, random_state=0)
-auc_train, auc_test = [], []
+auc_train, auc_validation = [], []
 for epoch in range(150):
     net.partial_fit(A, y_train, classes=[0, 1])
     auc_train.append(roc_auc_score(y_train, net.predict_proba(A)[:, 1]))
-    auc_test.append(roc_auc_score(y_test, net.predict_proba(B)[:, 1]))
-best_epoch = int(np.argmax(auc_test)) + 1
-best_test = round(max(auc_test), 3)
-gap_end = round(auc_train[-1] - auc_test[-1], 3)
-print(best_epoch, best_test, gap_end)
+    auc_validation.append(roc_auc_score(y_validation, net.predict_proba(B)[:, 1]))
+best_epoch = int(np.argmax(auc_validation)) + 1
+best_validation = round(max(auc_validation), 3)
+gap_end = round(auc_train[-1] - auc_validation[-1], 3)
+print(best_epoch, best_validation, gap_end)
 ```
 
 ### explain
@@ -602,7 +609,8 @@ from sklearn.model_selection import train_test_split
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X_development, X_final, y_development, y_final = train_test_split(X,y,test_size=.25,random_state=42,stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(X_development,y_development,test_size=.25,random_state=43,stratify=y_development)
 ```
 
 ### starter

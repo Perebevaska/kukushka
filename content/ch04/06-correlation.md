@@ -366,14 +366,33 @@ ok = d[d["actual_min"].between(1, 299)]
 
 ### check
 ```python
+import numpy as _np
 import pandas as _pd
+from matplotlib.collections import PathCollection as _PathCollection
 d = _pd.read_csv('deliveries.csv')
-ok = d[d['actual_min'].between(1, 299)]
+ok = d[d['actual_min'].between(1,299)]
 ax = ax_of()
-assert ax.collections, 'Нет точек: ax.scatter(...).'
-pts = ax.collections[0].get_offsets()
-assert len(pts) == len(ok), f'Точек {len(pts)}, а доставок с временем 1–299 — {len(ok)}.'
-assert abs(ax.collections[0].get_alpha() - 0.4) < 1e-9, 'Прозрачность — alpha=0.4.'
+clouds = [collection for collection in ax.collections if isinstance(collection, _PathCollection)]
+assert clouds, 'Нет точек: ax.scatter(...).'
+points = []
+for cloud in clouds:
+    offsets = cloud.get_offsets()
+    assert not _np.ma.getmaskarray(offsets).any(), 'Все допустимые пары должны быть видимыми точками.'
+    points.extend(_np.asarray(offsets, dtype=float).tolist())
+    assert _np.allclose(cloud.get_sizes(),8), 'Размер точек — s=8.'
+    alpha = cloud.get_alpha()
+    if alpha is None:
+        colors = cloud.get_facecolors()
+        assert len(colors), 'Точки должны иметь прозрачность 0.4.'
+        alpha = colors[:,3]
+    assert _np.allclose(alpha,.4), 'Прозрачность точек — alpha=0.4.'
+expected = ok[['distance_km','actual_min']].to_numpy(dtype=float)
+actual = _np.asarray(points,dtype=float)
+assert actual.shape == expected.shape, f'Точек {len(actual)}, а доставок с временем 1–299 — {len(expected)}.'
+# Keep duplicate observations and allow any permutation of the same (x,y) pairs.
+actual = actual[_np.lexsort((actual[:,1],actual[:,0]))]
+expected = expected[_np.lexsort((expected[:,1],expected[:,0]))]
+assert _np.allclose(actual,expected,rtol=1e-9,atol=1e-7), 'Каждая точка: X = distance_km в км, Y = actual_min в минутах. Проверьте оси и сохранение пар одной доставки.'
 assert ax.get_xlabel() == 'км' and ax.get_ylabel() == 'мин', f'Подписи осей: {ax.get_xlabel()!r}, {ax.get_ylabel()!r}.'
 ```
 
@@ -513,7 +532,7 @@ cm.round(2)
 
 ## task: spearman | Пирсон против Спирмена | base
 
-Посчитайте корреляцию расстояния и времени по **всем** непустым `actual_min` (с аномалиями) двумя способами: Пирсона — в `r_pearson`, Спирмена — в `r_spearman` (оба — 2 знака). В `diff` — насколько Спирмен больше (2 знака).
+Посчитайте корреляцию расстояния и времени по **всем** непустым `actual_min` (с аномалиями) двумя способами: Пирсона — в `r_pearson`, Спирмена — в `r_spearman` (оба — 2 знака). В `diff` — насколько Спирмен больше (2 знака): вычтите **исходные, неокруглённые** коэффициенты и округлите разность один раз.
 
 ### starter
 ```python
@@ -529,7 +548,7 @@ d = _pd.read_csv('deliveries.csv').dropna(subset=['actual_min'])
 p = round(d['distance_km'].corr(d['actual_min']), 2)
 s = round(d['distance_km'].rank().corr(d['actual_min'].rank()), 2)
 assert close(need('r_pearson'), p) and close(need('r_spearman'), s), f'r_pearson, r_spearman = {need("r_pearson")}, {need("r_spearman")}, а нужно {p}, {s}.'
-assert close(need('diff'), round(s - p, 2)), f'diff = {need("diff")}.'
+assert close(need('diff'), round(d['distance_km'].rank().corr(d['actual_min'].rank()) - d['distance_km'].corr(d['actual_min']), 2)), f'diff = {need("diff")}.'
 ```
 
 ### hint
@@ -544,7 +563,7 @@ import pandas as pd
 d = pd.read_csv("deliveries.csv").dropna(subset=["actual_min"])
 r_pearson = round(d["distance_km"].corr(d["actual_min"]), 2)
 r_spearman = round(d["distance_km"].rank().corr(d["actual_min"].rank()), 2)
-diff = round(r_spearman - r_pearson, 2)
+diff = round(d["distance_km"].rank().corr(d["actual_min"].rank()) - d["distance_km"].corr(d["actual_min"]), 2)
 ```
 
 ### explain

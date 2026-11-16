@@ -535,11 +535,20 @@ y = np.arange(10)
 ```python
 import numpy as _np
 f = need('batches')
-X0 = _np.arange(20).reshape(10, 2); y0 = _np.arange(10)
-got = list(f(X0, y0, 4, _np.random.default_rng(0)))
-assert [len(b[1]) for b in got] == [4, 4, 2], 'Батчи по 4 строки, последний — остаток.'
-assert sorted(_np.concatenate([b[1] for b in got]).tolist()) == list(range(10)), 'Каждая строка — ровно в одном батче.'
-assert all(_np.array_equal(b[0][:, 0] // 2, b[1]) for b in got), 'X_batch и y_batch должны соответствовать одним и тем же строкам.'
+X0 = _np.arange(30).reshape(10, 3); y0 = _np.arange(10) * 7 + 3
+for _size in (4, 3):
+    for _seed in (0, 17):
+        _rng = _np.random.default_rng(_seed)
+        _reference_rng = _np.random.default_rng(_seed)
+        # Два последовательных вызова — две эпохи с состоянием переданного RNG.
+        for _epoch in range(2):
+            got = list(f(X0, y0, _size, _rng))
+            _order = _reference_rng.permutation(len(y0))
+            _indices = [_order[i:i + _size] for i in range(0, len(y0), _size)]
+            assert [len(b[1]) for b in got] == [len(idx) for idx in _indices], f'При size={_size} сохраняйте заданный размер батча и последний остаток.'
+            for (_xb, _yb), _idx in zip(got, _indices):
+                assert _np.array_equal(_xb, X0[_idx]), f'При size={_size}, seed={_seed}, эпоха {_epoch + 1}: X_batch должен сохранять все столбцы и строки перестановки переданного rng.'
+                assert _np.array_equal(_yb, y0[_idx]), f'При size={_size}, seed={_seed}, эпоха {_epoch + 1}: y_batch должен содержать метки тех же строк перестановки переданного rng.'
 assert list(need('sizes')) == [4, 4, 2] and need('covered') == True, f'sizes = {need("sizes")}, covered = {need("covered")}.'
 ```
 

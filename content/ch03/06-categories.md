@@ -213,7 +213,7 @@ synonyms = {
     "соц. сети": "соцсети",
     "от друзей": "друзья",
     "проходил мимо": "мимо",
-    "2гис": "карты",
+    "2 гис": "карты",
     "яндекс карты": "карты",
 }
 src = df["source"].str.strip().str.lower().replace(synonyms)
@@ -251,7 +251,7 @@ src.value_counts(dropna=False)
 import pandas as pd
 df = pd.read_csv("clients_raw.csv")
 synonyms = {"соц. сети": "соцсети", "от друзей": "друзья", "проходил мимо": "мимо",
-            "2гис": "карты", "яндекс карты": "карты"}
+            "2 гис": "карты", "яндекс карты": "карты"}
 src = df["source"].str.strip().str.lower().replace(synonyms)
 counts = src.value_counts()
 frequent = counts[counts >= 10].index
@@ -312,6 +312,8 @@ df.groupby("slot")["amount"].agg(["count", "mean"]).round(1)
 :::
 
 {{practice: vip}}
+
+В отчёте явно выбирайте `observed`: `observed=False` сохраняет пустые категории, `observed=True` показывает только представленные. Пустая возрастная группа и нулевой средний чек имеют разный смысл.
 
 ## Практика
 
@@ -617,7 +619,7 @@ src.value_counts(dropna=False)
 
 ## task: age-groups | Возрастные группы | plus
 
-Посчитайте возраст гостей на 1 декабря 2026 года, как в уроке «Типы: из текста в числа и даты» (дата рождения в двух форматах, полные годы: `2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")`). Разложите по группам через `pd.cut` с `right=False`: 14–24, 25–34, 35–44, 45–59, 60–99 — с подписями `"14–24"`, `"25–34"` и т. д. (можно писать через обычный дефис: `"14-24"`, проверка примет оба варианта). Возрасты вне этих интервалов станут пропусками. Сохраните в `groups` словарь «группа → число анкет».
+Посчитайте возраст гостей на 1 декабря 2026 года, как в уроке «Типы: из текста в числа и даты» (дата рождения в двух форматах, полные годы: `2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")`). Разложите по группам через `pd.cut` с `right=False`: 14–24, 25–34, 35–44, 45–59, 60–100 — с подписями `"14–24"`, `"25–34"` и т. д. (можно писать через обычный дефис: `"14-24"`, проверка примет оба варианта). Возрасты вне этих интервалов станут пропусками. Сохраните в `groups` словарь «группа → число анкет».
 
 ### starter
 ```python
@@ -635,8 +637,8 @@ import pandas as _pd
 b = _pd.read_csv('clients_raw.csv')['birth_date']
 born = _pd.to_datetime(b, format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(b, format='%d.%m.%Y', errors='coerce'))
 age = 2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')
-labels = ['14–24', '25–34', '35–44', '45–59', '60–99']
-g = _pd.cut(age, bins=[14, 25, 35, 45, 60, 100], labels=labels, right=False)
+labels = ['14–24', '25–34', '35–44', '45–59', '60–100']
+g = _pd.cut(age, bins=[14, 25, 35, 45, 60, 101], labels=labels, right=False)
 want = {k: int(v) for k, v in g.value_counts().items()}
 got = {str(k).replace('-', '–'): int(v) for k, v in dict(need('groups')).items()}
 assert set(got) == set(labels), f'Ключи: {sorted(got)}, а нужны {labels}.'
@@ -657,8 +659,8 @@ iso = pd.to_datetime(df["birth_date"], format="%Y-%m-%d", errors="coerce")
 ru = pd.to_datetime(df["birth_date"], format="%d.%m.%Y", errors="coerce")
 born = iso.fillna(ru)
 age = 2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")
-df["age_group"] = pd.cut(age, bins=[14, 25, 35, 45, 60, 100],
-                         labels=["14–24", "25–34", "35–44", "45–59", "60–99"], right=False)
+df["age_group"] = pd.cut(age, bins=[14, 25, 35, 45, 60, 101],
+                         labels=["14–24", "25–34", "35–44", "45–59", "60–100"], right=False)
 groups = dict(df["age_group"].value_counts())
 ```
 

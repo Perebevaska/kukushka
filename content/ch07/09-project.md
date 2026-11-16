@@ -94,6 +94,8 @@ print(deal[top].sum() / deal.sum())
 9. Финальная проверка на тесте: сколько договоров в топ-30 %.
 10. Скорость ответа: причина или следствие?
 
+До исследования связей с `converted` зарезервируйте последние 750 заявок по created: первая дата финальной партии 2026-07-21 10:58. Метка созревает через 30 дней; обучение берёт только заявки до 2026-06-21 10:58 (1869 строк), промежуток 381 строк к старту финальной партии ещё не созрел и в fit не входит. Граница определяется датой, а не меткой. В паспорте фиксируйте доступность цели created+30 дней; финальные ответы открываются после их созревания.
+
 Начиная с пятого шага, перед задачей курс сам готовит `d` (с признаками из шага 4), `X`, `y`, `X_train`, `X_test`, `y_train`, `y_test` и фолды `kf = KFold(n_splits=5, shuffle=True, random_state=42)`, а с шестого — ещё и подготовку `pre` из шага 5.
 
 ::: warn Типичные ошибки проекта
@@ -121,6 +123,15 @@ print(deal[top].sum() / deal.sum())
 
 ### setup
 ```python
+
+from sklearn.preprocessing import FunctionTransformer as _FT0
+def _lead_time0(frame):
+    frame = frame.copy()
+    stamp = _pd0.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
 import pandas as _pd0
 import numpy as _np0
 from sklearn.model_selection import train_test_split as _tts0, KFold as _KF0, cross_val_score as _cvs0
@@ -139,19 +150,19 @@ def _leads0():
     _d['evening'] = (_d['hour'] >= 19).astype(int)
     return _d
 def _ref():
-    _d = _leads0()
+    _d = _leads0().iloc[:1869].copy()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'created', 'contract_rub', 'converted'])
-    _Xtr, _Xte, _ytr, _yte = _tts0(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
-    return _CT0([
+    return _mp0(_FT0(_lead_time0), _CT0([
         ('num', _mp0(_SI0(strategy='median'), _SS0()), num),
         ('cat', _mp0(_SI0(strategy='constant', fill_value='не указан'), _OHE0(handle_unknown='ignore')), _CAT0),
-    ])
-def _catch0(yt, s, share=0.3):
+    ]))
+def _catch0(yt, s, share=0.3, k=None):
     _s = _pd0.Series(_np0.asarray(s), index=yt.index)
-    return yt.loc[_s.nlargest(int(len(_s) * share)).index].sum() / yt.sum()
+    return yt.loc[_s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(_s)*share) if k is None else int(k)).index].sum() / yt.sum()
 ```
 
 ### starter
@@ -161,9 +172,9 @@ import pandas as pd
 
 ### check
 ```python
-_d = _pd0.read_csv('catering_leads.csv')
+_d = _pd0.read_csv('catering_leads.csv').iloc[:1869].copy()
 _x = need('d', _pd0.DataFrame)
-assert len(_x) == len(_d) and list(_x.columns) == list(_d.columns), 'd — вся таблица catering_leads.csv без изменений.'
+assert len(_x) == len(_d) and list(_x.columns) == list(_d.columns), 'd — разрешённые1869 зрелых строк разработки.'
 assert close(need('conv_rate'), round(_d['converted'].mean(), 3)), f'conv_rate = {need("conv_rate")}, а ожидалось {round(_d["converted"].mean(), 3)}.'
 assert need('n_contracts') == _d['converted'].sum(), f'n_contracts = {need("n_contracts")}: это сумма столбца converted.'
 assert close(need('budget_na'), round(_d['budget_pp'].isna().mean(), 3)), f'budget_na = {need("budget_na")}, а ожидалось {round(_d["budget_pp"].isna().mean(), 3)}. Доля, а не количество: .isna().mean().'
@@ -181,7 +192,7 @@ assert need('contract_match') == _w, f'contract_match должно быть {_w}
 ### solution
 ```python
 import pandas as pd
-d = pd.read_csv("catering_leads.csv")
+d = pd.read_csv("catering_leads.csv").iloc[:1869].copy()
 conv_rate = round(d["converted"].mean(), 3)
 n_contracts = d["converted"].sum()
 budget_na = round(d["budget_pp"].isna().mean(), 3)
@@ -205,6 +216,15 @@ print(conv_rate, n_contracts, budget_na, size_na, contract_match)
 
 ### setup
 ```python
+
+from sklearn.preprocessing import FunctionTransformer as _FT0
+def _lead_time0(frame):
+    frame = frame.copy()
+    stamp = _pd0.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
 import pandas as _pd0
 import numpy as _np0
 from sklearn.model_selection import train_test_split as _tts0, KFold as _KF0, cross_val_score as _cvs0
@@ -223,21 +243,21 @@ def _leads0():
     _d['evening'] = (_d['hour'] >= 19).astype(int)
     return _d
 def _ref():
-    _d = _leads0()
+    _d = _leads0().iloc[:1869].copy()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'created', 'contract_rub', 'converted'])
-    _Xtr, _Xte, _ytr, _yte = _tts0(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
-    return _CT0([
+    return _mp0(_FT0(_lead_time0), _CT0([
         ('num', _mp0(_SI0(strategy='median'), _SS0()), num),
         ('cat', _mp0(_SI0(strategy='constant', fill_value='не указан'), _OHE0(handle_unknown='ignore')), _CAT0),
-    ])
-def _catch0(yt, s, share=0.3):
+    ]))
+def _catch0(yt, s, share=0.3, k=None):
     _s = _pd0.Series(_np0.asarray(s), index=yt.index)
-    return yt.loc[_s.nlargest(int(len(_s) * share)).index].sum() / yt.sum()
+    return yt.loc[_s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(_s)*share) if k is None else int(k)).index].sum() / yt.sum()
 import pandas as pd
-d = pd.read_csv("catering_leads.csv")
+d = pd.read_csv("catering_leads.csv").iloc[:1869].copy()
 ```
 
 ### starter
@@ -247,7 +267,7 @@ d = pd.read_csv("catering_leads.csv")
 
 ### check
 ```python
-_d = _pd0.read_csv('catering_leads.csv')
+_d = _pd0.read_csv('catering_leads.csv').iloc[:1869].copy()
 _b = _d.groupby('channel')['converted'].mean().round(3).sort_values(ascending=False)
 _x = need('by_channel', _pd0.Series)
 assert set(_x.index) == set(_b.index), f'В индексе by_channel: {list(_x.index)}, а нужны все каналы: {list(_b.index)}.'
@@ -290,6 +310,15 @@ print(repeat_rate, new_rate, fast_rate, slow_rate)
 
 ### setup
 ```python
+
+from sklearn.preprocessing import FunctionTransformer as _FT0
+def _lead_time0(frame):
+    frame = frame.copy()
+    stamp = _pd0.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
 import pandas as _pd0
 import numpy as _np0
 from sklearn.model_selection import train_test_split as _tts0, KFold as _KF0, cross_val_score as _cvs0
@@ -308,21 +337,21 @@ def _leads0():
     _d['evening'] = (_d['hour'] >= 19).astype(int)
     return _d
 def _ref():
-    _d = _leads0()
+    _d = _leads0().iloc[:1869].copy()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'created', 'contract_rub', 'converted'])
-    _Xtr, _Xte, _ytr, _yte = _tts0(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
-    return _CT0([
+    return _mp0(_FT0(_lead_time0), _CT0([
         ('num', _mp0(_SI0(strategy='median'), _SS0()), num),
         ('cat', _mp0(_SI0(strategy='constant', fill_value='не указан'), _OHE0(handle_unknown='ignore')), _CAT0),
-    ])
-def _catch0(yt, s, share=0.3):
+    ]))
+def _catch0(yt, s, share=0.3, k=None):
     _s = _pd0.Series(_np0.asarray(s), index=yt.index)
-    return yt.loc[_s.nlargest(int(len(_s) * share)).index].sum() / yt.sum()
+    return yt.loc[_s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(_s)*share) if k is None else int(k)).index].sum() / yt.sum()
 import pandas as pd
-d = pd.read_csv("catering_leads.csv")
+d = pd.read_csv("catering_leads.csv").iloc[:1869].copy()
 ```
 
 ### starter
@@ -332,7 +361,7 @@ d = pd.read_csv("catering_leads.csv")
 
 ### check
 ```python
-_d = _pd0.read_csv('catering_leads.csv')
+_d = _pd0.read_csv('catering_leads.csv').iloc[:1869].copy()
 def _r(m):
     return round(_d.loc[m, 'converted'].mean(), 3)
 _sn, _so = _r(_d['company_size'].isna()), _r(_d['company_size'].notna())
@@ -362,7 +391,7 @@ print(size_na_rate, size_ok_rate, budget_na_rate, budget_ok_rate, budget_high, b
 ```
 
 ### explain
-Пропуски не случайны. Клиент, который не назвал размер компании, покупает реже (около 9 % против 14 %): часто это «прощупывание» без серьёзного намерения. Поэтому пропуск размера не заменяем самой частой категорией, а делаем **отдельной категорией** «не указан» — так модель сможет учесть, что пустое поле само по себе сигнал. С бюджетом разница меньше (12 % против 14 %), зато сам бюджет говорит много: от 450 ₽ на гостя договоров втрое больше, чем при меньшем бюджете. Пропуск бюджета заполним медианой обучающей части — это нейтральное значение, а не «бюджет ноль»: в отличие от среднего чека гостей без визитов (глава 6), здесь бюджет есть, его просто не назвали.
+Пропуски не случайны. Клиент, который не назвал размер компании, покупает реже (10 % против 13,8 %). Причины пропуска из выгрузки неизвестны. Поэтому пропуск размера не заменяем самой частой категорией, а делаем **отдельной категорией** «не указан» — так модель сможет учесть, что пустое поле само по себе сигнал. С бюджетом разница меньше (12 % против 14 %), зато сам бюджет говорит много: от 450 ₽ на гостя договоров втрое больше, чем при меньшем бюджете. Пропуск бюджета заполним медианой обучающей части — это нейтральное значение, а не «бюджет ноль»: в отличие от среднего чека гостей без визитов (глава 6), здесь бюджет есть, его просто не назвали.
 
 ## task: time | Шаг 4. Признаки из времени заявки | base
 
@@ -380,6 +409,15 @@ print(size_na_rate, size_ok_rate, budget_na_rate, budget_ok_rate, budget_high, b
 
 ### setup
 ```python
+
+from sklearn.preprocessing import FunctionTransformer as _FT0
+def _lead_time0(frame):
+    frame = frame.copy()
+    stamp = _pd0.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
 import pandas as _pd0
 import numpy as _np0
 from sklearn.model_selection import train_test_split as _tts0, KFold as _KF0, cross_val_score as _cvs0
@@ -398,21 +436,21 @@ def _leads0():
     _d['evening'] = (_d['hour'] >= 19).astype(int)
     return _d
 def _ref():
-    _d = _leads0()
+    _d = _leads0().iloc[:1869].copy()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'created', 'contract_rub', 'converted'])
-    _Xtr, _Xte, _ytr, _yte = _tts0(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
-    return _CT0([
+    return _mp0(_FT0(_lead_time0), _CT0([
         ('num', _mp0(_SI0(strategy='median'), _SS0()), num),
         ('cat', _mp0(_SI0(strategy='constant', fill_value='не указан'), _OHE0(handle_unknown='ignore')), _CAT0),
-    ])
-def _catch0(yt, s, share=0.3):
+    ]))
+def _catch0(yt, s, share=0.3, k=None):
     _s = _pd0.Series(_np0.asarray(s), index=yt.index)
-    return yt.loc[_s.nlargest(int(len(_s) * share)).index].sum() / yt.sum()
+    return yt.loc[_s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(_s)*share) if k is None else int(k)).index].sum() / yt.sum()
 import pandas as pd
-d = pd.read_csv("catering_leads.csv")
+d = pd.read_csv("catering_leads.csv").iloc[:1869].copy()
 ```
 
 ### starter
@@ -423,7 +461,7 @@ created = pd.to_datetime(d["created"])
 
 ### check
 ```python
-_d = _leads0()
+_d = _leads0().iloc[:1869].copy()
 _x = need('d', _pd0.DataFrame)
 for _c in ['hour', 'weekday', 'evening']:
     assert _c in _x.columns, f'В d нет столбца {_c!r} — добавьте его: d["{_c}"] = ...'
@@ -462,11 +500,13 @@ print(evening_share, evening_rate, day_rate, evening_wait, day_wait)
 ```
 
 ### explain
-Каждая девятая заявка приходит вечером, и из них договором заканчиваются единицы — около 2 % против 15 % днём. Причина видна во втором числе: вечерняя заявка ждёт ответа до утра, медиана — больше 13 часов против двух днём. Признаки времени считаются по самой строке (урок «Новые признаки»), поэтому их можно добавить в `d` до разбиения — утечки нет. День недели, как увидим, почти ничего не меняет, но модели это выяснять самой.
+Каждая девятая заявка приходит вечером, и из них договором заканчиваются единицы — 2,5 % против 14,7 % днём. Одновременно наблюдается более долгое ожидание: вечерняя заявка ждёт ответа до утра, медиана — 13 часов против двух днём. Это гипотеза для эксперимента с вечерним дежурством, а не измеренный эффект ускорения: состав клиентов мог отличаться. Признаки времени считаются по самой строке (урок «Новые признаки»), поэтому их можно добавить в `d` до разбиения — утечки нет. День недели, как увидим, почти ничего не меняет, но модели это выяснять самой.
 
 ::: note
 Почему отдельный флаг `evening`, если есть `hour`? Логистическая регрессия считает влияние часа одинаковым на каждый час: «каждый час позже — на столько-то хуже». А здесь не плавный спад, а ступенька в 19:00. Флаг ловит её одним коэффициентом.
 :::
+
+Общий конвейер должен принимать исходную CRM, включая строковый `created`: преобразуйте дату в hour/weekday/evening **внутри** подготовки до заполнения пропусков и кодирования. На 18:59 evening=0, на 19:00 evening=1. После загрузки модели вызовите её на новых каналах, пропусках, неизвестных категориях и переставленных столбцах; ID строк должны сохраниться.
 
 ## task: pipe | Шаг 5. Конвейер | base
 
@@ -481,6 +521,15 @@ print(evening_share, evening_rate, day_rate, evening_wait, day_wait)
 
 ### setup
 ```python
+
+from sklearn.preprocessing import FunctionTransformer as _FT0
+def _lead_time0(frame):
+    frame = frame.copy()
+    stamp = _pd0.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
 import pandas as _pd0
 import numpy as _np0
 from sklearn.model_selection import train_test_split as _tts0, KFold as _KF0, cross_val_score as _cvs0
@@ -501,17 +550,17 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'created', 'contract_rub', 'converted'])
-    _Xtr, _Xte, _ytr, _yte = _tts0(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
-    return _CT0([
+    return _mp0(_FT0(_lead_time0), _CT0([
         ('num', _mp0(_SI0(strategy='median'), _SS0()), num),
         ('cat', _mp0(_SI0(strategy='constant', fill_value='не указан'), _OHE0(handle_unknown='ignore')), _CAT0),
-    ])
-def _catch0(yt, s, share=0.3):
+    ]))
+def _catch0(yt, s, share=0.3, k=None):
     _s = _pd0.Series(_np0.asarray(s), index=yt.index)
-    return yt.loc[_s.nlargest(int(len(_s) * share)).index].sum() / yt.sum()
+    return yt.loc[_s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(_s)*share) if k is None else int(k)).index].sum() / yt.sum()
 import pandas as pd
 d = _leads0()
 ```
@@ -535,13 +584,20 @@ cat = ["channel", "event_type", "city", "company_size", "manager"]
 _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _k = _ref()
 _x = need('X', _pd0.DataFrame)
 assert 'contract_rub' not in _x.columns, 'contract_rub в X — это утечка из шага 1: сумма договора известна только после договора.'
-assert 'converted' not in _x.columns and 'lead_id' not in _x.columns and 'created' not in _x.columns, 'Уберите из X lead_id, created (из неё уже сделаны признаки) и сам ответ converted.'
-assert list(_x.columns) == list(_X.columns), f'Столбцы X: {list(_x.columns)}, а ожидались {list(_X.columns)}. Без get_dummies — сырые столбцы.'
-assert list(need('X_test').index) == list(_Xte.index) and list(need('y_train').index) == list(_ytr.index), 'Разбиение не то: test_size=0.25, random_state=42, stratify=y.'
+assert 'converted' not in _x.columns and 'lead_id' not in _x.columns , 'Уберите из X lead_id и сам ответ converted; created остаётся для конвейера.'
+assert _x.columns.is_unique and set(_x.columns) == set(_X.columns), f'Столбцы X: {list(_x.columns)}, а ожидались {list(_X.columns)}. Без get_dummies — сырые столбцы.'
+assert list(need('X_test').index) == list(_Xte.index) and list(need('y_train').index) == list(_ytr.index), 'Проверьте хронологию: последние 750 заявок отложены, для обучения берутся только метки, созревшие до начала проверки.'
 _p = need('pipe', _P0)
 assert list(_p.named_steps) == ['prep', 'model'], f'Шаги pipe: {list(_p.named_steps)}, а нужны ["prep", "model"].'
 assert isinstance(_p.named_steps['model'], _LR0), 'Последний шаг pipe — LogisticRegression(max_iter=2000).'
 _nf = _pre0().fit_transform(_Xtr).shape[1]
+from sklearn.base import clone as _clone
+_prep = _p.named_steps['prep']
+assert callable(getattr(_prep, 'fit_transform', None)), 'prep должен преобразовывать сырые столбцы.'
+_sample = _Xtr.iloc[:120]
+_got = _clone(_prep).fit_transform(_sample)
+_want = _pre0().fit_transform(_sample)
+assert _got.shape == _want.shape, 'Проверьте, что подготовка внутри pipe включает категории и числовые столбцы.'
 assert need('n_features') == _nf, f'n_features = {need("n_features")}, а после подготовки получается {_nf} столбцов. Проверьте списки num и cat и fit_transform(X_train).'
 _a = round(_cvs0(_P0([('prep', _pre0()), ('model', _LR0(max_iter=2000))]), _Xtr, _ytr, cv=_k, scoring='roc_auc').mean(), 3)
 assert close(need('cv_auc'), _a), f'cv_auc = {need("cv_auc")}, а ожидалось {_a}. cross_val_score(pipe, X_train, y_train, cv=kf, scoring="roc_auc").mean().'
@@ -555,6 +611,16 @@ assert close(need('cv_auc'), _a), f'cv_auc = {need("cv_auc")}, а ожидало
 
 ### solution
 ```python
+import pandas as pd
+
+from sklearn.preprocessing import FunctionTransformer
+def lead_time(frame):
+    frame = frame.copy()
+    stamp = pd.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline, make_pipeline
@@ -567,13 +633,13 @@ num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client"
 cat = ["channel", "event_type", "city", "company_size", "manager"]
 
 y = d["converted"]
-X = d.drop(columns=["lead_id", "created", "contract_rub", "converted"])
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-pre = ColumnTransformer([
+X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
+pre = make_pipeline(FunctionTransformer(lead_time), ColumnTransformer([
     ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
     ("cat", make_pipeline(SimpleImputer(strategy="constant", fill_value="не указан"),
                           OneHotEncoder(handle_unknown="ignore")), cat),
-])
+]))
 pipe = Pipeline([("prep", pre), ("model", LogisticRegression(max_iter=2000))])
 n_features = pre.fit_transform(X_train).shape[1]
 cv_auc = round(cross_val_score(pipe, X_train, y_train, cv=kf, scoring="roc_auc").mean(), 3)
@@ -581,7 +647,7 @@ print(n_features, cv_auc)
 ```
 
 ### explain
-9 числовых столбцов и 27 флагов категорий — включая флаг «не указан» для размера компании. Медиану бюджета конвейер на каждом фолде считает заново по обучающим строкам — утечки нет (урок «Pipeline: предобработка и модель вместе»). AUC около 0.86: случайная пара «заявка с договором — заявка без» упорядочена верно в шести случаях из семи. Тест (750 заявок) отложен до шага 9.
+9 числовых столбцов и 27 флагов категорий — включая флаг «не указан» для размера компании. Медиану бюджета конвейер на каждом фолде считает заново по обучающим строкам — утечки нет (урок «Pipeline: предобработка и модель вместе»). Средний AUC на фолдах — 0,878. Тест (750 заявок) отложен до шага 9.
 
 ## task: trap | Шаг 6. Ловушка дисбаланса | plus
 
@@ -593,6 +659,25 @@ print(n_features, cv_auc)
 
 ### setup
 ```python
+import pandas as pd
+
+from sklearn.preprocessing import FunctionTransformer
+def lead_time(frame):
+    frame = frame.copy()
+    stamp = pd.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
+
+from sklearn.preprocessing import FunctionTransformer as _FT0
+def _lead_time0(frame):
+    frame = frame.copy()
+    stamp = _pd0.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
 import pandas as _pd0
 import numpy as _np0
 from sklearn.model_selection import train_test_split as _tts0, KFold as _KF0, cross_val_score as _cvs0
@@ -613,17 +698,17 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'created', 'contract_rub', 'converted'])
-    _Xtr, _Xte, _ytr, _yte = _tts0(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
-    return _CT0([
+    return _mp0(_FT0(_lead_time0), _CT0([
         ('num', _mp0(_SI0(strategy='median'), _SS0()), num),
         ('cat', _mp0(_SI0(strategy='constant', fill_value='не указан'), _OHE0(handle_unknown='ignore')), _CAT0),
-    ])
-def _catch0(yt, s, share=0.3):
+    ]))
+def _catch0(yt, s, share=0.3, k=None):
     _s = _pd0.Series(_np0.asarray(s), index=yt.index)
-    return yt.loc[_s.nlargest(int(len(_s) * share)).index].sum() / yt.sum()
+    return yt.loc[_s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(_s)*share) if k is None else int(k)).index].sum() / yt.sum()
 import pandas as pd
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.compose import ColumnTransformer
@@ -637,17 +722,17 @@ d["hour"] = created.dt.hour
 d["weekday"] = created.dt.dayofweek
 d["evening"] = (d["hour"] >= 19).astype(int)
 y = d["converted"]
-X = d.drop(columns=["lead_id", "created", "contract_rub", "converted"])
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting",
        "hour", "weekday", "evening"]
 cat = ["channel", "event_type", "city", "company_size", "manager"]
-pre = ColumnTransformer([
+pre = make_pipeline(FunctionTransformer(lead_time), ColumnTransformer([
     ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
     ("cat", make_pipeline(SimpleImputer(strategy="constant", fill_value="не указан"),
                           OneHotEncoder(handle_unknown="ignore")), cat),
-])
+]))
 ```
 
 ### starter
@@ -704,7 +789,7 @@ print(dummy_acc, forest_acc, forest_f1, balanced_f1)
 
 ## task: metric | Шаг 7. Метрика директора | base
 
-Напишите функцию `catch_rate(y_true, scores, share=0.3)` — долю всех договоров, которые попадают в верхние `share` заявок по оценке:
+Напишите функцию `catch_rate(y_true, scores, share=0.3, k=None)` — долю всех договоров, которые попадают в верхние `share` заявок по оценке; при переданном целом `k` отбирайте ровно `k` мест. Долю для показа округляют после определения списка:
 
 1. сделайте `pd.Series(scores, index=y_true.index)`;
 2. возьмите `int(len(...) * share)` заявок с наибольшей оценкой (`nlargest`);
@@ -718,6 +803,25 @@ print(dummy_acc, forest_acc, forest_f1, balanced_f1)
 
 ### setup
 ```python
+import pandas as pd
+
+from sklearn.preprocessing import FunctionTransformer
+def lead_time(frame):
+    frame = frame.copy()
+    stamp = pd.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
+
+from sklearn.preprocessing import FunctionTransformer as _FT0
+def _lead_time0(frame):
+    frame = frame.copy()
+    stamp = _pd0.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
 import pandas as _pd0
 import numpy as _np0
 from sklearn.model_selection import train_test_split as _tts0, KFold as _KF0, cross_val_score as _cvs0
@@ -738,17 +842,17 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'created', 'contract_rub', 'converted'])
-    _Xtr, _Xte, _ytr, _yte = _tts0(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
-    return _CT0([
+    return _mp0(_FT0(_lead_time0), _CT0([
         ('num', _mp0(_SI0(strategy='median'), _SS0()), num),
         ('cat', _mp0(_SI0(strategy='constant', fill_value='не указан'), _OHE0(handle_unknown='ignore')), _CAT0),
-    ])
-def _catch0(yt, s, share=0.3):
+    ]))
+def _catch0(yt, s, share=0.3, k=None):
     _s = _pd0.Series(_np0.asarray(s), index=yt.index)
-    return yt.loc[_s.nlargest(int(len(_s) * share)).index].sum() / yt.sum()
+    return yt.loc[_s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(_s)*share) if k is None else int(k)).index].sum() / yt.sum()
 import pandas as pd
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.compose import ColumnTransformer
@@ -762,17 +866,17 @@ d["hour"] = created.dt.hour
 d["weekday"] = created.dt.dayofweek
 d["evening"] = (d["hour"] >= 19).astype(int)
 y = d["converted"]
-X = d.drop(columns=["lead_id", "created", "contract_rub", "converted"])
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting",
        "hour", "weekday", "evening"]
 cat = ["channel", "event_type", "city", "company_size", "manager"]
-pre = ColumnTransformer([
+pre = make_pipeline(FunctionTransformer(lead_time), ColumnTransformer([
     ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
     ("cat", make_pipeline(SimpleImputer(strategy="constant", fill_value="не указан"),
                           OneHotEncoder(handle_unknown="ignore")), cat),
-])
+]))
 ```
 
 ### starter
@@ -780,7 +884,7 @@ pre = ColumnTransformer([
 import numpy as np
 import pandas as pd
 
-def catch_rate(y_true, scores, share=0.3):
+def catch_rate(y_true, scores, share=0.3, k=None):
     ...
 ```
 
@@ -801,6 +905,15 @@ _rc = round(_ytr[_r].sum() / _ytr.sum(), 3)
 assert close(need('rule_catch'), _rc), f'rule_catch = {need("rule_catch")}, а ожидалось {_rc}. Договоры в отмеченных заявках делить на все договоры y_train.'
 _rnd = round(_catch0(_ytr, _np0.random.default_rng(0).random(len(_ytr))), 3)
 assert close(need('random_catch'), _rnd), f'random_catch = {need("random_catch")}, а ожидалось {_rnd}. Оценки — np.random.default_rng(0).random(len(y_train)).'
+_boundary_y = _pd0.Series([0]*9 + [1] + [0]*20)
+_boundary_s = _np0.arange(30,0,-1)
+from inspect import signature as _signature
+try:
+    _signature(_f).bind(_boundary_y, _boundary_s, k=10)
+except TypeError:
+    raise AssertionError('Добавьте к catch_rate аргумент k для точного числа мест. При k=10 в очередь входит десятая заявка.') from None
+assert close(_f(_boundary_y, _boundary_s, k=10), 1), 'При k=10 десятая заявка входит, даже если показанная доля 0.333 дала бы только9.'
+
 ```
 
 ### hint
@@ -814,9 +927,9 @@ assert close(need('random_catch'), _rnd), f'random_catch = {need("random_catch")
 import numpy as np
 import pandas as pd
 
-def catch_rate(y_true, scores, share=0.3):
+def catch_rate(y_true, scores, share=0.3, k=None):
     s = pd.Series(scores, index=y_true.index)
-    top = s.nlargest(int(len(s) * share)).index
+    top = s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(s)*share) if k is None else int(k)).index
     return y_true.loc[top].sum() / y_true.sum()
 
 rule = (X_train["repeat_client"] == 1) | (X_train["channel"] == "рекомендация")
@@ -836,7 +949,7 @@ print(rule_share, rule_catch, random_catch)
 - `C`: 0.01, 0.1, 1, 10;
 - `class_weight`: `None`, `"balanced"`
 
-с `cv=kf` и `scoring="roc_auc"` на обучающей части. Почему AUC, а не `catch_rate` из шага 7: AUC смотрит на весь порядок заявок и устойчивее на фолдах, а в топ-30 % одного фолда всего около 70 договоров — доля по ним сильно шумит. Сохраните обученный поиск в `grid`, а также:
+с `cv=kf` и `scoring="roc_auc"` на обучающей части. Почему AUC, а не `catch_rate` из шага 7: AUC смотрит на весь порядок заявок и устойчивее на фолдах, а в топ-30 % одного фолда всего в первом фолде 450 заявок, всего 61 договор, в первых 135 заявках базовой модели 50 договоров: полнота 50/61, точность 50/135 — доля по ним сильно шумит. Сохраните обученный поиск в `grid`, а также:
 
 - `best_params` — лучшие настройки (`best_params_`);
 - `best_auc` — лучший средний AUC (3 знака);
@@ -845,6 +958,25 @@ print(rule_share, rule_catch, random_catch)
 
 ### setup
 ```python
+import pandas as pd
+
+from sklearn.preprocessing import FunctionTransformer
+def lead_time(frame):
+    frame = frame.copy()
+    stamp = pd.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
+
+from sklearn.preprocessing import FunctionTransformer as _FT0
+def _lead_time0(frame):
+    frame = frame.copy()
+    stamp = _pd0.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
 import pandas as _pd0
 import numpy as _np0
 from sklearn.model_selection import train_test_split as _tts0, KFold as _KF0, cross_val_score as _cvs0
@@ -865,17 +997,17 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'created', 'contract_rub', 'converted'])
-    _Xtr, _Xte, _ytr, _yte = _tts0(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
-    return _CT0([
+    return _mp0(_FT0(_lead_time0), _CT0([
         ('num', _mp0(_SI0(strategy='median'), _SS0()), num),
         ('cat', _mp0(_SI0(strategy='constant', fill_value='не указан'), _OHE0(handle_unknown='ignore')), _CAT0),
-    ])
-def _catch0(yt, s, share=0.3):
+    ]))
+def _catch0(yt, s, share=0.3, k=None):
     _s = _pd0.Series(_np0.asarray(s), index=yt.index)
-    return yt.loc[_s.nlargest(int(len(_s) * share)).index].sum() / yt.sum()
+    return yt.loc[_s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(_s)*share) if k is None else int(k)).index].sum() / yt.sum()
 import pandas as pd
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.compose import ColumnTransformer
@@ -889,17 +1021,17 @@ d["hour"] = created.dt.hour
 d["weekday"] = created.dt.dayofweek
 d["evening"] = (d["hour"] >= 19).astype(int)
 y = d["converted"]
-X = d.drop(columns=["lead_id", "created", "contract_rub", "converted"])
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting",
        "hour", "weekday", "evening"]
 cat = ["channel", "event_type", "city", "company_size", "manager"]
-pre = ColumnTransformer([
+pre = make_pipeline(FunctionTransformer(lead_time), ColumnTransformer([
     ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
     ("cat", make_pipeline(SimpleImputer(strategy="constant", fill_value="не указан"),
                           OneHotEncoder(handle_unknown="ignore")), cat),
-])
+]))
 pipe = Pipeline([("prep", pre), ("model", LogisticRegression(max_iter=2000))])
 ```
 
@@ -923,6 +1055,11 @@ assert dict(need('best_params')) == _w.best_params_, f'best_params = {need("best
 assert close(need('best_auc'), round(_w.best_score_, 3)), f'best_auc = {need("best_auc")}, а ожидалось {round(_w.best_score_, 3)}: это grid.best_score_.'
 _rr = need('res', _pd0.DataFrame)
 assert 'mean_test_score' in _rr.columns and len(_rr) == 8, 'res — pd.DataFrame(grid.cv_results_): 8 строк, есть столбец mean_test_score.'
+assert 'params' in _rr and len(_rr['params']) == len(_w.cv_results_['params']), 'В res сохраните сочетания параметров.'
+_key = lambda p: tuple(sorted(p.items()))
+_expected_scores = {_key(p): v for p, v in zip(_w.cv_results_['params'], _w.cv_results_['mean_test_score'])}
+_scores = {_key(p): v for p, v in zip(_rr['params'], _rr['mean_test_score'])}
+assert set(_scores) == set(_expected_scores) and all(close(_scores[k], v, .0006) for k, v in _expected_scores.items()), 'Оценка mean_test_score в представленной таблице должна соответствовать сочетанию параметров.'
 _m = _w.cv_results_['mean_test_score']
 assert close(need('spread'), round(_m.max() - _m.min(), 3)), f'spread = {need("spread")}, а ожидалось {round(_m.max() - _m.min(), 3)}: max − min столбца mean_test_score.'
 ```
@@ -948,23 +1085,48 @@ res[["param_model__C", "param_model__class_weight", "mean_test_score"]].round(3)
 ```
 
 ### explain
-Лучшие настройки — `C=1` без весов, то есть обычная логистическая регрессия; вся сетка уложилась в полтора пункта AUC. Это нормальный и полезный результат: подбор показал, что настройки здесь почти не важны, и дальше можно не тратить на них время. Обратите внимание на `class_weight`: в шаге 6 он поднял F1 леса больше чем вдвое, а AUC почти не меняет (урок «Дисбаланс классов»). Веса сдвигают оценки к редкому классу, но порядок заявок остаётся прежним, а для списка «верхние 30 %» важен только порядок.
+Лучшие настройки — `C=1` без весов, то есть обычная логистическая регрессия; диапазон средних AUC по сетке составил 0,031. Это нормальный и полезный результат: подбор показал, что настройки здесь почти не важны, и дальше можно не тратить на них время. Обратите внимание на `class_weight`: в шаге 6 он поднял F1 леса больше чем вдвое, а AUC почти не меняет (урок «Дисбаланс классов»). Веса сдвигают оценки к редкому классу, а для списка «верхние 30 %» важно проверить, как изменился порядок заявок.
 
 ::: note
 Для сравнения: лес из шага 6 с `class_weight="balanced"` на тех же фолдах даёт AUC около 0.86 — столько же, сколько логистическая регрессия. Когда модели равны, берём более простую: её коэффициенты можно показать директору.
 :::
 
+При сравнении с правилом сначала получите целое `k = int(rule.sum())`. Например, если правило отметило 175 из 750 заявок, модели тоже выделяется 175, а не 174 после восстановления места из округлённой доли 23.3 %. Это пример ошибки округления; на новой календарной партии число мест вычислите заново. При ничьих используйте lead_id по возрастанию.
+
 ## task: final | Шаг 9. Сколько договоров в топ-30 % | base
+
+Перед отбором можете записать для диспетчера одну строку решения: чью заявку оцениваем, в какой момент, какие признаки уже известны, сколько контактов можно взять и по какому исходу позже сравним две очереди.
+
+Сохраните `model_ids` и `rule_ids` — списки исходных lead_id одинаковой длины `k=int(rule.sum())`. Для модели сортируйте score по убыванию, lead_id по возрастанию; правило сохраняет свои выбранные ID. Строки и прогнозы связывайте по ID, включая последний допустимый контакт.
 
 Курс обучил лучший конвейер из шага 8 на всей обучающей части — он в `best`, — и определил функцию `catch_rate` из шага 7. Теперь — один раз — проверьте на тесте (3 знака):
 
 - `test_auc` — ROC-AUC `best` на `X_test`;
 - `model_catch` — `catch_rate` вероятностей `best` на тесте (топ-30 %);
 - `rule_share_test` и `rule_catch_test` — какую долю тестовых заявок отмечает правило директора и какую долю договоров оно ловит;
-- `model_same` — `catch_rate` модели при `share=rule_share_test`: сколько ловит модель, если вести столько же заявок, сколько отмечает правило.
+- `model_same` — доля договоров, которую модель охватывает при том же числе мест. Передайте в `catch_rate` целое `k=int(rule.sum())`. Округлённая доля нужна для отчёта.
 
 ### setup
 ```python
+import pandas as pd
+
+from sklearn.preprocessing import FunctionTransformer
+def lead_time(frame):
+    frame = frame.copy()
+    stamp = pd.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
+
+from sklearn.preprocessing import FunctionTransformer as _FT0
+def _lead_time0(frame):
+    frame = frame.copy()
+    stamp = _pd0.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
 import pandas as _pd0
 import numpy as _np0
 from sklearn.model_selection import train_test_split as _tts0, KFold as _KF0, cross_val_score as _cvs0
@@ -985,17 +1147,17 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'created', 'contract_rub', 'converted'])
-    _Xtr, _Xte, _ytr, _yte = _tts0(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
-    return _CT0([
+    return _mp0(_FT0(_lead_time0), _CT0([
         ('num', _mp0(_SI0(strategy='median'), _SS0()), num),
         ('cat', _mp0(_SI0(strategy='constant', fill_value='не указан'), _OHE0(handle_unknown='ignore')), _CAT0),
-    ])
-def _catch0(yt, s, share=0.3):
+    ]))
+def _catch0(yt, s, share=0.3, k=None):
     _s = _pd0.Series(_np0.asarray(s), index=yt.index)
-    return yt.loc[_s.nlargest(int(len(_s) * share)).index].sum() / yt.sum()
+    return yt.loc[_s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(_s)*share) if k is None else int(k)).index].sum() / yt.sum()
 import pandas as pd
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.compose import ColumnTransformer
@@ -1009,22 +1171,22 @@ d["hour"] = created.dt.hour
 d["weekday"] = created.dt.dayofweek
 d["evening"] = (d["hour"] >= 19).astype(int)
 y = d["converted"]
-X = d.drop(columns=["lead_id", "created", "contract_rub", "converted"])
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting",
        "hour", "weekday", "evening"]
 cat = ["channel", "event_type", "city", "company_size", "manager"]
-pre = ColumnTransformer([
+pre = make_pipeline(FunctionTransformer(lead_time), ColumnTransformer([
     ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
     ("cat", make_pipeline(SimpleImputer(strategy="constant", fill_value="не указан"),
                           OneHotEncoder(handle_unknown="ignore")), cat),
-])
+]))
 pipe = Pipeline([("prep", pre), ("model", LogisticRegression(max_iter=2000))])
 best = Pipeline([("prep", pre), ("model", LogisticRegression(max_iter=2000, C=1, class_weight=None))]).fit(X_train, y_train)
-def catch_rate(y_true, scores, share=0.3):
+def catch_rate(y_true, scores, share=0.3, k=None):
     s = pd.Series(scores, index=y_true.index)
-    top = s.nlargest(int(len(s) * share)).index
+    top = s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(s)*share) if k is None else int(k)).index
     return y_true.loc[top].sum() / y_true.sum()
 ```
 
@@ -1045,15 +1207,30 @@ assert close(need('model_catch'), _mc), f'model_catch = {need("model_catch")}, �
 _r = (_Xte['repeat_client'] == 1) | (_Xte['channel'] == 'рекомендация')
 _rs, _rc = round(_r.mean(), 3), round(_yte[_r].sum() / _yte.sum(), 3)
 assert close(need('rule_share_test'), _rs) and close(need('rule_catch_test'), _rc), f'rule_share_test, rule_catch_test = {need("rule_share_test")}, {need("rule_catch_test")}, а ожидалось {_rs}, {_rc}. Правило — на X_test, договоры — y_test.'
-_ms = round(_catch0(_yte, _s, share=_rs), 3)
-assert close(need('model_same'), _ms, 0.0011), f'model_same = {need("model_same")}, а ожидалось {_ms}. catch_rate(y_test, вероятности, share=rule_share_test).'
+_ms = round(_catch0(_yte, _s, k=int(_r.sum())), 3)
+assert close(need('model_same'), _ms, 0.0011), f'model_same = {need("model_same")}, а ожидалось {_ms}. catch_rate(y_test, вероятности, k=int(rule.sum())).'
+_best = need('best')
+_raw = _pd0.read_csv('catering_leads.csv').loc[_Xte.index].drop(columns=['converted','contract_rub'])
+_actual = _best.predict_proba(_raw)[:,1]
+assert _np0.allclose(_actual, _s), 'best должен принимать исходные даты CRM и давать прогнозы той же модели.'
+_new = _raw.iloc[:2].copy()
+_new['created'] = ['2026-10-01 18:59','2026-10-01 19:00']
+_new['channel'] = ['новый канал', None]
+_new['budget_pp'] = _np0.nan
+_pred = _best.predict_proba(_new[_new.columns[::-1]])[:,1]
+assert len(_pred)==2 and _np0.isfinite(_pred).all(), 'Конвейер должен обрабатывать новые категории, пропуски и иной порядок колонок.'
+
+_rank = _pd0.Series(_s, index=_Xte.index).sort_index().sort_values(ascending=False, kind='stable')
+assert list(need('model_ids')) == _d.loc[_rank.head(int(_r.sum())).index, 'lead_id'].tolist(), 'model_ids: ровно k мест, риск по убыванию, ID по возрастанию при ничьей.'
+assert list(need('rule_ids')) == _d.loc[_Xte.index[_r], 'lead_id'].tolist(), 'rule_ids: исходные ID заявок под маской правила.'
+
 ```
 
 ### hint
 Вероятности: `scores = best.predict_proba(X_test)[:, 1]`. Тогда `catch_rate(y_test, scores)` — топ-30 %.
 
 ### hint
-Правило на тесте — та же маска, что в шаге 7, только по `X_test`; для `model_same` передайте `share=rule_share_test`.
+Правило на тесте — та же маска, что в шаге 7, только по `X_test`; для `model_same` передайте `k=int(rule.sum())`. При шести заявках и двух местах маска должна выбрать две строки, даже если напечатанная доля равна 0,333.
 
 ### solution
 ```python
@@ -1064,12 +1241,16 @@ model_catch = round(catch_rate(y_test, scores), 3)
 rule = (X_test["repeat_client"] == 1) | (X_test["channel"] == "рекомендация")
 rule_share_test = round(rule.mean(), 3)
 rule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)
-model_same = round(catch_rate(y_test, scores, share=rule_share_test), 3)
+model_same = round(catch_rate(y_test, scores, k=int(rule.sum())), 3)
 print(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)
+rank = pd.Series(scores, index=X_test.index).sort_index().sort_values(ascending=False, kind='stable')
+model_ids = d.loc[rank.head(int(rule.sum())).index, 'lead_id'].tolist()
+rule_ids = d.loc[X_test.index[rule], 'lead_id'].tolist()
+
 ```
 
 ### explain
-Ответ директору. В тесте 750 заявок и 99 договоров. Если плотно вести 30 % заявок по модели, в этот список попадают около 89 % договоров (88 из 99); случайные 30 % поймали бы около 30. Правило «повторные и рекомендации» отмечает 23 % заявок и ловит 56 % договоров, а модель на таком же объёме — около 80 %. AUC на тесте около 0.91 — выше, чем на кросс-валидации (около 0.86): тест оказался «проще», так бывает (глава 6, урок «Честное сравнение моделей»), но порядок сравнения от этого не меняется.
+В следующих по времени 750 заявках заключено 94 договора. Первые 225 по модели охватывают 72 договора (76,6 %), случайная очередь такой длины в среднем охватила бы 30 %. Правило директора выделяет 166 заявок и находит 57 договоров. Из 166 заявок, выбранных моделью, договор заключили 64. На этом периоде AUC составил 0,858, после среднего 0,878 при подборе. Для сравнения очередей знаменатель один и тот же — 94 договора.
 
 Модель выигрывает у правила, потому что складывает много сигналов сразу: канал и повторность, но ещё бюджет, срок до мероприятия, просьбу о дегустации и скорость первого ответа — по модулю коэффициента она на втором месте после флага канала «рекомендация» (`coef_`, урок «Масштабирование и ближайшие соседи»). О ней — в шаге 10.
 
@@ -1088,6 +1269,25 @@ print(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)
 
 ### setup
 ```python
+import pandas as pd
+
+from sklearn.preprocessing import FunctionTransformer
+def lead_time(frame):
+    frame = frame.copy()
+    stamp = pd.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
+
+from sklearn.preprocessing import FunctionTransformer as _FT0
+def _lead_time0(frame):
+    frame = frame.copy()
+    stamp = _pd0.to_datetime(frame['created'])
+    frame['hour'] = stamp.dt.hour
+    frame['weekday'] = stamp.dt.dayofweek
+    frame['evening'] = (stamp.dt.hour >= 19).astype(int)
+    return frame
 import pandas as _pd0
 import numpy as _np0
 from sklearn.model_selection import train_test_split as _tts0, KFold as _KF0, cross_val_score as _cvs0
@@ -1108,17 +1308,17 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'created', 'contract_rub', 'converted'])
-    _Xtr, _Xte, _ytr, _yte = _tts0(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
-    return _CT0([
+    return _mp0(_FT0(_lead_time0), _CT0([
         ('num', _mp0(_SI0(strategy='median'), _SS0()), num),
         ('cat', _mp0(_SI0(strategy='constant', fill_value='не указан'), _OHE0(handle_unknown='ignore')), _CAT0),
-    ])
-def _catch0(yt, s, share=0.3):
+    ]))
+def _catch0(yt, s, share=0.3, k=None):
     _s = _pd0.Series(_np0.asarray(s), index=yt.index)
-    return yt.loc[_s.nlargest(int(len(_s) * share)).index].sum() / yt.sum()
+    return yt.loc[_s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(_s)*share) if k is None else int(k)).index].sum() / yt.sum()
 import pandas as pd
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.compose import ColumnTransformer
@@ -1132,20 +1332,20 @@ d["hour"] = created.dt.hour
 d["weekday"] = created.dt.dayofweek
 d["evening"] = (d["hour"] >= 19).astype(int)
 y = d["converted"]
-X = d.drop(columns=["lead_id", "created", "contract_rub", "converted"])
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting",
        "hour", "weekday", "evening"]
 cat = ["channel", "event_type", "city", "company_size", "manager"]
-pre = ColumnTransformer([
+pre = make_pipeline(FunctionTransformer(lead_time), ColumnTransformer([
     ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
     ("cat", make_pipeline(SimpleImputer(strategy="constant", fill_value="не указан"),
                           OneHotEncoder(handle_unknown="ignore")), cat),
-])
-def catch_rate(y_true, scores, share=0.3):
+]))
+def catch_rate(y_true, scores, share=0.3, k=None):
     s = pd.Series(scores, index=y_true.index)
-    top = s.nlargest(int(len(s) * share)).index
+    top = s.sort_index().sort_values(ascending=False, kind="stable").head(int(len(s)*share) if k is None else int(k)).index
     return y_true.loc[top].sum() / y_true.sum()
 ```
 
@@ -1206,9 +1406,9 @@ print(catch_now, oleg_wait, others_wait, oleg_fast, others_fast)
 ```
 
 ### explain
-Без скорости ответа модель ловит в топ-30 % около 85 % договоров вместо 89 % — по-прежнему намного лучше правила. Значит, ставить приоритет можно уже в момент прихода заявки, а после первого ответа — уточнять.
+При раннем прогнозе без скорости ответа в верхние 30 % также попали 72 из 94 договоров. Совпадение числа договоров само по себе не означает совпадения всех адресатов. Значит, ставить приоритет можно уже в момент прихода заявки, а после первого ответа — уточнять.
 
-Олег отвечает медленнее всех: медиана около 6 часов против двух у коллег. Но когда он отвечает за два часа, его заявки заканчиваются договором не реже, чем у остальных (около 21 % против 20 %). Похоже, дело не в Олеге, а в скорости.
+Олег отвечает медленнее всех: медиана около 6 часов против двух у коллег. Но когда он отвечает за два часа, его заявки заканчиваются договором не реже, чем у остальных (около 21 % против 20 %). Это совместимо с гипотезой о скорости; причинный вывод из такого среза пока не следует.
 
 **Похоже — но не доказано.** Это наблюдение, а не эксперимент (глава 5). Быстрый ответ может быть причиной договора, а может быть и следствием: менеджер сразу отвечает тем, кто звонит сам, пишет подробную заявку и явно готов покупать, а «холодные» заявки откладывает. Вечерние заявки ждут дольше и покупают реже — но вечером могут писать и менее решительные клиенты. Модели для ранжирования эта разница не важна: признак честно известен к моменту решения и помогает упорядочить заявки. А вот для управленческого решения — «нанять дежурного на вечер, чтобы отвечать за час» — важна. Проверить её можно только A/B-тестом: случайной половине заявок отвечать быстро, второй — как обычно, и сравнить конверсию.
 
@@ -1216,8 +1416,8 @@ print(catch_now, oleg_wait, others_wait, oleg_fast, others_fast)
 
 - Данные без утечки: сумма договора известна только после подписания, поэтому в модель она не входит.
 - Доля правильных здесь бесполезна: «никто не купит» права в 87 % случаев. Мерили тем, что важно бизнесу, — долей договоров в верхних 30 % списка.
-- Модель (логистическая регрессия в конвейере, настройки подобраны кросс-валидацией) на отложенном тесте ловит в топ-30 % около 89 % договоров; случайный выбор — 30 %, правило «повторные и рекомендации» — 56 % на 23 % заявок, модель на таком же объёме — около 80 %.
-- Приоритет можно ставить сразу при поступлении заявки (около 85 % договоров в топ-30 %) и обновлять после первого ответа.
+- В календарной проверке модель нашла 72 из 94 договоров в 225 заявках. При одинаковой очереди из 166 заявок модель нашла 64 договора, правило — 57.
+- Для ранней очереди до первого ответа также получено 72 из 94 в топ-30 %. После получения ответа приоритет можно пересчитать.
 - Быстрый ответ — один из самых сильных сигналов договора, а у Олега и у вечерних заявок ответ медленный. Прежде чем перестраивать график, проверьте эффект скорости A/B-тестом.
 - Ограничения: девять месяцев одного года; качество модели нужно перепроверять на новых заявках, а список — пересчитывать.
 

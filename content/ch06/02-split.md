@@ -158,11 +158,11 @@ print(f"базовая «всегда вовремя» на тесте: {(~y_tes
 
 ## Переобучение и недообучение
 
-Большой разрыв между train и test — главный признак **переобучения** (overfitting): модель выучила не общие закономерности, а случайные особенности конкретных доставок — шум. Например, «заказ на 1.3 км с тремя позициями в 14 часов опоздал» — это случай, а не правило.
+Большой разрыв между обучением и внутренней валидацией — главный признак **переобучения** (overfitting): модель выучила не общие закономерности, а случайные особенности конкретных доставок — шум. Например, «заказ на 1.3 км с тремя позициями в 14 часов опоздал» — это случай, а не правило.
 
-Обратная беда — **недообучение** (underfitting): модель слишком простая и плохо работает везде, даже на обучении. Дерево глубины 1 задаёт один вопрос, но в обеих ветках опозданий меньше половины, поэтому и там и там отвечает «вовремя» — то есть совпадает с базовой моделью: на графике ниже при глубине 1 линия теста лежит ровно на линии «всегда вовремя».
+Обратная беда — **недообучение** (underfitting): модель слишком простая и плохо работает везде, даже на обучении. Дерево глубины 1 задаёт один вопрос, но в обеих ветках опозданий меньше половины, поэтому и там и там отвечает «вовремя» — то есть совпадает с базовой моделью: на графике ниже при глубине 1 линия валидации лежит ровно на линии «всегда вовремя».
 
-Чтобы найти золотую середину, построим **кривую обучения по сложности**: для разных глубин считаем качество на обучении и на тесте и рисуем обе линии.
+Сначала оставим четверть доставок для окончательной оценки. Из остальных выделим четверть для выбора глубины. На этих строках сравним варианты, а финальные ответы до выбора дерева не открываем. Затем построим **кривую обучения по сложности**: для разных глубин считаем качество на обучении и на валидации и рисуем обе линии.
 
 ```python
 import pandas as pd
@@ -175,19 +175,20 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["hour"] = ok["created"].dt.hour
 X = ok[["distance_km", "items", "promised_min", "hour"]]
 y = ok["actual_min"] > ok["promised_min"]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_dev, X_final, y_dev, y_final = train_test_split(X, y, test_size=0.25, random_state=42)
+X_train, X_validation, y_train, y_validation = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)
 
 depths = range(1, 16)
-train_acc, test_acc = [], []
+train_acc, validation_acc = [], []
 for depth in depths:
     model = DecisionTreeClassifier(max_depth=depth, random_state=0).fit(X_train, y_train)
     train_acc.append(model.score(X_train, y_train))
-    test_acc.append(model.score(X_test, y_test))
+    validation_acc.append(model.score(X_validation, y_validation))
 
 fig, ax = plt.subplots(figsize=(8, 4))
 ax.plot(depths, train_acc, marker="o", label="обучение")
-ax.plot(depths, test_acc, marker="o", label="тест")
-ax.axhline((~y_test).mean(), color="gray", linestyle="--", label="всегда «вовремя»")
+ax.plot(depths, validation_acc, marker="o", label="валидация")
+ax.axhline((~y_validation).mean(), color="gray", linestyle="--", label="всегда «вовремя»")
 ax.set_xlabel("максимальная глубина дерева")
 ax.set_ylabel("доля правильных ответов")
 ax.set_title("Чем глубже дерево, тем больше разрыв")
@@ -197,14 +198,14 @@ ax.legend()
 Тот же график можно «пройти» ползунком:
 
 ::: widget tree-depth
-Доля правильных ответов дерева на обучении и на тесте при разной глубине (доставки, тест — 25 %). Пунктир — правило «всегда вовремя».
+Доля правильных ответов дерева на обучении и на валидации при разной глубине (25 % всех доставок отложены до конца, 25 % оставшихся выделены для подбора глубины). Пунктир — правило «всегда вовремя».
 :::
 
 Как читать график:
 
-- **слева** (глубина 1–2) обе линии низко и рядом — недообучение;
-- **в середине** (глубина 3–5) линия теста выше всего — модель уловила закономерности;
-- **справа** линия обучения уходит вверх, а линия теста — вниз: модель запоминает шум. Это переобучение.
+- **слева** (глубина 1) обе линии низко и рядом — недообучение;
+- **в середине** (глубина 5) линия валидации выше всего — модель уловила закономерности;
+- **справа** линия обучения уходит вверх, а линия валидации — вниз: модель запоминает шум. Это переобучение.
 
 ::: note Почему на обучении не 100 %
 Даже самое глубокое дерево не дотягивает до 100 % на обучении. Среди доставок есть «близнецы» — с одинаковыми расстоянием, числом позиций, обещанием и часом, но одна опоздала, а другая нет. Никакая модель на этих четырёх признаках не различит их. Это намёк: признаков не хватает (вспомните тип курьера).
@@ -519,9 +520,11 @@ overfit = bool(test_acc < (~y_test).mean())
 ### explain
 Разрыв больше 20 п.п., а на тесте модель хуже, чем «всегда вовремя». Глубокое дерево выучило обучающие доставки почти наизусть, но на новых ошибается чаще, чем самый простой ответ.
 
+Перед перебором отделите окончательные строки проверки. Внутри оставшейся обучающей части выделите валидацию: она служит для выбора глубины. Итоговые ID и их метки до выбора модели не открывайте.
+
 ## task: depth-curve | Подобрать глубину | base
 
-Для глубин от 1 до 10 обучите деревья и соберите списки `train_scores` и `test_scores` — доли правильных ответов на обучении и тесте (без округления, по порядку глубин). В `best_depth` сохраните глубину с наибольшей долей на тесте (если таких несколько — самую маленькую).
+Для глубин от 1 до 10 обучите деревья и соберите списки `train_scores` и `validation_scores` — доли правильных ответов на обучении и внутренней валидации (без округления, по порядку глубин). В `best_depth` сохраните глубину с наибольшей долей на валидации (если таких несколько — самую маленькую).
 
 ### starter
 ```python
@@ -533,8 +536,9 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["hour"] = ok["created"].dt.hour
 X = ok[["distance_km", "items", "promised_min", "hour"]]
 y = ok["actual_min"] > ok["promised_min"]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
-train_scores, test_scores = [], []
+X_development, X_test, y_development, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_train, X_validation, y_train, y_validation = train_test_split(X_development, y_development, test_size=0.25, random_state=43)
+train_scores, validation_scores = [], []
 
 ```
 
@@ -548,24 +552,25 @@ ok = d[d['actual_min'].between(1, 299)].copy()
 ok['hour'] = ok['created'].dt.hour
 X = ok[['distance_km', 'items', 'promised_min', 'hour']]
 y = ok['actual_min'] > ok['promised_min']
-a, b, c, e = _tts(X, y, test_size=0.25, random_state=42)
+_dev, _final_X, _dev_y, _final_y = _tts(X, y, test_size=0.25, random_state=42)
+a, b, c, e = _tts(_dev, _dev_y, test_size=0.25, random_state=43)
 tr, te = [], []
 for k in range(1, 11):
     m = _T(max_depth=k, random_state=0).fit(a, c)
     tr.append(m.score(a, c)); te.append(m.score(b, e))
-gtr, gte = list(need('train_scores')), list(need('test_scores'))
+gtr, gte = list(need('train_scores')), list(need('validation_scores'))
 assert len(gtr) == 10 and len(gte) == 10, f'В списках {len(gtr)} и {len(gte)} значений, а нужно по 10 — глубины от 1 до 10 включительно.'
 assert all(close(x, w) for x, w in zip(gtr, tr)), 'train_scores не совпадают. Обучение — на X_train, y_train; качество — тоже на них.'
-assert all(close(x, w) for x, w in zip(gte, te)), 'test_scores не совпадают. Качество на тесте — model.score(X_test, y_test).'
+assert all(close(x, w) for x, w in zip(gte, te)), 'validation_scores не совпадают. Качество на валидации — model.score(X_validation, y_validation).'
 bd = 1 + te.index(max(te))
-assert need('best_depth') == bd, f'best_depth = {need("best_depth")}. Найдите позицию максимума в test_scores и превратите её в глубину.'
+assert need('best_depth') == bd, f'best_depth = {need("best_depth")}. Найдите позицию максимума в validation_scores и превратите её в глубину.'
 ```
 
 ### hint
 Цикл `for depth in range(1, 11):`, внутри — обучить и добавить `model.score(...)` в оба списка через `append`.
 
 ### hint
-Позиция максимума — `test_scores.index(max(test_scores))`; глубины начинаются с 1, а позиции — с 0.
+Позиция максимума — `validation_scores.index(max(validation_scores))`; глубины начинаются с 1, а позиции — с 0.
 
 ### solution
 ```python
@@ -577,21 +582,22 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["hour"] = ok["created"].dt.hour
 X = ok[["distance_km", "items", "promised_min", "hour"]]
 y = ok["actual_min"] > ok["promised_min"]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
-train_scores, test_scores = [], []
+X_development, X_test, y_development, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_train, X_validation, y_train, y_validation = train_test_split(X_development, y_development, test_size=0.25, random_state=43)
+train_scores, validation_scores = [], []
 for depth in range(1, 11):
     model = DecisionTreeClassifier(max_depth=depth, random_state=0).fit(X_train, y_train)
     train_scores.append(model.score(X_train, y_train))
-    test_scores.append(model.score(X_test, y_test))
-best_depth = 1 + test_scores.index(max(test_scores))
+    validation_scores.append(model.score(X_validation, y_validation))
+best_depth = 1 + validation_scores.index(max(validation_scores))
 ```
 
 ### explain
-Лучшая глубина — небольшая, а качество на тесте у глубин 3–5 почти одинаковое: разница в десятые доли процента меньше случайного разброса оценки. Заметьте: выбирая глубину по тесту, мы уже немного «подглядываем» в экзамен. Как этого избежать — отдельная валидационная выборка — в уроке «Честное сравнение моделей».
+Максимум на внутренней валидации — 0,812 при глубине 5. Теперь можно зафиксировать глубину до финальной оценки. При повторе на другой выборке лучшая глубина может измениться.
 
 ## task: curve-plot | График переобучения | base
 
-Нарисуйте кривую «глубина → качество» для глубин 1–12: две линии `ax.plot` — сначала обучение, потом тест, с подписями `label` `"обучение"` и `"тест"`, легенду, подпись оси X `"глубина"` и любой заголовок.
+Нарисуйте кривую «глубина → качество» для глубин 1–12: две линии `ax.plot` — сначала обучение, потом валидация, с подписями `label` `"обучение"` и `"валидация"`, легенду, подпись оси X `"глубина"` и любой заголовок.
 
 ### starter
 ```python
@@ -604,7 +610,8 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["hour"] = ok["created"].dt.hour
 X = ok[["distance_km", "items", "promised_min", "hour"]]
 y = ok["actual_min"] > ok["promised_min"]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_dev, X_final, y_dev, y_final = train_test_split(X, y, test_size=0.25, random_state=42)
+X_train, X_validation, y_train, y_validation = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)
 
 ```
 
@@ -618,18 +625,19 @@ ok = d[d['actual_min'].between(1, 299)].copy()
 ok['hour'] = ok['created'].dt.hour
 X = ok[['distance_km', 'items', 'promised_min', 'hour']]
 y = ok['actual_min'] > ok['promised_min']
-a, b, c, e = _tts(X, y, test_size=0.25, random_state=42)
+_dev, _, _dev_y, _ = _tts(X, y, test_size=0.25, random_state=42)
+a, b, c, e = _tts(_dev, _dev_y, test_size=0.25, random_state=43)
 tr, te = [], []
 for k in range(1, 13):
     m = _T(max_depth=k, random_state=0).fit(a, c)
     tr.append(m.score(a, c)); te.append(m.score(b, e))
 ax = ax_of()
-assert len(ax.lines) >= 2, f'На графике {len(ax.lines)} линий, а нужно две: обучение и тест.'
+assert len(ax.lines) >= 2, f'На графике {len(ax.lines)} линий, а нужно две: обучение и валидация.'
 l1, l2 = ax.lines[0], ax.lines[1]
 assert list(l1.get_xdata()) == list(range(1, 13)), 'По оси X — глубины от 1 до 12.'
 assert all(close(u, v) for u, v in zip(l1.get_ydata(), tr)) and len(l1.get_ydata()) == 12, 'Первая линия — качество на обучающей выборке для глубин 1–12.'
-assert all(close(u, v) for u, v in zip(l2.get_ydata(), te)) and len(l2.get_ydata()) == 12, 'Вторая линия — качество на тестовой выборке.'
-assert l1.get_label() == 'обучение' and l2.get_label() == 'тест', f'Подписи линий: {l1.get_label()!r}, {l2.get_label()!r}, а нужны "обучение" и "тест" (параметр label).'
+assert all(close(u, v) for u, v in zip(l2.get_ydata(), te)) and len(l2.get_ydata()) == 12, 'Вторая линия — качество на внутренней валидации.'
+assert l1.get_label() == 'обучение' and l2.get_label() == 'валидация', f'Подписи линий: {l1.get_label()!r}, {l2.get_label()!r}, а нужны "обучение" и "валидация" (параметр label).'
 assert ax.get_legend() is not None, 'Добавьте легенду: ax.legend().'
 assert ax.get_xlabel() == 'глубина', f'Подпись оси X: {ax.get_xlabel()!r}, а нужна "глубина".'
 assert ax.get_title(), 'Добавьте заголовок.'
@@ -639,7 +647,7 @@ assert ax.get_title(), 'Добавьте заголовок.'
 Сначала соберите два списка в цикле `for depth in range(1, 13)`, потом `ax.plot(range(1, 13), train_scores, label="обучение")`.
 
 ### hint
-Внутри цикла для каждой глубины: обучить `DecisionTreeClassifier(max_depth=depth, random_state=0)` на `X_train, y_train`, затем `model.score(X_train, y_train)` и `model.score(X_test, y_test)` добавить в два списка. После цикла — две линии, `ax.legend()` и подписи.
+Внутри цикла для каждой глубины: обучить `DecisionTreeClassifier(max_depth=depth, random_state=0)` на `X_train, y_train`, затем `model.score(X_train, y_train)` и `model.score(X_validation, y_validation)` добавить в два списка. После цикла — две линии, `ax.legend()` и подписи.
 
 ### solution
 ```python
@@ -652,16 +660,17 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["hour"] = ok["created"].dt.hour
 X = ok[["distance_km", "items", "promised_min", "hour"]]
 y = ok["actual_min"] > ok["promised_min"]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_dev, X_final, y_dev, y_final = train_test_split(X, y, test_size=0.25, random_state=42)
+X_train, X_validation, y_train, y_validation = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)
 depths = range(1, 13)
-train_scores, test_scores = [], []
+train_scores, validation_scores = [], []
 for depth in depths:
     model = DecisionTreeClassifier(max_depth=depth, random_state=0).fit(X_train, y_train)
     train_scores.append(model.score(X_train, y_train))
-    test_scores.append(model.score(X_test, y_test))
+    validation_scores.append(model.score(X_validation, y_validation))
 fig, ax = plt.subplots(figsize=(8, 4))
 ax.plot(depths, train_scores, marker="o", label="обучение")
-ax.plot(depths, test_scores, marker="o", label="тест")
+ax.plot(depths, validation_scores, marker="o", label="валидация")
 ax.set_xlabel("глубина")
 ax.set_ylabel("доля правильных ответов")
 ax.set_title("Переобучение дерева")
@@ -669,7 +678,7 @@ ax.legend()
 ```
 
 ### explain
-Линия обучения растёт всё время: 0.76 при глубине 1, 0.81 при 4, 0.93 при 12. Линия теста достигает вершины около глубины 4 (0.783) и потом сползает к 0.75 — ниже, чем у дерева глубины 1. После четвёртого уровня каждый новый вопрос дерева — это уже не закономерность, а запоминание отдельных доставок.
+На валидации глубина 5 даёт 0,812, глубина 12 — 0,777. На обучении доля верных ответов за это время растёт с 0,822 до 0,930. Поэтому добавление ветвей после глубины 5 не улучшило результат на этих отложенных для выбора строках.
 
 ## task: strat | Стратификация | base
 

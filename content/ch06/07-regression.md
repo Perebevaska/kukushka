@@ -713,6 +713,11 @@ pts = _np.asarray(ax.collections[0].get_offsets())
 assert len(pts) == len(e), f'На графике {len(pts)} точек, а тестовых доставок {len(e)}.'
 assert _np.allclose(_np.sort(pts[:, 0]), _np.sort(p), atol=1e-6), 'По оси X должен быть прогноз, а по оси Y — факт. Проверьте порядок аргументов scatter.'
 assert _np.allclose(_np.sort(pts[:, 1]), _np.sort(e.to_numpy(dtype=float))), 'По оси Y должен быть факт y_test.'
+_expected = _np.column_stack([p, e.to_numpy(dtype=float)])
+for _fact in _np.unique(_expected[:, 1]):
+    _actual_group = _np.sort(pts[pts[:, 1] == _fact, 0])
+    _expected_group = _np.sort(_expected[_expected[:, 1] == _fact, 0])
+    assert len(_actual_group) == len(_expected_group) and _np.allclose(_actual_group, _expected_group, atol=1e-6), f'Факт {_fact}: перепутаны пары факт–прогноз. Сохраняйте соответствие строк при построении графика.'
 assert any(list(l.get_xdata()) == [10, 100] and list(l.get_ydata()) == [10, 100] for l in ax.lines), 'Не вижу диагонали: ax.plot([10, 100], [10, 100], ...).'
 assert ax.get_xlabel() == 'прогноз, мин' and ax.get_ylabel() == 'факт, мин', f'Подписи осей: {ax.get_xlabel()!r} и {ax.get_ylabel()!r}, а нужны "прогноз, мин" и "факт, мин".'
 assert 'линейная' in ax.get_title().lower(), f'Заголовок {ax.get_title()!r} — в нём должно быть слово «линейная».'
@@ -798,6 +803,12 @@ assert set(s.index) == set(g.index), f'Индекс err_by_courier: {list(s.inde
 assert all(close(s[k], g[k], 0.006) for k in g.index), f'err_by_courier = {dict(s)}, а нужно {dict(g)}. Это среднее err по группам courier.'
 wc = r.loc[r['err'].abs().idxmax(), 'courier']
 assert need('worst_courier') == wc, f'worst_courier = {need("worst_courier")!r}. Найдите строку с наибольшим |err|.'
+assert t.index.is_unique and set(t.index) == set(r.index), 'res: сохраните ID тестовых доставок в индексе.'
+_aligned = t.reindex(r.index)
+for _col in ('fact', 'pred', 'err'):
+    assert all(close(a,b,1e-6) for a,b in zip(_aligned[_col],r[_col])), f'res.{_col}: сверяется каждая пара факт–прогноз по ID, а не только итоговая метрика.'
+assert _aligned['courier'].tolist() == r['courier'].tolist(), 'courier не соответствует ID доставки.'
+
 ```
 
 ### hint

@@ -612,7 +612,7 @@ least = gain.idxmin()
 
 ## task: report-text | Отчёт словами | base
 
-Метрику мало посчитать — её надо написать так, чтобы из текста нельзя было сделать неверный вывод. Соберите f-строку `report` для канала «соцсети» по образцу из теории. В ней должны быть: число заявок и договоров, AUC (3 знака), 95 % интервал (2 знака, функция `auc_ci` из теории), средний прогноз и фактическая конверсия (3 знака). Например: `"Соцсети: AUC 0.852 (95 % ДИ 0.79–0.92) на 324 заявках, 22 договора. Прогноз 0.025 при факте 0.068."` — но числа должны браться из переменных, а не быть вписаны руками.
+Метрику мало посчитать — её надо написать так, чтобы из текста нельзя было сделать неверный вывод. Сохраните `report_metrics` —словарь с именованными полями `n`, `deals`, `auc`, `ci_low`, `ci_high`, `pred_mean`, `fact_rate`, вычисленными для своего канала. Перед текстом свяжите подписи со значениями: численность, число договоров, AUC/интервал, средний прогноз и наблюдаемая конверсия. Перестановка факта и прогноза меняет смысл, даже если оба числа присутствуют. Соберите f-строку `report` для канала «соцсети» по образцу из теории. В ней должны быть: число заявок и договоров, AUC (3 знака), 95 % интервал (2 знака, функция `auc_ci` из теории), средний прогноз и фактическая конверсия (3 знака). Например: `"Соцсети: AUC 0.852 (95 % ДИ 0.79–0.92) на 324 заявках, 22 договора. Прогноз 0.025 при факте 0.068."` — но числа должны браться из переменных, а не быть вписаны руками.
 
 ### setup
 ```python
@@ -665,20 +665,24 @@ soc = live[live["channel"] == "соцсети"]
 ### check
 ```python
 from sklearn.metrics import roc_auc_score as _auc
+import numpy as _np
 L = live[live['channel'] == 'соцсети']
 r = need('report', str)
-_must = {
-    'число заявок': str(len(L)),
-    'число договоров': str(int(L['converted'].sum())),
-    'AUC': f"{_auc(L['converted'], L['p']):.3f}",
-    'средний прогноз': f"{L['p'].mean():.3f}",
-    'конверсия': f"{L['converted'].mean():.3f}",
-    'нижняя граница ДИ': '0.79',
-    'верхняя граница ДИ': '0.92',
-}
-for what, val in _must.items():
-    assert val in r, f'В отчёте не нашёл {what} ({val}). Сейчас report = {r!r}'
-assert '{' not in r, f'В строке остались фигурные скобки — не забыли букву f перед кавычками? report = {r!r}'
+_g = need('report_metrics', dict)
+_rng = _np.random.default_rng(0)
+_y, _p = L['converted'].to_numpy(), L['p'].to_numpy()
+_boot = []
+for _ in range(200):
+    _i = _rng.integers(0,len(_y),len(_y))
+    if len(set(_y[_i])) == 2:
+        _boot.append(_auc(_y[_i],_p[_i]))
+_lo, _hi = _np.percentile(_boot,[2.5,97.5])
+_w = dict(n=len(L), deals=int(L['converted'].sum()), auc=round(_auc(_y,_p),3), ci_low=round(_lo,2), ci_high=round(_hi,2), pred_mean=round(_p.mean(),3), fact_rate=round(_y.mean(),3))
+assert set(_g)==set(_w), f'Поля report_metrics: {list(_w)}.'
+for _key, _value in _w.items():
+    assert close(_g[_key], _value, 1e-6), f'{_key}: {_g[_key]}, нужно {_value}; не меняйте местами факт и прогноз или заявки и договоры.'
+assert len(r.split()) >= 12 and '{' not in r, 'Нужен связный report без нераскрытых полей.'
+
 ```
 
 ### hint
@@ -715,6 +719,8 @@ auc = roc_auc_score(soc["converted"], soc["p"])
 report = (f"Соцсети: AUC {auc:.3f} (95 % ДИ {lo:.2f}–{hi:.2f}) на {len(soc)} заявках, "
           f"{soc['converted'].sum()} договора. Прогноз {soc['p'].mean():.3f} при факте {soc['converted'].mean():.3f}.")
 print(report)
+report_metrics = dict(n=len(soc), deals=int(soc['converted'].sum()), auc=round(roc_auc_score(soc['converted'],soc['p']),3), ci_low=round(float(lo),2), ci_high=round(float(hi),2), pred_mean=round(soc['p'].mean(),3), fact_rate=round(soc['converted'].mean(),3))
+
 ```
 
 ### explain

@@ -508,7 +508,7 @@ assert _lines == ['True'], f'Сейчас: {_lines}.'
 
 ## task: size | Сколько весит модель | warmup
 
-Модели `small` (логистическая регрессия) и `big` (лес из 200 деревьев с `min_samples_leaf=5`) обучены в заготовке. Сохраните их в файлы `small.joblib` и `big.joblib` и запишите в `kb_small` и `kb_big` их размеры в килобайтах (байты / 1024, округлить до 1 знака). В `ratio` — во сколько раз лес тяжелее (целое, `round`).
+Модели `small` (логистическая регрессия) и `big` (лес из 200 деревьев с `min_samples_leaf=5`) обучены в заготовке. Сохраните их в файлы `small.joblib` и `big.joblib` и запишите в `kb_small` и `kb_big` их размеры в килобайтах (байты / 1024, округлить до 1 знака). В `ratio` — отношение исходных размеров **в байтах**, округлённое один раз до целого. Размеры в КиБ округляйте только для показа.
 
 ### setup
 ```python
@@ -536,14 +536,14 @@ assert _os.path.exists('small.joblib') and _os.path.exists('big.joblib'), 'Со�
 ws, wb = round(_os.path.getsize('small.joblib') / 1024, 1), round(_os.path.getsize('big.joblib') / 1024, 1)
 assert close(need('kb_small'), ws, 0.11), f'kb_small = {need("kb_small")}, а файл весит {ws} КБ.'
 assert close(need('kb_big'), wb, 0.11), f'kb_big = {need("kb_big")}, а файл весит {wb} КБ.'
-assert abs(need('ratio') - round(wb / ws)) <= 1, f'ratio = {need("ratio")}.'
+assert abs(need('ratio') - round(_os.path.getsize("big.joblib") / _os.path.getsize("small.joblib"))) <= 1, f'ratio = {need("ratio")}.'
 ```
 
 ### hint
 Сначала `joblib.dump(модель, "имя.joblib")`, потом `os.path.getsize("имя.joblib")` — размер в байтах.
 
 ### hint
-Килобайты: `round(os.path.getsize("small.joblib") / 1024, 1)`. Отношение: `round(kb_big / kb_small)`.
+Килобайты: `round(os.path.getsize("small.joblib") / 1024, 1)`. Отношение: `round(os.path.getsize("big.joblib") / os.path.getsize("small.joblib"))`; не делите округлённыеКиБ.
 
 ### solution
 ```python
@@ -554,7 +554,7 @@ joblib.dump(small, "small.joblib")
 joblib.dump(big, "big.joblib")
 kb_small = round(os.path.getsize("small.joblib") / 1024, 1)
 kb_big = round(os.path.getsize("big.joblib") / 1024, 1)
-ratio = round(kb_big / kb_small)
+ratio = round(os.path.getsize("big.joblib") / os.path.getsize("small.joblib"))
 print(kb_small, kb_big, ratio)
 ```
 

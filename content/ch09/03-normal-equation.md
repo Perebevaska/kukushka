@@ -264,6 +264,8 @@ print(np.linalg.matrix_rank(A))
 
 {{practice: dup-receipt, rank, many-solutions}}
 
+Практически решайте МНК через `np.linalg.lstsq`, а не явное обращение XᵀX: обращение требует полного столбцового ранга и может усиливать численные ошибки. При зависимости столбцов lstsq выбирает одно решение минимальной нормы; предсказания на обучении могут быть определены, хотя коэффициенты неоднозначны.
+
 ## Практика
 
 ## task: solve2 | Цены из чеков | warmup
@@ -628,7 +630,18 @@ sse_ratio = round(((y - X1 @ w_bad) ** 2).sum() / ((y - X1 @ w) ** 2).sum(), 3)
 
 ## task: many-solutions | Бесконечно много решений | plus
 
-Покажите, что при всех трёх флагах веса неоднозначны. Возьмите `full` из прошлой задачи и любое решение `w_a = np.linalg.lstsq(full, y, rcond=None)[0]` (`lstsq` находит решение и для вырожденных систем). Постройте другое решение `w_b`: прибавьте 10 к свободному члену и вычтите 10 из каждого из трёх весов флагов. Сохраните `max_diff` — наибольшую разницу прогнозов `full @ w_a` и `full @ w_b`, и `weights_differ` — наибольшую разницу самих весов.
+Покажите, что при всех трёх флагах веса неоднозначны. Возьмите исходные `full` и `y` из заготовки и любое оптимальное решение МНК `w_a`, например `np.linalg.lstsq(full, y, rcond=None)[0]` (`lstsq` находит решение и для вырожденных систем). Постройте другое оптимальное решение `w_b`: прибавьте 10 к свободному члену и вычтите 10 из каждого из трёх весов флагов. Оба вектора должны давать минимальную сумму квадратов ошибок на исходных доставках. Сохраните `max_diff` — максимальную абсолютную разницу прогнозов `full @ w_a` и `full @ w_b`, и `weights_differ` — максимальную абсолютную разницу самих весов. Обе величины — конечные неотрицательные числа; считайте их по полученным векторам.
+
+### setup
+```python
+# Snapshot the task data before the submitted program can change its variables/files.
+import numpy as _original_np
+import pandas as _original_pd
+_many_source = _original_pd.read_csv("deliveries.csv")
+_many_valid = _many_source[_many_source["actual_min"].between(1,299)]
+_many_target = _many_valid["actual_min"].to_numpy(dtype=float,copy=True)
+_many_design = _original_np.column_stack([_original_np.ones(len(_many_valid)), _many_valid["distance_km"], _original_pd.get_dummies(_many_valid["courier"],dtype=int)])
+```
 
 ### starter
 ```python
@@ -644,11 +657,30 @@ full = np.column_stack([np.ones(len(ok)), ok["distance_km"], pd.get_dummies(ok["
 ### check
 ```python
 import numpy as _np
-wa = _np.asarray(need('w_a')); wb = _np.asarray(need('w_b'))
-assert wa.shape == (5,) and wb.shape == (5,), 'w_a и w_b — векторы из 5 весов.'
-assert close(wb[0] - wa[0], 10) and _np.allclose(wb[2:] - wa[2:], -10) and close(wb[1], wa[1]), 'w_b: +10 к первому весу, −10 к трём последним, вес расстояния без изменений.'
-assert need('max_diff') < 1e-6, f'max_diff = {need("max_diff")} — прогнозы должны совпасть.'
-assert close(need('weights_differ'), 10), f'weights_differ = {need("weights_differ")}.'
+# Use the pre-execution snapshot, independent of changed full/y or CSV contents.
+_design = _many_design
+_target = _many_target
+wa = _np.asarray(need('w_a'),dtype=float)
+wb = _np.asarray(need('w_b'),dtype=float)
+assert wa.shape == (5,) and wb.shape == (5,), 'w_a и w_b — векторы из 5 весов: свободный член, расстояние, три флага.'
+assert _np.isfinite(wa).all() and _np.isfinite(wb).all(), 'Все веса w_a и w_b должны быть конечными: NaN и бесконечности не подходят.'
+_optimal = _design @ _np.linalg.lstsq(_design,_target,rcond=None)[0]
+_min_sse = float(_np.square(_target-_optimal).sum())
+pa,pb = _design @ wa,_design @ wb
+for name,prediction in [('w_a',pa),('w_b',pb)]:
+    sse = float(_np.square(_target-prediction).sum())
+    assert _np.isfinite(prediction).all() and _np.isfinite(sse) and _np.isclose(sse,_min_sse,rtol=1e-10,atol=1e-7) and _np.allclose(prediction,_optimal,rtol=0,atol=1e-6), f'{name}: прогнозы должны давать минимальную ошибку МНК на исходных доставках. Сейчас сумма квадратов ошибок {sse:.6g}, минимум {_min_sse:.6g}. Совпадения двух неоптимальных прогнозов недостаточно.'
+assert _np.allclose(wb-wa,[10,0,-10,-10,-10],rtol=0,atol=1e-8), 'w_b: +10 к первому весу, −10 к трём последним, вес расстояния без изменений.'
+_actual_diff = float(_np.abs(pa-pb).max())
+_actual_weights = float(_np.abs(wa-wb).max())
+for name,actual in [('max_diff',_actual_diff),('weights_differ',_actual_weights)]:
+    try:
+        value=float(need(name))
+    except (TypeError,ValueError) as error:
+        raise AssertionError(f'{name} — конечное неотрицательное число.') from error
+    assert _np.isfinite(value) and value>=0, f'{name} — конечное неотрицательное число, сейчас {value!r}.'
+    assert _np.isclose(value,actual,rtol=0,atol=1e-10), f'{name}={value!r}, а по вашим векторам {actual:.12g}. Вычислите максимум абсолютных разностей.'
+assert _actual_diff<1e-6, f'Прогнозы должны совпадать с численной точностью; максимальная разница {_actual_diff:.6g}.'
 ```
 
 ### hint

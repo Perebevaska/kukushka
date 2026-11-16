@@ -656,9 +656,9 @@ same_neurons = bool(all(np.allclose(W1[:, j], W1[:, 0]) for j in range(8)))
 
 ## task: hidden-size | Сколько нейронов | plus
 
-С помощью `train` (в заготовке) обучите сети с `hidden` = 1, 2, 4, 16, 64 (`lr=0.5, steps=2000, seed=0`) на обучающей части полумесяцев и проверьте долю правильных ответов на тестовой. Данные: `make_moons(600, noise=0.3, random_state=1)`, `train_test_split(X, y, test_size=0.5, random_state=0)`. Сохраните словарь `acc_test` (`{hidden: доля}`, 3 знака) и `best_hidden` (при равенстве — меньший).
+Из 600 полумесяцев в заготовке отложены 150 строк для финальной проверки. Остальные 450 разделены на 225 обучающих и 225 валидационных. С помощью `train` обучите сети ширины 1, 2, 4, 16 и 64 на обучающей части (`lr=0.5, steps=2000, seed=0`). В `acc_val` положите словарь «ширина → доля правильных на валидации» с тремя знаками. В `best_hidden` запишите ширину с наилучшим результатом. При равенстве выберите меньшую.
 
-Теперь посмотрите, когда большой слой вредит. Возьмите всего 30 обучающих точек: `train_test_split(X, y, train_size=30, random_state=0)`, остальные 570 — тест. Обучите сети с `hidden` = 4 и 64 с теми же `lr`, `steps`, `seed` и сохраните `small` — словарь `{hidden: (доля верных на обучении, доля верных на тесте)}`, оба числа — 3 знака.
+Теперь возьмите 30 строк **из тех же 450** (`train_test_split(X, y, train_size=30, random_state=0)`). Для ширины 4 и 64 сохраните `small` — словарь «ширина → (доля верных на 30 обучающих, доля верных на остальных 420)». Итоговые 150 строк остаются отложенными на протяжении обоих сравнений.
 
 ### starter
 ```python
@@ -689,7 +689,8 @@ def predict(params, X):
     return 1 / (1 + np.exp(-(np.maximum(0, X @ W1 + b1) @ w2 + b2)))
 
 X, y = make_moons(600, noise=0.3, random_state=1)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
+X, X_final, y, y_final = train_test_split(X,y,test_size=.25,random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.5, random_state=0)
 
 ```
 
@@ -698,14 +699,16 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_
 import numpy as _np
 from sklearn.datasets import make_moons as _mm
 from sklearn.model_selection import train_test_split as _tts
-X0, y0 = _mm(600, noise=0.3, random_state=1); a, b, c, d = _tts(X0, y0, test_size=0.5, random_state=0)
+X0,y0=_mm(600,noise=.3,random_state=1)
+X0,_final,y0,_finaly=_tts(X0,y0,test_size=.25,random_state=42)
+a,b,c,d=_tts(X0,y0,test_size=.5,random_state=0)
 want = {}
 for h in (1, 2, 4, 16, 64):
     pr = train(a, c, h, 0.5, 2000, 0)
     want[h] = round(((predict(pr, b) > 0.5) == d).mean(), 3)
-got = need('acc_test', dict)
+got = need('acc_val', dict)
 for h, v in want.items():
-    assert h in got and close(got[h], v), f'acc_test[{h}] = {got.get(h)}, а нужно {v}.'
+    assert h in got and close(got[h], v), f'acc_val[{h}] = {got.get(h)}, а нужно {v}.'
 best = min(want, key=lambda h: (-want[h], h))
 assert need('best_hidden') == best, f'best_hidden = {need("best_hidden")}, а нужно {best}.'
 a2, b2, c2, d2 = _tts(X0, y0, train_size=30, random_state=0)
@@ -713,14 +716,14 @@ sm = need('small', dict)
 for h in (4, 64):
     pr = train(a2, c2, h, 0.5, 2000, 0)
     w = (round(((predict(pr, a2) > 0.5) == c2).mean(), 3), round(((predict(pr, b2) > 0.5) == d2).mean(), 3))
-    assert h in sm and len(sm[h]) == 2 and close(sm[h][0], w[0]) and close(sm[h][1], w[1]), f'small[{h}] = {sm.get(h)}, а нужно {w}: обучение на 30 точках (train_size=30), первое число — доля верных на X_train этой выборки, второе — на остальных 570.'
+    assert h in sm and len(sm[h]) == 2 and close(sm[h][0], w[0]) and close(sm[h][1], w[1]), f'small[{h}] = {sm.get(h)}, а нужно {w}: обучение на 30 точках (train_size=30), первое число — доля верных на X_train этой выборки, второе — на остальных 420.'
 ```
 
 ### hint
-Цикл по размерам, `params = train(X_train, y_train, h, 0.5, 2000, 0)`, затем `predict(params, X_test)`.
+Цикл по размерам, `params = train(X_train, y_train, h, 0.5, 2000, 0)`, затем `predict(params, X_val)`.
 
 ### hint
-Доля верных — `(pred == y_test).mean()`; лучший размер — ключ с наибольшим значением. Для второй части заведите новые имена: `Xs_tr, Xs_te, ys_tr, ys_te = train_test_split(X, y, train_size=30, random_state=0)` и для каждого `h` из (4, 64) посчитайте долю верных и на `Xs_tr`, и на `Xs_te`.
+Доля верных — `(pred == y_val).mean()`; лучший размер — ключ с наибольшим значением. Для второй части заведите новые имена: `Xs_tr, Xs_te, ys_tr, ys_te = train_test_split(X, y, train_size=30, random_state=0)` и для каждого `h` из (4, 64) посчитайте долю верных и на `Xs_tr`, и на `Xs_te`.
 
 ### solution
 ```python
@@ -751,13 +754,14 @@ def predict(params, X):
     return 1 / (1 + np.exp(-(np.maximum(0, X @ W1 + b1) @ w2 + b2)))
 
 X, y = make_moons(600, noise=0.3, random_state=1)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
+X, X_final, y, y_final = train_test_split(X,y,test_size=.25,random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.5, random_state=0)
 
-acc_test = {}
+acc_val = {}
 for h in (1, 2, 4, 16, 64):
     params = train(X_train, y_train, h, 0.5, 2000, 0)
-    acc_test[h] = round(((predict(params, X_test) > 0.5) == y_test).mean(), 3)
-best_hidden = min(acc_test, key=lambda h: (-acc_test[h], h))
+    acc_val[h] = round(((predict(params, X_val) > 0.5) == y_val).mean(), 3)
+best_hidden = min(acc_val, key=lambda h: (-acc_val[h], h))
 
 Xs_tr, Xs_te, ys_tr, ys_te = train_test_split(X, y, train_size=30, random_state=0)
 small = {}
@@ -765,11 +769,11 @@ for h in (4, 64):
     params = train(Xs_tr, ys_tr, h, 0.5, 2000, 0)
     small[h] = (round(((predict(params, Xs_tr) > 0.5) == ys_tr).mean(), 3),
                 round(((predict(params, Xs_te) > 0.5) == ys_te).mean(), 3))
-print(acc_test, best_hidden, small)
+print(acc_val, best_hidden, small)
 ```
 
 ### explain
-Один и два нейрона дают почти прямую или ломаную из двух кусков границу, поэтому качество на уровне линейной модели (0.863). С 16 нейронами граница уже огибает полумесяцы (0.907), а 64 почти ничего не добавляют (0.91). Шум здесь большой (`noise=0.3`), и часть точек лежит «на чужой стороне» — их не разделит никакая сеть. Размер 4 вышел даже чуть хуже, чем 2: при маленьком слое результат заметно зависит от начальных весов, так что разница в пределах случайности. На 300 обучающих точках 64 нейронам просто нечего «запоминать» сверх формы полумесяцев. На 30 точках картина другая: 4 нейрона дают 0.933 на обучении и 0.8 на тесте, а 64 — 1.0 на обучении и 0.782 на тесте. Большой слой выучил обучающие точки наизусть, включая шумные, и на новых данных стал хуже — это и есть переобучение, о котором говорит теория. Поэтому размер слоя подбирают по тестовой (а лучше валидационной) выборке, а не «чем больше, тем лучше».
+Сравните, как меняется разрыв между обучением и валидацией при увеличении ширины и при сокращении выборки до 30 точек. Значение на 150 финальных строках можно получить после выбора ширины, обучив выбранную сеть на всех 450 строках разработки.
 
 ## task: backprop-check | Проверка обратного прохода | star
 

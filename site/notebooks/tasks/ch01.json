@@ -14,7 +14,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert calls('print') >= 1, 'Используйте команду print.'\nassert printed_line('Привет, Зерно!'), 'Не вижу строки «Привет, Зерно!» — проверьте запятую, пробел и восклицательный знак.'",
+   "check": "assert calls('print') >= 1, 'Используйте команду print.'\nassert _out.strip() == 'Привет, Зерно!', 'Выведите одну строку «Привет, Зерно!» — проверьте запятую, пробел и восклицательный знак.'",
    "starter": "",
    "solution": "print(\"Привет, Зерно!\")",
    "hints": [
@@ -140,7 +140,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert _lines == ['Латте 210', 'Раф 260', 'Итого: 470'], f'Сейчас вывод: {_lines}.'\nassert '210 + 260' in _code or '210+260' in _code, 'Посчитайте итог сложением 210 + 260 внутри print.'",
+   "check": "assert _lines == ['Латте 210', 'Раф 260', 'Итого: 470'], f'Сейчас вывод: {_lines}.'\nimport ast\nprints = [node for node in ast.walk(ast.parse(_code))\n          if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'print']\nassert any(isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add)\n           for call in prints for arg in call.args for node in ast.walk(arg)), 'Посчитайте итог сложением двух цен внутри print.'",
    "starter": "",
    "solution": "print(\"Латте\", 210)\nprint(\"Раф\", 260)\nprint(\"Итого:\", 210 + 260)",
    "hints": [
@@ -413,7 +413,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('n', int) == 11, f'n = {need(\"n\")}, а в «Новосибирск» 11 символов.'\nassert calls('len') >= 1, 'Используйте len.'\nassert not has_literal(11), 'Посчитайте длину функцией, а не вручную.'",
+   "check": "assert need('n', int) == 11, f'n = {need(\"n\")}, а в «Новосибирск» 11 символов.'\nassert calls('len') >= 1, 'Используйте len.'\nassert not has_literal(11), 'Посчитайте длину функцией, а не вручную.'\nassert _lines == ['11'], 'После расчёта выведите длину названия: print(n).'",
    "starter": "city = \"Новосибирск\"",
    "solution": "city = \"Новосибирск\"\nn = len(city)\nprint(n)",
    "hints": [
@@ -525,7 +525,7 @@
     "`float` понимает только точку и не понимает пробелы. Сначала `.replace(\" \", \"\")`, потом `.replace(\",\", \".\")`.",
     "`price = float(price_text.replace(\" \", \"\").replace(\",\", \".\"))`."
    ],
-   "explain": "Порядок замен важен: если сначала заменить запятую на точку, а пробелы оставить, `float(\"1 250.50\")` всё равно упадёт. Так выглядят почти все числа из российских выгрузок Excel."
+   "explain": "Здесь две замены затрагивают разные символы, поэтому их можно выполнить в любом порядке. Главное — сделать обе до вызова `float`: внутри `\"1 250.50\"` остался пробел, а внутри `\"1250,50\"` — десятичная запятая. В обоих случаях `float` выдаст `ValueError`."
   },
   "ch01/03-strings/fstring": {
    "chapter": "ch01",
@@ -707,7 +707,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('cities') == ['Пермь', 'Казань', 'Тюмень'], f'cities = {need(\"cities\")}.'\nassert calls('append') >= 1, 'Используйте append.'",
+   "check": "assert need('cities') == ['Пермь', 'Казань', 'Тюмень'], f'cities = {need(\"cities\")}.'\nassert calls('append') >= 1, 'Используйте append.'\nassert _lines == [str(need('cities'))], 'После добавления города выведите обновлённый список: print(cities).'",
    "starter": "cities = [\"Пермь\", \"Казань\"]",
    "solution": "cities = [\"Пермь\", \"Казань\"]\ncities.append(\"Тюмень\")\nprint(cities)",
    "hints": [
@@ -981,7 +981,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('total') == 337400, f'total = {need(\"total\")}. Проверьте, что total = 0 стоит до цикла, а не внутри.'\nassert calls('sum') == 0, 'В этой задаче sum использовать нельзя.'\nassert 'for' in _code, 'Нужен цикл for.'",
+   "check": "assert need('total') == 337400, f'total = {need(\"total\")}. Проверьте, что total = 0 стоит до цикла, а не внутри.'\nassert calls('sum') == 0, 'В этой задаче sum использовать нельзя.'\nimport ast\nassert any(isinstance(node, ast.For) for node in ast.walk(ast.parse(_code))), 'Нужен цикл for.'\nassert rerun_with(revenue=[125, 75, 350]).get('total') == 550, 'Пересчитайте сумму по списку: для [125, 75, 350] ожидается 550.'",
    "starter": "revenue = [41200, 38900, 45100, 39800, 52300, 61700, 58400]",
    "solution": "revenue = [41200, 38900, 45100, 39800, 52300, 61700, 58400]\ntotal = 0\nfor r in revenue:\n    total += r",
    "hints": [
@@ -1111,10 +1111,10 @@
    "starter": "revenue = [41200, 38900, 45100, 39800, 52300]",
    "solution": "revenue = [41200, 38900, 45100, 39800, 52300]\nchanges = []\nfor i in range(1, len(revenue)):\n    changes.append(round((revenue[i] - revenue[i - 1]) / revenue[i - 1] * 100, 1))",
    "hints": [
-    "Начните цикл со второго дня: `for i in range(1, len(revenue)):`. Тогда «вчера» — это `revenue[i - 1]`.",
+    "Сохраните выручку первого дня в `previous` и пройдите по остальным дням: `for today in revenue[1:]:`. После расчёта изменения запишите в `previous` сегодняшнюю выручку. Если уже прочитали про `range`, можно идти по индексам со второго дня.",
     "`round((revenue[i] - revenue[i - 1]) / revenue[i - 1] * 100, 1)`"
    ],
-   "explain": "В SQL это `LAG(revenue) OVER (ORDER BY day)`, в pandas — `pct_change()`."
+   "explain": "Для второго дня получаем `(38900 - 41200) / 41200 * 100`, то есть −5,6% после округления. В SQL во внутреннем запросе возьмите выручку предыдущего дня как `LAG(revenue) OVER (ORDER BY day) AS prev`. Во внешнем посчитайте `ROUND((revenue - prev) * 100.0 / NULLIF(prev, 0), 1)` и оставьте строки с `prev IS NOT NULL`. В pandas для этого ряда с ненулевой выручкой результат даёт `s.pct_change().mul(100).round(1).iloc[1:]`."
   },
   "ch01/06-if/bool": {
    "chapter": "ch01",
@@ -1212,14 +1212,14 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('segment') == 'высокий', f'Для 600 получилось {need(\"segment\")!r}, а должно быть «высокий» (граница 600 входит в высокий).'\nassert 'avg_check = 600' in _code, 'Оставьте первую строку avg_check = 600 как есть — проверка подставляет туда другие значения.'\nfor v, want in [(120, 'низкий'), (299, 'низкий'), (300, 'средний'), (599, 'средний'), (1500, 'высокий')]:\n    g = {}\n    exec(_code.replace('avg_check = 600', f'avg_check = {v}', 1), g)\n    assert g.get('segment') == want, f'Для avg_check = {v} получается {g.get(\"segment\")!r}, а должно быть «{want}».'",
+   "check": "assert need('segment') == 'высокий', f'Для 600 получилось {need(\"segment\")!r}, а должно быть «высокий» (граница 600 входит в высокий).'\nfor v, want in [(120, 'низкий'), (299.99, 'низкий'), (300, 'средний'),\n                (599.5, 'средний'), (599.99, 'средний'), (600.01, 'высокий'), (1500, 'высокий')]:\n    g = rerun_with(avg_check=v)\n    assert g.get('segment') == want, f'Для avg_check = {v} получается {g.get(\"segment\")!r}, а должно быть «{want}».'",
    "starter": "avg_check = 600",
    "solution": "avg_check = 600\nif avg_check < 300:\n    segment = \"низкий\"\nelif avg_check < 600:\n    segment = \"средний\"\nelse:\n    segment = \"высокий\"",
    "hints": [
     "Три ветки: `if … elif … else`. Проверяйте от меньшего к большему: `< 300`, потом `< 600`.",
     "Почему порядок важен: `elif` проверяется, только если все условия выше оказались ложными. Поэтому во второй ветке достаточно `avg_check < 600` — что чек не меньше 300, уже известно. Проверьте себя на трёх значениях: 299, 300 и 600."
    ],
-   "explain": "Проверка подставила в ваш код разные значения `avg_check` и сравнила ответы. Так проверяют код и в работе: на граничных значениях (299, 300, 599, 600) ошибки встречаются чаще всего."
+   "explain": "300 ₽ и 599,50 ₽ попадают во вторую ветку. При 600 ₽ обе проверки ложны, поэтому выполняется `else`. Такой порядок сохраняет смысл интервала и при переходе от рублей к копейкам."
   },
   "ch01/06-if/filter": {
    "chapter": "ch01",
@@ -1317,7 +1317,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('days') == 10, f'days = {need(\"days\")}. Цикл должен идти, пока остаток не меньше 8 кг.'\nassert 'while' in _code, 'Используйте while.'",
+   "check": "assert need('days') == 10, f'days = {need(\"days\")}. Цикл должен идти, пока остаток не меньше 8 кг.'\nimport ast\nassert any(isinstance(node, ast.While) for node in ast.walk(ast.parse(_code))), 'Используйте while.'\nfor stock, per_day, expected in [(8, 2, 1), (20, 3, 5), (7, 1, 0)]:\n    result = rerun_with(stock=stock, per_day=per_day)\n    assert result.get('days') == expected, f'При запасе {stock} кг и расходе {per_day} кг за день закупка нужна через {expected} дн.'",
    "starter": "stock = 40\nper_day = 3.5",
    "solution": "stock = 40\nper_day = 3.5\ndays = 0\nwhile stock >= 8:\n    stock -= per_day\n    days += 1",
    "hints": [
@@ -1401,7 +1401,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert _lines == ['Пермь: 412 чашек', 'Казань: 538 чашек', 'Тюмень: 297 чашек'], f'Сейчас: {_lines}'\nimport re\nassert re.search(r'for\\s+\\w+\\s*,', _code), 'Распакуйте строку в заголовке цикла: for city, cups, price in sales.'",
+   "check": "assert _lines == ['Пермь: 412 чашек', 'Казань: 538 чашек', 'Тюмень: 297 чашек'], f'Сейчас: {_lines}'\nimport ast\nassert any(isinstance(loop, ast.For) and isinstance(loop.target, (ast.Tuple, ast.List))\n           and len(loop.target.elts) == 3 for loop in ast.walk(ast.parse(_code))), 'Распакуйте три поля строки в заголовке цикла: for city, cups, price in sales.'",
    "starter": "sales = [\n    [\"Пермь\", 412, 205],\n    [\"Казань\", 538, 198],\n    [\"Тюмень\", 297, 214],\n]",
    "solution": "sales = [\n    [\"Пермь\", 412, 205],\n    [\"Казань\", 538, 198],\n    [\"Тюмень\", 297, 214],\n]\nfor city, cups, price in sales:\n    print(f\"{city}: {cups} чашек\")",
    "hints": [
@@ -1464,7 +1464,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "s = need('sales')\nassert all(len(r) == 4 for r in s), f'В каждой строке должно быть 4 значения. Сейчас: {s}'\nassert [r[3] for r in s] == [84460, 106524, 63558, 68985], f'Выручка: {[r[3] for r in s]}. Нужно row[1] * row[2].'",
+   "check": "s = need('sales')\nsource = [['Пермь', 412, 205], ['Казань', 538, 198], ['Тюмень', 297, 214], ['Уфа', 365, 189]]\nassert len(s) == len(source), 'Сохраните все четыре строки в исходном порядке.'\nfor row, original in zip(s, source):\n    assert len(row) == 4, f'Для {original[0]} ожидается четыре поля, сейчас {len(row)}.'\n    assert list(row[:3]) == original, f'Сохраните исходные поля строки {original[0]}: {original}.'\n    assert row[3] == original[1] * original[2], f'Проверьте выручку для {original[0]}: чашки × цена.'",
    "starter": "sales = [\n    [\"Пермь\", 412, 205],\n    [\"Казань\", 538, 198],\n    [\"Тюмень\", 297, 214],\n    [\"Уфа\", 365, 189],\n]",
    "solution": "sales = [\n    [\"Пермь\", 412, 205],\n    [\"Казань\", 538, 198],\n    [\"Тюмень\", 297, 214],\n    [\"Уфа\", 365, 189],\n]\nfor row in sales:\n    row.append(row[1] * row[2])",
    "hints": [
@@ -1534,7 +1534,7 @@
     "Два накопителя в одном цикле: `total_revenue` и `total_cups`. После цикла — деление и `round(…, 2)`.",
     "В цикле: `total_revenue += cups * price`, `total_cups += cups`."
    ],
-   "explain": "Это одна из самых частых ошибок в отчётах: среднее средних. В SQL правильный вариант — `SUM(cups * price) / SUM(cups)`, а не `AVG(avg_price)`."
+   "explain": "Числитель — 323 527 ₽ выручки, знаменатель — 1 612 чашек. Получается 200,70 ₽ за чашку. При простом среднем каждая кофейня получила бы одинаковый вес, даже если продала всего одну чашку.\n\nВ PostgreSQL для целых столбцов `cups` и `price` тот же расчёт выглядит так:\n\n```sql\nSELECT ROUND(SUM(cups * price)::numeric / NULLIF(SUM(cups), 0), 2) AS avg_price\nFROM sales;\n```\n\nПриведение числителя к `numeric` **до деления** сохраняет копейки. Без него деление двух целых дало бы 200. `NULLIF` при нуле чашек вернёт `NULL`: средняя цена в таком случае не определена."
   },
   "ch01/07-tables/report": {
    "chapter": "ch01",
@@ -1632,7 +1632,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('prices') == {'Латте': 220, 'Капучино': 190, 'Раф': 260, 'Мокко': 240}, f'prices = {need(\"prices\")}.'\nassert '{' not in _code.split('}', 1)[1], 'Не пересоздавайте словарь — измените существующий: в реальном меню сотни позиций, их меняют по ключу, а не переписывают целиком.'",
+   "check": "assert need('prices') == {'Латте': 220, 'Капучино': 190, 'Раф': 260, 'Мокко': 240}, f'prices = {need(\"prices\")}.'\noriginal = {'Латте': 150, 'Эспрессо': 175}\nupdated = rerun_with(prices=original).get('prices')\nassert updated is original, 'Измените существующий словарь на месте. Подойдут присваивание по ключу или prices.update(...).'\nassert updated == {'Латте': 220, 'Эспрессо': 175, 'Мокко': 240}, 'Изменились только две цены? Остальные позиции меню нужно сохранить.'",
    "starter": "prices = {\"Латте\": 210, \"Капучино\": 190, \"Раф\": 260}",
    "solution": "prices = {\"Латте\": 210, \"Капучино\": 190, \"Раф\": 260}\nprices[\"Мокко\"] = 240\nprices[\"Латте\"] = 220",
    "hints": [
@@ -1870,7 +1870,7 @@
     "Посмотрите, что возвращает функция без `return`: `None`.",
     "`print` показывает значение, но не возвращает его. Замените на `return`."
    ],
-   "explain": "С `print` функция возвращала `None`, и `None * 2` падало. Правило: функция, результат которой нужен дальше, всегда заканчивается `return`."
+   "explain": "Сначала два вызова печатают 84460 и 106524. Каждый доходит до конца функции без `return` и возвращает `None`. В строке `total = ...` Python пробует сложить `None + None` и выдаёт `TypeError`. В этом запуске переменная `total` ещё не создана, до `print(total)` выполнение не доходит.\n\nПосле замены на `return cups * price` вызовы возвращают два числа. Их сумма 190984 записывается в `total`, и завершающий `print` выводит её одной строкой."
   },
   "ch01/09-functions/discount": {
    "chapter": "ch01",
@@ -1905,7 +1905,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "f = need('avg_check')\nassert close(f(84530, 260), 325.12), f'avg_check(84530, 260) = {f(84530, 260)!r}.'\ntry:\n    z = f(0, 0)\nexcept ZeroDivisionError:\n    raise AssertionError('avg_check(0, 0) падает с делением на ноль. Проверьте orders перед делением.')\nassert z == 0, f'avg_check(0, 0) = {z!r}, а нужно 0.'",
+   "check": "f = need('avg_check')\nassert close(f(84530, 260), 325.12), f'avg_check(84530, 260) = {f(84530, 260)!r}.'\nfor revenue, orders in [(0, 0), (500, 0), (0, 5)]:\n    try:\n        result = f(revenue, orders)\n    except ZeroDivisionError:\n        raise AssertionError(f'avg_check({revenue}, {orders}) падает с делением на ноль. Проверьте orders перед делением.')\n    assert result == 0, f'avg_check({revenue}, {orders}) = {result!r}, а нужно 0.'",
    "starter": "def avg_check(revenue, orders):\n    ...",
    "solution": "def avg_check(revenue, orders):\n    if orders == 0:\n        return 0\n    return round(revenue / orders, 2)",
    "hints": [
@@ -2038,7 +2038,7 @@
     "Тело функции — подсчёт из урока про словари, только словарь создаётся внутри функции и возвращается через `return`.",
     "После функции: `drinks = count_by(orders)`, `cities = count_by(город_список)` — одна функция, два применения."
    ],
-   "explain": "Вы только что написали упрощённую версию `value_counts()` из pandas и `Counter` из стандартной библиотеки. Хорошая функция решает задачу для любых данных, а не для одного списка."
+   "explain": "Напитки и города — два разных списка строк, и одна функция справилась с обоими. Подобный подсчёт есть в `value_counts()` из pandas и в `Counter` из стандартной библиотеки Python."
   },
   "ch01/exam-1/shift": {
    "chapter": "ch01",
@@ -2073,7 +2073,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('city_code') == 'PRM', f'city_code = {need(\"city_code\")!r}.'\nn = need('number')\nassert n == 42 and isinstance(n, int), f'number = {n!r}. Нужно целое число 42.'",
+   "check": "assert need('city_code') == 'PRM', f'city_code = {need(\"city_code\")!r}.'\nn = need('number')\nassert n == 42 and isinstance(n, int), f'number = {n!r}. Нужно целое число 42.'\n_other = rerun_with(code='WH-KZN-0105')\nassert (_other.get('city_code'), _other.get('number')) == ('KZN', 105), 'Для WH-KZN-0105 должны получиться KZN и число 105. Извлеките обе части из code.'",
    "starter": "code = \"WH-PRM-0042\"",
    "solution": "code = \"WH-PRM-0042\"\ncity_code = code[3:6]\nnumber = int(code[7:])",
    "hints": [
@@ -2094,7 +2094,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('top2_sum') == 2430, f'top2_sum = {need(\"top2_sum\")}. Два крупнейших — 1280 и 1150.'\nassert not has_literal(2430) and _code.count('1280') == 1 and _code.count('1150') == 1, 'Найдите крупнейшие чеки кодом: числа 1280, 1150 и 2430 не нужно писать вручную — они должны получиться из списка checks.'",
+   "check": "assert need('top2_sum') == 2430, f'top2_sum = {need(\"top2_sum\")}. Два крупнейших — 1280 и 1150.'\nassert rerun_with(checks=[300, 110, 520, 470]).get('top2_sum') == 990, 'Для чеков 300, 110, 520 и 470 сумма двух крупнейших равна 990. Получайте её из текущего списка checks.'",
    "starter": "checks = [450, 1280, 320, 990, 610, 1150]",
    "solution": "checks = [450, 1280, 320, 990, 610, 1150]\ntop2_sum = sum(sorted(checks, reverse=True)[:2])",
    "hints": [
@@ -2115,7 +2115,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('in_k') == [41.2, 39.0, 45.1, 39.9], f'in_k = {need(\"in_k\")}.'",
+   "check": "assert need('in_k') == [41.2, 39.0, 45.1, 39.9], f'in_k = {need(\"in_k\")}.'\nassert rerun_with(revenue=[12340, 9810]).get('in_k') == [12.3, 9.8], 'Для выручки [12340, 9810] нужны [12.3, 9.8]. Пересчитайте каждый элемент revenue.'",
    "starter": "revenue = [41200, 38950, 45130, 39870]",
    "solution": "revenue = [41200, 38950, 45130, 39870]\nin_k = []\nfor r in revenue:\n    in_k.append(round(r / 1000, 1))",
    "hints": [
@@ -2136,7 +2136,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('labels') == ['ниже плана', 'план', 'план', 'ниже плана', 'план'], f'labels = {need(\"labels\")}. 45 000 — это уже «план».'",
+   "check": "assert need('labels') == ['ниже плана', 'план', 'план', 'ниже плана', 'план'], f'labels = {need(\"labels\")}. 45 000 — это уже «план».'\nassert rerun_with(revenue=[45001, 0, 45000]).get('labels') == ['план', 'ниже плана', 'план'], 'Проверьте код на днях с выручкой 45 001, 0 и 45 000. Порядок меток должен совпадать с порядком дней в revenue.'",
    "starter": "revenue = [41200, 45000, 52300, 44999, 61700]",
    "solution": "revenue = [41200, 45000, 52300, 44999, 61700]\nlabels = []\nfor r in revenue:\n    if r >= 45000:\n        labels.append(\"план\")\n    else:\n        labels.append(\"ниже плана\")",
    "hints": [
@@ -2157,7 +2157,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('years') == 6, f'years = {need(\"years\")}. Через 5 лет цена ровно 250 — это ещё не «больше 250»; больше она станет через 6 лет (260).'\nimport ast as _ast, contextlib as _cl, io as _io\n_t = _ast.parse(_code)\nassert any(isinstance(_n, _ast.While) for _n in _ast.walk(_t)), 'Посчитайте циклом while: слово while в комментарии не считается.'\n# тот же код с другими условиями: цена 230, порог 300 → 8 лет. Так ловится ответ, записанный вручную.\nclass _Swap(_ast.NodeTransformer):\n    def visit_Constant(self, n):\n        if type(n.value) is int and n.value in (200, 250):\n            return _ast.copy_location(_ast.Constant({200: 230, 250: 300}[n.value]), n)\n        return n\n_ns = {}\nwith _cl.redirect_stdout(_io.StringIO()):\n    exec(compile(_ast.fix_missing_locations(_Swap().visit(_t)), '<проверка>', 'exec'), _ns)\nassert _ns.get('years') == 8, ('С ценой 230 и порогом 300 ваш код даёт years = ' + repr(_ns.get('years')) +\n                               ', а должно быть 8. Пусть цикл сам считает годы, пока цена не больше порога, — без готового числа.')",
+   "check": "assert need('years') == 6, f'years = {need(\"years\")}. Через 5 лет цена ровно 250 — это ещё не «больше 250»; больше она станет через 6 лет (260).'\nfor _start, _expected in [(230, 3), (249, 1), (250, 1), (251, 0)]:\n    _got = rerun_with(price=_start, _require_while=_expected > 1).get('years')\n    assert _got == _expected, f'При начальной цене {_start} ₽ ваш расчёт даёт {_got!r} лет. При росте на 10 ₽ в год нужно {_expected}.'",
    "starter": "price = 200",
    "solution": "price = 200\nyears = 0\nwhile price <= 250:\n    price += 10\n    years += 1",
    "hints": [
@@ -2178,7 +2178,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('kazan_revenue') == 538 * 198 + 301 * 210, f'kazan_revenue = {need(\"kazan_revenue\")}.'",
+   "check": "assert need('kazan_revenue') == 538 * 198 + 301 * 210, f'kazan_revenue = {need(\"kazan_revenue\")}.'\n_other = rerun_with(sales=[['Казань', 2, 180], ['Пермь', 9, 300], ['Уфа', 3, 220], ['Казань', 1, 220]])\nassert _other.get('kazan_revenue') == 580, f'В другой таблице Казань продала 2 чашки по 180 ₽ и одну за 220 ₽. Получено {_other.get(\"kazan_revenue\")!r}, ожидается 580 ₽. Проверьте отбор строк по городу и умножение на число чашек.'",
    "starter": "sales = [\n    [\"Пермь\", 412, 205],\n    [\"Казань\", 538, 198],\n    [\"Казань\", 301, 210],\n    [\"Тюмень\", 297, 214],\n]",
    "solution": "sales = [\n    [\"Пермь\", 412, 205],\n    [\"Казань\", 538, 198],\n    [\"Казань\", 301, 210],\n    [\"Тюмень\", 297, 214],\n]\nkazan_revenue = 0\nfor city, cups, price in sales:\n    if city == \"Казань\":\n        kazan_revenue += cups * price",
    "hints": [
@@ -2199,7 +2199,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('counts') == {'S': 2, 'M': 4, 'L': 2}, f'counts = {need(\"counts\")}.'\nassert need('top_size') == 'M', f'top_size = {need(\"top_size\")!r}.'\nassert _code.count('\"M\"') + _code.count(\"'M'\") <= 4, 'Найдите самый частый размер кодом, а не впишите.'",
+   "check": "assert need('counts') == {'S': 2, 'M': 4, 'L': 2}, f'counts = {need(\"counts\")}.'\nassert need('top_size') == 'M', f'top_size = {need(\"top_size\")!r}.'\n_other = rerun_with(sizes=['L', 'S', 'L', 'L', 'M'])\nassert _other.get('counts') == {'L': 3, 'S': 1, 'M': 1} and _other.get('top_size') == 'L', 'Для размеров L, S, L, L, M лидирует L с тремя заказами. Проверьте counts и поиск самого частого размера.'",
    "starter": "sizes = [\"S\", \"M\", \"M\", \"L\", \"M\", \"S\", \"L\", \"M\"]",
    "solution": "sizes = [\"S\", \"M\", \"M\", \"L\", \"M\", \"S\", \"L\", \"M\"]\ncounts = {}\nfor s in sizes:\n    counts[s] = counts.get(s, 0) + 1\ntop_size = \"\"\nbest = 0\nfor size, n in counts.items():\n    if n > best:\n        best = n\n        top_size = size",
    "hints": [
@@ -2220,7 +2220,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('prices') == {'Латте': 220, 'Капучино': 190, 'Раф': 260, 'Мокко': 240}, f'prices = {need(\"prices\")}.'\nassert 'for' in _code, 'Пройдите по changes циклом.'",
+   "check": "assert need('prices') == {'Латте': 220, 'Капучино': 190, 'Раф': 260, 'Мокко': 240}, f'prices = {need(\"prices\")}.'\n_prices = {'Эспрессо': 130, 'Латте': 240}\n_other = rerun_with(prices=_prices, changes={'Эспрессо': 150, 'Фильтр': 210})\nassert _other.get('prices') is _prices, 'Измените существующий словарь prices. Для этого подойдут присваивания по ключу или prices.update(changes).'\nassert _prices == {'Эспрессо': 150, 'Латте': 240, 'Фильтр': 210}, 'Во втором прайсе нужно обновить Эспрессо, добавить Фильтр и сохранить прежнюю цену Латте.'",
    "starter": "prices = {\"Латте\": 210, \"Капучино\": 190, \"Раф\": 260}\nchanges = {\"Латте\": 220, \"Мокко\": 240}",
    "solution": "prices = {\"Латте\": 210, \"Капучино\": 190, \"Раф\": 260}\nchanges = {\"Латте\": 220, \"Мокко\": 240}\nfor name, price in changes.items():\n    prices[name] = price",
    "hints": [
@@ -2262,7 +2262,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "f = need('revenue_by')\no = need('orders')\nassert f(o, 'city') == {'Пермь': 1060, 'Казань': 320}, f'revenue_by(orders, \"city\") = {f(o, \"city\")}.'\nassert f(o, 'drink') == {'Латте': 450, 'Раф': 930}, f'revenue_by(orders, \"drink\") = {f(o, \"drink\")}.'\nassert f([], 'city') == {}, 'Для пустого списка — пустой словарь.'",
+   "check": "f = need('revenue_by')\nsample = [\n    {'city': 'Томск', 'drink': 'Чай', 'amount': 120},\n    {'city': 'Омск', 'drink': 'Чай', 'amount': 80},\n    {'city': 'Томск', 'drink': 'Какао', 'amount': 250},\n]\nfor field, totals in [('city', {'Томск': 370, 'Омск': 80}), ('drink', {'Чай': 200, 'Какао': 250})]:\n    actual = f([row.copy() for row in sample], field)\n    assert actual == totals, f'Сгруппируйте переданные заказы по полю {field!r} и сложите amount в каждой группе. Получено {actual!r}.'\nassert f([{'city': 'Томск', 'drink': 'Чай', 'amount': 15}], 'city') == {'Томск': 15}, 'При новом вызове считайте только заказы из нового списка.'\nassert f([], 'city') == {}, 'Для пустого списка — пустой словарь.'",
    "starter": "def revenue_by(orders, field):\n    ...\n\norders = [\n    {\"city\": \"Пермь\", \"drink\": \"Латте\", \"amount\": 450},\n    {\"city\": \"Казань\", \"drink\": \"Раф\", \"amount\": 320},\n    {\"city\": \"Пермь\", \"drink\": \"Раф\", \"amount\": 610},\n]\nprint(revenue_by(orders, \"city\"))\nprint(revenue_by(orders, \"drink\"))",
    "solution": "def revenue_by(orders, field):\n    result = {}\n    for o in orders:\n        key = o[field]\n        result[key] = result.get(key, 0) + o[\"amount\"]\n    return result\n\norders = [\n    {\"city\": \"Пермь\", \"drink\": \"Латте\", \"amount\": 450},\n    {\"city\": \"Казань\", \"drink\": \"Раф\", \"amount\": 320},\n    {\"city\": \"Пермь\", \"drink\": \"Раф\", \"amount\": 610},\n]\nprint(revenue_by(orders, \"city\"))\nprint(revenue_by(orders, \"drink\"))",
    "hints": [
@@ -2283,7 +2283,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "f = need('parse_line')\nassert f('Уфа;10;200') == ['Уфа', 10, 200], f'parse_line(\"Уфа;10;200\") = {f(\"Уфа;10;200\")!r}.'\nassert need('total') == 412 * 205 + 538 * 198 + 297 * 214, f'total = {need(\"total\")}. Пустые строки нужно пропускать.'\nassert calls('parse_line') >= 1, 'Используйте parse_line для подсчёта total.'",
+   "check": "f = need('parse_line')\nassert f('Уфа;10;200') == ['Уфа', 10, 200], f'parse_line(\"Уфа;10;200\") = {f(\"Уфа;10;200\")!r}.'\nassert need('total') == 412 * 205 + 538 * 198 + 297 * 214, f'total = {need(\"total\")}. Пустые строки нужно пропускать.'\nimport ast as _ast\n_sample = 'Уфа;7;113\\n\\nОмск;11;127\\nСамара;3;149\\n'\n_seen = []\ndef _record(_fn):\n    def _wrapped(*args, **kwargs):\n        _seen.append(args[0] if args else next(iter(kwargs.values())))\n        return _fn(*args, **kwargs)\n    return _wrapped\nclass _Probe(_ast.NodeTransformer):\n    def visit_Name(self, node):\n        if node.id == 'parse_line' and isinstance(node.ctx, _ast.Load):\n            return _ast.copy_location(_ast.Call(func=_ast.Name(id='_record', ctx=_ast.Load()), args=[node], keywords=[]), node)\n        return node\n    def visit_Assign(self, node):\n        self.generic_visit(node)\n        if any(isinstance(t, _ast.Name) and t.id == 'text' for t in node.targets) and not any(isinstance(n, _ast.Name) and n.id == 'text' for n in _ast.walk(node.value)):\n            override = _ast.parse('text = _probe_inputs.pop(\"text\", text)').body[0]\n            return [node, _ast.copy_location(override, node)]\n        return node\n    def visit_AnnAssign(self, node):\n        self.generic_visit(node)\n        if isinstance(node.target, _ast.Name) and node.target.id == 'text' and node.value is not None and not any(isinstance(n, _ast.Name) and n.id == 'text' for n in _ast.walk(node.value)):\n            override = _ast.parse('text = _probe_inputs.pop(\"text\", text)').body[0]\n            return [node, _ast.copy_location(override, node)]\n        return node\n_env = {'__name__': '__main__', '_record': _record, 'text': _sample, '_probe_inputs': {'text': _sample}}\ntry:\n    exec(compile(_ast.fix_missing_locations(_Probe().visit(_ast.parse(_code))), '<parse-probe>', 'exec'), _env)\nexcept Exception as _e:\n    raise AssertionError(f'На новой выгрузке с пустой строкой код не завершился: {_e}') from None\nassert _env.get('total') == 7 * 113 + 11 * 127 + 3 * 149, 'На новой выгрузке total неверен: обработайте все непустые строки, не вписывайте сумму.'\nassert all(line in _seen for line in _sample.splitlines() if line.strip()), 'Используйте parse_line для обработки каждой непустой строки. Подойдут цикл, map и генератор.'",
    "starter": "def parse_line(line):\n    ...\n\ntext = \"Пермь;412;205\\nКазань;538;198\\n\\nТюмень;297;214\\n\"",
    "solution": "def parse_line(line):\n    city, cups, price = line.split(\";\")\n    return [city, int(cups), int(price)]\n\ntext = \"Пермь;412;205\\nКазань;538;198\\n\\nТюмень;297;214\\n\"\ntotal = 0\nfor line in text.split(\"\\n\"):\n    if line.strip() != \"\":\n        city, cups, price = parse_line(line)\n        total += cups * price",
    "hints": [
@@ -2304,7 +2304,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "import io as _io, tokenize as _tk\nassert need('revenue') == 84460 and need('share') == 6.4, f'Расчёт изменился: revenue = {need(\"revenue\")!r}, share = {need(\"share\")!r}. Должно быть 84460 и 6.4 — меняются только пробелы.'\n_toks = [t for t in _tk.generate_tokens(_io.StringIO(_code).readline) if t.type not in (_tk.COMMENT, _tk.NL, _tk.NEWLINE, _tk.INDENT, _tk.DEDENT, _tk.ENDMARKER)]\n_depth = 0\nfor _k, _t in enumerate(_toks):\n    if _t.type != _tk.OP:\n        continue\n    if _t.string in '([{':\n        _depth += 1\n    elif _t.string in ')]}':\n        _depth -= 1\n    _prev = _toks[_k - 1] if _k else None\n    _next = _toks[_k + 1] if _k + 1 < len(_toks) else None\n    _gap_l = _prev is not None and _prev.end[0] == _t.start[0] and _prev.end[1] < _t.start[1]\n    _gap_r = _next is not None and _next.start[0] == _t.end[0] and _next.start[1] > _t.end[1]\n    _where = f'Строка {_t.start[0]}'\n    if _t.string == ',' and _next is not None and _next.string not in ')]}' and _next.start[0] == _t.end[0]:\n        assert _gap_r, f'{_where}: после запятой нужен пробел.'\n    if _t.string in ('*', '/', '+', '-') and _prev is not None and _prev.type in (_tk.NAME, _tk.NUMBER) or _t.string in ('*', '/', '+', '-') and _prev is not None and _prev.string == ')':\n        assert _gap_l and _gap_r, f'{_where}: вокруг {_t.string} нужны пробелы с обеих сторон.'\n    if _t.string == '=' and _depth > 0:\n        assert not _gap_l and not _gap_r, f'{_where}: у именованного аргумента пробелов вокруг = нет: ndigits=1.'\n    if _t.string == '=' and _depth == 0:\n        assert _gap_l and _gap_r, f'{_where}: вокруг = в присваивании нужны пробелы.'",
+   "check": "import ast as _ast, io as _io, tokenize as _tk\nassert need('revenue') == 84460 and need('share') == 6.4, f'Расчёт изменился: revenue = {need(\"revenue\")!r}, share = {need(\"share\")!r}. Должно быть 84460 и 6.4 — меняются только пробелы.'\n_original = 'cups=412\\nprice=205\\nrevenue=cups*price\\nshare=round(revenue/1314000*100,ndigits=1)\\nprint(revenue,share)'\nassert _ast.dump(_ast.parse(_code)) == _ast.dump(_ast.parse(_original)), 'Сохраните исходные переменные, вычисления и print. В этом упражнении меняются только пробелы.'\n_toks = [t for t in _tk.generate_tokens(_io.StringIO(_code).readline) if t.type not in (_tk.COMMENT, _tk.NL, _tk.NEWLINE, _tk.INDENT, _tk.DEDENT, _tk.ENDMARKER)]\n_depth = 0\nfor _k, _t in enumerate(_toks):\n    if _t.type != _tk.OP:\n        continue\n    if _t.string in '([{':\n        _depth += 1\n    elif _t.string in ')]}':\n        _depth -= 1\n    _prev = _toks[_k - 1] if _k else None\n    _next = _toks[_k + 1] if _k + 1 < len(_toks) else None\n    _gap_l = _prev is not None and _prev.end[0] == _t.start[0] and _prev.end[1] < _t.start[1]\n    _gap_r = _next is not None and _next.start[0] == _t.end[0] and _next.start[1] > _t.end[1]\n    _where = f'Строка {_t.start[0]}'\n    if _t.string == ',' and _next is not None and _next.string not in ')]}' and _next.start[0] == _t.end[0]:\n        assert _gap_r, f'{_where}: после запятой нужен пробел.'\n    if _t.string in ('*', '/', '+', '-') and _prev is not None and _prev.type in (_tk.NAME, _tk.NUMBER) or _t.string in ('*', '/', '+', '-') and _prev is not None and _prev.string == ')':\n        assert _gap_l and _gap_r, f'{_where}: вокруг {_t.string} нужны пробелы с обеих сторон.'\n    if _t.string == '=' and _depth > 0:\n        assert not _gap_l and not _gap_r, f'{_where}: у именованного аргумента пробелов вокруг = нет: ndigits=1.'\n    if _t.string == '=' and _depth == 0:\n        assert _gap_l and _gap_r, f'{_where}: вокруг = в присваивании нужны пробелы.'",
    "starter": "cups=412\nprice=205\nrevenue=cups*price\nshare=round(revenue/1314000*100,ndigits = 1)\nprint(revenue,share)",
    "solution": "cups = 412\nprice = 205\nrevenue = cups * price\nshare = round(revenue / 1314000 * 100, ndigits=1)\nprint(revenue, share)",
    "hints": [
@@ -2325,7 +2325,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "import ast as _ast\n_tree = _ast.parse(_code)\n_names = {n.id for n in _ast.walk(_tree) if isinstance(n, _ast.Name) and isinstance(n.ctx, _ast.Store)}\n_bad = sorted(x for x in _names if x != x.lower() and x != x.upper())\nassert not _bad, f'Остались имена не в snake_case: {_bad}. Маленькие буквы и подчёркивание между словами.'\nassert {'total_revenue', 'orders_count', 'avg_check', 'VAT_RATE', 'vat'} <= _names, f'Нужны переменные total_revenue, orders_count, avg_check, VAT_RATE и vat. Сейчас присваиваются: {sorted(_names)}.'\nassert need('VAT_RATE') == 0.2, f'VAT_RATE = {need(\"VAT_RATE\")!r}. Ставка НДС — 0.2.'\nassert need('avg_check') == 325.12, f'avg_check = {need(\"avg_check\")!r}. Переименование не должно менять расчёт.'\nassert need('vat') == 54.19, f'vat = {need(\"vat\")!r}. Формула та же, только вместо 0.2 — VAT_RATE.'\nassert '0.2' not in _code.replace('VAT_RATE = 0.2', '').replace('VAT_RATE=0.2', ''), 'Число 0.2 должно встречаться только один раз — в объявлении VAT_RATE. Дальше используйте константу.'",
+   "check": "import ast as _ast\n_tree = _ast.parse(_code)\n_names = {n.id for n in _ast.walk(_tree) if isinstance(n, _ast.Name) and isinstance(n.ctx, _ast.Store)}\n_bad = sorted(x for x in _names if x != x.lower() and x != x.upper())\nassert not _bad, f'Остались имена не в snake_case: {_bad}. Маленькие буквы и подчёркивание между словами.'\nassert {'total_revenue', 'orders_count', 'avg_check', 'VAT_RATE', 'vat'} <= _names, f'Нужны переменные total_revenue, orders_count, avg_check, VAT_RATE и vat. Сейчас присваиваются: {sorted(_names)}.'\nassert need('VAT_RATE') == 0.2, f'VAT_RATE = {need(\"VAT_RATE\")!r}. В учебном примере задана ставка 0.2.'\nassert need('avg_check') == 325.12, f'avg_check = {need(\"avg_check\")!r}. Переименование не должно менять расчёт.'\nassert need('vat') == 54.19, f'vat = {need(\"vat\")!r}. Формула та же, только вместо 0.2 — VAT_RATE.'\nassert '0.2' not in _code.replace('VAT_RATE = 0.2', '').replace('VAT_RATE=0.2', ''), 'Число 0.2 должно встречаться только один раз — в объявлении VAT_RATE. Дальше используйте константу.'",
    "starter": "TotalRevenue = 84530\nOrdersCount = 260\navgCheck = round(TotalRevenue / OrdersCount, 2)\nvat = round(avgCheck * 0.2 / (1 + 0.2), 2)\nprint(avgCheck, vat)",
    "solution": "VAT_RATE = 0.2\ntotal_revenue = 84530\norders_count = 260\navg_check = round(total_revenue / orders_count, 2)\nvat = round(avg_check * VAT_RATE / (1 + VAT_RATE), 2)\nprint(avg_check, vat)",
    "hints": [
@@ -2390,7 +2390,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "_b = need('bad')\nassert isinstance(_b, (list, tuple, set)), 'bad — список номеров строк, например [1, 4].'\n_got = sorted(int(x) for x in _b)\n_hint = {\n    1: 'Строка 1 в порядке: константа заглавными, пробелы вокруг =.',\n    2: 'Строка 2: avgCheck — имя не в snake_case, нужно avg_check.',\n    3: 'Строка 3: у именованного аргумента ndigits = 2 лишние пробелы — нужно ndigits=2.',\n    4: 'Строка 4 в порядке: пробел после каждой запятой.',\n    5: 'Строка 5: if и действие в одной строке — print нужно перенести на новую строку с отступом.',\n    6: 'Строка 6 в порядке: имена в snake_case.',\n}\nfor _n in [1, 2, 3, 4, 5, 6]:\n    if (_n in _got) != (_n in (2, 3, 5)):\n        raise AssertionError(_hint[_n] + f' Сейчас bad = {_got}.')\nassert _got == [2, 3, 5], f'bad = {_got}. Каждый номер — один раз.'",
+   "check": "_b = need('bad')\nassert isinstance(_b, (list, tuple, set)), 'bad — список номеров строк, например [1, 4].'\nassert all(type(x) is int for x in _b), 'Номера строк — целые числа от 1 до 6.'\n_got = sorted(_b)\n_hint = {\n    1: 'Строка 1 в порядке: константа заглавными, пробелы вокруг =.',\n    2: 'Строка 2: avgCheck — имя не в snake_case, нужно avg_check.',\n    3: 'Строка 3: у именованного аргумента ndigits = 2 лишние пробелы — нужно ndigits=2.',\n    4: 'Строка 4 в порядке: пробел после каждой запятой.',\n    5: 'Строка 5: if и действие в одной строке — print нужно перенести на новую строку с отступом.',\n    6: 'Строка 6 в порядке: имена в snake_case.',\n}\nfor _n in [1, 2, 3, 4, 5, 6]:\n    if (_n in _got) != (_n in (2, 3, 5)):\n        raise AssertionError(_hint[_n] + f' Сейчас bad = {_got}.')\nassert _got == [2, 3, 5], f'bad = {_got}. Каждый номер — один раз.'",
    "starter": "bad = []",
    "solution": "bad = [2, 3, 5]",
    "hints": [
@@ -2530,7 +2530,7 @@
    "lesson": "10-tuples-sets",
    "lesson_title": "Кортежи и множества",
    "id": "retention",
-   "title": "Вернувшиеся и новые гости",
+   "title": "Кто из гостей октября был в сентябре?",
    "level": "base",
    "exam": false,
    "parsons": false,
@@ -2544,7 +2544,7 @@
     "Сначала превратите оба списка в множества. Пересечение — `&`, разность — `-`.",
     "`returned = sorted(s & o)`, `new = sorted(o - s)` — порядок в разности важен."
    ],
-   "explain": "Вернулись Борис и Глеб, новые — Дина и Ева. `o - s` и `s - o` — разные вопросы: «кто новый в октябре» и «кто не вернулся»."
+   "explain": "Борис и Глеб были в оба месяца. Дина и Ева отмечены только в октябрьском списке, Анна и Вера — только в сентябрьском. По этим спискам можно сравнить два месяца. Чтобы установить дату первого визита Дины, понадобятся и более ранние записи."
   },
   "ch01/10-tuples-sets/group2": {
    "chapter": "ch01",
@@ -2642,7 +2642,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert need('small') == [120, 275, 90], f'small = {need(\"small\")}. 300 — уже не меньше 300.'\nassert 'append' not in _code, 'Обойдитесь без append.'",
+   "check": "assert need('small') == [120, 275, 90], f'small = {need(\"small\")}. 300 — уже не меньше 300.'\nimport ast\nassert any(isinstance(node, ast.ListComp) and any(gen.ifs for gen in node.generators)\n           for node in ast.walk(ast.parse(_code))), 'Соберите список генератором с условием: [значение for ... if ...].'\nassert rerun_with(checks=[300, 299.5, 25, 310]).get('small') == [299.5, 25], 'Проверьте отбор на других чеках: 299.5 и 25 меньше 300, ровно 300 уже за границей.'",
    "starter": "checks = [450, 120, 320, 275, 610, 90, 300]",
    "solution": "checks = [450, 120, 320, 275, 610, 90, 300]\nsmall = [c for c in checks if c < 300]",
    "hints": [
@@ -2817,7 +2817,7 @@
     "Окно из трёх дней, заканчивающееся на дне `i`, — это срез `revenue[i - 2:i + 1]`.",
     "`[round(sum(revenue[i - 2:i + 1]) / 3) for i in range(2, len(revenue))]`"
    ],
-   "explain": "В SQL это `AVG(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)`, в pandas — `rolling(3).mean()`. Скользящее среднее ещё встретится в главе про временные ряды."
+   "explain": "В Python первый результат появляется для третьего дня. Оконная функция SQL вычисляет среднее и по **неполной** рамке в начале таблицы. Сравните первые три строки после округления:\n\n| День | Выручка | SQL: среднее по доступным дням | Python: среднее за три дня |\n|---|---:|---:|---:|\n| 1 | 41 200 | 41 200 | — |\n| 2 | 38 900 | 40 050 | — |\n| 3 | 45 100 | 41 733 | 41 733 |\n\nЧтобы получить тот же ряд, в SQL посчитайте число строк в каждом окне, а во внешнем запросе оставьте только полные окна. Здесь в таблице `daily` по одной записи на каждый день, пропусков в выручке нет.\n\n```sql\nSELECT day, ROUND(mean_revenue) AS ma3\nFROM (\n    SELECT day, AVG(revenue) OVER w AS mean_revenue, COUNT(*) OVER w AS n\n    FROM daily\n    WINDOW w AS (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)\n) AS windows\nWHERE n = 3\nORDER BY day;\n```\n\nДля тех же значений в pandas результат даёт `s.rolling(3).mean().dropna().round()`, где `s` — выручка в порядке дней."
   },
   "ch01/12-errors/not-number": {
    "chapter": "ch01",
@@ -2831,7 +2831,7 @@
    "files": [],
    "display": false,
    "setup": "",
-   "check": "assert printed_line('Не число'), 'Для «двадцать» должно вывестись «Не число».'\nassert 'except ValueError' in _code, 'Ловите именно ValueError.'\ng = {}\nexec(_code.replace('\"двадцать\"', '\"20\"', 1), g)\nassert g.get('n') == 20, 'Для text = \"20\" в n должно оказаться число 20.'",
+   "check": "assert printed_line('Не число'), 'Для «двадцать» должно вывестись «Не число».'\nimport ast\nassert any(isinstance(node, ast.ExceptHandler) and isinstance(node.type, ast.Name)\n           and node.type.id == 'ValueError' for node in ast.walk(ast.parse(_code))), 'Ловите именно ValueError.'\nfor text, expected in [('20', 20), ('-8', -8)]:\n    assert rerun_with(text=text).get('n') == expected, f'Для text = {text!r} в n должно оказаться число {expected}.'",
    "starter": "text = \"двадцать\"",
    "solution": "text = \"двадцать\"\ntry:\n    n = int(text)\nexcept ValueError:\n    print(\"Не число\")",
    "hints": [
@@ -3106,7 +3106,7 @@
    "lesson": "13-files",
    "lesson_title": "Файлы, CSV и модули",
    "id": "count-rows",
-   "title": "Сколько заказов",
+   "title": "Сколько записей в выгрузке",
    "level": "base",
    "exam": false,
    "parsons": false,
@@ -3116,14 +3116,14 @@
    ],
    "display": false,
    "setup": "",
-   "check": "want = len(open('orders.csv', encoding='utf-8').read().strip().split('\\n')) - 1\nassert need('n_orders') == want, f'n_orders = {need(\"n_orders\")}, а строк с заказами {want}.'\nassert 'csv.' in _code, 'Используйте csv.reader или csv.DictReader.'\nassert 'encoding' in _code, 'Укажите кодировку: open(\"orders.csv\", encoding=\"utf-8\"). В браузере сработает и без неё, а на Windows русские буквы сломаются.'",
+   "check": "import ast as _ast\nimport csv as _csv\nwith open('orders.csv', encoding='utf-8', newline='') as _source:\n    _count = sum(1 for _row in _csv.DictReader(_source))\nassert need('n_orders') == _count, f'n_orders = {need(\"n_orders\")}, а записей без заголовка {_count}.'\n_imports = [n for n in _ast.walk(_ast.parse(_code)) if isinstance(n, (_ast.Import, _ast.ImportFrom))]\nassert any(getattr(n, 'module', None) == 'csv' or any(a.name == 'csv' for a in n.names) for n in _imports), 'Для чтения таблицы подключите модуль csv или импортируйте из него reader либо DictReader.'",
    "starter": "import csv",
-   "solution": "import csv\nwith open(\"orders.csv\", encoding=\"utf-8\") as f:\n    n_orders = len(list(csv.DictReader(f)))",
+   "solution": "import csv\nwith open(\"orders.csv\", encoding=\"utf-8\", newline=\"\") as f:\n    n_orders = len(list(csv.DictReader(f)))",
    "hints": [
     "`len(list(csv.DictReader(f)))` — DictReader сам пропускает строку заголовка.",
     "Всё чтение — внутри `with open(\"orders.csv\", encoding=\"utf-8\") as f:`."
    ],
-   "explain": "В файле 41 заказ. Строка заголовка в счёт не входит — `DictReader` использует её для имён ключей."
+   "explain": "В файле 41 запись и 40 разных `order_id`. Заказ `Z-1038` выгрузился дважды. В проекте после исключения трёх строк с испорченной суммой и одного повтора для расчёта останется 37 заказов."
   },
   "ch01/13-files/total": {
    "chapter": "ch01",
@@ -3147,7 +3147,7 @@
     "Сумма — строка: `int(row[\"amount\"])`. Обёртка `try/except ValueError` из прошлого урока.",
     "Два накопителя до `with`: `total = 0`, `bad = 0`; в `except` — `bad += 1`."
    ],
-   "explain": "Хорошие заказы дают 16 820 ₽, битых сумм — 3: пустая, прочерк и `1 250`. Счётчик плохих строк — часть результата: «выручка 16 820, не разобрано 3 строки» честнее, чем просто «16 820»."
+   "explain": "В 38 записях сумму удалось прочитать. Вместе они дают 16 820 ₽. Три значения пришлось пропустить — пустое, прочерк и `1 250`. В 16 820 ₽ ещё включена повторная запись на 450 ₽. В проекте вы удалите повтор и получите 16 370 ₽ по 37 принятым заказам."
   },
   "ch01/13-files/by-city": {
    "chapter": "ch01",
@@ -3188,7 +3188,7 @@
    ],
    "display": false,
    "setup": "",
-   "check": "import os\nassert os.path.exists('by_city.csv'), 'Файл by_city.csv не создан.'\ngot = open('by_city.csv', encoding='utf-8').read().split()\nassert got == ['city,revenue', 'Пермь,1450', 'Казань,600', 'Тюмень,715'], f'В файле: {got}'",
+   "check": "import csv as _csv\nimport os as _os\nfrom tempfile import TemporaryDirectory as _TemporaryDirectory\n\ndef _check_file(source):\n    assert _os.path.isfile('by_city.csv'), 'Файл by_city.csv не создан.'\n    with open('by_city.csv', encoding='utf-8', newline='') as file:\n        try:\n            rows = list(_csv.reader(file, strict=True))\n        except _csv.Error as error:\n            raise AssertionError(f'Не удалось прочитать записи CSV. Проверьте разделители и кавычки. {error}')\n    assert len(rows) == len(source) + 1, f'В by_city.csv прочитано записей: {len(rows)}. Нужны заголовок и отдельная запись для каждого из {len(source)} городов.'\n    assert rows[0] == ['city', 'revenue'], f'Проверьте заголовок. Прочитаны поля {rows[0]!r}.'\n    for number, (city, revenue) in enumerate(source.items(), 1):\n        assert rows[number] == [city, str(revenue)], f'Запись {number} после заголовка: {rows[number]!r}. Ожидались город {city!r} и выручка {revenue}.'\n\n_check_file({'Пермь': 1450, 'Казань': 600, 'Тюмень': 715})\n_other = {'Нижний Новгород': 320, 'Казань, центр': 140}\nwith _TemporaryDirectory() as _tmp:\n    _previous = _os.getcwd()\n    try:\n        _os.chdir(_tmp)\n        rerun_with(by_city=dict(_other))\n        _check_file(_other)\n    finally:\n        _os.chdir(_previous)",
    "starter": "import csv\nby_city = {\"Пермь\": 1450, \"Казань\": 600, \"Тюмень\": 715}",
    "solution": "import csv\nby_city = {\"Пермь\": 1450, \"Казань\": 600, \"Тюмень\": 715}\nwith open(\"by_city.csv\", \"w\", encoding=\"utf-8\", newline=\"\") as f:\n    w = csv.writer(f)\n    w.writerow([\"city\", \"revenue\"])\n    for city, revenue in by_city.items():\n        w.writerow([city, revenue])",
    "hints": [
@@ -3235,12 +3235,12 @@
     "menu.txt"
    ],
    "display": false,
-   "setup": "",
-   "check": "import csv as _csv, datetime as _dt\ngood = []\nfor r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        good.append(int(r['amount']))\n    except ValueError:\n        pass\no = need('load_orders')('orders.csv')\nassert len(o) != len(good) + 1, f'Загружено {len(o)} заказов — на один больше, чем нужно. Похоже, сумма «1 250» починена; в этом уроке её считаем битой и в результат не кладём.'\nassert len(o) == len(good), f'Загружено {len(o)} заказов, а хороших строк {len(good)}.'\nassert isinstance(o[0]['amount'], int), 'amount должен быть int.'\nassert isinstance(o[0]['date'], _dt.date), 'date должна быть датой (dt.date.fromisoformat).'\nassert need('avg_check') == round(sum(good) / len(good)), f'avg_check = {need(\"avg_check\")}.'",
+   "setup": "import csv as _source_csv\nwith open('orders.csv', encoding='utf-8', newline='') as _source_file:\n    _source_records = list(_source_csv.DictReader(_source_file))",
+   "check": "import csv as _csv\nimport datetime as _dt\nfrom pathlib import Path as _Path\nfrom tempfile import TemporaryDirectory as _TemporaryDirectory\n\ndef _expected_rows(records):\n    result = []\n    for row in records:\n        try:\n            amount = int(row['amount'])\n        except ValueError:\n            continue\n        result.append(dict(row, amount=amount, date=_dt.date.fromisoformat(row['date'])))\n    return result\n\ndef _compare_rows(actual, expected, label):\n    assert isinstance(actual, list), f'{label}: верните список словарей.'\n    assert len(actual) == len(expected), f'{label}: загружено {len(actual)} записей, с читаемой суммой — {len(expected)}. Повторы здесь сохраняются.'\n    for row, original in zip(actual, expected):\n        order_id = original['order_id']\n        assert isinstance(row, dict), f'{label}, {order_id}: запись должна быть словарём.'\n        for field, value in original.items():\n            assert field in row, f'{label}, {order_id}: пропущено поле {field}.'\n            assert type(row[field]) is type(value) and row[field] == value, f'{label}, {order_id}: проверьте {field}. Получено {row[field]!r}, в исходной записи после преобразования {value!r}.'\n\n_load = need('load_orders')\n_original = _expected_rows(_source_records)\n_compare_rows(need('orders'), _original, 'orders')\nassert need('avg_check') == round(sum(r['amount'] for r in _original) / len(_original)), f'avg_check = {need(\"avg_check\")}.'\nwith _TemporaryDirectory() as _tmp:\n    _other = _Path(_tmp) / 'october.csv'\n    with _other.open('w', encoding='utf-8', newline='') as _file:\n        _csv.writer(_file).writerows([\n            ['order_id', 'date', 'city', 'drink', 'amount'],\n            ['O-1', '2026-10-18', 'Нижний Новгород', 'Кофе, фильтр', '375'],\n            ['O-2', '2026-10-19', 'Уфа', 'Раф', '—'],\n            ['O-3', '2026-10-20', 'Уфа', 'Чай', '130'],\n        ])\n    with _other.open(encoding='utf-8', newline='') as _file:\n        _expected = _expected_rows(_csv.DictReader(_file))\n    _compare_rows(_load(str(_other)), _expected, 'load_orders(другой путь)')",
    "starter": "import csv\nimport datetime as dt\n\ndef load_orders(path):\n    ...\n\norders = load_orders(\"orders.csv\")",
    "solution": "import csv\nimport datetime as dt\n\ndef load_orders(path):\n    result = []\n    with open(path, encoding=\"utf-8\") as f:\n        for row in csv.DictReader(f):\n            try:\n                row[\"amount\"] = int(row[\"amount\"])\n            except ValueError:\n                continue\n            row[\"date\"] = dt.date.fromisoformat(row[\"date\"])\n            result.append(row)\n    return result\n\norders = load_orders(\"orders.csv\")\navg_check = round(sum(o[\"amount\"] for o in orders) / len(orders))",
    "hints": [
-    "Внутри функции — цикл по `DictReader`, в `try` превращаете оба поля и добавляете словарь в список; в `except ValueError` — `continue`.",
+    "У следующей записи своя дата. Как получить её из `row[\"date\"]`? Вспомните вызов `dt.date.fromisoformat(...)` в разделе «Даты». Когда сумма успешно прочитана, замените текст даты в словаре и добавьте эту запись в список.",
     "Средний чек — `sum(o[\"amount\"] for o in orders) / len(orders)`, затем `round`."
    ],
    "explain": "Такая функция — обычное начало любого анализа: один раз загрузить и привести типы, дальше работать с чистыми данными. В следующем уроке на её основе соберём отчёт."
@@ -3259,7 +3259,7 @@
    ],
    "display": false,
    "setup": "",
-   "check": "import csv as _csv, datetime as _dt\ngood, bad = [], 0\nfor r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        int(r['amount']); good.append(r)\n    except ValueError:\n        bad += 1\no = need('orders', list)\nassert len(o) == len(good), f'В orders {len(o)} заказов, а хороших строк {len(good)}.'\nassert need('n_bad') == bad, f'n_bad = {need(\"n_bad\")}, а битых строк {bad}.'\nassert all(isinstance(x['amount'], int) for x in o), 'amount должен быть int.'\nassert all(isinstance(x['date'], _dt.date) for x in o), 'date должна быть dt.date.'",
+   "check": "import csv as _csv\nimport datetime as _dt\n\ngood, bad = [], 0\nwith open('orders.csv', encoding='utf-8', newline='') as source:\n    for row in _csv.DictReader(source):\n        try:\n            row['amount'] = int(row['amount'])\n        except ValueError:\n            bad += 1\n            continue\n        row['date'] = _dt.date.fromisoformat(row['date'])\n        good.append(row)\nloaded = need('orders', list)\nassert len(loaded) == len(good), f'В orders {len(loaded)} записей, а годных строк в CSV {len(good)}.'\nassert need('n_bad') == bad, f'n_bad = {need(\"n_bad\")}, а битых строк {bad}.'\nfor expected, actual in zip(good, loaded):\n    order_id = expected['order_id']\n    assert isinstance(actual, dict), f'Заказ {order_id} должен быть словарём.'\n    for field, value in expected.items():\n        assert field in actual, f'У заказа {order_id} отсутствует поле {field}.'\n        assert actual[field] == value and type(actual[field]) is type(value), (\n            f'Заказ {order_id}, поле {field}: получено {actual[field]!r}, по CSV ожидается {value!r}.')\n    assert actual.keys() == expected.keys(), f'Проверьте названия полей заказа {order_id} по заголовку CSV.'",
    "starter": "import csv\nimport datetime as dt",
    "solution": "import csv\nimport datetime as dt\norders = []\nn_bad = 0\nwith open(\"orders.csv\", encoding=\"utf-8\") as f:\n    for row in csv.DictReader(f):\n        try:\n            row[\"amount\"] = int(row[\"amount\"])\n        except ValueError:\n            n_bad += 1\n            continue\n        row[\"date\"] = dt.date.fromisoformat(row[\"date\"])\n        orders.append(row)",
    "hints": [
@@ -3304,8 +3304,8 @@
     "orders.csv"
    ],
    "display": false,
-   "setup": "import csv as _csv, datetime as _dt\nclean, _seen = [], set()\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        continue\n    if _r['order_id'] in _seen:\n        continue\n    _seen.add(_r['order_id'])\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    clean.append(_r)",
-   "check": "a = [o['amount'] for o in clean]\nassert need('n_orders') == len(a), f'n_orders = {need(\"n_orders\")}.'\nassert need('revenue') == sum(a), f'revenue = {need(\"revenue\")}.'\nassert need('avg_check') == round(sum(a) / len(a)), f'avg_check = {need(\"avg_check\")}.'",
+   "setup": "import csv as _csv, datetime as _dt\nclean, _seen = [], set()\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        continue\n    if _r['order_id'] in _seen:\n        continue\n    _seen.add(_r['order_id'])\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    clean.append(_r)\n_amounts = tuple(row['amount'] for row in clean)",
+   "check": "assert need('n_orders') == len(_amounts), f'n_orders = {need(\"n_orders\")}.'\nassert need('revenue') == sum(_amounts), f'revenue = {need(\"revenue\")}.'\nassert need('avg_check') == round(sum(_amounts) / len(_amounts)), f'avg_check = {need(\"avg_check\")}.'",
    "starter": "# clean уже готов",
    "solution": "n_orders = len(clean)\nrevenue = sum(o[\"amount\"] for o in clean)\navg_check = round(revenue / n_orders)",
    "hints": [
@@ -3327,8 +3327,8 @@
     "orders.csv"
    ],
    "display": false,
-   "setup": "import csv as _csv, datetime as _dt\nclean, _seen = [], set()\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        continue\n    if _r['order_id'] in _seen:\n        continue\n    _seen.add(_r['order_id'])\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    clean.append(_r)",
-   "check": "want = {}\nfor o in clean:\n    want[o['city']] = want.get(o['city'], 0) + o['amount']\nwant = sorted(want.items(), key=lambda kv: kv[1], reverse=True)\nassert [tuple(x) for x in need('city_rank')] == want, f'city_rank = {need(\"city_rank\")}, а должно быть {want}.'",
+   "setup": "import csv as _csv, datetime as _dt\nclean, _seen = [], set()\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        continue\n    if _r['order_id'] in _seen:\n        continue\n    _seen.add(_r['order_id'])\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    clean.append(_r)\n_city_amounts = tuple((row['city'], row['amount']) for row in clean)",
+   "check": "want = {}\nfor city, amount in _city_amounts:\n    want[city] = want.get(city, 0) + amount\nrank = [tuple(x) for x in need('city_rank')]\nassert len(rank) == len(want) and dict(rank) == want, 'Проверьте города и сумму для каждого из них.'\namounts = [amount for city, amount in rank]\nassert amounts == sorted(amounts, reverse=True), 'Расположите города по убыванию выручки.'\n\"\"\"Три заказа, в которых лидеры по числу заказов и по выручке различаются.\"\"\"\nfrom datetime import date as _date\n\n_sample_orders = [\n    dict(order_id='A1', date=_date(2027, 2, 1), city='Киров', drink='Чай', amount=50),\n    dict(order_id='A2', date=_date(2027, 2, 1), city='Киров', drink='Чай', amount=120),\n    dict(order_id='A3', date=_date(2027, 2, 2), city='Омск', drink='Матча', amount=700),\n]\nother = rerun_with(clean=_sample_orders)\nassert [tuple(pair) for pair in other.get('city_rank', [])] == [('Омск', 700), ('Киров', 170)], (\n    'Город с большим числом заказов может получить меньше денег. Упорядочьте города по сумме выручки.')",
    "starter": "# clean уже готов",
    "solution": "by_city = {}\nfor o in clean:\n    by_city[o[\"city\"]] = by_city.get(o[\"city\"], 0) + o[\"amount\"]\ncity_rank = sorted(by_city.items(), key=lambda kv: kv[1], reverse=True)",
    "hints": [
@@ -3350,8 +3350,8 @@
     "orders.csv"
    ],
    "display": false,
-   "setup": "import csv as _csv, datetime as _dt\nclean, _seen = [], set()\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        continue\n    if _r['order_id'] in _seen:\n        continue\n    _seen.add(_r['order_id'])\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    clean.append(_r)",
-   "check": "cnt = {}\nfor o in clean:\n    cnt[o['drink']] = cnt.get(o['drink'], 0) + 1\nwant = sorted(cnt.items(), key=lambda kv: (-kv[1], kv[0]))[:3]\nassert [tuple(x) for x in need('top3')] == want, f'top3 = {need(\"top3\")}, а должно быть {want}.'\n_ctrl = [{'drink': d} for d in ['Флэт уайт', 'Флэт уайт', 'Раф', 'Раф', 'Американо', 'Американо', 'Латте']]\n_ns = {'clean': _ctrl}\nexec(_code, _ns)\n_got = [tuple(x) for x in _ns.get('top3', [])]\nassert _got == [('Американо', 2), ('Раф', 2), ('Флэт уайт', 2)], f'На контрольных данных с равными количествами получилось {_got}. При равенстве нужен алфавит: key=lambda kv: (-kv[1], kv[0]).'",
+   "setup": "import csv as _csv, datetime as _dt\nclean, _seen = [], set()\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        continue\n    if _r['order_id'] in _seen:\n        continue\n    _seen.add(_r['order_id'])\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    clean.append(_r)\n_drink_names = tuple(row['drink'] for row in clean)",
+   "check": "cnt = {}\nfor drink in _drink_names:\n    cnt[drink] = cnt.get(drink, 0) + 1\nwant = sorted(cnt.items(), key=lambda kv: (-kv[1], kv[0]))[:3]\nassert [tuple(x) for x in need('top3')] == want, f'top3 = {need(\"top3\")}, а должно быть {want}.'\n_names = ['Флэт уайт', 'Флэт уайт', 'Раф', 'Раф', 'Американо', 'Американо', 'Латте']\n_ctrl = [dict(order_id=f'T-{i}', date=_dt.date(2027, 2, 1), city='Пермь', drink=name, amount=300)\n         for i, name in enumerate(_names, 1)]\n_ns = rerun_with(clean=_ctrl)\n_got = [tuple(x) for x in _ns.get('top3', [])]\nassert _got == [('Американо', 2), ('Раф', 2), ('Флэт уайт', 2)], f'На контрольных данных с равными количествами получилось {_got}. При равенстве нужен алфавит: key=lambda kv: (-kv[1], kv[0]).'",
    "starter": "# clean уже готов",
    "solution": "counts = {}\nfor o in clean:\n    counts[o[\"drink\"]] = counts.get(o[\"drink\"], 0) + 1\ntop3 = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:3]",
    "hints": [
@@ -3373,15 +3373,15 @@
     "orders.csv"
    ],
    "display": false,
-   "setup": "import csv as _csv, datetime as _dt\nclean, _seen = [], set()\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        continue\n    if _r['order_id'] in _seen:\n        continue\n    _seen.add(_r['order_id'])\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    clean.append(_r)",
-   "check": "w = {}\nfor o in clean:\n    k = o['date'].weekday()\n    w[k] = w.get(k, 0) + o['amount']\nb = max(w, key=w.get)\nD = [\"понедельник\", \"вторник\", \"среда\", \"четверг\", \"пятница\", \"суббота\", \"воскресенье\"]\nassert need('best_day') == D[b], f'best_day = {need(\"best_day\")!r}, а должно быть {D[b]!r}.'\nassert need('best_day_revenue') == w[b], f'best_day_revenue = {need(\"best_day_revenue\")}.'",
+   "setup": "import csv as _csv, datetime as _dt\nclean, _seen = [], set()\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        continue\n    if _r['order_id'] in _seen:\n        continue\n    _seen.add(_r['order_id'])\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    clean.append(_r)\n_weekday_amounts = tuple((row['date'].weekday(), row['amount']) for row in clean)",
+   "check": "w = {}\nfor day, amount in _weekday_amounts:\n    w[day] = w.get(day, 0) + amount\nmaximum = max(w.values())\nD = [\"понедельник\", \"вторник\", \"среда\", \"четверг\", \"пятница\", \"суббота\", \"воскресенье\"]\nassert need('best_day') in {D[day] for day, amount in w.items() if amount == maximum}, 'Проверьте день максимальной выручки.'\nassert need('best_day_revenue') == maximum, f'best_day_revenue = {need(\"best_day_revenue\")}.'\n\"\"\"Три заказа, в которых лидеры по числу заказов и по выручке различаются.\"\"\"\nfrom datetime import date as _date\n\n_sample_orders = [\n    dict(order_id='A1', date=_date(2027, 2, 1), city='Киров', drink='Чай', amount=50),\n    dict(order_id='A2', date=_date(2027, 2, 1), city='Киров', drink='Чай', amount=120),\n    dict(order_id='A3', date=_date(2027, 2, 2), city='Омск', drink='Матча', amount=700),\n]\nother = rerun_with(clean=_sample_orders, DAYS=D)\nassert (other.get('best_day'), other.get('best_day_revenue')) == ('вторник', 700), (\n    'Сравните суммы по дням. Один заказ на 700 ₽ приносит больше, чем два заказа на 50 и 120 ₽.')",
    "starter": "DAYS = [\"понедельник\", \"вторник\", \"среда\", \"четверг\", \"пятница\", \"суббота\", \"воскресенье\"]\n# clean уже готов, date — это dt.date",
    "solution": "DAYS = [\"понедельник\", \"вторник\", \"среда\", \"четверг\", \"пятница\", \"суббота\", \"воскресенье\"]\nby_day = {}\nfor o in clean:\n    k = o[\"date\"].weekday()\n    by_day[k] = by_day.get(k, 0) + o[\"amount\"]\nbest = max(by_day, key=by_day.get)\nbest_day = DAYS[best]\nbest_day_revenue = by_day[best]",
    "hints": [
     "Словарь «номер дня → сумма» по `o[\"date\"].weekday()`, потом `max(d, key=d.get)` и `DAYS[номер]`.",
     "`best = max(d, key=d.get)`, `best_day = DAYS[best]`, `best_day_revenue = d[best]`."
    ],
-   "explain": "Самый выручальный день — среда (5 070 ₽), почти вровень с субботой (4 630 ₽). На месячной выгрузке из 37 заказов один день недели встречается 4–5 раз, так что разница между ними — повод для гипотезы, а не вывод."
+   "explain": "Больше всего учтено по средам (5 070 ₽), затем по субботам (4 630 ₽). Принятые заказы охватывают три разные среды и четыре субботы. Эти суммы описывают данную выгрузку. Чтобы судить об обычной среде, понадобятся сопоставимые данные за большее число недель."
   },
   "ch01/14-project/report": {
    "chapter": "ch01",
@@ -3396,15 +3396,15 @@
     "orders.csv"
    ],
    "display": false,
-   "setup": "import csv as _csv, datetime as _dt\nclean, _seen = [], set()\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        continue\n    if _r['order_id'] in _seen:\n        continue\n    _seen.add(_r['order_id'])\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    clean.append(_r)",
-   "check": "def _want(orders):\n    rev = sum(o['amount'] for o in orders)\n    bc = {}\n    for o in orders:\n        bc[o['city']] = bc.get(o['city'], 0) + o['amount']\n    best = max(bc, key=bc.get)\n    f = lambda x: f'{x:,}'.replace(',', ' ')\n    return '\\n'.join([f'Заказов: {len(orders)}', f'Выручка: {f(rev)} ₽', f'Средний чек: {f(round(rev / len(orders)))} ₽',\n                      f'Лучший город: {best} ({f(bc[best])} ₽)'])\nfn = need('build_report')\ngot = fn(clean)\nassert got is not None, 'Функция ничего не возвращает — нужен return, а не print.'\nassert got.strip() == _want(clean), f'Сейчас отчёт такой:\\n{got}\\n\\nа ожидался:\\n{_want(clean)}'\npart = clean[:10]\nassert fn(part).strip() == _want(part), 'На другом наборе заказов отчёт не совпал — проверьте, что все числа считаются из параметра orders.'",
-   "starter": "def build_report(orders):\n    ...\n\nprint(build_report(clean))",
-   "solution": "def build_report(orders):\n    def rub(x):\n        return f\"{x:,}\".replace(\",\", \" \") + \" ₽\"\n    revenue = sum(o[\"amount\"] for o in orders)\n    by_city = {}\n    for o in orders:\n        by_city[o[\"city\"]] = by_city.get(o[\"city\"], 0) + o[\"amount\"]\n    best = max(by_city, key=by_city.get)\n    lines = [\n        f\"Заказов: {len(orders)}\",\n        f\"Выручка: {rub(revenue)}\",\n        f\"Средний чек: {rub(round(revenue / len(orders)))}\",\n        f\"Лучший город: {best} ({rub(by_city[best])})\",\n    ]\n    return \"\\n\".join(lines)\n\nprint(build_report(clean))",
+   "setup": "import csv as _csv\nimport datetime as _dt\n\nclean, _seen = [], set()\nwith open('orders.csv', encoding='utf-8', newline='') as _source:\n    for _row in _csv.DictReader(_source):\n        try:\n            _row['amount'] = int(_row['amount'])\n        except ValueError:\n            continue\n        if _row['order_id'] in _seen:\n            continue\n        _seen.add(_row['order_id'])\n        _row['date'] = _dt.date.fromisoformat(_row['date'])\n        clean.append(_row)",
+   "check": "\"\"\"Встраивается в проверки шагов 7 и 8. Сверяем содержание уже составленного отчёта.\"\"\"\nimport csv as _csv\nimport datetime as _dt\nimport re as _re\nfrom collections import Counter as _Counter\n\n_DAYS = ('понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье')\n_MONTHS = ('январь', 'февраль', 'март', 'апрель', 'май', 'июнь',\n           'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь')\n\n\ndef _read_orders(path):\n    clean, seen, bad, duplicates = [], set(), 0, 0\n    with open(path, encoding='utf-8', newline='') as source:\n        for row in _csv.DictReader(source):\n            try:\n                row['amount'] = int(row['amount'])\n            except ValueError:\n                bad += 1\n                continue\n            if row['order_id'] in seen:\n                duplicates += 1\n                continue\n            seen.add(row['order_id'])\n            row['date'] = _dt.date.fromisoformat(row['date'])\n            clean.append(row)\n    return clean, bad, duplicates\n\n\ndef _normal(text):\n    return ' '.join(text.casefold().replace('ё', 'е').replace('−', '-').replace('*', '').split())\n\n\ndef _tokens(value):\n    # Скобки и тире служат для оформления. Знак минуса, валюта и дробная часть меняют смысл.\n    value = _re.sub(r'(?<=\\d)\\s+(?=\\d{3}(?!\\d))', '', _normal(value))\n    value = _re.sub(r'(?<=\\d)[.,]0+(?!\\d)', '', value)\n    return _re.findall(r'-?\\d+(?:[.,]\\d+)?|[^\\W\\d_]+|[₽$€%]', value)\n\n\ndef _field(lines, labels):\n    # Порядок строк свободный. Повтор поля делает две версии одной цифры двусмысленными.\n    for_label = '|'.join(_re.escape(_normal(label)) for label in labels)\n    pattern = rf'^(?:{for_label})\\s*(?::|[—–|]|-\\s)\\s*(.*?)\\s*\\|?$'\n    values = [match[1] for line in lines if (match := _re.match(pattern, line))]\n    assert len(values) == 1, f'Найдите в отчёте одну строку «{labels[0]}: …».'\n    return values[0]\n\n\ndef _value(lines, labels, choices, units=()):\n    raw = _field(lines, labels)\n    got = [token for token in _tokens(raw) if token not in units]\n    assert any(got == _tokens(str(choice)) for choice in choices), (\n        f'Проверьте поле «{labels[0]}»: в отчёте «{raw}». Сверьте значение с принятыми заказами и журналом.')\n\n\ndef _check_report(text, orders, quality=None):\n    assert isinstance(text, str), 'build_report должна вернуть текст отчёта через return.'\n    lines = [_normal(line).lstrip('#>-•| ').strip() for line in text.splitlines() if line.strip()]\n    rubles = ('₽', 'руб', 'рубль', 'рубля', 'рублей', 'р')\n    count_labels = ('Принято заказов', 'Принятые заказы', 'Заказов')\n    revenue_labels = ('Учтённая выручка', 'Выручка по принятым заказам')\n    avg_labels = ('Средний чек',)\n    city_labels = ('Лучший город', 'Город-лидер')\n    drink_labels = ('Напитки по числу заказов', 'Топ напитков', 'Топ-3 напитка', 'Популярные напитки')\n    day_labels = ('День с наибольшей выручкой', 'Лучший день по выручке', 'Лучший день')\n    if orders:\n        first = orders[0]['date']\n        periods = (first.isoformat()[:7], f'{_MONTHS[first.month - 1]} {first.year}', f'{first.month:02}.{first.year}')\n        headers = [line for line in lines if line.startswith(('отчет за ', 'период:'))]\n        assert len(headers) == 1 and any(headers[0] in ('отчет за ' + p, 'период: ' + p) for p in periods), (\n            f'Проверьте период в заголовке: даты принятых заказов относятся к {periods[0]}.')\n        total = sum(row['amount'] for row in orders)\n        _value(lines, count_labels, [len(orders)])\n        _value(lines, revenue_labels, [total], rubles)\n        _value(lines, avg_labels, [round(total / len(orders))], rubles)\n\n        cities, weekdays, drinks = _Counter(), _Counter(), _Counter()\n        for row in orders:\n            cities[row['city']] += row['amount']\n            weekdays[row['date'].weekday()] += row['amount']\n            drinks[row['drink']] += 1\n        _value(lines, city_labels,\n               [f'{city} ({amount})' for city, amount in cities.items() if amount == max(cities.values())], rubles)\n        top = sorted(drinks.items(), key=lambda item: (-item[1], item[0]))[:3]\n        _value(lines, drink_labels,\n               [', '.join(f'{drink} ({count})' for drink, count in top)], ('заказ', 'заказа', 'заказов'))\n        _value(lines, day_labels,\n               [f'{_DAYS[day]} ({amount})' for day, amount in weekdays.items() if amount == max(weekdays.values())], rubles)\n    else:\n        assert 'нет принятых заказов' in lines, 'Для пустой выборки напишите «Нет принятых заказов».'\n        assert 'отчет' in lines and not any(line.startswith(('отчет за ', 'период:')) for line in lines), (\n            'Без принятых дат определить месяц по данным нельзя. Добавьте заголовок «Отчёт» без периода.')\n        metric_labels = count_labels + revenue_labels + avg_labels + city_labels + drink_labels + day_labels\n        for label in metric_labels:\n            assert not any(_re.match(_re.escape(_normal(label)) + r'\\s*[:—–|-]', line) for line in lines), (\n                'Для пустой выборки оставьте только заголовок, сообщение и журнал. '\n                f'Уберите показатель «{label}».')\n    if quality is not None:\n        bad, duplicates = quality\n        assert any(line.rstrip(':') == 'качество данных' for line in lines), 'Добавьте в файл раздел «Качество данных».'\n        _value(lines, ('Строк в выгрузке', 'Строк в CSV'), [len(orders) + bad + duplicates])\n        _value(lines, ('Битых строк', 'Строк с битой суммой'), [bad])\n        _value(lines, ('Дублей', 'Лишних дублей'), [duplicates])\n\n_fn = need('build_report')\n_source_orders, _, _ = _read_orders('orders.csv')\n_check_report(_fn([row.copy() for row in _source_orders]), _source_orders)\n\"\"\"Три заказа, в которых лидеры по числу заказов и по выручке различаются.\"\"\"\nfrom datetime import date as _date\n\n_sample_orders = [\n    dict(order_id='A1', date=_date(2027, 2, 1), city='Киров', drink='Чай', amount=50),\n    dict(order_id='A2', date=_date(2027, 2, 1), city='Киров', drink='Чай', amount=120),\n    dict(order_id='A3', date=_date(2027, 2, 2), city='Омск', drink='Матча', amount=700),\n]\n_check_report(_fn([row.copy() for row in _sample_orders]), _sample_orders)\n_check_report(_fn([]), [])",
+   "starter": "def build_report(orders):\n    if not orders:\n        return \"# Отчёт\\nНет принятых заказов\"\n\n    period = orders[0][\"date\"].isoformat()[:7]\n    lines = [f\"# Отчёт за {period}\", f\"Принято заказов: {len(orders)}\"]\n    # Добавляйте сюда расчёты и новые строки отчёта.\n    return \"\\n\".join(lines)\n\nprint(build_report(clean))",
+   "solution": "def build_report(orders):\n    if not orders:\n        return \"# Отчёт\\nНет принятых заказов\"\n\n    def rub(amount):\n        return f\"{amount:,}\".replace(\",\", \" \") + \" ₽\"\n\n    days = [\"понедельник\", \"вторник\", \"среда\", \"четверг\", \"пятница\", \"суббота\", \"воскресенье\"]\n    by_city = {}\n    by_day = {}\n    drinks = {}\n    for row in orders:\n        city, drink = row[\"city\"], row[\"drink\"]\n        day = row[\"date\"].weekday()\n        by_city[city] = by_city.get(city, 0) + row[\"amount\"]\n        by_day[day] = by_day.get(day, 0) + row[\"amount\"]\n        drinks[drink] = drinks.get(drink, 0) + 1\n\n    period = orders[0][\"date\"].isoformat()[:7]\n    revenue = sum(row[\"amount\"] for row in orders)\n    best_city = max(by_city, key=by_city.get)\n    best_day = max(by_day, key=by_day.get)\n    top3 = sorted(drinks.items(), key=lambda pair: (-pair[1], pair[0]))[:3]\n    drink_line = \", \".join(f\"{drink} ({count})\" for drink, count in top3)\n    lines = [\n        f\"# Отчёт за {period}\",\n        f\"Принято заказов: {len(orders)}\",\n        f\"Учтённая выручка: {rub(revenue)}\",\n        f\"Средний чек: {rub(round(revenue / len(orders)))}\",\n        f\"Лучший город: {best_city} ({rub(by_city[best_city])})\",\n        f\"Напитки по числу заказов: {drink_line}\",\n        f\"День с наибольшей выручкой: {days[best_day]} ({rub(by_day[best_day])})\",\n    ]\n    return \"\\n\".join(lines)\n\nprint(build_report(clean))",
    "hints": [
-    "Посчитайте внутри функции выручку, словарь по городам и лучший город (шаги 3–4). Строки соберите f-строками в список и склейте `\"\\n\".join(lines)`.",
-    "Разделитель тысяч: `f\"{x:,}\".replace(\",\", \" \")` — урок «Строки и f-строки»."
+    "Внутри функции можно повторить знакомые части по очереди. Сначала проверьте заголовок, число заказов, сумму и среднее. Затем добавьте расчёты по городам, напиткам и дням из шагов 4–6. Для названия дня пригодится список `DAYS` из шага 6.",
+    "Из `top3` получится строка с парами: `\", \".join(f\"{drink} ({count})\" for drink, count in top3)`. Для форматирования рублей подойдёт `f\"{amount:,}\".replace(\",\", \" \")`. В конце соедините все строки с помощью `\"\\n\".join(lines)`."
    ],
-   "explain": "Внутри функции можно объявить ещё одну маленькую функцию (`rub`) — она видна только внутри `build_report`."
+   "explain": "Читатель видит, почему к сумме 16 370 ₽ стоит добавить слово «учтённая». Это выручка по тем же 37 заказам, для которых рассчитаны средний чек и рейтинги. У двух напитков по восемь заказов, поэтому «Раф» и «Флэт уайт» стоят по алфавиту."
   },
   "ch01/14-project/file": {
    "chapter": "ch01",
@@ -3419,15 +3419,15 @@
     "orders.csv"
    ],
    "display": false,
-   "setup": "import csv as _csv, datetime as _dt\nclean, _seen = [], set()\nn_bad = n_dupes = 0\nfor _r in _csv.DictReader(open('orders.csv', encoding='utf-8')):\n    try:\n        _r['amount'] = int(_r['amount'])\n    except ValueError:\n        n_bad += 1\n        continue\n    if _r['order_id'] in _seen:\n        n_dupes += 1\n        continue\n    _seen.add(_r['order_id'])\n    _r['date'] = _dt.date.fromisoformat(_r['date'])\n    clean.append(_r)\n\ndef build_report(orders):\n    rev = sum(o['amount'] for o in orders)\n    bc = {}\n    for o in orders:\n        bc[o['city']] = bc.get(o['city'], 0) + o['amount']\n    best = max(bc, key=bc.get)\n    f = lambda x: f'{x:,}'.replace(',', ' ')\n    return '\\n'.join([f'Заказов: {len(orders)}', f'Выручка: {f(rev)} ₽', f'Средний чек: {f(round(rev / len(orders)))} ₽',\n                      f'Лучший город: {best} ({f(bc[best])} ₽)'])",
-   "check": "import os\nassert os.path.exists('report.md'), 'Файл report.md не создан.'\ngot = [l.rstrip() for l in open('report.md', encoding='utf-8').read().strip().split('\\n')]\nwant = ['# Отчёт за сентябрь', ''] + build_report(clean).split('\\n') + ['', '## Качество данных', f'- Битых строк: {n_bad}', f'- Дублей: {n_dupes}']\nassert got == want, 'Содержимое report.md не совпадает с ожидаемым:\\n' + '\\n'.join(want)",
-   "starter": "# clean, n_bad, n_dupes и build_report уже есть\nprint(n_bad, n_dupes)",
-   "solution": "lines = [\"# Отчёт за сентябрь\", \"\", build_report(clean), \"\", \"## Качество данных\",\n         f\"- Битых строк: {n_bad}\", f\"- Дублей: {n_dupes}\"]\nwith open(\"report.md\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"\\n\".join(lines) + \"\\n\")\nprint(open(\"report.md\", encoding=\"utf-8\").read())",
+   "setup": "from pathlib import Path as _InputPath\n_original_csv = _InputPath('orders.csv').read_bytes()",
+   "check": "\"\"\"Встраивается в проверки шагов 7 и 8. Сверяем содержание уже составленного отчёта.\"\"\"\nimport csv as _csv\nimport datetime as _dt\nimport re as _re\nfrom collections import Counter as _Counter\n\n_DAYS = ('понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье')\n_MONTHS = ('январь', 'февраль', 'март', 'апрель', 'май', 'июнь',\n           'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь')\n\n\ndef _read_orders(path):\n    clean, seen, bad, duplicates = [], set(), 0, 0\n    with open(path, encoding='utf-8', newline='') as source:\n        for row in _csv.DictReader(source):\n            try:\n                row['amount'] = int(row['amount'])\n            except ValueError:\n                bad += 1\n                continue\n            if row['order_id'] in seen:\n                duplicates += 1\n                continue\n            seen.add(row['order_id'])\n            row['date'] = _dt.date.fromisoformat(row['date'])\n            clean.append(row)\n    return clean, bad, duplicates\n\n\ndef _normal(text):\n    return ' '.join(text.casefold().replace('ё', 'е').replace('−', '-').replace('*', '').split())\n\n\ndef _tokens(value):\n    # Скобки и тире служат для оформления. Знак минуса, валюта и дробная часть меняют смысл.\n    value = _re.sub(r'(?<=\\d)\\s+(?=\\d{3}(?!\\d))', '', _normal(value))\n    value = _re.sub(r'(?<=\\d)[.,]0+(?!\\d)', '', value)\n    return _re.findall(r'-?\\d+(?:[.,]\\d+)?|[^\\W\\d_]+|[₽$€%]', value)\n\n\ndef _field(lines, labels):\n    # Порядок строк свободный. Повтор поля делает две версии одной цифры двусмысленными.\n    for_label = '|'.join(_re.escape(_normal(label)) for label in labels)\n    pattern = rf'^(?:{for_label})\\s*(?::|[—–|]|-\\s)\\s*(.*?)\\s*\\|?$'\n    values = [match[1] for line in lines if (match := _re.match(pattern, line))]\n    assert len(values) == 1, f'Найдите в отчёте одну строку «{labels[0]}: …».'\n    return values[0]\n\n\ndef _value(lines, labels, choices, units=()):\n    raw = _field(lines, labels)\n    got = [token for token in _tokens(raw) if token not in units]\n    assert any(got == _tokens(str(choice)) for choice in choices), (\n        f'Проверьте поле «{labels[0]}»: в отчёте «{raw}». Сверьте значение с принятыми заказами и журналом.')\n\n\ndef _check_report(text, orders, quality=None):\n    assert isinstance(text, str), 'build_report должна вернуть текст отчёта через return.'\n    lines = [_normal(line).lstrip('#>-•| ').strip() for line in text.splitlines() if line.strip()]\n    rubles = ('₽', 'руб', 'рубль', 'рубля', 'рублей', 'р')\n    count_labels = ('Принято заказов', 'Принятые заказы', 'Заказов')\n    revenue_labels = ('Учтённая выручка', 'Выручка по принятым заказам')\n    avg_labels = ('Средний чек',)\n    city_labels = ('Лучший город', 'Город-лидер')\n    drink_labels = ('Напитки по числу заказов', 'Топ напитков', 'Топ-3 напитка', 'Популярные напитки')\n    day_labels = ('День с наибольшей выручкой', 'Лучший день по выручке', 'Лучший день')\n    if orders:\n        first = orders[0]['date']\n        periods = (first.isoformat()[:7], f'{_MONTHS[first.month - 1]} {first.year}', f'{first.month:02}.{first.year}')\n        headers = [line for line in lines if line.startswith(('отчет за ', 'период:'))]\n        assert len(headers) == 1 and any(headers[0] in ('отчет за ' + p, 'период: ' + p) for p in periods), (\n            f'Проверьте период в заголовке: даты принятых заказов относятся к {periods[0]}.')\n        total = sum(row['amount'] for row in orders)\n        _value(lines, count_labels, [len(orders)])\n        _value(lines, revenue_labels, [total], rubles)\n        _value(lines, avg_labels, [round(total / len(orders))], rubles)\n\n        cities, weekdays, drinks = _Counter(), _Counter(), _Counter()\n        for row in orders:\n            cities[row['city']] += row['amount']\n            weekdays[row['date'].weekday()] += row['amount']\n            drinks[row['drink']] += 1\n        _value(lines, city_labels,\n               [f'{city} ({amount})' for city, amount in cities.items() if amount == max(cities.values())], rubles)\n        top = sorted(drinks.items(), key=lambda item: (-item[1], item[0]))[:3]\n        _value(lines, drink_labels,\n               [', '.join(f'{drink} ({count})' for drink, count in top)], ('заказ', 'заказа', 'заказов'))\n        _value(lines, day_labels,\n               [f'{_DAYS[day]} ({amount})' for day, amount in weekdays.items() if amount == max(weekdays.values())], rubles)\n    else:\n        assert 'нет принятых заказов' in lines, 'Для пустой выборки напишите «Нет принятых заказов».'\n        assert 'отчет' in lines and not any(line.startswith(('отчет за ', 'период:')) for line in lines), (\n            'Без принятых дат определить месяц по данным нельзя. Добавьте заголовок «Отчёт» без периода.')\n        metric_labels = count_labels + revenue_labels + avg_labels + city_labels + drink_labels + day_labels\n        for label in metric_labels:\n            assert not any(_re.match(_re.escape(_normal(label)) + r'\\s*[:—–|-]', line) for line in lines), (\n                'Для пустой выборки оставьте только заголовок, сообщение и журнал. '\n                f'Уберите показатель «{label}».')\n    if quality is not None:\n        bad, duplicates = quality\n        assert any(line.rstrip(':') == 'качество данных' for line in lines), 'Добавьте в файл раздел «Качество данных».'\n        _value(lines, ('Строк в выгрузке', 'Строк в CSV'), [len(orders) + bad + duplicates])\n        _value(lines, ('Битых строк', 'Строк с битой суммой'), [bad])\n        _value(lines, ('Дублей', 'Лишних дублей'), [duplicates])\n\nfrom pathlib import Path as _Path\nfrom tempfile import TemporaryDirectory as _TemporaryDirectory\nimport os as _os\n\ndef _check_file(original_csv):\n    source = _Path('orders.csv')\n    if not source.is_file() or source.read_bytes() != original_csv:\n        source.write_bytes(original_csv)\n        raise AssertionError('Исходная выгрузка orders.csv изменилась. Откройте её для чтения, а результат запишите отдельно в report.md.')\n    output = _Path('report.md')\n    assert output.is_file(), 'После запуска должен появиться файл report.md. Проверьте путь и режим записи.'\n    rows, bad, duplicates = _read_orders('orders.csv')\n    _check_report(output.read_text(encoding='utf-8'), rows, (bad, duplicates))\n\n_check_file(_original_csv)\n# Во временной папке следующий запуск должен заменить предыдущий отчёт.\n_october = [\n    ('O1', '2027-10-04', 'Томск', 'Чай', 260),\n    ('O2', '2027-10-05', 'Омск', 'Какао', 690),\n    ('O3', '2027-10-04', 'Томск', 'Чай', 230),\n    ('O3', '2027-10-04', 'Томск', 'Чай', 230),\n    ('O4', '2027-10-05', 'Омск', 'Матча', '—'),\n    ('O5', '2027-10-06', 'Томск', 'Матча', 85),\n    ('O2', '2027-10-05', 'Омск', 'Какао', 690),\n]\n_original_dir = _Path.cwd()\nwith _TemporaryDirectory() as _folder:\n    try:\n        _os.chdir(_folder)\n        _Path('report.md').write_bytes((_original_dir / 'report.md').read_bytes())\n        for _case, _rows in [('октябрь', _october), ('пустой файл с заголовком', [])]:\n            with open('orders.csv', 'w', encoding='utf-8', newline='') as _source:\n                _writer = _csv.writer(_source)\n                _writer.writerow(['order_id', 'date', 'city', 'drink', 'amount'])\n                _writer.writerows(_rows)\n            _input = _Path('orders.csv').read_bytes()\n            try:\n                exec(_code, {'__name__': '__main__'})\n                _check_file(_input)\n            except Exception as _error:\n                raise AssertionError(f'Повторный запуск ({_case}): {_error}') from _error\n    finally:\n        _os.chdir(_original_dir)",
+   "starter": "# 1. Здесь ваш код чтения и удаления дублей.\n# print(len(clean), n_bad, n_dupes)\n\n# 2. Здесь ваше определение build_report.\n# text = build_report(clean)\n# print(text)\n\n# 3. Здесь запись текста и журнала в report.md.",
+   "solution": "import csv\nimport datetime as dt\n\ndef build_report(orders):\n    if not orders:\n        return \"# Отчёт\\nНет принятых заказов\"\n\n    def rub(amount):\n        return f\"{amount:,}\".replace(\",\", \" \") + \" ₽\"\n\n    days = [\"понедельник\", \"вторник\", \"среда\", \"четверг\", \"пятница\", \"суббота\", \"воскресенье\"]\n    by_city = {}\n    by_day = {}\n    drinks = {}\n    for row in orders:\n        city, drink = row[\"city\"], row[\"drink\"]\n        day = row[\"date\"].weekday()\n        by_city[city] = by_city.get(city, 0) + row[\"amount\"]\n        by_day[day] = by_day.get(day, 0) + row[\"amount\"]\n        drinks[drink] = drinks.get(drink, 0) + 1\n\n    period = orders[0][\"date\"].isoformat()[:7]\n    revenue = sum(row[\"amount\"] for row in orders)\n    best_city = max(by_city, key=by_city.get)\n    best_day = max(by_day, key=by_day.get)\n    top3 = sorted(drinks.items(), key=lambda pair: (-pair[1], pair[0]))[:3]\n    drink_line = \", \".join(f\"{drink} ({count})\" for drink, count in top3)\n    lines = [\n        f\"# Отчёт за {period}\",\n        f\"Принято заказов: {len(orders)}\",\n        f\"Учтённая выручка: {rub(revenue)}\",\n        f\"Средний чек: {rub(round(revenue / len(orders)))}\",\n        f\"Лучший город: {best_city} ({rub(by_city[best_city])})\",\n        f\"Напитки по числу заказов: {drink_line}\",\n        f\"День с наибольшей выручкой: {days[best_day]} ({rub(by_day[best_day])})\",\n    ]\n    return \"\\n\".join(lines)\n\norders = []\nn_bad = 0\nwith open(\"orders.csv\", encoding=\"utf-8\", newline=\"\") as source:\n    for row in csv.DictReader(source):\n        try:\n            row[\"amount\"] = int(row[\"amount\"])\n        except ValueError:\n            n_bad += 1\n            continue\n        row[\"date\"] = dt.date.fromisoformat(row[\"date\"])\n        orders.append(row)\n\nclean = []\nseen = set()\nn_dupes = 0\nfor row in orders:\n    if row[\"order_id\"] in seen:\n        n_dupes += 1\n    else:\n        seen.add(row[\"order_id\"])\n        clean.append(row)\n\njournal = [\n    \"## Качество данных\",\n    f\"- Строк в выгрузке: {len(orders) + n_bad}\",\n    f\"- Битых строк: {n_bad}\",\n    f\"- Дублей: {n_dupes}\",\n]\nwith open(\"report.md\", \"w\", encoding=\"utf-8\") as output:\n    output.write(build_report(clean) + \"\\n\\n\" + \"\\n\".join(journal) + \"\\n\")\n\nwith open(\"report.md\", encoding=\"utf-8\") as result:\n    print(result.read())",
    "hints": [
-    "Соберите все строки в список, склейте через `\"\\n\".join(...)` и запишите одним `f.write(...)` в режиме `\"w\"`.",
-    "Пустые строки в отчёте — это пустые элементы `\"\"` в списке: при склейке через `\"\\n\"` они дают пустую строку между разделами. Числа подставляйте f-строкой: `f\"- Битых строк: {n_bad}\"`. Чтобы проверить себя, после записи прочитайте файл обратно и напечатайте его."
+    "Скопируйте первые два шага и проверьте, что `len(clean) + n_bad + n_dupes` даёт число записей из CSV после заголовка. Затем добавьте определение функции и временно выполните `print(build_report(clean))`. Так удобно найти шаг, на котором расходятся цифры.",
+    "Откройте файл через `with open(\"report.md\", \"w\", encoding=\"utf-8\") as f:`. Сначала запишите `build_report(clean)`, затем перевод строки и журнал. Пример строки журнала: `f\"- Битых строк: {n_bad}\"`."
    ],
-   "explain": "Markdown — простая разметка: `#` — заголовок, `-` — пункт списка. Такой файл красиво откроется на GitHub, в Notion и в большинстве редакторов. Вы только что автоматизировали отчёт: в следующем месяце достаточно запустить код на новой выгрузке."
+   "explain": "Для сентября журнал сходится: 41 = 37 + 3 + 1. Если заменить содержимое `orders.csv` и запустить тот же код с начала, программа возьмёт период из новых дат, пересчитает все строки и перезапишет файл. Так руководитель получит ответы и сможет проверить, какие заказы в них учтены."
   }
  }
 }

@@ -1,14 +1,14 @@
 ---
 title: "Проект: о чём жалуются гости"
-files: [reviews_text.csv, reviews_new.csv]
-lead: "Финал главы. С сентября сеть собирает отзывы с карт — без оценок и без тем, просто тексты. Управляющая хочет каждую неделю видеть, где гости стали недовольнее и почему. Обучаем две модели на размеченных отзывах, размечаем ими новые, находим кофейню, где что-то сломалось, и причину — и поправляем долю негатива на ошибки самой модели."
+files: [reviews_text.csv, reviews_new.csv, reviews_new_gold.csv]
+lead: "Финал главы. С сентября сеть собирает отзывы с карт — без оценок и без тем, просто тексты. Управляющая хочет каждую неделю видеть, где выросла доля текстов с жалобой и какие темы требуют проверки. Обучаем две модели на размеченных отзывах, размечаем ими новые, выбираем точку и период с ростом жалоб и формулируем гипотезу для операционной проверки — и поправляем долю негатива на ошибки самой модели."
 recap:
   - "Модель для разметки обучают на старых размеченных данных и честно оценивают на отложенной части; для работы её переобучают на всех данных."
   - "Для многоклассовой модели смотрят F1 по каждому классу и macro-F1: доля правильных прячет провал на редкой теме. Если модель недосчитывает редкий класс, счётчики по темам в отчёте занижены; `class_weight=\"balanced\"` поднимает полноту редкого класса ценой общей точности."
   - "Перенос на новый источник — риск: тексты могут отличаться. Перед выводами читают примеры и смотрят, правдоподобна ли разметка."
   - "Сравнивают «до» и «после», а не только уровень: самая недовольная точка и точка, где стало хуже, — разные вопросы."
-  - "Причину ищут в разрезе: структура жалоб по темам до и после и сравнение с остальными точками."
-  - "Доля по модели смещена её ошибками. Зная полноту (TPR) и долю ложных срабатываний (FPR), долю исправляют: (p − FPR) / (TPR − FPR)."
+  - "Сначала определяют, у какой точки и когда изменилась доля жалоб. Возможное объяснение проверяют по другим данным."
+  - "При переносимых TPR и FPR приближение к доле жалоб можно получить по формуле: (p − FPR) / (TPR − FPR)."
   - "Цитаты из отзывов убеждают руководителя лучше процентов — давайте и то и другое."
 ---
 
@@ -22,19 +22,20 @@ recap:
 
 ## План
 
+До открытия разбора выберите по собственной таблице проблемную точку, период и свидетельства: максимальный уровень и максимальный прирост — разные критерии. Не подставляйте готовую точку до расчёта. В отчёте единица — отзыв, число уникальных гостей и доля недовольных среди всех посетителей здесь неизвестны.
+
+
 1. Две модели на размеченных `reviews_text.csv`: тональность (`rating <= 3` — недоволен) и тема. Оценка на отложенной части, затем переобучение на всех данных.
    Для темы — не только доля правильных, но и F1 по каждой теме: в отчёте будут счётчики по темам, и редкая тема не должна теряться.
-2. Разметка новых отзывов: вероятность недовольства, флаг, тема, период — до и после 5 октября (понедельник: сравниваем целые недели; частей поровну не будет — после 5 октября меньше половины отзывов).
+2. Присоедините к каждому отзыву его прогноз и тему по ID. В первом сравнении используйте календарные месяцы — сентябрь и октябрь.
 3. Доля недовольных по точкам: уровень и рост.
-4. Причина: темы жалоб в проблемной точке до и после, сравнение с остальными, цитаты.
-5. С какой недели: понедельная динамика.
+4. Постройте понедельную таблицу, выберите точку для разбора, проверьте объём наблюдений и найдите дату изменения.
+5. Для выбранной точки и даты сравните темы до и после, приложите цитаты с ID и сформулируйте гипотезу.
 6. Поправка доли на ошибки модели.
 
 Обе модели — TF-IDF слов и биграмм + логистическая регрессия (урок «Классификация текстов»).
 
-::: figure reviews-project-flow
-Шаги проекта: модели учатся на размеченных отзывах, размечают новые, а дальше — сравнение точек до и после, причина и поправка доли на ошибки модели.
-:::
+Для одного отзыва проследите цепочку: исходный `review_id` → текст → прогноз и тема → ячейка недельной таблицы → цитата в письме.
 
 Как работает поправка из шага 6, проще увидеть на игрушечных числах: пусть по-настоящему недовольны 10 % гостей, модель ловит 90 % из них (TPR) и ошибочно называет недовольными 5 % довольных (FPR).
 
@@ -45,7 +46,7 @@ recap:
 ::: quiz
 Доля негативных отзывов в кофейне выросла с 10 % до 14 %, но классификатор ошибается. Как честно сказать о росте?
 
-- [x] Поправить доли на известные ошибки модели — тогда видно, реальный ли это рост
+- [x] Поправить доли на известные ошибки модели — при переносимых частотах ошибок это даёт оценку доли; переносимость и выборочный разброс проверяем отдельно
   > Сырые доли от модели смещены: часть «негатива» — ложные срабатывания, часть пропущена.
 - [ ] Сообщить «рост на 4 п.п.» без оговорок
   > Цифра может быть артефактом ошибок модели.
@@ -58,6 +59,8 @@ recap:
 ## task: models | Шаг 1. Две модели | base
 
 Оцените на отложенной четверти (`train_test_split(..., test_size=0.25, random_state=42, stratify=...)`) две модели вида `make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000))`: тональность (цель `(rating <= 3).astype(int)`) и тему (цель `topic`). Сохраните `acc_sent` и `acc_topic` — доли правильных на тесте (3 знака). Затем обучите такие же модели **на всех** 2400 отзывах: `sent` и `topic_model`.
+
+Проверьте перенос на другие формулировки. Сохраните `text_quality` — DataFrame с индексом `повторы`, `новые`, `без пересечения` и колонками `n_sent`, `acc_sent`, `n_topic`, `acc_topic`, `macro_f1_topic`. В первых двух строках разделите тест каждой модели по точному совпадению текста с обучением. В третьей используйте общие индексы `GroupShuffleSplit(n_splits=1, test_size=.25, random_state=42)` с `groups=r["text"]`: одинаковая фраза целиком попадает на одну сторону. Сохраните список ID из этой контрольной части в `group_test_ids`. Для каждой строки считайте macro-F1 по полному списку тем, с `zero_division=0`. Числа округлите до трёх знаков. Финальные модели для следующего шага по-прежнему обучаются на всех отзывах.
 
 ### starter
 ```python
@@ -97,13 +100,35 @@ ref_s = _m().fit(r0['text'], y0).predict(n0)
 ref_t = _m().fit(r0['text'], r0['topic']).predict(n0)
 assert (s.predict(n0) == ref_s).mean() > 0.99, 'sent должна быть обучена на всех 2400 отзывах.'
 assert (t.predict(n0) == ref_t).mean() > 0.99, 'topic_model должна быть обучена на всех 2400 отзывах.'
+
+from sklearn.model_selection import GroupShuffleSplit as _GSS
+from sklearn.metrics import f1_score as _f1
+_gtrain, _gtest = next(_GSS(n_splits=1, test_size=.25, random_state=42).split(r0, groups=r0.text))
+_ids = list(need('group_test_ids'))
+assert len(_ids) == len(_gtest) and set(_ids) == set(r0.iloc[_gtest].review_id), 'Сверьте ID из test общего разбиения по текстам.'
+_q = need('text_quality')
+assert isinstance(_q, _pd.DataFrame) and _q.index.is_unique and _q.columns.is_unique, 'text_quality — таблица с уникальными группами и показателями.'
+for _label, _target in [('sent', y0), ('topic', r0.topic)]:
+    _tr, _te = _tts(r0.index, test_size=.25, random_state=42, stratify=_target)
+    _seen = set(r0.loc[_tr, 'text'])
+    for _group, _fit, _test in [('повторы', _tr, [i for i in _te if r0.text[i] in _seen]),
+                                ('новые', _tr, [i for i in _te if r0.text[i] not in _seen]),
+                                ('без пересечения', _gtrain, _gtest)]:
+        _pred = _m().fit(r0.text.iloc[_fit], _target.iloc[_fit]).predict(r0.text.iloc[_test])
+        _true = _target.iloc[_test]
+        assert _group in _q.index and {'n_'+_label, 'acc_'+_label, 'macro_f1_topic'} <= set(_q.columns), 'Проверьте подписи групп и метрик text_quality.'
+        assert _q.loc[_group, 'n_'+_label] == len(_test), f'{_group}: проверьте число текстов для {_label}.'
+        assert close(_q.loc[_group, 'acc_'+_label], (_pred == _true).mean(), .0015), f'{_group}: пересчитайте accuracy для {_label}.'
+        if _label == 'topic':
+            assert close(_q.loc[_group, 'macro_f1_topic'], _f1(_true, _pred, labels=sorted(_target.unique()), average='macro', zero_division=0), .0015), f'{_group}: пересчитайте macro-F1 тем на этой же выборке.'
+
 ```
 
 ### hint
 Функция `new_model()` возвращает каждый раз новый, необученный конвейер — используйте её для всех четырёх моделей (две оценочные и две финальные).
 
 ### hint
-Два разбиения: для тональности `stratify=y`, для темы `stratify=r["topic"]`. Финальные модели: `new_model().fit(r["text"], y)` и `new_model().fit(r["text"], r["topic"])`.
+Для отметки дословных повторов удобно использовать `X_test.isin(X_train)`. Индексы разбиения по группам возвращает `next(splitter.split(r, groups=r["text"]))`. Два разбиения строк: для тональности `stratify=y`, для темы `stratify=r["topic"]`. Финальные модели: `new_model().fit(r["text"], y)` и `new_model().fit(r["text"], r["topic"])`.
 
 ### solution
 ```python
@@ -129,12 +154,35 @@ acc_topic = round(accuracy_score(t_test, new_model().fit(X_train, t_train).predi
 sent = new_model().fit(r["text"], y)
 topic_model = new_model().fit(r["text"], r["topic"])
 print(acc_sent, acc_topic)
+
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.metrics import f1_score
+
+text_quality = pd.DataFrame(index=["повторы", "новые", "без пересечения"])
+group_train, group_test = next(GroupShuffleSplit(n_splits=1, test_size=.25, random_state=42)
+                               .split(r, groups=r["text"]))
+group_test_ids = r.iloc[group_test]["review_id"].tolist()
+assert set(r.iloc[group_train]["text"]).isdisjoint(r.iloc[group_test]["text"])
+for label, target in [("sent", y), ("topic", r["topic"])]:
+    train, test = train_test_split(r.index, test_size=.25, random_state=42, stratify=target)
+    repeated = r.loc[test, "text"].isin(r.loc[train, "text"])
+    for subset, fit_ids, test_ids in [("повторы", train, test[repeated]),
+                                     ("новые", train, test[~repeated]),
+                                     ("без пересечения", group_train, group_test)]:
+        predicted = new_model().fit(r.loc[fit_ids, "text"], target.loc[fit_ids]).predict(r.loc[test_ids, "text"])
+        truth = target.loc[test_ids]
+        text_quality.loc[subset, "n_" + label] = len(truth)
+        text_quality.loc[subset, "acc_" + label] = round(accuracy_score(truth, predicted), 3)
+        if label == "topic":
+            text_quality.loc[subset, "macro_f1_topic"] = round(f1_score(
+                truth, predicted, average="macro", labels=sorted(target.unique()), zero_division=0), 3)
+print(text_quality)
 ```
 
 ### explain
-Тональность — около 94 %, тема — около 82 %. В уроке «Классификация текстов» модель тем давала 79 %: здесь к словам добавлены биграммы (`ngram_range=(1, 2)`), и это подняло тему на 3 п. п.; тональность почти не изменилась. Темы хуже, и это надо помнить при выводах: каждый пятый отзыв попадёт не в свою тему. Финальные модели обучены на всех данных — оценка на отложенной части остаётся честной оценкой их качества (чуть пессимистичной: данных при обучении стало больше).
+В случайном тесте по тональности accuracy равна 0,939 на 82 дословных повторах и 0,944 на 518 новых текстах. По теме на 81 повторе accuracy и macro-F1 равны 1,000, а на 519 новых текстах они равны 0,792 и 0,761. При разбиении по самой формулировке все 592 проверочных отзыва содержат фразы, отсутствующие в обучении. Здесь accuracy по тональности составила 0,953, по теме — 0,816, macro-F1 тем — 0,794. Размеры групп различаются, потому что случайные разбиения стратифицированы отдельно по каждой цели. Для отчёта о переносе на следующие формулировки укажите способ разделения вместе с результатом и единицей подсчёта.
 
-## task: rare | Шаг 1б. Редкая тема: F1 вместо доли правильных | plus
+## task: rare | Шаг 1 б. Редкая тема: F1 вместо доли правильных | plus
 
 Доля правильных у модели тем — около 82 %, но в отчёте управляющей будут **счётчики по темам**, и важна каждая тема, в том числе редкая. Доля правильных усредняет по отзывам: частая тема «кофе» тянет её вверх, а провал на редкой теме почти не виден. Поэтому смотрят F1 по каждому классу и **macro-F1** — простое среднее F1 по классам, где редкая тема весит столько же, сколько частая.
 
@@ -243,7 +291,7 @@ print(f1_by_topic, macro_f1, rarest, worst, count_ratio, f1_rare_balanced)
 
 ## task: score | Шаг 2. Разметка новых отзывов | base
 
-Модели `sent` и `topic_model` обучены в заготовке. Загрузите `reviews_new.csv` в `n` (дата — `datetime`) и добавьте колонки: `p_neg` — вероятность недовольства, `neg` — 1, если `p_neg >= 0.5`, иначе 0, `topic` — предсказанная тема, `period` — `"после"` для дат с 2026-10-05 включительно и `"до"` для остальных. Сохраните `n_after` — число отзывов в периоде «после».
+Модели `sent` и `topic_model` обучены в заготовке. Присоединяйте вероятности и темы по `review_id`, сохраняя исходные `shop_id`, дату и текст. Перестановка прогнозов в отдельной таблице не должна менять, чьему отзыву они принадлежат. Загрузите `reviews_new.csv` в `n` (дата — `datetime`) и добавьте колонки: `p_neg` — вероятность недовольства, `neg` — 1, если `p_neg >= 0.5`, иначе 0, `topic` — предсказанная тема, `period` — `"после"` для дат с 2026-10-01 включительно и `"до"` для остальных. Сохраните `n_after` — число отзывов в периоде «после».
 
 ### setup
 ```python
@@ -271,14 +319,18 @@ import numpy as _np
 import pandas as _pd
 n = need('n', _pd.DataFrame)
 n0 = _pd.read_csv('reviews_new.csv', parse_dates=['date'])
+assert n['review_id'].is_unique and set(n['review_id'])==set(n0['review_id']), 'review_id должен совпадать с источником без дублей.'
+n = n.set_index('review_id').reindex(n0['review_id']).reset_index()
+for _key in ('date','shop_id','text'):
+    assert n[_key].tolist()==n0[_key].tolist(), f'{_key}: исходное значение не соответствует review_id.'
 assert len(n) == len(n0), f'Строк {len(n)}, а в файле {len(n0)}.'
 assert _pd.api.types.is_datetime64_any_dtype(n['date']), 'Колонка date должна быть датой: parse_dates=["date"].'
 p = need('sent').predict_proba(n0['text'])[:, 1]
 assert _np.allclose(n['p_neg'].values, p, atol=1e-6), 'p_neg — вторая колонка predict_proba.'
 assert (n['neg'].astype(int).values == (p >= 0.5).astype(int)).all(), 'neg = (p_neg >= 0.5).'
 assert (n['topic'].values == need('topic_model').predict(n0['text'])).all(), 'topic — предсказание topic_model.'
-want = _np.where(n0['date'] >= '2026-10-05', 'после', 'до')
-assert (n['period'].values == want).all(), 'period: «после» — с 2026-10-05 включительно.'
+want = _np.where(n0['date'] >= '2026-10-01', 'после', 'до')
+assert (n['period'].values == want).all(), 'period: «после» — с 2026-10-01 включительно.'
 assert need('n_after') == int((want == 'после').sum()), f'n_after = {need("n_after")}.'
 ```
 
@@ -286,7 +338,7 @@ assert need('n_after') == int((want == 'после').sum()), f'n_after = {need("
 Модели уже обучены — здесь только применение: `predict_proba` для вероятности, `predict` для темы.
 
 ### hint
-`sent.predict_proba(n["text"])[:, 1]`; `np.where(n["date"] >= "2026-10-05", "после", "до")`.
+`sent.predict_proba(n["text"])[:, 1]`; `np.where(n["date"] >= "2026-10-01", "после", "до")`.
 
 ### solution
 ```python
@@ -297,17 +349,17 @@ n = pd.read_csv("reviews_new.csv", parse_dates=["date"])
 n["p_neg"] = sent.predict_proba(n["text"])[:, 1]
 n["neg"] = (n["p_neg"] >= 0.5).astype(int)
 n["topic"] = topic_model.predict(n["text"])
-n["period"] = np.where(n["date"] >= "2026-10-05", "после", "до")
+n["period"] = np.where(n["date"] >= "2026-10-01", "после", "до")
 n_after = int((n["period"] == "после").sum())
 print(n.sample(5, random_state=1)[["text", "p_neg", "topic"]])
 ```
 
 ### explain
-Перед любыми выводами стоит прочитать пару десятков размеченных строк: новые отзывы пришли из другого источника, и если бы там писали иначе (длиннее, с жаргоном, на другие темы), модель могла бы тихо ошибаться. Здесь тексты похожи на обучающие — разметке можно доверять примерно настолько, насколько показал шаг 1.
+Цель старой модели — низкая оценка (`rating <= 3`), цель нового отчёта — жалоба в смысле текста по согласованной инструкции. Эти определения могут расходиться: низкая звезда без жалобы и жалоба с высокой звездой требуют отдельной ручной разметки. Перед любыми выводами стоит прочитать пару десятков размеченных строк: новые отзывы пришли из другого источника, и если бы там писали иначе (длиннее, с жаргоном, на другие темы), модель могла бы тихо ошибаться. Похожесть текстов не доказывает перенос качества: независимо и вслепую разметьте часть новой партии из обоих периодов по одному правилу; покажите численности и знаменатели.
 
 ## task: shops | Шаг 3. Уровень и рост | base
 
-Посчитайте по точкам долю недовольных (`neg`) до и после 5 октября. Сохраните `by_shop` — DataFrame с индексом `shop_id` и колонками `до`, `после`, `рост` (`после − до`), все — 3 знака, отсортированный по `рост` по убыванию. В `worst_level` — точку с наибольшей долей «после», в `worst_growth` — с наибольшим ростом.
+Для первой сверки сравните сентябрь и октябрь. Посчитайте по каждой точке долю отзывов с сигналом модели (`neg`) до 1 октября и начиная с этой даты. Сохраните `by_shop` — DataFrame с индексом `shop_id` и колонками `до`, `после`, `рост` (`после − до`), все — 3 знака, отсортированный по `рост` по убыванию. В `worst_level` — точку с наибольшей долей «после», в `worst_growth` — с наибольшим ростом.
 
 ### setup
 ```python
@@ -323,7 +375,7 @@ n = pd.read_csv("reviews_new.csv", parse_dates=["date"])
 n["p_neg"] = sent.predict_proba(n["text"])[:, 1]
 n["neg"] = (n["p_neg"] >= 0.5).astype(int)
 n["topic"] = topic_model.predict(n["text"])
-n["period"] = np.where(n["date"] >= "2026-10-05", "после", "до")
+n["period"] = np.where(n["date"] >= "2026-10-01", "после", "до")
 ```
 
 ### starter
@@ -363,76 +415,11 @@ print(by_shop, worst_level, worst_growth)
 ```
 
 ### explain
-Самая недовольная точка — TMN-1, но она такая весь период: около 56 % недовольных ещё в сентябре. А в KZN-2 доля выросла с ~37 % до ~60 % — это и есть «стало хуже». Если смотреть только на уровень, управляющая поедет разбираться не туда. В остальных точках изменения до 6–7 п. п. При ~400 отзывах на период стандартная ошибка разницы двух долей — около 3.5 п. п.: рост на 6 п. п. — на грани случайности, на 23 — точно нет.
+Сравните лидера столбца «после» с лидером прироста. Доля сигналов модели относится к поступившим отзывам. Чтобы найти неделю изменения, понадобится другая группировка; граница календарных месяцев служила для предварительной сверки.
 
-## task: why | Шаг 4. Почему и цитаты | plus
+## task: weekly | Шаг 4. С какой недели | plus
 
-Таблица `n` размечена в заготовке. Для недовольных отзывов KZN-2 посчитайте структуру тем до и после: `kzn` — `pd.crosstab(topic, period, normalize="columns")`. То же для недовольных отзывов остальных пяти точек — `others`. Сохраните `cause` — тему, доля которой в жалобах KZN-2 выросла сильнее всего, и `quotes` — список из пяти текстов: недовольные отзывы KZN-2 «после» с темой `cause` и наибольшей `p_neg` (по убыванию).
-
-### setup
-```python
-import numpy as np
-import pandas as pd
-from sklearn.pipeline import make_pipeline
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-_r = pd.read_csv("reviews_text.csv")
-sent = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r["text"], (_r["rating"] <= 3).astype(int))
-topic_model = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r["text"], _r["topic"])
-n = pd.read_csv("reviews_new.csv", parse_dates=["date"])
-n["p_neg"] = sent.predict_proba(n["text"])[:, 1]
-n["neg"] = (n["p_neg"] >= 0.5).astype(int)
-n["topic"] = topic_model.predict(n["text"])
-n["period"] = np.where(n["date"] >= "2026-10-05", "после", "до")
-```
-
-### starter
-```python
-bad = n[n["neg"] == 1]
-
-```
-
-### check
-```python
-import pandas as _pd
-n0 = need('n', _pd.DataFrame); bad = n0[n0['neg'] == 1]
-k0 = bad[bad['shop_id'] == 'KZN-2']; o0 = bad[bad['shop_id'] != 'KZN-2']
-kw = _pd.crosstab(k0['topic'], k0['period'], normalize='columns')
-ow = _pd.crosstab(o0['topic'], o0['period'], normalize='columns')
-k, o = need('kzn', _pd.DataFrame), need('others', _pd.DataFrame)
-assert ((k[['до', 'после']] - kw[['до', 'после']]).abs() < 1e-6).all().all(), 'kzn не совпадает: только недовольные отзывы KZN-2, normalize="columns".'
-assert ((o[['до', 'после']] - ow[['до', 'после']]).abs() < 1e-6).all().all(), 'others не совпадает: недовольные отзывы остальных точек.'
-c = (kw['после'] - kw['до']).idxmax()
-assert need('cause') == c, f'cause = {need("cause")!r}.'
-qw = k0[(k0['period'] == 'после') & (k0['topic'] == c)].sort_values('p_neg', ascending=False)['text'].head(5).tolist()
-assert need('quotes', list) == qw, 'quotes: пять текстов с наибольшей p_neg, по убыванию.'
-```
-
-### hint
-Сначала только недовольные: `bad = n[n["neg"] == 1]`, затем две части — `bad[bad["shop_id"] == "KZN-2"]` и остальные.
-
-### hint
-Фильтр по точке и `pd.crosstab(...)`; `cause = (kzn["после"] - kzn["до"]).idxmax()`. Для цитат — фильтр по периоду и теме, `.sort_values("p_neg", ascending=False)`, `.head(5)`.
-
-### solution
-```python
-bad = n[n["neg"] == 1]
-kb = bad[bad["shop_id"] == "KZN-2"]
-ob = bad[bad["shop_id"] != "KZN-2"]
-kzn = pd.crosstab(kb["topic"], kb["period"], normalize="columns")
-others = pd.crosstab(ob["topic"], ob["period"], normalize="columns")
-cause = (kzn["после"] - kzn["до"]).idxmax()
-quotes = (kb[(kb["period"] == "после") & (kb["topic"] == cause)]
-          .sort_values("p_neg", ascending=False)["text"].head(5).tolist())
-print(kzn.round(2), others.round(2), cause, *quotes, sep="\n")
-```
-
-### explain
-В KZN-2 доставка была четвертью жалоб, а стала больше половины; в остальных точках её доля не изменилась (~17 %). Значит, причина местная — что-то случилось с доставкой именно в этой кофейне, а не с меню или ценами по сети. Цитаты — про курьеров, которые не могут найти адрес, пролитый кофе и перепутанные заказы: управляющей точки этого достаточно, чтобы начать разбор.
-
-## task: weekly | Шаг 5. С какой недели | plus
-
-Таблица `n` размечена в заготовке. Добавьте `week` — понедельник недели (`n["date"].dt.to_period("W").dt.start_time`). Сохраните `weekly` — сводную таблицу долей недовольных: строки — недели, столбцы — точки. Найдите `jump_week` — неделю (Timestamp), в которую доля KZN-2 выросла сильнее всего по сравнению с предыдущей неделей, и `sept_max` — максимум недельной доли KZN-2 в неделях, начавшихся до 2026-10-01 (3 знака). Нарисуйте доли по неделям и выделите KZN-2 цветом — график не проверяется, но ступеньку на нём видно сразу.
+Соберите `weekly`: индекс — понедельник недели, столбцы — точки, значение — доля отзывов с сигналом модели. Выберите точку `focus_shop` и найдите её `jump_week` — неделю наибольшего роста относительно предшествующей. В `sept_max` сохраните максимум недельной доли этой точки до `jump_week` (три знака). Постройте график и посмотрите, сколько отзывов было в неделю скачка и удержался ли уровень позже. Запишите, какую точку и дату возьмёте для разбора тем.
 
 ### setup
 ```python
@@ -464,17 +451,21 @@ w = n0.pivot_table(index='week', columns='shop_id', values='neg', aggfunc='mean'
 got = need('weekly', _pd.DataFrame)
 assert got.shape == w.shape, f'weekly.shape = {got.shape}, а нужно {w.shape}.'
 assert ((got[w.columns].values - w.values) ** 2).max() < 1e-12, 'Доли по неделям не совпадают.'
-jw = w['KZN-2'].diff().idxmax()
+_shop=need('focus_shop')
+assert _shop in w.columns, 'Выберите точку из weekly.'
+jw = w[_shop].diff().idxmax()
 assert _pd.Timestamp(need('jump_week')) == jw, f'jump_week = {need("jump_week")}, а нужно {jw.date()}.'
-sm = round(float(w.loc[w.index < '2026-10-01', 'KZN-2'].max()), 3)
+sm = round(float(w.loc[w.index < jw, _shop].max()), 3)
 assert close(need('sept_max'), sm, 0.0015), f'sept_max = {need("sept_max")}, а нужно {sm}.'
+assert got.index.equals(w.index), 'Недельные даты weekly должны соответствовать реальным датам отзывов, не только числам в ячейках.'
+
 ```
 
 ### hint
 Неделя: `n["date"].dt.to_period("W").dt.start_time` — понедельник недели каждой даты.
 
 ### hint
-`n.pivot_table(index="week", columns="shop_id", values="neg", aggfunc="mean")`; `weekly["KZN-2"].diff().idxmax()`.
+`n.pivot_table(index="week", columns="shop_id", values="neg", aggfunc="mean")`; `weekly[focus_shop].diff().idxmax()`.
 
 ### solution
 ```python
@@ -483,23 +474,121 @@ import matplotlib.pyplot as plt
 
 n["week"] = n["date"].dt.to_period("W").dt.start_time
 weekly = n.pivot_table(index="week", columns="shop_id", values="neg", aggfunc="mean")
-jump_week = weekly["KZN-2"].diff().idxmax()
-sept_max = round(float(weekly.loc[weekly.index < "2026-10-01", "KZN-2"].max()), 3)
+change_date,focus_shop=weekly.diff().stack().idxmax()
+jump_week = weekly[focus_shop].diff().idxmax()
+sept_max = round(float(weekly.loc[weekly.index < jump_week, focus_shop].max()), 3)
 print(weekly.round(2))
 print(jump_week.date(), sept_max)
 ax = weekly.plot(figsize=(9, 4), color="lightgray", legend=False)
-weekly["KZN-2"].plot(ax=ax, color="crimson", lw=3, label="KZN-2")
+weekly[focus_shop].plot(ax=ax, color="crimson", lw=3, label=focus_shop)
 ax.set_ylabel("доля недовольных"); ax.legend()
 ```
 
 ### explain
-Скачок — в неделю с 5 октября: с ~0.35 сразу до ~0.60, и обратно доля не возвращается. Все сентябрьские недели KZN-2 держались не выше ~0.43 — новый уровень выше любой из них. Ступенька, а не плавный рост, — признак конкретного события: смена подрядчика, новый курьер, изменение зоны доставки. Это вопрос к управляющей точки.
+Положительная разность между неделями показывает момент изменения сигнала. Если в неделе всего два отзыва, одна дополнительная жалоба резко изменит долю. Для письма сравните объёмы до и после, а также несколько недель после скачка.
+
+## task: why | Шаг 5. Темы и цитаты | plus
+
+Сохраните выбранную точку в `focus_shop`, дату раздела в `change_date`. Проверьте, что в каждом из двух периодов у точки есть хотя бы 30 отзывов. Создайте `period` по своей дате. Для отзывов с сигналом модели посчитайте доли тем по периодам в выбранной точке (`kzn`, имя таблицы для сдачи) и среди остальных (`others`). В `cause` запишите тему с наибольшим ростом доли. Из этой темы после границы возьмите пять текстов с наибольшей `p_neg` в порядке убывания и их исходные ID в том же порядке (`quotes` и `quote_ids`). Прочтите цитаты: действительно ли текст подтверждает тему модели?
+
+### setup
+```python
+import numpy as np
+import pandas as pd
+from sklearn.pipeline import make_pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+_r = pd.read_csv("reviews_text.csv")
+sent = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r["text"], (_r["rating"] <= 3).astype(int))
+topic_model = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r["text"], _r["topic"])
+n = pd.read_csv("reviews_new.csv", parse_dates=["date"])
+n["p_neg"] = sent.predict_proba(n["text"])[:, 1]
+n["neg"] = (n["p_neg"] >= 0.5).astype(int)
+n["topic"] = topic_model.predict(n["text"])
+n["period"] = np.where(n["date"] >= "2026-10-05", "после", "до")
+```
+
+### starter
+```python
+bad = n[n["neg"] == 1]
+
+```
+
+### check
+```python
+import pandas as _pd
+n0 = need('n', _pd.DataFrame).copy()
+_shop=need('focus_shop');_date=_pd.Timestamp(need('change_date'))
+assert _shop in set(n0.shop_id), 'Выберите существующую точку.'
+assert n0.date.min() < _date < n0.date.max(), 'Дата разделяет наблюдавшиеся периоды.'
+n0['period']=__import__('numpy').where(n0.date>=_date,'после','до')
+_counts=n0[n0.shop_id==_shop].groupby('period').size()
+assert set(_counts.index)=={'до','после'} and (_counts>=30).all(), 'Для сравнения нужно не меньше30 отзывов точки в каждом периоде.'
+bad=n0[n0['neg']==1]
+k0 = bad[bad['shop_id'] == _shop]; o0 = bad[bad['shop_id'] != _shop]
+kw = _pd.crosstab(k0['topic'], k0['period'], normalize='columns')
+ow = _pd.crosstab(o0['topic'], o0['period'], normalize='columns')
+k, o = need('kzn', _pd.DataFrame), need('others', _pd.DataFrame)
+assert ((k[['до', 'после']] - kw[['до', 'после']]).abs() < 1e-6).all().all(), 'kzn не совпадает: только недовольные отзывы KZN-2, normalize="columns".'
+assert ((o[['до', 'после']] - ow[['до', 'после']]).abs() < 1e-6).all().all(), 'others не совпадает: недовольные отзывы остальных точек.'
+c = (kw['после'] - kw['до']).idxmax()
+assert need('cause') == c, f'cause = {need("cause")!r}.'
+qw = k0[(k0['period'] == 'после') & (k0['topic'] == c)].sort_values('p_neg', ascending=False)['text'].head(5).tolist()
+assert need('quotes', list) == qw, 'quotes: пять текстов с наибольшей p_neg, по убыванию.'
+_expected_ids=k0[(k0['period']=='после')&(k0['topic']==c)].sort_values('p_neg',ascending=False)['review_id'].head(5).tolist()
+assert list(need('quote_ids'))==_expected_ids, 'Цитаты должны сопровождаться исходными review_id этой точки, периода и темы.'
+
+```
+
+### hint
+Сначала пересчитайте период по `change_date`. Оставьте строки с `neg == 1`, затем разделите их по условию `shop_id == focus_shop`. Для каждой доли знаменатель — число отмеченных отзывов в соответствующей группе и периоде.
+
+### hint
+Фильтр по точке и `pd.crosstab(...)`; `cause = (kzn["после"] - kzn["до"]).idxmax()`. Для цитат — фильтр по периоду и теме, `.sort_values("p_neg", ascending=False)`, `.head(5)`.
+
+### solution
+```python
+import pandas as pd
+
+_weeks=n.assign(week=n['date'].dt.to_period('W').dt.start_time).pivot_table(index='week',columns='shop_id',values='neg',aggfunc='mean')
+change_date,focus_shop=_weeks.diff().stack().idxmax()
+change_date=pd.Timestamp(change_date)
+n=n.copy()
+n['period']=__import__('numpy').where(n['date']>=change_date,'после','до')
+bad = n[n["neg"] == 1]
+kb = bad[bad["shop_id"] == focus_shop]
+ob = bad[bad["shop_id"] != focus_shop]
+kzn = pd.crosstab(kb["topic"], kb["period"], normalize="columns")
+others = pd.crosstab(ob["topic"], ob["period"], normalize="columns")
+cause = (kzn["после"] - kzn["до"]).idxmax()
+quotes = (kb[(kb["period"] == "после") & (kb["topic"] == cause)]
+          .sort_values("p_neg", ascending=False)["text"].head(5).tolist())
+print(kzn.round(2), others.round(2), cause, *quotes, sep="\n")
+quote_ids = kb[(kb['period']=='после')&(kb['topic']==cause)].sort_values('p_neg',ascending=False)['review_id'].head(5).tolist()
+
+```
+
+### explain
+Самая быстрорастущая тема у выбранной точки задаёт гипотезу. Например, жалобы на доставку можно сопоставить с долей опозданий в журнале заказов этой точки за те же недели. Укажите ID подходящих цитат и случаи, где тема модели расходится с содержанием.
 
 ## task: adjust | Шаг 6. Поправка на ошибки модели | star
 
-Доля «недовольных по модели» — не настоящая доля: модель пропускает часть недовольных и иногда ошибается в другую сторону. Если TPR — доля пойманных недовольных, а FPR — доля довольных, ошибочно названных недовольными, то наблюдаемая доля p = q · TPR + (1 − q) · FPR, откуда настоящая q = (p − FPR) / (TPR − FPR).
+Доля «недовольных по модели» — не настоящая доля: модель пропускает часть недовольных и иногда ошибается в другую сторону. Если TPR — доля пойманных недовольных, а FPR — доля довольных, ошибочно названных недовольными, то наблюдаемая доля p = q · TPR + (1 − q) · FPR, откуда оценка q = (p − FPR) / (TPR − FPR), **если** TPR≠FPR и частоты ошибок переносятся на эту цель, точку и период. При неизменных TPR/FPR знак прироста сохраняется автоматически и не подтверждает сам перенос. Например, при истинной доле 10 %, TPR 80 % и росте FPR с 2,22 % до 6,67 % наблюдаемая доля вырастет 10→14 % без истинного роста.
 
-Оцените `tpr` и `fpr` на отложенной четверти размеченных данных (разбиение и модель — как в шаге 1, тональность). Затем исправьте доли KZN-2 до и после: `adj` — словарь `{"до": ..., "после": ...}` (3 знака). Таблица `n` размечена в заготовке.
+**1. Старый тест со звёздами.** Цель модели — рейтинг ≤ 3. На отложенной четверти размеченных отзывов вычислите `tpr` и `fpr`. Используйте разбиение и модель из шага 1. Примените эти две частоты к долям сигналов в KZN-2 до и после границы, сохраните поправки в словарь `adj = {"до": ..., "после": ...}` с точностью до трёх знаков.
+
+В готовой таблице `n` граница — **5 октября 2026 года**. Отзывы с этой даты включительно входят в «после». В собственном отчёте из шага `why` укажите выбранную вами дату. В какой период попадёт отзыв от 3 октября при границе 1 октября? А при границе 5 октября?
+
+**2. Новая партия с метками жалоб.** Соедините строки отзывов из `n` с `reviews_new_gold.csv` по `review_id`, затем выберите KZN-2. Соберите таблицу `audit` с индексом `period` и одной строкой на период.
+
+| Поля | Что рассчитать в каждом периоде |
+|---|---|
+| `n`, `complaints` | Число размеченных отзывов и число жалоб по разметке. |
+| `tpr`, `fpr` | Доля сигналов среди отзывов с жалобой и доля сигналов среди отзывов без жалобы. |
+| `observed`, `manual` | Доля сигналов модели и доля жалоб по разметке среди всех размеченных отзывов. |
+| `adjusted` | Поправка по частотам ошибок этого периода. |
+
+Здесь метки жалоб создал генератор (`label_source = synthetic_kind_neg_or_mixed`). Почему совпадение с долей жалоб на тех же строках ещё не показывает точность на будущей неделе? Для вывода о реальном потоке потребуются новые отзывы обоих периодов с независимой человеческой разметкой и оценкой неопределённости.
 
 ### setup
 ```python
@@ -549,6 +638,15 @@ obs = n0[n0['shop_id'] == 'KZN-2'].groupby('period')['neg'].mean()
 w = {k: round((obs[k] - f0) / (t0 - f0), 3) for k in ['до', 'после']}
 got = need('adj', dict)
 assert all(close(got[k], w[k], 0.003) for k in w), f'adj = {got}, а нужно {w}.'
+_gold=_pd.read_csv('reviews_new_gold.csv')
+_labeled=n0.merge(_gold[['review_id','complaint']],on='review_id',validate='one_to_one')
+_audit=need('audit',_pd.DataFrame)
+for _period,_part in _labeled[_labeled.shop_id=='KZN-2'].groupby('period'):
+    _target=_part.complaint; _tp=float(_part.loc[_target==1,'neg'].mean()); _fp=float(_part.loc[_target==0,'neg'].mean());_obs=float(_part.neg.mean())
+    _want=dict(n=len(_part),complaints=int(_target.sum()),tpr=_tp,fpr=_fp,observed=_obs,manual=float(_target.mean()),adjusted=(_obs-_fp)/(_tp-_fp))
+    for _key,_value in _want.items():
+        assert close(_audit.loc[_period,_key],_value), f'audit {_period}/{_key}: разметка нового потока и исходные знаменатели, не частоты старых звёзд.'
+
 ```
 
 ### hint
@@ -576,21 +674,25 @@ tpr, fpr = tp / (tp + fn), fp / (fp + tn)
 obs = n[n["shop_id"] == "KZN-2"].groupby("period")["neg"].mean()
 adj = {k: round((obs[k] - fpr) / (tpr - fpr), 3) for k in ["до", "после"]}
 print(round(tpr, 3), round(fpr, 3), obs.round(3).to_dict(), adj)
+gold = pd.read_csv('reviews_new_gold.csv')
+labeled = n.merge(gold[['review_id','complaint']],on='review_id',validate='one_to_one')
+rows=[]
+for period,part in labeled[labeled.shop_id=='KZN-2'].groupby('period'):
+    target=part.complaint
+    tpr_new=float(part.loc[target==1,'neg'].mean())
+    fpr_new=float(part.loc[target==0,'neg'].mean())
+    observed=float(part.neg.mean())
+    rows.append(dict(period=period,n=len(part),complaints=int(target.sum()),tpr=tpr_new,fpr=fpr_new,observed=observed,manual=float(target.mean()),adjusted=(observed-fpr_new)/(tpr_new-fpr_new) if abs(tpr_new-fpr_new)>1e-6 else float("nan")))
+audit=pd.DataFrame(rows).set_index('period')
+
 ```
 
 ### explain
-Модель ловит около 92 % недовольных и ошибочно метит около 3 % довольных. Поправка поднимает долю «до» примерно на 1 п. п., а «после» — на 4: модель недосчитывает недовольных, и сильнее там, где их больше. Рост в KZN-2 после поправки — около 26 п. п. вместо 23. Вывод от поправки не меняется, но в отчёт идут исправленные цифры. Оговорка: TPR и FPR оценены на старых отзывах; если новый источник отличается, поправка тоже будет неточной. И ещё одна: TPR и FPR посчитаны для модели, обученной на 75 % данных, а размечала отзывы финальная модель на всех данных — она, скорее всего, чуть точнее (данных при обучении больше), поэтому поправка может быть слегка завышена. На вывод о KZN-2 это не влияет: рост больше 20 п. п. и без поправки.
+В `audit` сравните численности и частоты ошибок по синтетическим меткам новой партии по обе стороны границы. Поправка по старым звёздам предполагает перенос ошибок. Если состав отзывов или точность модели изменились, одна поправка на два периода может исказить величину роста.
 
 ## Итог для управляющей сетью
 
-> **Отзывы с карт, сентябрь–октябрь 2026, ~4800 отзывов, разметка моделью (тональность — 94 % верных, тема — 82 %).**
->
-> 1. **KZN-2: резкий рост недовольства с недели 5 октября.** Доля недовольных гостей — около 38 % до 5 октября и около 64 % после (с поправкой на ошибки модели; по модели без поправки — 37 % и 60 %). Рост — ступенькой, не возвращается.
-> 2. **Причина — доставка.** Жалобы на доставку в KZN-2 выросли с четверти до больше чем половины всех жалоб точки; в остальных кофейнях их доля не изменилась. Типичные отзывы: курьер не может найти адрес, кофе пролился, привезли не тот заказ (цитаты приложены).
-> 3. **TMN-1 — самая недовольная точка весь период:** 56 % недовольных до и 62 % после, рост на 6–7 п. п. — на грани случайности. Это хроническая проблема, а не новая; разбирать стоит отдельно, по темам жалоб, и следить, не продолжится ли рост.
-> 4. В остальных точках изменения до 6–7 п. п. — на грани случайности; наблюдаем.
->
-> **Рекомендация:** выяснить, что изменилось в доставке KZN-2 в начале октября (подрядчик, курьеры, зона), и следить за долей жалоб на доставку по неделям. Отчёт можно пересчитывать каждую неделю тем же кодом.
+Напишите короткое письмо. Назовите выбранную точку и неделю, число отзывов до и после, долю сигналов модели и происхождение учебных меток и какой проверки на реальных отзывах ещё не хватает. Приведите цитаты с ID и объясните, поддерживают ли они вашу гипотезу. Если рост неустойчив или строк мало, укажите, какие дополнительные наблюдения изменят решение. Закончите одним проверяемым действием управляющей.
 
 ::: tip
 Чтобы отчёт был еженедельным, модели сохраняют (`joblib.dump(sent, "sent.joblib")`, глава 15) и раз в неделю прогоняют через них свежую выгрузку. Раз в квартал модель проверяют на свежей ручной разметке пары сотен отзывов — гости могут начать писать иначе.

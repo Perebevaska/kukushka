@@ -124,11 +124,9 @@ with open("report.txt", encoding="utf-8") as f:
 В курсе файлы живут в браузере, внутри Python этой страницы: созданный файл исчезнет, когда вы закроете вкладку. Когда будете работать на своём компьютере (глава 2), файл появится в рабочей папке проекта.
 :::
 
-{{practice: write}}
-
 ## CSV: таблица в текстовом файле
 
-CSV (*comma-separated values*) — самый частый формат выгрузок: таблица, где строки — строки файла, а значения разделены запятыми. Посмотрим на начало `orders.csv` — заказы сети за сентябрь:
+CSV (*comma-separated values*) хранит таблицу в тексте. Поля разделены запятыми. Если поле содержит запятую или перевод строки, его заключают в кавычки. Поэтому одна запись может занимать несколько строк файла. Посмотрим на начало `orders.csv` — заказы сети за сентябрь:
 
 ```python
 with open("orders.csv", encoding="utf-8") as f:
@@ -173,7 +171,9 @@ with open("by_city.csv", "w", encoding="utf-8", newline="") as f:
 print(open("by_city.csv", encoding="utf-8").read())
 ```
 
-`newline=""` при записи CSV — рекомендация самой документации: без неё на Windows между строками появляются пустые.
+`newline=""` оставляет обработку переводов строк модулю `csv`. Это пригодится и при чтении полей с переносами, и при записи файла в Windows.
+
+{{practice: write}}
 
 ### Разберём вместе: одна строка CSV — один словарь
 
@@ -203,7 +203,7 @@ print(first)
 print(type(first["amount"]), int(first["amount"]) + 100)
 ```
 
-Что получилось: `DictReader` превращает файл в знакомый по уроку «Словари — GROUP BY своими руками» «список словарей» — по строке за раз. Обращение по имени столбца (`row["amount"]`) не сломается, даже если в выгрузке поменяют порядок столбцов.
+`next(reader)` вернул первый словарь. Следующий вызов внутри `with` прочитает следующую запись. Чтобы собрать всю таблицу в список, можно сразу написать `rows = list(csv.DictReader(f))`. Обращение по имени столбца (`row["amount"]`) работает и при другом порядке столбцов.
 
 ::: quiz
 `csv.DictReader` прочитал строку `{"city": "Пермь", "amount": "450"}`. Что нужно сделать, прежде чем складывать суммы?
@@ -222,7 +222,7 @@ print(type(first["amount"]), int(first["amount"]) + 100)
 
 В `orders.csv` три суммы, которые `int()` не берёт: пустая строка, прочерк `—` и `1 250` с пробелом. Последнюю можно было бы починить — `replace(" ", "")` из урока «Строки и f-строки» превратит её в 1250. Но пробел внутри числа значит, что выгрузка нарушила свой же формат, и молча чинить такое — значит прятать проблему от того, кто отвечает за выгрузку. Поэтому в задачах этого урока и в мини-проекте правило одно: **битая сумма — всё, что `int()` не превращает в число как есть**, включая `1 250`. Такую строку не чиним, а пропускаем и считаем — в отчёте она будет видна в строке «не разобрано».
 
-{{practice: p-dictreader, count-rows, total, by-city, loader}}
+{{practice: p-dictreader, count-rows, total, by-city}}
 
 ## Даты
 
@@ -245,6 +245,8 @@ print((dt.date(2026, 9, 30) - d).days)      # дней между датами
 - `dt.timedelta(days=7)` — промежуток «7 дней»; дата плюс промежуток — новая дата.
 - Разность двух дат — тоже промежуток, а `.days` даёт его длину в днях.
 
+Теперь возьмём дату прямо из словаря, который вернул `DictReader`. Для первой записи `row["date"]` — строка `"2026-09-03"`. Вызов `dt.date.fromisoformat(row["date"])` даст дату 3 сентября. У следующей записи текст берётся из той же колонки.
+
 ::: predict
 ```python static
 import datetime as dt
@@ -260,13 +262,13 @@ print((dt.date(2026, 9, 20) - d).days)
 :::
 
 ::: warn Типичные ошибки
-- **Нет `encoding="utf-8"`.** На Windows русские буквы превратятся в «кракозябры» или чтение упадёт.
+- **Нет `encoding="utf-8"`.** Если кодировка по умолчанию отличается от UTF-8, русские буквы могут отобразиться неверно или чтение прервётся.
 - **Числа из CSV остались строками.** `"260" + "460"` — это `"260460"`.
 - **Запись без `newline=""`.** В Windows между строками CSV появятся пустые строки.
 - **Режим `"w"` по ошибке.** Открытие на запись стирает файл — читать нужно в режиме по умолчанию.
 :::
 
-{{practice: weekdays}}
+{{practice: weekdays, loader}}
 
 ## Практика
 
@@ -359,9 +361,9 @@ assert _lines == [str(want)], f'Должно вывестись {want}. Сейч
 ### hint
 Внутри цикла по `DictReader`: `if row["city"] == "Пермь": count += 1`.
 
-## task: count-rows | Сколько заказов | base
+## task: count-rows | Сколько записей в выгрузке | base
 
-Посчитайте `n_orders` — сколько строк с заказами в `orders.csv` (заголовок не считается). Используйте модуль `csv`.
+Посчитайте `n_orders` — число записей в `orders.csv`. Прочитайте UTF-8-файл модулем `csv`. Заголовок пропустите, а повторяющиеся записи и строки с испорченной суммой пока учитывайте.
 
 ### starter
 ```python
@@ -371,10 +373,13 @@ import csv
 
 ### check
 ```python
-want = len(open('orders.csv', encoding='utf-8').read().strip().split('\n')) - 1
-assert need('n_orders') == want, f'n_orders = {need("n_orders")}, а строк с заказами {want}.'
-assert 'csv.' in _code, 'Используйте csv.reader или csv.DictReader.'
-assert 'encoding' in _code, 'Укажите кодировку: open("orders.csv", encoding="utf-8"). В браузере сработает и без неё, а на Windows русские буквы сломаются.'
+import ast as _ast
+import csv as _csv
+with open('orders.csv', encoding='utf-8', newline='') as _source:
+    _count = sum(1 for _row in _csv.DictReader(_source))
+assert need('n_orders') == _count, f'n_orders = {need("n_orders")}, а записей без заголовка {_count}.'
+_imports = [n for n in _ast.walk(_ast.parse(_code)) if isinstance(n, (_ast.Import, _ast.ImportFrom))]
+assert any(getattr(n, 'module', None) == 'csv' or any(a.name == 'csv' for a in n.names) for n in _imports), 'Для чтения таблицы подключите модуль csv или импортируйте из него reader либо DictReader.'
 ```
 
 ### hint
@@ -386,12 +391,12 @@ assert 'encoding' in _code, 'Укажите кодировку: open("orders.csv
 ### solution
 ```python
 import csv
-with open("orders.csv", encoding="utf-8") as f:
+with open("orders.csv", encoding="utf-8", newline="") as f:
     n_orders = len(list(csv.DictReader(f)))
 ```
 
 ### explain
-В файле 41 заказ. Строка заголовка в счёт не входит — `DictReader` использует её для имён ключей.
+В файле 41 запись и 40 разных `order_id`. Заказ `Z-1038` выгрузился дважды. В проекте после исключения трёх строк с испорченной суммой и одного повтора для расчёта останется 37 заказов.
 
 ## task: total | Выручка за месяц | base
 
@@ -437,7 +442,7 @@ with open("orders.csv", encoding="utf-8") as f:
 ```
 
 ### explain
-Хорошие заказы дают 16 820 ₽, битых сумм — 3: пустая, прочерк и `1 250`. Счётчик плохих строк — часть результата: «выручка 16 820, не разобрано 3 строки» честнее, чем просто «16 820».
+В 38 записях сумму удалось прочитать. Вместе они дают 16 820 ₽. Три значения пришлось пропустить — пустое, прочерк и `1 250`. В 16 820 ₽ ещё включена повторная запись на 450 ₽. В проекте вы удалите повтор и получите 16 370 ₽ по 37 принятым заказам.
 
 ## task: by-city | Выручка по городам из файла | base
 
@@ -488,7 +493,7 @@ with open("orders.csv", encoding="utf-8") as f:
 
 ## task: write | Записать отчёт | base
 
-Запишите словарь `by_city` в файл `by_city.csv` с заголовком `city,revenue` и строкой на каждый город (в порядке словаря). Используйте `csv.writer`.
+Запишите словарь `by_city` в UTF-8-файл `by_city.csv` с заголовком `city,revenue` и отдельной записью для каждого города в порядке словаря. Используйте `csv.writer`, чтобы код работал и с другими названиями, в том числе с запятой.
 
 ### starter
 ```python
@@ -499,10 +504,32 @@ by_city = {"Пермь": 1450, "Казань": 600, "Тюмень": 715}
 
 ### check
 ```python
-import os
-assert os.path.exists('by_city.csv'), 'Файл by_city.csv не создан.'
-got = open('by_city.csv', encoding='utf-8').read().split()
-assert got == ['city,revenue', 'Пермь,1450', 'Казань,600', 'Тюмень,715'], f'В файле: {got}'
+import csv as _csv
+import os as _os
+from tempfile import TemporaryDirectory as _TemporaryDirectory
+
+def _check_file(source):
+    assert _os.path.isfile('by_city.csv'), 'Файл by_city.csv не создан.'
+    with open('by_city.csv', encoding='utf-8', newline='') as file:
+        try:
+            rows = list(_csv.reader(file, strict=True))
+        except _csv.Error as error:
+            raise AssertionError(f'Не удалось прочитать записи CSV. Проверьте разделители и кавычки. {error}')
+    assert len(rows) == len(source) + 1, f'В by_city.csv прочитано записей: {len(rows)}. Нужны заголовок и отдельная запись для каждого из {len(source)} городов.'
+    assert rows[0] == ['city', 'revenue'], f'Проверьте заголовок. Прочитаны поля {rows[0]!r}.'
+    for number, (city, revenue) in enumerate(source.items(), 1):
+        assert rows[number] == [city, str(revenue)], f'Запись {number} после заголовка: {rows[number]!r}. Ожидались город {city!r} и выручка {revenue}.'
+
+_check_file({'Пермь': 1450, 'Казань': 600, 'Тюмень': 715})
+_other = {'Нижний Новгород': 320, 'Казань, центр': 140}
+with _TemporaryDirectory() as _tmp:
+    _previous = _os.getcwd()
+    try:
+        _os.chdir(_tmp)
+        rerun_with(by_city=dict(_other))
+        _check_file(_other)
+    finally:
+        _os.chdir(_previous)
 ```
 
 ### hint
@@ -580,7 +607,7 @@ best_weekday = max(by_weekday, key=by_weekday.get)
 
 ## task: loader | Функция загрузки | star
 
-Напишите `load_orders(path)`: читает CSV и возвращает список словарей, где `amount` — `int`, а `date` — объект `dt.date`. Строки с битой суммой (её не берёт `int()` как есть, включая `1 250`) в результат не попадают. Затем посчитайте `avg_check` — средний чек по загруженным заказам, округлённый до целого.
+Напишите `load_orders(path)`. Функция читает CSV по переданному пути и возвращает список словарей в порядке записей файла. Сохраните все пять полей каждой записи. Преобразуйте `amount` в `int`, а `date` — в `dt.date`. Строки с битой суммой (её не берёт `int()` как есть, включая `1 250`) пропускайте. Повторы пока сохраняйте. Затем посчитайте `avg_check` — средний чек по записям, загруженным из `orders.csv`, округлённый до целого.
 
 ### starter
 ```python
@@ -594,25 +621,60 @@ orders = load_orders("orders.csv")
 
 ```
 
+### setup
+```python
+import csv as _source_csv
+with open('orders.csv', encoding='utf-8', newline='') as _source_file:
+    _source_records = list(_source_csv.DictReader(_source_file))
+```
+
 ### check
 ```python
-import csv as _csv, datetime as _dt
-good = []
-for r in _csv.DictReader(open('orders.csv', encoding='utf-8')):
-    try:
-        good.append(int(r['amount']))
-    except ValueError:
-        pass
-o = need('load_orders')('orders.csv')
-assert len(o) != len(good) + 1, f'Загружено {len(o)} заказов — на один больше, чем нужно. Похоже, сумма «1 250» починена; в этом уроке её считаем битой и в результат не кладём.'
-assert len(o) == len(good), f'Загружено {len(o)} заказов, а хороших строк {len(good)}.'
-assert isinstance(o[0]['amount'], int), 'amount должен быть int.'
-assert isinstance(o[0]['date'], _dt.date), 'date должна быть датой (dt.date.fromisoformat).'
-assert need('avg_check') == round(sum(good) / len(good)), f'avg_check = {need("avg_check")}.'
+import csv as _csv
+import datetime as _dt
+from pathlib import Path as _Path
+from tempfile import TemporaryDirectory as _TemporaryDirectory
+
+def _expected_rows(records):
+    result = []
+    for row in records:
+        try:
+            amount = int(row['amount'])
+        except ValueError:
+            continue
+        result.append(dict(row, amount=amount, date=_dt.date.fromisoformat(row['date'])))
+    return result
+
+def _compare_rows(actual, expected, label):
+    assert isinstance(actual, list), f'{label}: верните список словарей.'
+    assert len(actual) == len(expected), f'{label}: загружено {len(actual)} записей, с читаемой суммой — {len(expected)}. Повторы здесь сохраняются.'
+    for row, original in zip(actual, expected):
+        order_id = original['order_id']
+        assert isinstance(row, dict), f'{label}, {order_id}: запись должна быть словарём.'
+        for field, value in original.items():
+            assert field in row, f'{label}, {order_id}: пропущено поле {field}.'
+            assert type(row[field]) is type(value) and row[field] == value, f'{label}, {order_id}: проверьте {field}. Получено {row[field]!r}, в исходной записи после преобразования {value!r}.'
+
+_load = need('load_orders')
+_original = _expected_rows(_source_records)
+_compare_rows(need('orders'), _original, 'orders')
+assert need('avg_check') == round(sum(r['amount'] for r in _original) / len(_original)), f'avg_check = {need("avg_check")}.'
+with _TemporaryDirectory() as _tmp:
+    _other = _Path(_tmp) / 'october.csv'
+    with _other.open('w', encoding='utf-8', newline='') as _file:
+        _csv.writer(_file).writerows([
+            ['order_id', 'date', 'city', 'drink', 'amount'],
+            ['O-1', '2026-10-18', 'Нижний Новгород', 'Кофе, фильтр', '375'],
+            ['O-2', '2026-10-19', 'Уфа', 'Раф', '—'],
+            ['O-3', '2026-10-20', 'Уфа', 'Чай', '130'],
+        ])
+    with _other.open(encoding='utf-8', newline='') as _file:
+        _expected = _expected_rows(_csv.DictReader(_file))
+    _compare_rows(_load(str(_other)), _expected, 'load_orders(другой путь)')
 ```
 
 ### hint
-Внутри функции — цикл по `DictReader`, в `try` превращаете оба поля и добавляете словарь в список; в `except ValueError` — `continue`.
+У следующей записи своя дата. Как получить её из `row["date"]`? Вспомните вызов `dt.date.fromisoformat(...)` в разделе «Даты». Когда сумма успешно прочитана, замените текст даты в словаре и добавьте эту запись в список.
 
 ### hint
 Средний чек — `sum(o["amount"] for o in orders) / len(orders)`, затем `round`.

@@ -36,7 +36,7 @@ def label(text):
     )
     if msg.stop_reason != "end_turn":     # обрезан по max_tokens, отказ и т. п. — в кучку «не удалось»
         return None
-    return next(b.text for b in msg.content if b.type == "text")   # строка — её ещё надо разобрать
+    return next((b.text for b in msg.content if b.type == "text" and b.text.strip()), None)   # строка — её ещё надо разобрать
 
 print(label("Курьер опоздал на сорок минут, кофе остыл."))
 ```
@@ -76,7 +76,7 @@ SCHEMA = {
 
 msg = client.messages.create(
     model=MODEL, max_tokens=50,
-    messages=[{"role": "user", "content": "Определи тональность и тему отзыва о кофейне.\n\nОтзыв: " + text}],
+    messages=[{"role": "user", "content": "Определи тональность и тему отзыва о кофейне.\n\n Отзыв: " + text}],
     output_config={"format": {"type": "json_schema", "schema": SCHEMA}},
 )
 ```
@@ -180,7 +180,9 @@ resp = client.chat.completions.create(
     temperature=0, max_tokens=60,
     messages=[{"role": "user", "content": PROMPT + "Курьер опоздал на сорок минут, кофе остыл."}],
 )
-print(resp.choices[0].message.content)
+choice = resp.choices[0] if resp.choices else None
+answer = choice.message.content if choice and choice.finish_reason == "stop" else None
+print(answer if answer and answer.strip() else "Ответ не получен, требуется повторная проверка.")
 ```
 
 ::: warn Типичные ошибки
@@ -189,6 +191,8 @@ print(resp.choices[0].message.content)
 - **Первый ответ идёт долго.** LM Studio загружает модель в память; следующие ответы быстрее. Если ответы медленные всегда — возьмите модель поменьше.
 - **Ответ не разбирается как JSON.** Обычное дело для маленьких моделей: поэтому каждый ответ проверяют кодом, а долю «не разобралось» считают на размеченной выборке.
 :::
+
+Метки и ответы LLM в упражнениях синтетические; цены — условные входы задачи, а не актуальный тариф. Учебный результат воспроизводится по заготовленным ответам без платных вызовов. Пустой успешный ответ трактуйте как отказ/ошибку разбора, а не допустимую метку. Сравнивайте методы на одних текстах с эталонной разметкой, покажите парные расхождения и отказы; допустимый проигрыш задайте до просмотра результата.
 
 ## Практика
 
@@ -231,7 +235,7 @@ print(d, topic)
 
 ## task: parse-llm | Разбор ответов LLM | plus
 
-В `raw` — восемь ответов языковой модели на промпт из урока. Разберите их в DataFrame `parsed` с колонками `sentiment`, `topic`, `ok` (по строке на ответ, в том же порядке). Правила: из ответа берётся текст от первой `{` до последней `}` и разбирается `json.loads`; ответ годен (`ok=True`), только если JSON разобрался, `sentiment` — из `positive`/`negative`, а `topic` — из шести тем. У негодных ответов `sentiment` и `topic` — `None` (в напечатанной таблице pandas покажет их как `NaN` — это нормально: `isna()` находит оба). Сохраните также `n_bad` — число негодных.
+В `raw` — восемь ответов языковой модели на промпт из урока. Разберите их в DataFrame `parsed` с колонками `sentiment`, `topic`, `ok` (по строке на ответ, в том же порядке). Правила: из ответа берётся текст от первой `{` до последней `}` и разбирается `json.loads`; ответ годен (`ok=True`), только если JSON разобрался, `sentiment` — из `positive`/`negative`, а `topic` — из шести тем. У негодных ответов `sentiment` и `topic` — `None` (в напечатанной таблице pandas покажет их как `NaN` — это нормально: `isna()` находит оба). Ваша функция `parse(answer)` должна обработать и новый отзыв. Для одного ответа верните три поля `sentiment`, `topic`, `ok` как словарь либо как значения в этом порядке. Пустой ответ считается негодным. Сохраните также `n_bad` — число негодных.
 
 ### setup
 ```python
@@ -262,6 +266,7 @@ def parse(answer):
 ```python
 import pandas as _pd
 p = need('parsed', _pd.DataFrame)
+p = p.reset_index(drop=True)
 assert len(p) == 8, f'Строк {len(p)}, а нужно 8.'
 assert {'sentiment', 'topic', 'ok'} <= set(p.columns), f'Колонки: {list(p.columns)}.'
 okw = [True, True, True, False, False, False, True, False]
@@ -269,6 +274,19 @@ assert [bool(x) for x in p['ok']] == okw, f'ok = {list(p["ok"])}, а нужно 
 assert list(p.loc[[0, 1, 2, 6], 'topic']) == ['доставка', 'кофе', 'атмосфера', 'обслуживание'], 'Темы годных ответов разобраны неверно.'
 assert list(p.loc[[0, 1, 2, 6], 'sentiment']) == ['negative', 'positive', 'positive', 'positive'], 'Тональности годных ответов разобраны неверно.'
 assert p.loc[[3, 4, 5, 7], ['sentiment', 'topic']].isna().all().all(), 'У негодных ответов sentiment и topic должны быть None.'
+_parse = need('parse')
+import json as _json
+_cases = [('', (None, None, False)), ('{"sentiment":"positive","topic":"парковка"}', (None, None, False)), ('{"sentiment":"neutral","topic":"кофе"}', (None, None, False))]
+for _topic in ['кофе', 'еда', 'обслуживание', 'доставка', 'цена', 'атмосфера']:
+    for _sentiment in ['positive', 'negative']:
+        _cases.append((_json.dumps(dict(topic=_topic, sentiment=_sentiment), ensure_ascii=False), (_sentiment, _topic, True)))
+for _answer, _expected in _cases:
+    _row = _parse(_answer)
+    _fields = ['sentiment', 'topic', 'ok']
+    if isinstance(_row, (dict, _pd.Series)):
+        assert all(_key in _row for _key in _fields), 'Укажите sentiment, topic и ok в возвращаемой записи.'
+        _row = tuple(_row[_key] for _key in _fields)
+    assert isinstance(_row, (tuple, list)) and tuple(_row) == _expected, f'parse({_answer!r}): ожидалось {_expected}. Проверьте разрешённые темы, тональности и негодный ответ.'
 assert need('n_bad') == 4, f'n_bad = {need("n_bad")}.'
 ```
 
@@ -441,11 +459,13 @@ print(recall_by_topic)
 ```
 
 ### explain
-Условная модель верна в 82.5 % случаев без единого обучающего примера. Но погрешность на 200 отзывах — около 2.7 п. п., и диапазон 0.771–0.879 захватывает 0.79: честный вывод — «не хуже обученной модели», а не «лучше» (`clearly_better = False`). К тому же 0.79 посчитано на других отзывах; на одних и тех же их сравнивает следующая задача. Но 14 ответов из 200 негодны (пустые или «сервис» — темы нет в списке), и они в расчёте честно считаются ошибками. Хуже всего — «атмосфера» (около 2/3), как и у обученной модели: тема размытая. Такой разбор и есть решение «можно ли доверять разметке»: где модель слаба, там нужна ручная проверка. Важно: ответы в задаче условные (сгенерированы для упражнения); на живой модели числа будут свои — и проверять их нужно точно так же.
+В этом синтетическом опыте верны 82,5 % ответов. Доля 0,79 попадает в приближённый интервал 0,771–0,879. Для вывода о допустимом проигрыше задайте границу заранее и сравните две системы на одних и тех же отзывах.
 
 ## task: llm-same | LLM и TF-IDF на одних отзывах | plus
 
 Сравните условную LLM из задачи «Проверка разметки LLM» с моделью тем на **тех же** 200 отзывах. Обучите `make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000))` на темах всех остальных 2200 отзывов (без 200 проверочных — иначе модель видела бы ответы) и предскажите темы `check`. Сохраните `acc_model` (3 знака), `llm_only` — сколько отзывов LLM разметила верно, а модель нет, и `model_only` — наоборот.
+
+Допустимый проигрыш задан до оценки и равен 2 п.п. Для каждого из 200 отзывов вычтите индикатор правильности TF-IDF из индикатора правильности LLM. В `paired_lower` запишите приближённую нижнюю границу двустороннего 95 %-го интервала для **средней парной разницы** (среднее минус 1,96 выборочной стандартной ошибки, 3 знака). В `within_margin` укажите, выше ли неокруглённая граница −0,02. Неразобранный ответ LLM засчитывается как ошибка.
 
 ### setup
 ```python
@@ -489,7 +509,15 @@ okm = _mp(_T(), _LR(max_iter=1000)).fit(rest['text'], rest['topic']).predict(c0[
 am = round(float(okm.mean()), 3)
 assert close(need('acc_model'), am, 0.004), f'acc_model = {need("acc_model")}, а нужно около {am}. Обучайте на 2200 отзывах без проверочных (по review_id).'
 lo, mo = int((ol.values & ~okm).sum()), int((okm & ~ol.values).sum())
-assert abs(need('llm_only') - lo) <= 1 and abs(need('model_only') - mo) <= 1, f'llm_only, model_only = {need("llm_only")}, {need("model_only")}, а нужно около {lo}, {mo}.'
+assert need('llm_only') == lo and need('model_only') == mo, f'llm_only, model_only = {need("llm_only")}, {need("model_only")}, а нужно около {lo}, {mo}.'
+_only_a, _only_b = need('llm_only'), need('model_only')
+_n = len(check)
+_diff = (_only_a - _only_b) / _n
+_se = ((_only_a + _only_b - _n * _diff ** 2) / (_n * (_n - 1))) ** .5
+_lower = _diff - 1.96 * _se
+assert close(need('paired_lower'),round(_lower,3),.00051), 'Числитель парной разницы определяется расхождениями обеих моделей на тех же ID.'
+assert need('within_margin') == (_lower > -.02), 'Сравните неокруглённую нижнюю границу с −0,02.'
+
 ```
 
 ### hint
@@ -506,6 +534,10 @@ ok_model = pd.Series(model.predict(check["text"])) == check["topic"]
 acc_model = round(float(ok_model.mean()), 3)
 llm_only = int((ok_llm & ~ok_model).sum())
 model_only = int((ok_model & ~ok_llm).sum())
+paired = ok_llm.astype(int) - ok_model.astype(int)
+lower = paired.mean() - 1.96 * paired.sem()
+paired_lower = round(float(lower), 3)
+within_margin = bool(lower > -.02)
 print(acc_model, llm_only, model_only)
 ```
 

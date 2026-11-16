@@ -519,6 +519,7 @@ G = X.T @ X
 ```python
 import numpy as _np
 X0, n0 = need('X'), need('n')
+assert _np.allclose(need('G'), X0.T @ X0), 'Сверьте значения G с попарными скалярными произведениями признаков.'
 assert bool(need('diag_ok')) and bool(need('off_ok')), 'diag_ok и off_ok должны быть True — проверьте сравнение через np.isclose.'
 assert bool(need('cov_ok')), 'cov_ok должно быть True: Xc.T @ Xc / (n - 1) совпадает с np.cov(X, rowvar=False).'
 C = _np.cov(X0, rowvar=False)

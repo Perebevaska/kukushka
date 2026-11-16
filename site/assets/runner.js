@@ -82,6 +82,9 @@ self.onmessage = async (e) => {
       const r = fn(m.code, m.check ?? null, m.setup ?? null, !!m.display);
       const result = r.toJs({ dict_converter: Object.fromEntries });
       r.destroy();
+      if (m.orderReport && result.check?.passed) {
+        result.reportText = py.FS.readFile('report.md', { encoding: 'utf8' });
+      }
       self.postMessage({ type: 'result', id: m.id, result });
     } catch (err) {
       self.postMessage({ type: 'result', id: m.id, result: {

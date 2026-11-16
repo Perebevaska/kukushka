@@ -654,6 +654,12 @@ model2 = pipe
 import os as _os
 from sklearn.pipeline import Pipeline as _Pl
 assert _os.path.exists('churn_model.joblib'), 'Файла churn_model.joblib нет — сохраните конвейер через joblib.dump(pipe, "churn_model.joblib").'
+import joblib as _joblib
+try:
+    _saved = _joblib.load('churn_model.joblib')
+except (EOFError, ValueError, OSError):
+    raise AssertionError('Не удалось прочитать churn_model.joblib. Сохраните обученный конвейер.')
+assert isinstance(_saved, _Pl) and (_saved.predict(X_test) == pipe.predict(X_test)).all(), 'Модель в файле должна воспроизводить прогнозы pipe на сырых тестовых строках.'
 _m = need('model2', _Pl)
 assert _m is not pipe, 'model2 — это тот же самый объект pipe. Загрузите модель из файла: joblib.load("churn_model.joblib").'
 _pr = pipe.predict(X_test)
@@ -776,11 +782,13 @@ print(best_params, best_f1, gain)
 ### explain
 Прирост около 5 п.п. F1 почти целиком дают веса классов, а не `C`. Перебор по сетке это показал, но вывод делаем по таблице, а не по одному `best_params_`.
 
+Для содержательного сравнения сохраните `split0_test_score`…`split4_test_score` двух кандидатов на одних фолдах и выпишите пять парных разностей. До открытия теста можно договориться выбирать более простую/быструю модель, если средняя разница меньше заданного допуска; один std лучшего не является проверкой равенства моделей.
+
 ## task: cv-table | Читаем таблицу перебора | base
 
 Поиск `search` (сетка `C` × `class_weight`, метрика F1) уже обучен. Соберите из `search.cv_results_` таблицу `table` со столбцами `param_model__C`, `param_model__class_weight`, `mean_test_score`, `std_test_score`, отсортированную по `rank_test_score` (лучшее сочетание — первой строкой).
 
-В `n_close` сохраните, у скольких сочетаний (включая лучшее) средний F1 не ниже, чем «F1 лучшего минус его `std_test_score`», — то есть сколько сочетаний неотличимы от лучшего в пределах разброса. В `cw_close` — множество (`set`) значений `class_weight` у этих сочетаний.
+В `n_close` сохраните, у скольких сочетаний (включая лучшее) средний F1 не ниже, чем «F1 лучшего минус его `std_test_score`», — это выбранная аналитиком эвристика близости, а не доказательство статистической неотличимости. В `cw_close` — множество (`set`) значений `class_weight` у этих сочетаний.
 
 ### setup
 ```python

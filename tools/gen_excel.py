@@ -142,7 +142,7 @@ NB_OUT = OUT.parent / 'notebooks' / 'extra' / 'ch03-excel.ipynb'
 NB_CELLS = [
     ('md', '''# Книга Excel: `read_excel` на своём компьютере
 
-Блокнот к уроку «Типы: из текста в числа и даты» (глава 3), раздел «Книга Excel». В браузере курса те же примеры работают прямо в уроке; здесь — те же шаги в своём Jupyter на книге `zerno_finance.xlsx`, плюс запись результата обратно в Excel.
+Блокнот к уроку «Книга Excel: листы, шапка, итоги» главы 3. В браузере курса те же примеры работают прямо в уроке; здесь — те же шаги в своём Jupyter на книге `zerno_finance.xlsx`, плюс запись результата обратно в Excel.
 
 **Что нужно.** Библиотека openpyxl: в папке проекта из урока про uv выполните в терминале `uv add openpyxl` и перезапустите ядро (Kernel → Restart Kernel). Блокнот ищет книгу в папке `data` курса (`../../data`), а если не нашёл — рядом с собой.
 
@@ -171,15 +171,22 @@ except ImportError:
 Сначала — как есть. Заголовок листа стал названием первого столбца, остальные — `Unnamed`.'''),
     ('code', '''raw = pd.read_excel(BOOK, sheet_name="План")
 raw.head(4)'''),
-    ('code', '''plan = pd.read_excel(BOOK, sheet_name="План", skiprows=3)
+    ('code', '''def header_row(sheet):
+    first = pd.read_excel(BOOK, sheet_name=sheet, header=None, usecols=[0]).iloc[:, 0]
+    positions = first.index[first.eq("Код")]
+    if len(positions) != 1:
+        raise ValueError(f"Лист {sheet}: ожидали одну строку с заголовком Код")
+    return int(positions[0])
+
+plan = pd.read_excel(BOOK, sheet_name="План", skiprows=header_row("План"))
 print(plan.dtypes.value_counts())
 plan'''),
     ('md', '''Названия столбцов на месте, месяцы — числа. В отличие от CSV, `decimal=","` не нужен: Excel хранит числа как числа, запятая — только способ их показать.
 
 ## 3. Лист «Факт»: шапка выше, столбцы буквами
 
-У «Факта» четыре строки над таблицей. Столбцы выбираем буквами, как при выделении в Excel: A — код, D:L — январь–сентябрь.'''),
-    ('code', '''fact = pd.read_excel(BOOK, sheet_name="Факт", skiprows=4, usecols="A,D:L")
+На исходном листе «Факт» над таблицей четыре строки. Найдём заголовок по слову «Код», чтобы служебная строка в новой выгрузке не сдвинула таблицу. Столбцы выбираем буквами, как при выделении в Excel: A — код, D:L — январь–сентябрь.'''),
+    ('code', '''fact = pd.read_excel(BOOK, sheet_name="Факт", skiprows=header_row("Факт"), usecols="A,D:L")
 fact'''),
     ('md', '''## 4. Строка «Итого»: убрать и сверить
 

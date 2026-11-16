@@ -260,10 +260,66 @@ def _helpers(out, code, ns):
         except (TypeError, ValueError):
             return False
 
+    def rerun_with(*, _require_while=False, **inputs):
+        """Повторить программу с новыми значениями переменных из заготовки, сохранив остальные присваивания."""
+        tree = ast.parse(code)
+        def replace_inputs(statements):
+            body = []
+            for stmt in statements:
+                body.append(stmt)
+                if isinstance(stmt, ast.If):
+                    stmt.body = replace_inputs(stmt.body)
+                    stmt.orelse = replace_inputs(stmt.orelse)
+                body.extend(overrides(stmt))
+            return body
+
+        def overrides(stmt):
+            if not isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+                return []
+            # В том числе «price, years = 200, 0». Если переменная уже читается справа,
+            # это расчёт из входа (например, stock = stock - used), а не его объявление.
+            targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+            names = {n.id for target in targets for n in ast.walk(target)
+                     if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
+            reads = {n.id for n in ast.walk(stmt.value) if isinstance(n, ast.Name)} if stmt.value else set()
+            changes = []
+            for name in sorted(inputs.keys() & names - reads):
+                # Подмену забирает первое реально выполненное объявление на этом пути.
+                override = ast.parse(f'{name} = _dsc_check_inputs.pop({name!r}, {name})').body[0]
+                changes.append(ast.copy_location(override, stmt))
+            return changes
+
+        tree.body = replace_inputs(tree.body)
+
+        # На втором примере ошибочный цикл может перестать сходиться. Остановим
+        # его и дадим обратную связь в той же ячейке, в том числе в Jupyter.
+        iterations = 0
+        def record_iteration():
+            nonlocal iterations
+            iterations += 1
+            if iterations > 10000:
+                raise _Fail('На новых данных цикл while не завершился за 10 000 шагов. Проверьте границу и обновление переменных.')
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.While):
+                mark = ast.parse('_dsc_check_iteration()').body[0]
+                node.body.insert(0, ast.copy_location(mark, node))
+        rerun = dict(inputs, __name__='__main__', _dsc_check_inputs=inputs.copy(), _dsc_check_iteration=record_iteration)
+        try:
+            exec(compile(ast.fix_missing_locations(tree), _USER, 'exec'), rerun)
+        except _Fail:
+            raise
+        except Exception as error:
+            raise _Fail(f'На новых данных программа завершилась с ошибкой. {_fmt_error(error, code)["text"]}') from None
+        if _require_while and iterations == 0:
+            raise _Fail('При этих исходных данных нужно посчитать годы в цикле while. Его тело ни разу не выполнилось.')
+        return rerun
+
     return {
         '_out': out, '_lines': lines, '_code': code,
         'need': need, 'printed': printed, 'printed_line': printed_line,
         'calls': calls, 'uses_fstring': uses_fstring, 'has_literal': has_literal, 'close': close,
+        'rerun_with': rerun_with,
         'figs': list(_LAST_FIGS), 'ax_of': _ax_of,
     }
 

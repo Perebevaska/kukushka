@@ -291,7 +291,7 @@ p_on_time = round(1 - late.mean(), 3)
 
 ## task: two-late | Две доставки | warmup
 
-Гость заказал две доставки, каждая опаздывает с вероятностью 0.24, независимо. Посчитайте по формулам (3 знака): `both` — обе опоздали, `none` — ни одна не опоздала, `exactly_one` — ровно одна. Проверьте себя: сумма трёх вероятностей должна быть 1.
+Гость заказал две доставки, каждая опаздывает с вероятностью 0.24, независимо. Посчитайте по формулам (3 знака): `both` — обе опоздали, `none` — ни одна не опоздала, `exactly_one` — ровно одна. Проверьте сумму **до округления**: она должна быть 1. После округления отдельных ответов возможна сумма 1.001.
 
 ### starter
 ```python
@@ -485,7 +485,7 @@ ratio = round(joint / product, 2)
 
 ## task: snow-table | Снег в двух направлениях | plus
 
-Постройте таблицу `t = pd.crosstab(ok["weather"] == "снег", ok["late"], margins=True)` и по её числам сохраните: `n_snow_late` — число опоздавших снежных доставок, `p_late_snow` — P(опоздание | снег) и `p_snow_late` — P(снег | опоздание) (3 знака), `extra` — сколько опозданий было бы в снег, если бы там опаздывали с общей частотой (число снежных доставок × P(опоздание), 1 знак), и `added` — сколько опозданий снег добавил сверх этого (`n_snow_late − extra`, 1 знак).
+Постройте таблицу `t = pd.crosstab(ok["weather"] == "снег", ok["late"], margins=True)` и по её числам сохраните: `n_snow_late` — число опоздавших снежных доставок, `p_late_snow` — P(опоздание | снег) и `p_snow_late` — P(снег | опоздание) (3 знака), `extra` — сколько опозданий было бы в снег, если бы там опаздывали с общей частотой (число снежных доставок × P(опоздание), 1 знак), и `added` — наблюдаемое превышение над ожиданием при независимости (`n_snow_late − extra`, 1 знак).
 
 ### starter
 ```python
@@ -530,7 +530,7 @@ added = round(n_snow_late - t.loc[True, "All"] * ok["late"].mean(), 1)
 ```
 
 ### explain
-В снег опоздали 57 доставок из 166 — 34 %. Но среди всех 441 опоздания на снег приходится лишь 13 %: снежных дней мало. При обычной частоте опозданий в снег было бы около 40 опозданий — снег «добавил» примерно 17. Для отчёта это честнее, чем «в снег опаздываем в полтора раза чаще»: эффект заметный, но на общую картину опозданий влияет слабо.
+В снег опоздали 57 доставок из 166 — 34 %. Но среди всех 441 опоздания на снег приходится лишь 13 %: снежных дней мало. При обычной частоте опозданий в снег было бы около 40 опозданий — наблюдаемое превышение над ожиданием при независимости составляет примерно 17 случаев. Это не число задержек, причинённых снегом: состав маршрутов и курьеров может различаться. При одинаковых долях внутри коротких/длинных маршрутов общий избыток появится, если в снег длинных маршрутов больше.
 
 ## task: running | Закон больших чисел | base
 
@@ -547,15 +547,44 @@ rng = np.random.default_rng(11)
 ### check
 ```python
 import numpy as _np
-r = need('running')
-assert len(r) == 5000, f'В running {len(r)} значений, а нужно 5000.'
+from matplotlib.collections import LineCollection as _LineCollection
+from matplotlib.colors import to_rgba as _to_rgba
+r = _np.asarray(need('running'))
 l = _np.random.default_rng(11).random(5000) < 0.24
 want = l.cumsum() / _np.arange(1, 5001)
-assert _np.allclose(r, want), 'running — накопленная сумма опозданий, делённая на номер доставки (1, 2, …).'
-assert close(need('after_100'), abs(want[99] - 0.24)) and close(need('after_5000'), abs(want[-1] - 0.24)), 'Отклонение — доля минус 0.24 по модулю. Проверьте номер элемента: нумерация с нуля.'
+assert r.shape == want.shape and _np.allclose(r, want), 'running — накопленная сумма опозданий, делённая на номер доставки (1, 2, …).'
+assert close(need('after_100'),abs(want[99]-.24)) and close(need('after_5000'),abs(want[-1]-.24)), 'Отклонения — модули разности с 0.24 после 100 и 5000 доставок.'
 ax = ax_of()
-assert ax.lines and len(ax.lines[0].get_ydata()) == 5000, 'Нарисуйте running линией.'
-assert any(len(set(l.get_ydata())) == 1 for l in ax.lines[1:]), 'Добавьте горизонтальную линию: ax.axhline(0.24).'
+ax.figure.canvas.draw()
+def _visible_line(line):
+    alpha = line.get_alpha()
+    return line.get_visible() and line.get_linewidth()>0 and line.get_linestyle() not in ('None','none',' ','') and (alpha is None or _np.all(_np.asarray(alpha)>0)) and _to_rgba(line.get_color())[3]>0
+curves = []
+for line in ax.lines:
+    if not _visible_line(line):continue
+    x,y = _np.asarray(line.get_xdata(),dtype=float),_np.asarray(line.get_ydata(),dtype=float)
+    if x.shape!=(5000,) or y.shape!=(5000,):continue
+    if not (_np.all(_np.diff(x)>0) or _np.all(_np.diff(x)<0)):continue
+    order = _np.argsort(x)
+    if (_np.allclose(x[order],_np.arange(5000)) or _np.allclose(x[order],_np.arange(1,5001))) and _np.allclose(y[order],want):
+        curves.append(line)
+assert curves, 'На графике нужна видимая линия из 5000 рассчитанных значений running; проверьте её Y и соответствие номеру доставки.'
+curve = curves[0]
+curve_points=curve.get_transform().transform(_np.c_[curve.get_xdata(),curve.get_ydata()])
+x_min,x_max=curve_points[:,0].min(),curve_points[:,0].max()
+level_y=ax.transData.transform((0,.24))[1]
+def _spans_level(points):
+    return ax.bbox.ymin<=level_y<=ax.bbox.ymax and len(points)>=2 and _np.isfinite(points).all() and _np.allclose(points[:,1],level_y,rtol=0,atol=1e-6) and points[:,0].min()<=x_min+1e-6 and points[:,0].max()>=x_max-1e-6
+horizontal = any(_visible_line(line) and _spans_level(line.get_transform().transform(_np.c_[line.get_xdata(),line.get_ydata()])) for line in ax.lines)
+for collection in ax.collections:
+    if not isinstance(collection,_LineCollection) or not collection.get_visible():continue
+    alpha=collection.get_alpha()
+    colors,widths=collection.get_colors(),collection.get_linewidths()
+    for i,segment in enumerate(collection.get_segments()):
+        segment_alpha=1 if alpha is None else _np.atleast_1d(alpha)[i % _np.size(alpha)]
+        if segment_alpha<=0 or (len(colors) and colors[i % len(colors),3]<=0) or (len(widths) and widths[i % len(widths)]<=0):continue
+        horizontal = horizontal or _spans_level(collection.get_transform().transform(segment))
+assert horizontal, 'Добавьте видимую горизонтальную линию на 0.24 через весь диапазон доставок; другой уровень или короткая отметка не подходят.'
 ```
 
 ### hint

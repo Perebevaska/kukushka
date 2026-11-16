@@ -332,7 +332,10 @@ checks = [450, 120, 320, 275, 610, 90, 300]
 ### check
 ```python
 assert need('small') == [120, 275, 90], f'small = {need("small")}. 300 — уже не меньше 300.'
-assert 'append' not in _code, 'Обойдитесь без append.'
+import ast
+assert any(isinstance(node, ast.ListComp) and any(gen.ifs for gen in node.generators)
+           for node in ast.walk(ast.parse(_code))), 'Соберите список генератором с условием: [значение for ... if ...].'
+assert rerun_with(checks=[300, 299.5, 25, 310]).get('small') == [299.5, 25], 'Проверьте отбор на других чеках: 299.5 и 25 меньше 300, ровно 300 уже за границей.'
 ```
 
 ### hint
@@ -588,4 +591,25 @@ ma3 = [round(sum(revenue[i - 2:i + 1]) / 3) for i in range(2, len(revenue))]
 ```
 
 ### explain
-В SQL это `AVG(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)`, в pandas — `rolling(3).mean()`. Скользящее среднее ещё встретится в главе про временные ряды.
+В Python первый результат появляется для третьего дня. Оконная функция SQL вычисляет среднее и по **неполной** рамке в начале таблицы. Сравните первые три строки после округления:
+
+| День | Выручка | SQL: среднее по доступным дням | Python: среднее за три дня |
+|---|---:|---:|---:|
+| 1 | 41 200 | 41 200 | — |
+| 2 | 38 900 | 40 050 | — |
+| 3 | 45 100 | 41 733 | 41 733 |
+
+Чтобы получить тот же ряд, в SQL посчитайте число строк в каждом окне, а во внешнем запросе оставьте только полные окна. Здесь в таблице `daily` по одной записи на каждый день, пропусков в выручке нет.
+
+```sql
+SELECT day, ROUND(mean_revenue) AS ma3
+FROM (
+    SELECT day, AVG(revenue) OVER w AS mean_revenue, COUNT(*) OVER w AS n
+    FROM daily
+    WINDOW w AS (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)
+) AS windows
+WHERE n = 3
+ORDER BY day;
+```
+
+Для тех же значений в pandas результат даёт `s.rolling(3).mean().dropna().round()`, где `s` — выручка в порядке дней.

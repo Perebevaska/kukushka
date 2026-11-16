@@ -51,6 +51,8 @@ code = "WH-PRM-0042"
 assert need('city_code') == 'PRM', f'city_code = {need("city_code")!r}.'
 n = need('number')
 assert n == 42 and isinstance(n, int), f'number = {n!r}. Нужно целое число 42.'
+_other = rerun_with(code='WH-KZN-0105')
+assert (_other.get('city_code'), _other.get('number')) == ('KZN', 105), 'Для WH-KZN-0105 должны получиться KZN и число 105. Извлеките обе части из code.'
 ```
 
 ### hint
@@ -79,7 +81,7 @@ checks = [450, 1280, 320, 990, 610, 1150]
 ### check
 ```python
 assert need('top2_sum') == 2430, f'top2_sum = {need("top2_sum")}. Два крупнейших — 1280 и 1150.'
-assert not has_literal(2430) and _code.count('1280') == 1 and _code.count('1150') == 1, 'Найдите крупнейшие чеки кодом: числа 1280, 1150 и 2430 не нужно писать вручную — они должны получиться из списка checks.'
+assert rerun_with(checks=[300, 110, 520, 470]).get('top2_sum') == 990, 'Для чеков 300, 110, 520 и 470 сумма двух крупнейших равна 990. Получайте её из текущего списка checks.'
 ```
 
 ### hint
@@ -107,6 +109,7 @@ revenue = [41200, 38950, 45130, 39870]
 ### check
 ```python
 assert need('in_k') == [41.2, 39.0, 45.1, 39.9], f'in_k = {need("in_k")}.'
+assert rerun_with(revenue=[12340, 9810]).get('in_k') == [12.3, 9.8], 'Для выручки [12340, 9810] нужны [12.3, 9.8]. Пересчитайте каждый элемент revenue.'
 ```
 
 ### hint
@@ -136,6 +139,7 @@ revenue = [41200, 45000, 52300, 44999, 61700]
 ### check
 ```python
 assert need('labels') == ['ниже плана', 'план', 'план', 'ниже плана', 'план'], f'labels = {need("labels")}. 45 000 — это уже «план».'
+assert rerun_with(revenue=[45001, 0, 45000]).get('labels') == ['план', 'ниже плана', 'план'], 'Проверьте код на днях с выручкой 45 001, 0 и 45 000. Порядок меток должен совпадать с порядком дней в revenue.'
 ```
 
 ### hint
@@ -157,7 +161,7 @@ for r in revenue:
 
 ## task: price-growth | Когда латте подорожает | base | 06-if
 
-Латте стоит 200 рублей, цена растёт на 10 рублей в год. Через сколько лет (`years`) цена впервые станет **больше** 250? Посчитайте циклом `while`.
+Латте стоит `price` рублей, цена растёт на 10 рублей в год. Через сколько лет (`years`) цена впервые станет **больше** 250? Посчитайте циклом `while`. Начните с 200 рублей. Ваш расчёт должен работать и при другой начальной цене, в том числе если порог уже пройден.
 
 ### starter
 ```python
@@ -168,20 +172,9 @@ price = 200
 ### check
 ```python
 assert need('years') == 6, f'years = {need("years")}. Через 5 лет цена ровно 250 — это ещё не «больше 250»; больше она станет через 6 лет (260).'
-import ast as _ast, contextlib as _cl, io as _io
-_t = _ast.parse(_code)
-assert any(isinstance(_n, _ast.While) for _n in _ast.walk(_t)), 'Посчитайте циклом while: слово while в комментарии не считается.'
-# тот же код с другими условиями: цена 230, порог 300 → 8 лет. Так ловится ответ, записанный вручную.
-class _Swap(_ast.NodeTransformer):
-    def visit_Constant(self, n):
-        if type(n.value) is int and n.value in (200, 250):
-            return _ast.copy_location(_ast.Constant({200: 230, 250: 300}[n.value]), n)
-        return n
-_ns = {}
-with _cl.redirect_stdout(_io.StringIO()):
-    exec(compile(_ast.fix_missing_locations(_Swap().visit(_t)), '<проверка>', 'exec'), _ns)
-assert _ns.get('years') == 8, ('С ценой 230 и порогом 300 ваш код даёт years = ' + repr(_ns.get('years')) +
-                               ', а должно быть 8. Пусть цикл сам считает годы, пока цена не больше порога, — без готового числа.')
+for _start, _expected in [(230, 3), (249, 1), (250, 1), (251, 0)]:
+    _got = rerun_with(price=_start, _require_while=_expected > 1).get('years')
+    assert _got == _expected, f'При начальной цене {_start} ₽ ваш расчёт даёт {_got!r} лет. При росте на 10 ₽ в год нужно {_expected}.'
 ```
 
 ### hint
@@ -201,7 +194,7 @@ while price <= 250:
 
 ## task: kazan | Выручка Казани | base | 07-tables
 
-Строка таблицы: город, чашки, цена. Посчитайте `kazan_revenue` — суммарную выручку кофеен Казани (в городе их несколько).
+В каждой строке `sales` указаны город, число чашек и цена за чашку. Посчитайте `kazan_revenue` — суммарную выручку всех строк Казани. Строки могут идти в любом порядке.
 
 ### starter
 ```python
@@ -217,6 +210,8 @@ sales = [
 ### check
 ```python
 assert need('kazan_revenue') == 538 * 198 + 301 * 210, f'kazan_revenue = {need("kazan_revenue")}.'
+_other = rerun_with(sales=[['Казань', 2, 180], ['Пермь', 9, 300], ['Уфа', 3, 220], ['Казань', 1, 220]])
+assert _other.get('kazan_revenue') == 580, f'В другой таблице Казань продала 2 чашки по 180 ₽ и одну за 220 ₽. Получено {_other.get("kazan_revenue")!r}, ожидается 580 ₽. Проверьте отбор строк по городу и умножение на число чашек.'
 ```
 
 ### hint
@@ -253,7 +248,8 @@ sizes = ["S", "M", "M", "L", "M", "S", "L", "M"]
 ```python
 assert need('counts') == {'S': 2, 'M': 4, 'L': 2}, f'counts = {need("counts")}.'
 assert need('top_size') == 'M', f'top_size = {need("top_size")!r}.'
-assert _code.count('"M"') + _code.count("'M'") <= 4, 'Найдите самый частый размер кодом, а не впишите.'
+_other = rerun_with(sizes=['L', 'S', 'L', 'L', 'M'])
+assert _other.get('counts') == {'L': 3, 'S': 1, 'M': 1} and _other.get('top_size') == 'L', 'Для размеров L, S, L, L, M лидирует L с тремя заказами. Проверьте counts и поиск самого частого размера.'
 ```
 
 ### hint
@@ -290,7 +286,10 @@ changes = {"Латте": 220, "Мокко": 240}
 ### check
 ```python
 assert need('prices') == {'Латте': 220, 'Капучино': 190, 'Раф': 260, 'Мокко': 240}, f'prices = {need("prices")}.'
-assert 'for' in _code, 'Пройдите по changes циклом.'
+_prices = {'Эспрессо': 130, 'Латте': 240}
+_other = rerun_with(prices=_prices, changes={'Эспрессо': 150, 'Фильтр': 210})
+assert _other.get('prices') is _prices, 'Измените существующий словарь prices. Для этого подойдут присваивания по ключу или prices.update(changes).'
+assert _prices == {'Эспрессо': 150, 'Латте': 240, 'Фильтр': 210}, 'Во втором прайсе нужно обновить Эспрессо, добавить Фильтр и сохранить прежнюю цену Латте.'
 ```
 
 ### hint
@@ -345,7 +344,7 @@ def share(part, total):
 
 ## task: revenue-by | Выручка по любому полю | plus | 09-functions
 
-Напишите `revenue_by(orders, field)`: заказы — список словарей, функция возвращает словарь «значение поля → сумма `amount`». Одна функция должна работать и для `"city"`, и для `"drink"`.
+Напишите `revenue_by(orders, field)`: заказы — список словарей, функция возвращает словарь «значение поля → сумма `amount`». Одна функция должна работать и для `"city"`, и для `"drink"`. Для пустого списка верните `{}`. Для сдачи достаточно определения функции. Данные и вызовы ниже можно использовать для самопроверки.
 
 ### starter
 ```python
@@ -364,9 +363,15 @@ print(revenue_by(orders, "drink"))
 ### check
 ```python
 f = need('revenue_by')
-o = need('orders')
-assert f(o, 'city') == {'Пермь': 1060, 'Казань': 320}, f'revenue_by(orders, "city") = {f(o, "city")}.'
-assert f(o, 'drink') == {'Латте': 450, 'Раф': 930}, f'revenue_by(orders, "drink") = {f(o, "drink")}.'
+sample = [
+    {'city': 'Томск', 'drink': 'Чай', 'amount': 120},
+    {'city': 'Омск', 'drink': 'Чай', 'amount': 80},
+    {'city': 'Томск', 'drink': 'Какао', 'amount': 250},
+]
+for field, totals in [('city', {'Томск': 370, 'Омск': 80}), ('drink', {'Чай': 200, 'Какао': 250})]:
+    actual = f([row.copy() for row in sample], field)
+    assert actual == totals, f'Сгруппируйте переданные заказы по полю {field!r} и сложите amount в каждой группе. Получено {actual!r}.'
+assert f([{'city': 'Томск', 'drink': 'Чай', 'amount': 15}], 'city') == {'Томск': 15}, 'При новом вызове считайте только заказы из нового списка.'
 assert f([], 'city') == {}, 'Для пустого списка — пустой словарь.'
 ```
 
@@ -412,7 +417,38 @@ text = "Пермь;412;205\nКазань;538;198\n\nТюмень;297;214\n"
 f = need('parse_line')
 assert f('Уфа;10;200') == ['Уфа', 10, 200], f'parse_line("Уфа;10;200") = {f("Уфа;10;200")!r}.'
 assert need('total') == 412 * 205 + 538 * 198 + 297 * 214, f'total = {need("total")}. Пустые строки нужно пропускать.'
-assert calls('parse_line') >= 1, 'Используйте parse_line для подсчёта total.'
+import ast as _ast
+_sample = 'Уфа;7;113\n\nОмск;11;127\nСамара;3;149\n'
+_seen = []
+def _record(_fn):
+    def _wrapped(*args, **kwargs):
+        _seen.append(args[0] if args else next(iter(kwargs.values())))
+        return _fn(*args, **kwargs)
+    return _wrapped
+class _Probe(_ast.NodeTransformer):
+    def visit_Name(self, node):
+        if node.id == 'parse_line' and isinstance(node.ctx, _ast.Load):
+            return _ast.copy_location(_ast.Call(func=_ast.Name(id='_record', ctx=_ast.Load()), args=[node], keywords=[]), node)
+        return node
+    def visit_Assign(self, node):
+        self.generic_visit(node)
+        if any(isinstance(t, _ast.Name) and t.id == 'text' for t in node.targets) and not any(isinstance(n, _ast.Name) and n.id == 'text' for n in _ast.walk(node.value)):
+            override = _ast.parse('text = _probe_inputs.pop("text", text)').body[0]
+            return [node, _ast.copy_location(override, node)]
+        return node
+    def visit_AnnAssign(self, node):
+        self.generic_visit(node)
+        if isinstance(node.target, _ast.Name) and node.target.id == 'text' and node.value is not None and not any(isinstance(n, _ast.Name) and n.id == 'text' for n in _ast.walk(node.value)):
+            override = _ast.parse('text = _probe_inputs.pop("text", text)').body[0]
+            return [node, _ast.copy_location(override, node)]
+        return node
+_env = {'__name__': '__main__', '_record': _record, 'text': _sample, '_probe_inputs': {'text': _sample}}
+try:
+    exec(compile(_ast.fix_missing_locations(_Probe().visit(_ast.parse(_code))), '<parse-probe>', 'exec'), _env)
+except Exception as _e:
+    raise AssertionError(f'На новой выгрузке с пустой строкой код не завершился: {_e}') from None
+assert _env.get('total') == 7 * 113 + 11 * 127 + 3 * 149, 'На новой выгрузке total неверен: обработайте все непустые строки, не вписывайте сумму.'
+assert all(line in _seen for line in _sample.splitlines() if line.strip()), 'Используйте parse_line для обработки каждой непустой строки. Подойдут цикл, map и генератор.'
 ```
 
 ### hint

@@ -121,6 +121,8 @@ print("гостей в месяце 0:", a[0].sum(), b[0].sum(), "| всего �
 
 ## DAU, WAU, MAU и sticky factor
 
+Сначала восстановите календарь наблюдения: `pd.date_range("2026-01-01", "2026-06-30")`. Полностью наблюдавшийся день без покупок имеет DAU=0 и входит в среднее. День, отсутствующий из-за сбоя источника, нельзя автоматически считать нулевым. Полнота недели определяется семью наблюдавшимися календарными датами, а не семью датами с покупками.
+
 Удержание отвечает на вопрос «возвращаются ли гости». Второй частый вопрос — **как часто** они с нами. Для него считают активную аудиторию:
 
 - **DAU** (daily active users) — сколько разных гостей сделали хотя бы один предзаказ за день;
@@ -461,7 +463,7 @@ o = pd.read_csv("preorders.csv", parse_dates=["date"])
 ```python
 import pandas as _pd
 r = _pd.read_csv('preorders.csv', parse_dates=['date'])
-dau = r.groupby('date')['guest_id'].nunique()
+dau = r.groupby('date')['guest_id'].nunique().reindex(_pd.date_range('2026-01-01', '2026-06-30'), fill_value=0)
 da = dau.groupby(dau.index.to_period('M')).mean().round(1)
 mau = r.groupby(r['date'].dt.to_period('M'))['guest_id'].nunique()
 st = (da / mau * 100).round(1)
@@ -479,7 +481,7 @@ assert str(need('best_month'))[:7] == str(st.idxmax()), f'best_month = {need("be
 ```
 
 ### hint
-DAU — `o.groupby("date")["guest_id"].nunique()`; средний за месяц — `dau.groupby(dau.index.to_period("M")).mean()`.
+DAU — `o.groupby("date")["guest_id"].nunique()`, затем `dau = dau.reindex(pd.date_range("2026-01-01", "2026-06-30"), fill_value=0)`. Средний за месяц — `dau.groupby(dau.index.to_period("M")).mean()`.
 
 ### hint
 MAU — по заказам, а не по DAU: `o.groupby(o["date"].dt.to_period("M"))["guest_id"].nunique()`.
@@ -491,7 +493,7 @@ MAU — по заказам, а не по DAU: `o.groupby(o["date"].dt.to_period
 ```python
 import pandas as pd
 o = pd.read_csv("preorders.csv", parse_dates=["date"])
-dau = o.groupby("date")["guest_id"].nunique()
+dau = o.groupby("date")["guest_id"].nunique().reindex(pd.date_range("2026-01-01", "2026-06-30"), fill_value=0)
 dau_avg = dau.groupby(dau.index.to_period("M")).mean()
 mau = o.groupby(o["date"].dt.to_period("M"))["guest_id"].nunique()
 monthly = pd.DataFrame({"dau": dau_avg.round(1), "mau": mau})
@@ -505,7 +507,7 @@ monthly
 
 ## task: wau-full | WAU только по полным неделям | base
 
-На краях выгрузки недели неполные: первая неделя (29 декабря – 4 января) захватывает только 4 дня, последняя (29 июня – 5 июля) — 2. Соберите таблицу `weekly` (индекс — неделя `to_period("W")`) со столбцами `wau` — разные гости за неделю и `days` — сколько разных дат с предзаказами попало в неделю (`nunique()` по столбцу `date`). Оставьте в `full` только строки, где `days == 7`. Сохраните `n_full` — число полных недель и `min_wau` — наименьший WAU среди них.
+На краях выгрузки недели неполные: первая неделя (29 декабря – 4 января) захватывает только 4 дня, последняя (29 июня – 5 июля) — 2. Соберите таблицу `weekly` (индекс — неделя `to_period("W")`) со столбцами `wau` — разные гости за неделю и `days` — сколько календарных дат периода наблюдения попало в неделю (включая полностью наблюдавшиеся дни без предзаказов). Оставьте в `full` только строки, где `days == 7`. Сохраните `n_full` — число полных недель и `min_wau` — наименьший WAU среди них.
 
 ### starter
 ```python
@@ -520,13 +522,15 @@ week = o["date"].dt.to_period("W")
 import pandas as _pd
 r = _pd.read_csv('preorders.csv', parse_dates=['date'])
 g = r.groupby(r['date'].dt.to_period('W'))
-w = _pd.DataFrame({'wau': g['guest_id'].nunique(), 'days': g['date'].nunique()})
+_calendar = _pd.date_range('2026-01-01', '2026-06-30')
+_days = _pd.Series(1, index=_calendar).groupby(_calendar.to_period('W')).sum()
+w = _pd.DataFrame({'wau': g['guest_id'].nunique().reindex(_days.index, fill_value=0), 'days': _days})
 wf = w[w['days'] == 7]
 wk = need('weekly', _pd.DataFrame)
 for c in ('wau', 'days'):
     assert c in wk.columns, f'В weekly нет столбца {c}.'
 assert len(wk) == len(w), f'В weekly {len(wk)} строк, а недель в выгрузке {len(w)}: группируйте по to_period("W").'
-if [int(x) for x in wk['days']] == [int(x) for x in g.size()]:
+if len(g) == len(wk) and [int(x) for x in wk['days']] == [int(x) for x in g.size()]:
     raise AssertionError('days — это число заказов в неделе. Нужно число разных дат: g["date"].nunique().')
 assert [int(x) for x in wk['days']] == [int(x) for x in w['days']], f'days = {[int(x) for x in wk["days"]][:3]}…, а нужно {[int(x) for x in w["days"]][:3]}…: разные даты в неделе — nunique() по date.'
 assert [int(x) for x in wk['wau']] == [int(x) for x in w['wau']], 'wau — разные гости за неделю: nunique() по guest_id.'
@@ -537,7 +541,7 @@ assert int(need('min_wau')) == int(wf['wau'].min()), f'min_wau = {need("min_wau"
 ```
 
 ### hint
-Сгруппируйте один раз: `g = o.groupby(week)`, затем два столбца — `g["guest_id"].nunique()` и `g["date"].nunique()`; соберите их в `pd.DataFrame({...})`.
+`wau` — уникальные гости по `o["date"].dt.to_period("W")`. Для `days` создайте отдельную Series единиц на `pd.date_range("2026-01-01", "2026-06-30")`, сгруппируйте её по неделям индекса и суммируйте: нулевой день покупок тоже наблюдался. Сведите оба ряда по ключу недели.
 
 ### hint
 `full = weekly[weekly["days"] == 7]`, `n_full = len(full)`, `min_wau = full["wau"].min()`.
@@ -548,7 +552,9 @@ import pandas as pd
 o = pd.read_csv("preorders.csv", parse_dates=["date"])
 week = o["date"].dt.to_period("W")
 g = o.groupby(week)
-weekly = pd.DataFrame({"wau": g["guest_id"].nunique(), "days": g["date"].nunique()})
+calendar = pd.date_range("2026-01-01", "2026-06-30")
+days = pd.Series(1, index=calendar).groupby(calendar.to_period("W")).sum()
+weekly = pd.DataFrame({"wau": g["guest_id"].nunique().reindex(days.index, fill_value=0), "days": days})
 full = weekly[weekly["days"] == 7]
 n_full = len(full)
 min_wau = full["wau"].min()

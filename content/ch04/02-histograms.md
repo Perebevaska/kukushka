@@ -305,6 +305,8 @@ ax.set_title("Время доставки: пешие и авто")
 
 {{practice: compare, delay}}
 
+Плотность измеряется в **1/мин**, а долю задаёт площадь столбика: высота × ширина. Если в корзине шириной 2 минуты 4 из 10 показанных доставок, высота 0.2, площадь 0.4. Если исходных наблюдений 11 и одно вне окна графика, доля полной группы — 4/11. Подпишите окно и число исключённых; медиану полной группы можно считать без обрезки.
+
 ## Практика
 
 ## task: hist-km | Гистограмма расстояний | warmup
@@ -322,12 +324,56 @@ d = pd.read_csv("deliveries.csv")
 
 ### check
 ```python
+import numpy as _np
 import pandas as _pd
-km = _pd.read_csv('deliveries.csv')['distance_km']
+from matplotlib.patches import Rectangle as _Rectangle, Polygon as _Polygon, StepPatch as _StepPatch
+km = _pd.read_csv('deliveries.csv')['distance_km'].dropna().to_numpy()
 ax = ax_of()
-assert len(ax.patches) == 30, f'Корзин {len(ax.patches)}, а нужно 30: bins=30.'
-assert sum(p.get_height() for p in ax.patches) == len(km), 'Сумма высот должна равняться числу доставок.'
-assert ax.get_title() == 'Расстояние, км', f'Заголовок: {ax.get_title()!r}.'
+candidates = []
+patches = list(ax.patches)
+if len(patches) == 30 and all(isinstance(p,_Rectangle) for p in patches):
+    bars = sorted(patches,key=lambda p:p.get_x()+p.get_width()/2)
+    centers = _np.array([p.get_x()+p.get_width()/2 for p in bars])
+    widths = _np.array([p.get_width() for p in bars])
+    heights = _np.array([p.get_height() for p in bars])
+    assert all(close(p.get_y(),0) for p in bars), 'Корзины числа доставок должны начинаться от нуля по оси Y.'
+    spacing = _np.diff(centers)
+    assert _np.isfinite(centers).all() and _np.isfinite(widths).all() and (spacing>0).all() and (widths>0).all(), 'Корзины должны иметь конечные границы расстояний и положительную ширину.'
+    # rwidth may leave gaps between bars; infer the actual bins, not the rectangles' widths.
+    for align, ratios in [('mid',(widths[:-1]+widths[1:])/(2*spacing)),('left',widths[:-1]/spacing),('right',widths[1:]/spacing)]:
+        ratio = ratios.mean()
+        if ratio>0 and _np.allclose(ratios,ratio,rtol=1e-7,atol=1e-9):
+            bin_widths=widths/ratio
+            left = centers-bin_widths/2 if align=='mid' else centers if align=='left' else centers-bin_widths
+            if _np.allclose(left[1:],left[:-1]+bin_widths[:-1],rtol=1e-7,atol=1e-7):
+                candidates.append((_np.r_[left,left[-1]+bin_widths[-1]],heights))
+elif len(patches)==1 and isinstance(patches[0],_StepPatch):
+    data=patches[0].get_data()
+    assert patches[0].orientation=='vertical', 'По горизонтальной шкале должны быть расстояния в км.'
+    assert data.baseline is None or _np.allclose(data.baseline,0), 'Отсчёт числа доставок начинается от нуля.'
+    candidates.append((_np.asarray(data.edges),_np.asarray(data.values)))
+elif len(patches)==1 and isinstance(patches[0],_Polygon):
+    vertices=patches[0].get_xy()
+    segments=[(a[0],b[0],a[1]) for a,b in zip(vertices[:-1],vertices[1:]) if b[0]>a[0] and close(a[1],b[1])]
+    if len(segments)==30:
+        left,right,heights=map(_np.asarray,zip(*segments))
+        if _np.allclose(right[:-1],left[1:]):
+            candidates.append((_np.r_[left,right[-1]],heights))
+assert candidates, 'Нужна гистограмма с 30 корзинами: допустимы столбцы, step, stepfilled и stairs.'
+def _correct_histogram(edges,heights):
+    if len(edges)!=31 or len(heights)!=30 or not _np.isfinite(edges).all() or not _np.isfinite(heights).all() or not (_np.diff(edges)>0).all():
+        return False
+    if (heights<0).any() or not _np.allclose(heights,_np.round(heights),rtol=0,atol=1e-7) or not close(heights.sum(),len(km)):
+        return False
+    eps=1e-7*max(1.,float(_np.abs(edges).max()))
+    if km.min()<edges[0]-eps or km.max()>edges[-1]+eps:
+        return False
+    # Rendered edges can move by a floating-point ulp. Only samples on such an edge
+    # may legitimately fall on either side; all other cumulative counts are exact.
+    cumulative=_np.cumsum(heights)[:-1]
+    return all(int((km<edge-eps).sum())<=count<=int((km<=edge+eps).sum()) for edge,count in zip(edges[1:-1],cumulative))
+assert any(_correct_histogram(edges,heights) for edges,heights in candidates), 'Границы корзин — расстояния в км; высота каждой — число доставок с distance_km в её границах. Проверьте, не подставили ли amount или другую величину.'
+assert ax.get_title()=='Расстояние, км', f'Заголовок: {ax.get_title()!r}.'
 ```
 
 ### hint

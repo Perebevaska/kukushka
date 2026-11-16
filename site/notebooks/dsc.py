@@ -447,6 +447,7 @@ def tasks(chapter: str) -> list:
 _CELL_HELPERS = {
     '_out': 'печать', '_lines': 'печать', 'printed': 'печать', 'printed_line': 'печать',
     '_code': 'код ячейки', 'calls': 'код ячейки', 'uses_fstring': 'код ячейки', 'has_literal': 'код ячейки',
+    'rerun_with': 'код ячейки',
     'figs': 'график', 'ax_of': 'график',
 }
 
@@ -505,7 +506,7 @@ def _stmt_names(stmt) -> tuple[set, set, set]:
     return every, loads, stores
 
 
-def _check_in_namespace(t: dict, ns: dict, h, later: dict | None = None) -> dict:
+def _check_in_namespace(t: dict, ns: dict, h, later: dict | None = None, submission_dir: Path | None = None) -> dict:
     """Проверка задачи по готовым переменным ns — без запуска кода задачи.
     status: ok — всё сошлось; partial — значения сошлись, но часть проверки требует ячейки задачи;
     skip — проверить нечего без ячейки; fail — не совпало; error — не выполнилась подготовка."""
@@ -529,7 +530,10 @@ def _check_in_namespace(t: dict, ns: dict, h, later: dict | None = None) -> dict
         if k not in produced or k not in env:
             env[k] = v
     cns = dict(env)
+    cns['_project_notebook'] = True
     cns.update(h._helpers('', '', env))
+    if submission_dir is not None:
+        cns['_submission_dir'] = submission_dir
     for name, kind in _CELL_HELPERS.items():
         cns[name] = _needs_cell(kind)
     tainted: set = set()
@@ -606,7 +610,7 @@ def _lesson_keys(lesson: str) -> list:
     return keys
 
 
-_MARK = {'ok': '✓', 'partial': '✓', 'fail': '✗', 'error': '✗', 'skip': '–'}
+_MARK = {'ok': '✓', 'partial': '◐', 'fail': '✗', 'error': '✗', 'skip': '–'}
 
 
 class _ProjectResults(list):
@@ -650,12 +654,13 @@ def check_project(lesson: str, ns: dict | None = None, show: bool = True) -> lis
         os.chdir(WORK)       # проверки читают данные курса из рабочей папки, как в %%task
         for i, key in enumerate(keys):
             t = _tasks[key]
+            final_package = key == 'ch15/06-final-project/package' and not in_work
             later = {}                 # имя → задача ниже по уроку, которая тоже его создаёт
             for k2 in reversed(keys[i + 1:]):
                 later.update(dict.fromkeys(_produced(_tasks[k2]), _tasks[k2]['id']))
             # файлы, которые задача создаёт сама (отчёт, модель), проверка ищет в рабочей папке:
             # берём их из папки блокнота, а не от прошлых запусков задач
-            if not in_work:
+            if not in_work and not final_package:
                 for name in _output_files(t):
                     try:
                         (WORK / name).unlink()
@@ -669,7 +674,7 @@ def check_project(lesson: str, ns: dict | None = None, show: bool = True) -> lis
                 import warnings
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore')
-                    r = _check_in_namespace(t, ns, h, later)
+                    r = _check_in_namespace(t, ns, h, later, Path(cwd) if final_package else None)
             finally:
                 sys.stdout = old_out
             r.update(key=key, id=t['id'], title=t['title'])
@@ -689,10 +694,13 @@ def check_project(lesson: str, ns: dict | None = None, show: bool = True) -> lis
 
 def project_summary(results: list) -> str:
     n = len(results)
-    ok = sum(r['status'] in ('ok', 'partial') for r in results)
+    ok = sum(r['status'] == 'ok' for r in results)
+    partial = sum(r['status'] == 'partial' for r in results)
     bad = sum(r['status'] in ('fail', 'error') for r in results)
     skip = sum(r['status'] == 'skip' for r in results)
     text = f'Совпало с эталоном: {ok} из {n}'
+    if partial:
+        text += f', частично проверено: {partial}'
     if bad:
         text += f', не совпало: {bad}'
     if skip:

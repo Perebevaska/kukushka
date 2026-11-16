@@ -80,7 +80,9 @@ print("Итого:", 2 + 3)
 Почему: выражение без кавычек Python сначала вычисляет, а между значениями `print` ставит пробел.
 :::
 
-{{practice: hello, two-lines, comma, receipt, sep, one-print}}
+Для первого запуска откройте «Первое приветствие». Затем продолжите до раздела об ошибках: там вы исправите команду и самостоятельно посчитаете сумму чека.
+
+{{practice: hello, two-lines, comma, sep, one-print}}
 
 ## Программа — это строки сверху вниз
 
@@ -197,7 +199,9 @@ Python идёт по строкам сверху вниз: строки 1–2 у
   > Строки 1–2 выполнились успешно — их вывод уже на экране.
 :::
 
-{{practice: fix-quote, fix-name}}
+Сначала исправьте ошибку в имени `print`. Затем в «Мини-чеке» используйте эту команду, чтобы покупатель увидел итог двух покупок.
+
+{{practice: fix-name, receipt, fix-quote}}
 
 ## Практика
 
@@ -217,7 +221,7 @@ Python идёт по строкам сверху вниз: строки 1–2 у
 ### check
 ```python
 assert calls('print') >= 1, 'Используйте команду print.'
-assert printed_line('Привет, Зерно!'), 'Не вижу строки «Привет, Зерно!» — проверьте запятую, пробел и восклицательный знак.'
+assert _out.strip() == 'Привет, Зерно!', 'Выведите одну строку «Привет, Зерно!» — проверьте запятую, пробел и восклицательный знак.'
 ```
 
 ### hint
@@ -400,7 +404,11 @@ print("Выручка в норме")
 ### check
 ```python
 assert _lines == ['Латте 210', 'Раф 260', 'Итого: 470'], f'Сейчас вывод: {_lines}.'
-assert '210 + 260' in _code or '210+260' in _code, 'Посчитайте итог сложением 210 + 260 внутри print.'
+import ast
+prints = [node for node in ast.walk(ast.parse(_code))
+          if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'print']
+assert any(isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add)
+           for call in prints for arg in call.args for node in ast.walk(arg)), 'Посчитайте итог сложением двух цен внутри print.'
 ```
 
 ### hint

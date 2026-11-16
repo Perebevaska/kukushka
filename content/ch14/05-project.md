@@ -1,6 +1,6 @@
 ---
 title: "Проект: что закончилось на витрине"
-files: [showcase.npz, showcase_day.npz]
+files: [showcase.npz, showcase_day.npz, showcase_day_next.npz, showcase_inventory.npz]
 lead: "Финал главы. Камера над витриной снимает 12 ячеек каждые 15 минут, и пекарня хочет получать сигнал, когда выпечка закончилась. Модель, обученная на дневных кадрах, отлично работает днём — и полностью слепнет вечером, когда в зале включают другой свет. Находим причину, чиним, строим правило оповещений и отвечаем пекарне, когда допекать."
 recap:
   - "Тестовая выборка из того же источника, что обучение, не гарантирует работы в новых условиях: вечерний свет — сдвиг данных, который проверяют отдельно."
@@ -16,11 +16,16 @@ recap:
 >
 > Хотим: оповещение пекарю, когда ячейка опустела, и понять, правильно ли мы допекаем — сейчас в 13:00 и 17:00.
 >
-> У нас есть 2000 размеченных вырезок (`showcase.npz`) и один полностью размеченный день с камеры (`showcase_day.npz`): кадры, номер ячейки, время и что там было на самом деле.
+> У нас есть 2000 размеченных вырезок (`showcase.npz`) и два размеченных дня с камеры (`showcase_day.npz` для выбора и `showcase_day_next.npz` для проверки): кадры, номер ячейки, время и что там было на самом деле.
 >
 > *Управляющая KZN-1*
 
 ## План
+
+Проследите одну ячейку по ключу (time, slot) от исходного кадра и прогноза до эпизода пустоты и первого оповещения. Перемешивание журнала не должно менять соответствие; перед соседними кадрами проверяется именно 15 минут, а не соседство строк. Пропущенный снимок не подтверждает непрерывность серии.
+
+Нормировку и правило числа пустых кадров выбирайте на первом дне. После фиксации оцените на следующем дне пропуски эпизодов, ложные и повторные сигналы и задержку относительно первого истинно пустого кадра. Успех на том же дне, где правило выбрано, не является независимой проверкой.
+
 
 1. Модель на размеченных вырезках, проверка на дне с камеры — отдельно днём и вечером.
 2. Диагностика: что изменилось вечером.
@@ -52,6 +57,34 @@ recap:
   > Модель та же, меняется правило реакции на её ответы.
 - [ ] Кадров слишком много для обработки
   > Обработка тут ни при чём.
+:::
+
+## Сколько стоит дождаться второго кадра?
+
+В коротком учебном журнале ниже одна ячейка. Снимки идут с шагом 15 минут слева направо. Состояние в журнале подписано словами. Для данных проекта переведите предсказанный класс в признак пустоты: класс 0 → `is_empty=True`, любой из классов 1–3 → `False`.
+
+| День 1 | 09:00 | 09:15 | 09:30 | 09:45 | 10:00 | 10:15 | 10:30 | 10:45 | 11:00 | 11:15 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Состояние по фото | занято | занято | занято | пусто | пусто | пусто | занято | занято | занято | занято |
+| Состояние по модели | пусто | занято | занято | пусто | пусто | пусто | занято | пусто | занято | занято |
+
+Сравните правила для одного, двух и трёх кадров подряд. Каждое подаёт один сигнал в момент, когда серия впервые достигла выбранной длины. Ложный вызов пекаря стоит 45 ₽, минута ожидания в обнаруженном эпизоде — 1 ₽, пропущенный эпизод — 300 ₽. Какое правило дешевле за первый день? Затем управляющая предложила сначала проверять снимок у монитора. Ложный вызов теперь стоит 6 ₽, остальные цены прежние.
+
+::: quiz
+Зафиксируйте правило для следующего дня вместе с причиной выбора. Что вы выберете по первому журналу при новой цене?
+
+- [x] Один кадр. Два ложных вызова теперь обходятся дешевле, чем ожидание второго кадра.
+  > Для k=1, 2, 3 раньше получалось 90, 15 и 30 ₽, теперь — 12, 15 и 30 ₽. У k=1 те же два ложных сигнала; поменялась их цена. **Теперь примените выбранное вами правило ко второму дню.** С 12:30 до 13:45 снимали каждые 15 минут. По фото: занято, пусто, пусто, занято, занято, занято. По модели: пусто, пусто, занято, занято, пусто, занято. Укажите времена сигналов, число ложных вызовов и пропущенных эпизодов. Посчитайте стоимость, сохранив свой k.
+  >
+  > <details><summary>Сверить свой расчёт после разбора второго дня</summary>
+  >
+  > При k=1 сигналы приходят в 12:30 и 13:30. Оба ложные. Когда ячейка действительно опустела в 12:45, серия модели уже началась, и нового сигнала в этом эпизоде не было. Стоимость — 312 ₽. При k=2 сигнал поступил бы в 12:45, прямо в начале эпизода, затраты — 0 ₽. При k=3 сигналов нет, один пропуск стоит 300 ₽. Выбор по первому дню и результат проверки на следующем запишите отдельно.
+  >
+  > </details>
+- [ ] Два кадра. Раз число ложных срабатываний модели прежнее, правило тоже должно остаться прежним.
+  > Два кадра по-прежнему дают 15 минут задержки. Сравните 15 ₽ с новой стоимостью двух ложных вызовов и сохраните выбранное правило при разборе второго дня.
+- [ ] Три кадра. Дополнительное ожидание поможет сэкономить ещё на одном ложном вызове.
+  > Оба ошибочных сигнала первого дня одиночные. Переход от двух к трём кадрам добавляет 15 минут задержки при том же числе ложных вызовов.
 :::
 
 ## task: day | Шаг 1. День и вечер | base
@@ -123,7 +156,9 @@ print(acc_day, acc_evening, n_empty_evening, n_found_evening)
 
 ## task: light | Шаг 2. Что изменилось | base
 
-Посчитайте среднюю яркость каждого кадра дня и усредните по времени: `bright` — Series с индексом-временем (61 значение). Сохраните `ratio` — отношение средней яркости вечерних кадров (с 18:00) к дневным (3 знака) и `step_time` — время, в которое яркость упала сильнее всего относительно предыдущего момента. Нарисуйте `bright`.
+Посчитайте среднюю яркость каждого кадра дня и усредните по времени: `bright` — Series с индексом-временем (61 значение). Сохраните `ratio` — отношение средней яркости вечерних кадров (с 18:00) к дневным (3 знака) и `step_time` — время, в которое яркость упала сильнее всего относительно предыдущего момента. Нарисуйте ряд из 61 пары «время — яркость» по порядку съёмки. Если строите по номерам кадров, подпишите несколько делений реальным временем, чтобы по графику можно было найти вечерний спад.
+
+Готовый массив `XD` хранит яркость от 0 до 1. В исходном `X = np.load("showcase_day.npz")["X"]` пиксели имеют тип `uint8` и шкалу 0–255. Можно усреднять исходный `X` в этой шкале или сначала разделить его на 255, чтобы получить шкалу 0–1. Стройте график в той же шкале, что и `bright`. Отношение `ratio` и момент спада от выбора шкалы не меняются.
 
 ### setup
 ```python
@@ -137,6 +172,8 @@ XD, slot, tm, yD = D["X"] / 255, D["slot"], D["time"], D["y"]
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+# XD уже в шкале 0–1. При чтении X из файла используйте 0–255 или X / 255.
+# Постройте рисунок по сохранённому bright в выбранной шкале.
 
 ```
 
@@ -147,11 +184,121 @@ import pandas as _pd
 D0 = _np.load('showcase_day.npz'); X0, t0 = D0['X'] / 255, D0['time']
 b = _pd.Series(X0.reshape(len(X0), -1).mean(1)).groupby(t0).mean()
 g = need('bright', _pd.Series)
-assert len(g) == 61 and _np.allclose(g.values, b.values), 'bright: средняя яркость кадров, сгруппированная по времени.'
+def _clock(value):
+    if isinstance(value, _np.datetime64):
+        value = _pd.Timestamp(value)
+    if hasattr(value, 'strftime'):
+        return value.strftime('%H:%M')
+    return str(value)
+
+times = list(b.index)
+labels = [_clock(value) for value in g.index]
+assert len(labels) == len(times) and set(labels) == set(times), 'Индекс bright должен содержать каждое время съёмки от 07:00 до 22:00 с шагом 15 минут ровно один раз.'
+ordered = _pd.Series(g.to_numpy(), index=labels).reindex(times)
+assert _pd.api.types.is_numeric_dtype(ordered.dtype) and not _np.iscomplexobj(ordered), 'В bright для каждого времени нужна одна числовая средняя яркость.'
+brightness = ordered.to_numpy(dtype=float, na_value=_np.nan)
+if _np.allclose(brightness, b):
+    unit, other_values = '0–1', b.to_numpy() * 255
+else:
+    assert _np.allclose(brightness, b * 255), ('Сверьте значения bright со средними по 12 кадрам каждой съёмки. '
+        'Для готового XD используйте шкалу 0–1, для исходного X — 0–255; деление исходного X на 255 переводит его в 0–1.')
+    unit, other_values = '0–255', b.to_numpy()
 r = round(float(X0[t0 >= '18:00'].mean() / X0[t0 < '18:00'].mean()), 3)
 assert close(need('ratio'), r, 0.002), f'ratio = {need("ratio")}, а нужно {r}.'
-assert str(need('step_time')) == str(b.diff().idxmin()), f'step_time = {need("step_time")}.'
-assert len(figs) >= 1, 'Нарисуйте bright.'
+assert _clock(need('step_time')) == str(b.diff().idxmin()), f'step_time = {need("step_time")}.'
+from matplotlib.colors import to_rgba as _rgba
+from matplotlib.dates import AutoDateFormatter, ConciseDateFormatter, DateFormatter, num2date as _num2date
+from matplotlib.collections import PathCollection as _PathCollection
+
+def _axis_times(ax, x):
+    # Convert expected time labels through Matplotlib's actual axis converter.
+    if isinstance(ax.xaxis.get_major_formatter(), (AutoDateFormatter, ConciseDateFormatter, DateFormatter)):
+        # Calendar axes carry timestamps in days; use the date on this chart.
+        try:
+            day = _num2date(x[0]).date().isoformat()
+            coords = ax.convert_xunits(_pd.to_datetime([f'{day} {t}' for t in times]))
+            if _np.allclose(x, coords, rtol=0, atol=1e-8):
+                return True
+        except (TypeError, ValueError, OverflowError):
+            pass
+    # Category, integer and pandas time axes: visible tick labels identify the scale.
+    points = []
+    lo, hi = sorted(ax.get_xlim())
+    for label in ax.get_xticklabels(which='both'):
+        pos = label.get_position()[0]
+        if label.get_visible() and lo <= pos <= hi and label.get_text().strip():
+            points.append((pos, label.get_text().strip()))
+    if len(points) < 2:
+        return False
+    for pos, text in points:
+        i = int(_np.argmin(abs(x-pos)))
+        if not _np.isclose(x[i], pos, rtol=0, atol=1e-7) or text != times[i]:
+            return False
+    return _np.allclose(_np.diff(x), _np.diff(x)[0], rtol=1e-7, atol=1e-9)
+
+def _right_series(ax, xy, transform, raw_times=None):
+    xy = _np.ma.asarray(xy)
+    if xy.shape != (len(times), 2) or _np.ma.getmaskarray(xy).any():
+        return False
+    xy = ax.transData.inverted().transform(transform.transform(xy))
+    if not _np.isfinite(xy).all():
+        return False
+    if xy[-1, 0] < xy[0, 0]:
+        xy = xy[::-1]
+        if raw_times is not None:
+            raw_times = raw_times[::-1]
+    x, y = xy.T
+    if not (_np.diff(x) > 0).all():
+        return False
+    for coordinates, limits in ((x, ax.get_xlim()), (y, ax.get_ylim())):
+        lo, hi = sorted(limits)
+        if coordinates.min() < lo - 1e-7 or coordinates.max() > hi + 1e-7:
+            return False
+    if raw_times is not None and all(isinstance(v, _pd.Period) for v in raw_times):
+        if [_clock(v) for v in raw_times] != times:
+            return False
+        # pandas uses minute period ordinals, with major and minor time ticks.
+        for tick in ax.get_xticklabels(which='both'):
+            label = tick.get_text()
+            if len(label) == 5 and label[2] == ':' and x[0] <= tick.get_position()[0] <= x[-1]:
+                nearest = int(_np.argmin(abs(x - tick.get_position()[0])))
+                if label != times[nearest]:
+                    return False
+    elif not _axis_times(ax, x):
+        return False
+    if _np.allclose(y, brightness):
+        return 'match'
+    if _np.allclose(y, other_values):
+        return 'different_scale'
+    return False
+
+drawn = False
+checks = set()
+for fig in figs:
+    fig.canvas.draw()
+    for ax in fig.axes:
+        if not ax.get_visible():
+            continue
+        for line in ax.lines:
+            marker = line.get_marker() not in ('None', 'none', '', ' ') and line.get_markersize() > 0
+            stroke = line.get_linestyle() not in ('None', 'none', '', ' ') and line.get_linewidth() > 0
+            if not (line.get_visible() and line.get_alpha() != 0 and _rgba(line.get_color())[3] > 0 and (stroke or marker) and len(line.get_xdata())):
+                continue
+            drawn = True
+            checks.add(_right_series(ax, line.get_xydata(), line.get_transform(), line.get_xdata()))
+        for cloud in ax.collections:
+            if not isinstance(cloud, _PathCollection) or not cloud.get_visible() or not len(cloud.get_offsets()):
+                continue
+            colors = [rgba for rgba in (cloud.get_facecolors(), cloud.get_edgecolors()) if len(rgba)]
+            if not colors or not any((rgba[:, 3] > 0).all() for rgba in colors) or not (cloud.get_sizes() > 0).all():
+                continue
+            drawn = True
+            xy = cloud.get_offsets()
+            checks.add(_right_series(ax, xy[_np.argsort(xy[:, 0])], cloud.get_offset_transform()))
+
+assert drawn, f'График пуст. Значения bright в шкале {unit} верны. Нарисуйте их на осях: bright.plot() или ax.plot(bright.index, bright.values).'
+assert 'match' in checks or 'different_scale' not in checks, f'Шкалы не совпали. В bright яркость в шкале {unit}, а на оси Y использована другая шкала. Передайте в график сами значения bright.'
+assert 'match' in checks, 'На рисунке нужен весь ряд: 61 пара от 07:00 до 22:00. Сверьте значения и подписи времени, включая спад в 18:00. Для числовых позиций подпишите ось временем.'
 ```
 
 ### hint
@@ -213,10 +360,8 @@ p = _np.asarray(need('pred_norm'))
 assert p.shape == t.shape, f'pred_norm.shape = {p.shape}, а нужно {t.shape}: по ответу на каждый кадр дня.'
 _st = lambda q: (round(float((q == t)[~ev].mean()), 3), round(float((q == t)[ev].mean()), 3),
                  round(float(((q == 0) & (t == 0) & ev).sum() / max(((q == 0) & ev).sum(), 1)), 3))
-if _st(p) != (0.962, 0.863, 0.922):   # эталон: так отвечает лес из условия
-    # не совпало с заранее посчитанным эталоном — обучаем лес заново (на другой версии sklearn числа могут чуть отличаться)
-    p = _RF(100, random_state=0).fit(nz(d0['X'] / 255), d0['y']).predict(nz(D0['X'] / 255))
-    assert (_np.asarray(need('pred_norm')) == p).mean() > 0.99, 'pred_norm — предсказания леса на нормированных кадрах дня.'
+_expected = _RF(100,random_state=0).fit(nz(d0['X']/255),d0['y']).predict(nz(D0['X']/255))
+assert _np.array_equal(p,_expected), 'pred_norm: проверяется каждый прогноз на своём кадре, сохранения общих accuracy недостаточно.'
 w = {'acc_day_n': (p == t)[~ev].mean(), 'acc_evening_n': (p == t)[ev].mean(),
      'recall_empty': ((p == 0) & (t == 0) & ev).sum() / ((t == 0) & ev).sum(),
      'precision_empty': ((p == 0) & (t == 0) & ev).sum() / ((p == 0) & ev).sum()}
@@ -284,6 +429,8 @@ pred = np.array(list(
     "0010032220300010002320300030032220300000012120300000013220300"
     "0000122200000000322303000000122103000000322000000000022000000"
 ), dtype=int)
+_ref_pred = pred.copy()
+
 ```
 
 ### starter
@@ -299,17 +446,24 @@ product = np.array(["круассан"] * 4 + ["маффин"] * 4 + ["пече�
 ```python
 import numpy as _np
 import pandas as _pd
-D0 = _np.load('showcase_day.npz'); p = need('pred')
+D0 = _np.load('showcase_day.npz'); p = _ref_pred
 pr = _np.array(['круассан'] * 4 + ['маффин'] * 4 + ['печенье'] * 4)
 df0 = _pd.DataFrame({'time': D0['time'], 'slot': D0['slot'], 'true': D0['y'], 'pred': p}); df0['product'] = pr[df0['slot']]
 g = need('df', _pd.DataFrame)
 assert {'time', 'slot', 'product', 'true', 'pred'} <= set(g.columns), f'Колонки df: {list(g.columns)}.'
-assert (g['product'].values == df0['product'].values).all(), 'product: по номеру ячейки (0–3 круассан, 4–7 маффин, 8–11 печенье).'
+assert g['product'].isin(['круассан','маффин','печенье']).all(), 'product: название товара по ключу slot.'
 m = df0[df0['time'] < '13:00']
 w = _pd.DataFrame({'модель': (m['pred'] == 0).groupby(m['product']).sum() * 0.25, 'факт': (m['true'] == 0).groupby(m['product']).sum() * 0.25})
 e = need('empty_hours', _pd.DataFrame)
 assert list(e.columns) == ['модель', 'факт'], f'Столбцы: {list(e.columns)}.'
 assert ((e.loc[w.index] - w).abs() < 1e-9).all().all(), f'empty_hours:\n{e}\nа нужно\n{w}'
+assert not g.duplicated(['time','slot']).any(), 'Одна пара(time,slot) — один кадр.'
+assert set(map(tuple,g[['time','slot']].values))==set(map(tuple,df0[['time','slot']].values)), 'Набор кадров не совпадает.'
+_actual=g.set_index(['time','slot']).reindex(df0.set_index(['time','slot']).index)
+_expected=df0.set_index(['time','slot'])
+for _col in ('product','true','pred'):
+    assert _actual[_col].tolist()==_expected[_col].tolist(), f'{_col}: значение не соответствует паре(time,slot).'
+
 ```
 
 ### hint
@@ -336,13 +490,15 @@ print(empty_hours)
 ```
 
 ### explain
-Модель оценивает простой почти точно: по каждому товару она ошибается не больше чем на четверть часа, причём в разные стороны (круассаны — 8.0 часа против 7.75, печенье — 7.5 против 7.75, маффины совпали), а в сумме за утро — точно. За утро ячейки суммарно простояли пустыми около 21 часа — в среднем почти два часа на ячейку. Пустая ячейка в часы пик — недополученная выручка.
+Модель оценивает простой почти точно: по каждому товару она ошибается не больше чем на четверть часа, причём в разные стороны (круассаны — 8.0 часа против 7.75, печенье — 7.5 против 7.75, маффины совпали), а в сумме за утро — точно. За утро ячейки суммарно простояли пустыми около 21 часа — в среднем почти два часа на ячейку. Чтобы оценить потерянную выручку, нужен спрос в эти часы и сведения о заменах товара.
 
-## task: alerts | Шаг 5. Правило оповещений | plus
+## task: alerts | Шаг 5. Как выбрать правило оповещений | base
 
-Одиночная ошибка модели не должна будить пекаря. Правило: оповещение по ячейке в момент `t`, когда ячейка пуста по модели второй кадр подряд — «пусто» в `t` и в `t − 15 мин`, но не в `t − 30 мин`. Так на каждую серию пустых кадров приходится одно оповещение, в её начале, а не по оповещению на каждый следующий кадр. Если серию прервал хотя бы один кадр «не пусто», следующая серия даст новое оповещение. Поэтому если модель внутри настоящей серии пустоты на один кадр ошибётся, правило даст повторное оповещение по той же ячейке — это нормально, и оповещений может оказаться больше, чем эпизодов пустоты. Таблица `df` — в заготовке.
+В разделе урока «Сколько стоит дождаться второго кадра?» можно сначала проверить своё решение вручную. Прежде чем применять правило ко всей витрине, проверьте одну ячейку. В 12:00, 12:15 и 12:30 предсказаны классы 2, 0 и 0. Когда сработает правило двух кадров? Что изменится, если снимка в 12:15 нет? Если ячейка пуста на снимках в 11:00, 11:15 и 11:30, один сигнал поступит в 11:15. Сигнал при первом кадре пришёл бы в 11:00, при третьем — в 11:30. Если снимка в 11:15 нет, серия прерывается. Отсчёт задержки начинается с первого кадра, на котором ячейка действительно пуста.
 
-Постройте `P` и `T` — таблицы «время × ячейка» из `True/False`: пусто по модели и по факту. Сохраните `alerts` — DataFrame с колонками `time`, `slot` (по одной строке на оповещение), `n_alerts`, `n_correct` — сколько оповещений пришлось на действительно пустую ячейку, и `n_missed` — сколько эпизодов пустоты по факту (серий подряд идущих пустых кадров ячейки) прошли без единого оповещения.
+1. Напишите `alert_table(frame, k=2)`. Верните таблицу сигналов со временем в строках и ячейками в столбцах: один сигнал на k-м подряд кадре, где модель предсказала пустоту. Предсказание 0 означает «пусто». Восстановите равномерную сетку с шагом 15 минут. Для k=2 по таблице первого дня `df` сохраните `P` и `T` (пусто по модели и по факту), список сигналов `alerts` с колонками `time, slot`, число сигналов `n_alerts`, из них по фактически пустой ячейке `n_correct`, число пропущенных эпизодов `n_missed`.
+2. Управляющая **до проверки** оценила ложный вызов в 120 ₽, пропущенный эпизод в 300 ₽, повторный вызов в 30 ₽, минуту ожидания первого сигнала в обнаруженном эпизоде в 1 ₽. По первому дню сравните k=1, 2 и 3. Готовая функция `episode_metrics(frame, signals)` считает `n_alerts, false, missed, repeated, delay_minutes, delay_total`. Для стоимости нужна сумма задержек `delay_total` в минутах; `delay_minutes` — среднее по обнаруженным эпизодам. Сохраните таблицу `policy_table` с индексом k и этими столбцами плюс `cost`. В `chosen_k` запишите вариант с минимальными затратами; при равенстве берите меньший k.
+3. Зафиксируйте k и нормированный лес из шага 3. В заготовке дана функция `predict_next_day()` — она применяет этот лес к снимкам другого дня без дополнительной настройки. Сохраните её результат в `next_df` (столбцы `time, slot, true, pred`). Примените `chosen_k` к этим прогнозам и сохраните в `next_metrics` словарь, который вернёт та же `episode_metrics`. В письме сравните первый день со вторым и назовите один вид ошибки, который важен для пекаря.
 
 ### setup
 ```python
@@ -354,25 +510,50 @@ D = np.load("showcase_day.npz")
 def normalize(Z):
     A = Z.reshape(len(Z), -1)
     return (A - A.mean(axis=1, keepdims=True)) / A.std(axis=1, keepdims=True)
-# ответы нормированного леса из шага 3 — заранее посчитаны тем же кодом, чтобы не обучать лес при каждом запуске:
-# RandomForestClassifier(100, random_state=0).fit(normalize(d["X"] / 255), d["y"]).predict(normalize(D["X"] / 255))
-pred = np.array(list(
-    "1101222213331111222233331111222233331111222233331111222233331"
-    "1112222333311112222333311312222333311112222333311312222113311"
-    "1122203303101122203300101122203300101122203300100122203300100"
-    "1122033001000202033011000202033001000202033001000102033001000"
-    "2020300030002020300010002020300010002020300013112222333311113"
-    "2223333111122223333311122223333111122223333111122223333111122"
-    "2233331111222203331111220203331111220203330311220203330111220"
-    "2013301102202033300100202033301100202033301101202033311112222"
-    "3333111122223333110122223333113122223313100123213333131112323"
-    "3030101222030030101232030031100223030033101122030031001221030"
-    "0010032220300010002320300030032220300000012120300000013220300"
-    "0000122200000000322303000000122103000000322000000000022000000"
-), dtype=int)
+# Эти же веса используются для обоих дней.
+camera_model = RandomForestClassifier(n_estimators=100, random_state=0)
+camera_model.fit(normalize(d["X"] / 255), d["y"])
+pred = camera_model.predict(normalize(D["X"] / 255))
 product = np.array(["круассан"] * 4 + ["маффин"] * 4 + ["печенье"] * 4)
 df = pd.DataFrame({"time": D["time"], "slot": D["slot"], "true": D["y"], "pred": pred})
 df["product"] = product[df["slot"]]
+
+def episode_metrics(frame, signals):
+    """Оценить истинные эпизоды и сигналы по одному журналу кадров."""
+    truth = frame.pivot(index="time", columns="slot", values="true").eq(0)
+    truth = truth.reindex(index=signals.index, columns=signals.columns, fill_value=False)
+    missed, repeated = 0, 0
+    delays = []
+    for slot in truth.columns:
+        empty = truth[slot]
+        beginnings = empty & ~empty.shift(fill_value=False)
+        episode_id = beginnings.cumsum()
+        for _, episode in empty[empty].groupby(episode_id[empty]):
+            times = episode.index
+            hits = signals.loc[times, slot]
+            positions = np.flatnonzero(hits)
+            if len(positions) == 0:
+                missed += 1
+            else:
+                repeated += len(positions) - 1
+                delays.append(int(positions[0]) * 15)
+    return {
+        "n_alerts": int(signals.to_numpy().sum()),
+        "false": int((signals & ~truth).to_numpy().sum()),
+        "missed": missed,
+        "repeated": repeated,
+        "delay_minutes": float(np.mean(delays)) if delays else None,
+        "delay_total": sum(delays),
+    }
+
+
+def predict_next_day():
+    day = np.load("showcase_day_next.npz")
+    return pd.DataFrame({
+        "time": day["time"], "slot": day["slot"], "true": day["y"],
+        "pred": camera_model.predict(normalize(day["X"] / 255)),
+    })
+
 ```
 
 ### starter
@@ -383,6 +564,17 @@ import pandas as pd
 P = df.pivot(index="time", columns="slot", values="pred") == 0
 T = df.pivot(index="time", columns="slot", values="true") == 0
 
+def alert_table(frame, k=2):
+    empty = frame.pivot(index="time", columns="slot", values="pred").eq(0)
+    ticks = pd.date_range("2000-01-01 " + empty.index.min(),
+                          "2000-01-01 " + empty.index.max(), freq="15min")
+    empty = empty.reindex(ticks.strftime("%H:%M"), fill_value=False)
+    empty.index.name = "time"
+    # Какие из последних k кадров были пусты? Горел ли сигнал серии кадром раньше?
+    ...
+
+# Для каждого k передайте свой сигнал в episode_metrics и посчитайте стоимость.
+# После выбора вызовите predict_next_day(), затем ту же пару функций.
 ```
 
 ### check
@@ -410,49 +602,129 @@ for s in T0.columns:
             if not A0[s].values[run].any(): miss += 1
             run = []
 assert need('n_missed') == miss, f'n_missed = {need("n_missed")}, а нужно {miss}.'
+_rule=need('alert_table')
+_gap=_pd.DataFrame(dict(time=['11:00','11:30'],slot=[0,0],pred=[0,0]))
+assert not _rule(_gap).any().any(), 'Пропущенный11:15: кадры11:00 и11:30 не соседние.'
+_pair=_pd.DataFrame(dict(time=['11:00','11:15'],slot=[0,0],pred=[0,0]))
+assert bool(_rule(_pair).loc['11:15',0]), 'Два соседних пустых кадра подтверждают сигнал.'
+assert _np.array_equal(need('P'),P0) and _np.array_equal(need('T'),T0), 'P/T должны соответствовать keyed прогнозам и истинным меткам.'
+
+from sklearn.ensemble import RandomForestClassifier as _RF
+_nd=_np.load('showcase_day_next.npz');_base=_np.load('showcase.npz')
+def _norm(z):
+    z=z.reshape(len(z),-1);return (z-z.mean(1,keepdims=True))/z.std(1,keepdims=True)
+_forest = _RF(100, random_state=0).fit(_norm(_base["X"] / 255), _base["y"])
+_predict = _forest.predict(_norm(_nd["X"] / 255))
+_frame=_pd.DataFrame(dict(time=_nd['time'],slot=_nd['slot'],true=_nd['y'],pred=_predict))
+
+def _reference(frame, k):
+    pivot = frame.pivot(index="time", columns="slot", values="pred")
+    ticks = _pd.date_range("2000-01-01 " + pivot.index.min(),
+                           "2000-01-01 " + pivot.index.max(), freq="15min")
+    pivot = pivot.reindex(ticks.strftime("%H:%M"))
+    signals = _pd.DataFrame(False, index=pivot.index, columns=pivot.columns)
+    for slot in pivot:
+        length = 0
+        for time, label in pivot[slot].items():
+            length = length + 1 if label == 0 else 0
+            signals.loc[time, slot] = length == k
+
+    truth = frame.pivot(index="time", columns="slot", values="true").eq(0)
+    truth = truth.reindex(signals.index, fill_value=False)
+    missed, repeated, delays = 0, 0, []
+    for slot in truth:
+        run = []
+        for i, empty in enumerate(list(truth[slot]) + [False]):
+            if empty:
+                run.append(i)
+            elif run:
+                positions = [j for j in run if signals[slot].iloc[j]]
+                if positions:
+                    repeated += len(positions) - 1
+                    delays.append(15 * (positions[0] - run[0]))
+                else:
+                    missed += 1
+                run = []
+    metrics = dict(n_alerts=int(signals.to_numpy().sum()),
+                   false=int((signals & ~truth).to_numpy().sum()),
+                   missed=missed, repeated=repeated, delay_total=sum(delays),
+                   delay_minutes=float(_np.mean(delays)) if delays else None)
+    return signals, metrics
+
+
+_first = _np.load("showcase_day.npz")
+_day = _pd.DataFrame(dict(time=_first["time"], slot=_first["slot"], true=_first["y"],
+                          pred=_forest.predict(_norm(_first["X"] / 255))))
+_table = need("policy_table", _pd.DataFrame)
+assert _table.index.is_unique and set(_table.index) == {1, 2, 3}, "Сравните на первом дне все три k."
+_costs = {}
+for _k in (1, 2, 3):
+    _signals, _m = _reference(_day, _k)
+    _s = _rule(_day.sample(frac=1, random_state=1), _k)
+    assert _s.sort_index().sort_index(axis=1).equals(_signals.sort_index().sort_index(axis=1)), f"Для k={_k} проверьте момент первого сигнала серии."
+    _costs[_k] = 120 * _m["false"] + 300 * _m["missed"] + 30 * _m["repeated"] + _m["delay_total"]
+    for _key, _value in {**_m, "cost": _costs[_k]}.items():
+        assert close(_table.loc[_k, _key], _value), f"policy_table: первый день, k={_k}, столбец {_key}."
+_best = min(_costs, key=lambda k: (_costs[k], k))
+assert need("chosen_k") == _best, "Выберите k по минимальной стоимости на первом дне."
+_actual = need("next_df").set_index(["time", "slot"]).sort_index()
+_expected = _frame.set_index(["time", "slot"]).sort_index()
+assert _actual.equals(_expected), "Сверьте исходные кадры, метки и прогноз замороженного леса следующего дня."
+assert need("next_metrics", dict) == _reference(_frame, _best)[1], "Примените замороженный k к следующему дню и заново посчитайте эпизоды."
+
 ```
 
 ### hint
-Таблица «время × ячейка» — `df.pivot(index="time", columns="slot", values="pred") == 0`. Строки идут по времени, поэтому `shift(1)` сдвигает на один кадр (15 минут) назад.
+Для k последовательных пустых кадров объедините `empty` и её сдвиги на 1…k−1 через `&`. Подтверждение сохраняется всю длинную серию; первый сигнал — переход от отсутствия подтверждения к его появлению.
 
 ### hint
-`P.shift(1, fill_value=False)` — «пусто в предыдущем кадре». Оповещения: `A = P & p1 & ~(p1 & p2)`; список — `A.stack()` и отбор `True`. Для пропусков пройдите по каждой ячейке и найдите серии подряд идущих `True` в `T`; эпизод пропущен, если в его кадрах `A` нигде не `True`.
+В строку для каждого k добавьте `cost = 120 * false + 300 * missed + 30 * repeated + delay_total`. Для `n_correct` вычтите ложные сигналы из всех. Начните сравнение с k=1: один пустой кадр вызывает сигнал сразу.
 
 ### solution
 ```python
-import numpy as np
 import pandas as pd
 
-P = df.pivot(index="time", columns="slot", values="pred") == 0
-T = df.pivot(index="time", columns="slot", values="true") == 0
-p1, p2 = P.shift(1, fill_value=False), P.shift(2, fill_value=False)
-A = P & p1 & ~(p1 & p2)
+def alert_table(frame, k=2):
+    empty = frame.pivot(index="time", columns="slot", values="pred").eq(0)
+    ticks = pd.date_range("2000-01-01 " + empty.index.min(),
+                          "2000-01-01 " + empty.index.max(), freq="15min")
+    empty = empty.reindex(ticks.strftime("%H:%M"), fill_value=False)
+    empty.index.name = "time"
+    confirmed = empty.copy()
+    for lag in range(1, k):
+        confirmed &= empty.shift(lag, fill_value=False)
+    return confirmed & ~confirmed.shift(fill_value=False)
 
-st = A.stack()
-alerts = st[st].reset_index()[["time", "slot"]]
-n_alerts = len(alerts)
-n_correct = int(sum(T.loc[t, s] for t, s in zip(alerts["time"], alerts["slot"])))
 
-n_missed = 0
-for s in T.columns:
-    run = []
-    for i, v in enumerate(list(T[s].values) + [False]):
-        if v:
-            run.append(i)
-        elif run:
-            if not A[s].values[run].any():
-                n_missed += 1
-            run = []
-print(n_alerts, n_correct, n_missed)
-print(alerts.head(10))
+P = df.pivot(index="time", columns="slot", values="pred").eq(0)
+T = df.pivot(index="time", columns="slot", values="true").eq(0)
+signals = alert_table(df)
+flags = signals.stack()
+alerts = flags[flags].reset_index()[["time", "slot"]]
+rows = {}
+for k in (1, 2, 3):
+    m = episode_metrics(df, alert_table(df, k))
+    m["cost"] = 120 * m["false"] + 300 * m["missed"] + 30 * m["repeated"] + m["delay_total"]
+    rows[k] = m
+
+policy_table = pd.DataFrame.from_dict(rows, orient="index")
+n_alerts = rows[2]["n_alerts"]
+n_correct = n_alerts - rows[2]["false"]
+n_missed = rows[2]["missed"]
+chosen_k = int(policy_table["cost"].idxmin())
+next_df = predict_next_day()
+next_metrics = episode_metrics(next_df, alert_table(next_df, chosen_k))
+print(policy_table, chosen_k, next_metrics, sep="\n")
 ```
 
 ### explain
-За день — 24 оповещения на 22 эпизода пустоты: все эпизоды пойманы, ложное одно (вечерний круассан). Ещё одно оповещение — повторное: модель на один кадр «увидела» печенье в пустой ячейке, серия прервалась и началась заново. Цена правила «два кадра подряд» — задержка: пекарь узнаёт о пустой ячейке через 15 минут после того, как камера её впервые увидела. Для выпечки это приемлемо; для чего-то срочного правило было бы другим.
+Первый пустой кадр даёт быстрый сигнал, но одиночные ошибки распознавания вызывают лишние походы к витрине. Ожидание третьего кадра позволяет пропустить короткую пустоту. В сравнение включены стоимость этих исходов и суммарное ожидание пекаря. На следующем дне возможны пропуски даже у правила, которое нашло все эпизоды первого дня.
 
 ## task: restock | Шаг 6. Когда допекать | star
 
-По фактическим данным (`T` и `product` — в заготовке) найдите для каждого товара `half_empty` — первое время `t`, когда в момент `t` пусты не меньше 2 из 4 ячеек товара (Series с индексом-товаром). Посчитайте `saved_hours` — сколько часов пустых ячеек (по факту, 0.25 ч за кадр) приходится на интервал 11:00–12:45 включительно: столько простоя убрало бы допекание в 11:00 вместо 13:00 (при условии, что пекарня успеет). И `saved_by_product` — то же по товарам (Series).
+По фактическим данным (`T` и `product` — в заготовке) найдите для каждого товара `half_empty` — первое время `t`, когда в момент `t` пусты не меньше 2 из 4 ячеек товара (Series с индексом-товаром). Посчитайте `observed_empty_hours` — сколько часов пустых ячеек (по факту, 0.25 ч за кадр) приходится на интервал 11:00–12:45 включительно: это **наблюдаемый простой** на двухчасовом интервале, а не измеренная экономия от переноса партии. И `observed_by_product` — то же по товарам (Series).
+
+В `showcase_inventory.npz` доступны начальный запас по ячейкам `initial`, спрос на каждом четвертьчасовом шаге `demand` и две партии по ячейкам `refill`. В момент пополнения положите соответствующую партию только в пустые ячейки, затем вычтите спрос до минимума ноль и отметьте пустые ячейки. Сравните исходные 13:00 и 17:00, перенос первой партии на 11:00 и дополнительную копию первой партии в 11:00 при сохранении обеих исходных. Сдайте таблицу `schedule_scenarios` со строками `исходный`, `перенос`, `добавочная` и столбцами `morning` [11:00, 13:00), `afternoon` [13:00, 17:00), `whole_day` [07:00, 22:00). В каждой ячейке таблицы — сумма четвертьчасов пустоты по всем ячейкам витрины, переведённая в ячейко-часы.
 
 ### setup
 ```python
@@ -482,10 +754,22 @@ w = _pd.Series({p: share.index[(share[p] >= 0.5).values][0] for p in share.colum
 g = need('half_empty', _pd.Series)
 assert all(str(g[p]) == str(w[p]) for p in w.index), f'half_empty:\n{g}\nа нужно\n{w}'
 m = d0[(d0['time'] >= '11:00') & (d0['time'] < '13:00')]
-assert close(need('saved_hours'), (m['true'] == 0).sum() * 0.25), f'saved_hours = {need("saved_hours")}.'
+assert close(need('observed_empty_hours'), (m['true'] == 0).sum() * 0.25), f'observed_empty_hours = {need("observed_empty_hours")}.'
 sb = (m['true'] == 0).groupby(m['product']).sum() * 0.25
-gs = need('saved_by_product', _pd.Series)
-assert all(close(gs[p], sb[p]) for p in sb.index), f'saved_by_product:\n{gs}'
+gs = need('observed_by_product', _pd.Series)
+assert all(close(gs[p], sb[p]) for p in sb.index), f'observed_by_product:\n{gs}'
+_tape=_np.load('showcase_inventory.npz')
+_scenarios=need('schedule_scenarios',_pd.DataFrame)
+for _name,_batches in [('исходный',{780:0,1020:1}),('перенос',{660:0,1020:1}),('добавочная',{660:0,780:0,1020:1})]:
+    _stock=_tape['initial'].copy();_empty=[]
+    for _step,_demand in enumerate(_tape['demand']):
+        _minute=420+15*_step
+        if _minute in _batches:_stock=_np.where(_stock==0,_tape['refill'][_batches[_minute]],_stock)
+        _stock=_np.maximum(_stock-_demand,0);_empty.append(_stock==0)
+    _empty=_np.array(_empty)[:60]
+    for _key,_value in dict(morning=_empty[16:24].sum()*.25,afternoon=_empty[24:40].sum()*.25,whole_day=_empty.sum()*.25).items():
+        assert close(_scenarios.loc[_name,_key],_value), f'{_name}/{_key}: сравнивайте наблюдаемую пустоту за весь день; это не потерянные продажи.'
+
 ```
 
 ### hint
@@ -506,21 +790,41 @@ share = T.T.groupby(product).mean().T
 half_empty = pd.Series({p: share.index[(share[p] >= 0.5).values][0] for p in share.columns})
 
 m = df[(df["time"] >= "11:00") & (df["time"] < "13:00")]
-saved_hours = (m["true"] == 0).sum() * 0.25
-saved_by_product = (m["true"] == 0).groupby(m["product"]).sum() * 0.25
-print(half_empty, saved_hours, saved_by_product, sep="\n\n")
+observed_empty_hours = (m["true"] == 0).sum() * 0.25
+observed_by_product = (m["true"] == 0).groupby(m["product"]).sum() * 0.25
+print(half_empty, observed_empty_hours, observed_by_product, sep="\n\n")
+_tape=np.load('showcase_inventory.npz')
+def stock_scenario(batches):
+    stock=_tape['initial'].copy();observations=[]
+    for step,demand in enumerate(_tape['demand']):
+        minute=7*60+step*15
+        if minute in batches:
+            stock=np.where(stock==0,_tape['refill'][batches[minute]],stock)
+        stock=np.maximum(stock-demand,0)
+        observations.append(stock==0)
+    empty=np.asarray(observations)[:60] # [07:00,22:00), not an extra interval at22:00
+    return dict(morning=float(empty[16:24].sum()*.25),afternoon=float(empty[24:40].sum()*.25),whole_day=float(empty.sum()*.25))
+schedule_scenarios=pd.DataFrame({
+    'исходный':stock_scenario({13*60:0,17*60:1}),
+    'перенос':stock_scenario({11*60:0,17*60:1}),
+    'добавочная':stock_scenario({11*60:0,13*60:0,17*60:1}),
+}).T
+
 ```
 
 ### explain
-К 11:00 половина ячеек каждого товара уже пуста (печенье — с 9:45), а допекают только в 13:00. Между 11:00 и 13:00 витрина набирает 15 часов пустых ячеек — больше двух третей утреннего простоя. А вот второе допекание, в 17:00, почти вовремя: с 13:00 до 17:00 набирается 7.5 часа пустых ячеек, половина круассанов пустеет к 16:00, маффинов — к 16:15, а печенье до 17:00 ни разу не пустеет наполовину. Это один день, и вывод стоит подтвердить за 2–3 недели — но камера с моделью как раз и даёт такие данные каждый день.
+К 11:00 половина ячеек каждого товара уже пуста (печенье — с 9:45), а допекают только в 13:00. Между 11:00 и 13:00 витрина набирает 15 ячейко-часов наблюдаемой пустоты — больше двух третей утреннего простоя. А вот второе допекание, в 17:00, почти вовремя: с 13:00 до 17:00 набирается 7.5 часа пустых ячеек, половина круассанов пустеет к 16:00, маффинов — к 16:15, а печенье до 17:00 ни разу не пустеет наполовину. Это один день, и вывод стоит подтвердить за 2–3 недели — но камера с моделью как раз и даёт такие данные каждый день.
 
 ## Итог для управляющей KZN-1
+
+Пустая ячейка не означает отсутствие товара во всех ячейках и не измеряет потерю продажи. Для решения о партии сравните **весь день** в двух сценариях: перенос единственной партии с 13:00 на 11:00 и дополнительная партия в 11:00 с сохранением 13:00. При переносе утренний простой может снизиться, но запас кончится раньше и суммарный дневной простой увеличится. Нужны размер партий, остатки, спрос, время повторного опустошения, производственные ограничения и списания. Число 15 ячейко-часов нельзя назвать экономией без этих допущений.
+
 
 > **Камера над витриной: один размеченный день, 732 кадра ячеек.**
 >
 > 1. **Модель распознаёт ячейку днём в 96 % случаев, вечером — в 86 %.** Первая версия вечером не находила пустые ячейки совсем: в 18:00 включается другой свет, и кадры становятся на треть темнее. Исправлено нормировкой яркости каждого кадра. Чтобы поднять вечернюю точность, нужна сотня размеченных вечерних кадров.
-> 2. **Оповещения:** сигнал, если ячейка пуста на двух кадрах подряд (через 15 минут после того, как опустела). За проверочный день пойманы все 22 случая пустоты, ложных сигналов — один.
-> 3. **Допекание:** к 11:00 половина ячеек каждого товара уже пустует, печенье — с 9:45. С 11:00 до 13:00 витрина набирает 15 часов пустых ячеек. Допекание в 17:00 почти вовремя: с 13:00 до 17:00 — 7.5 часа пустых ячеек, половина круассанов пустеет к 16:00. **Предложение:** перенести утреннее допекание на 11:00 (печенье — раньше), дневное круассанов — на 16:00 и проверить на 2–3 неделях данных с камеры, как изменится выручка выпечки.
+> 2. **Оповещения.** Назовите выбранное число кадров подряд, затраты на первом дне и исходы на другом. Укажите число пропущенных эпизодов и задержку относительно первого пустого кадра.
+> 3. **Допекание:** к 11:00 половина ячеек каждого товара уже пустует, печенье — с 9:45. С 11:00 до 13:00 витрина набирает 15 ячейко-часов наблюдаемой пустоты. Допекание в 17:00 почти вовремя: с 13:00 до 17:00 — 7.5 часа пустых ячеек, половина круассанов пустеет к 16:00. В симуляции перенос партии на 11:00 уменьшил утренний простой с 15 до 5 ячейко-часов, но увеличил простой за день с 49,75 до 52,25. Дополнительная партия дала 43,75 за день. До изменения расписания оценим себестоимость партии и списания. Если пробный выпуск оправдан, за 2–3 недели сравним продажи, списания и простой за весь день с сопоставимыми сменами.
 
 ::: tip
 В работе модель будет видеть кадры, которых не было ни в обучении, ни в проверочном дне: новую выпечку, другую раскладку, солнце в окне. Раз в месяц размечайте день вручную и пересчитывайте точность, как в шаге 1, — это мониторинг из главы 8.

@@ -40,7 +40,7 @@ print(X.toarray())
 `CountVectorizer` делает то же, что запрос `SELECT review_id, word, COUNT(*) FROM tokens GROUP BY review_id, word` с последующим разворотом (PIVOT) слов в столбцы. Только столбцов — сотни, а большинство клеток — нули.
 :::
 
-По умолчанию шаблон слова — «две и больше буквы или цифры подряд». Однобуквенные «и», «в», «с» отбрасываются сами, а «не» — сохраняется. Шаблон меняется параметром `token_pattern`. Поэтому на всех отзывах словарь `CountVectorizer` — 485 слов, а не 491, как при `re.findall`: ушли 9 однобуквенных слов, зато добавились числа «10», «20» и склейка «из10».
+По умолчанию шаблон слова — «две и больше буквы или цифры подряд». Однобуквенные «и», «в», «с» отбрасываются сами, а «не» — сохраняется. Шаблон меняется параметром `token_pattern`. Поэтому на всех отзывах словарь `CountVectorizer` — 485 слов, а не 491, как при `re.findall`: ушли 9 однобуквенных слов, зато добавились числа «10», «20» и склейка «из 10».
 
 {{practice: count, min-df}}
 
@@ -585,6 +585,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer as _TF
 r0 = _pd.read_csv('reviews_text.csv'); a, b = _tts(r0['text'], test_size=0.25, random_state=42)
 tf = _TF().fit(a); Xb = tf.transform(b)
 assert need('X_train').shape == (len(a), len(tf.vocabulary_)) and need('X_test').shape == Xb.shape, 'Векторайзер обучается на text_train, к text_test — только transform.'
+from scipy.sparse import csr_matrix as _csr
+for _name, _matrix in [('X_train', tf.transform(a)), ('X_test', Xb)]:
+    _difference = _csr(need(_name)) - _matrix
+    assert not _difference.nnz or abs(_difference.data).max() < 1e-7, f'{_name}: признаки должны соответствовать словам своей строки.'
 words = {w for t in b for w in _re.findall(r'(?u)\b\w\w+\b', t.lower())}
 un = len([w for w in words if w not in tf.vocabulary_])
 assert need('n_unseen') == un, f'n_unseen = {need("n_unseen")}, а нужно {un}.'

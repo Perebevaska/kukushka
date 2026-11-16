@@ -9,6 +9,7 @@
   var LESSON = JSON.parse(document.getElementById('lesson-data').textContent);
   var ICON_PLAY = '<svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z"/></svg>';
   var EXAM = LESSON.mode === 'exam';
+  var orderReportKey = 'ch01/14-project/file';
   // у контрольной каждая попытка — свои ключи задач (отметку «решено» нельзя снять, поэтому новая попытка = новые ключи)
   function examState() { return (P.state && P.state.exam[LESSON.lesson]) || { n: 1 }; }
   function prefix() { return EXAM ? LESSON.lesson + '@' + (examState().n || 1) : LESSON.lesson; }
@@ -81,7 +82,8 @@
           var id = ++self.seq;
           self.pending[id] = { resolve: resolve, onStatus: onStatus };
           setPill('busy');
-          self.worker.postMessage({ type: 'run', id: id, code: job.code, check: job.check || null, setup: job.setup || null, files: job.files || [], display: !!LESSON.display });
+          self.worker.postMessage({ type: 'run', id: id, code: job.code, check: job.check || null, setup: job.setup || null,
+            files: job.files || [], display: !!LESSON.display, orderReport: !!job.orderReport });
         });
       });
     },
@@ -400,9 +402,13 @@
   // ---------- «Проверьте себя»: вопрос на понимание, у каждого варианта своё объяснение ----------
   function initQuizzes() {
     var TEST = LESSON.mode === 'test';
+    var ordersTest = LESSON.lesson === 'ch01/test';
+    var chapter = TEST && D.COURSE.find(function (c) { return c.id + '/test' === LESSON.lesson; });
+    var coreQuestions = chapter && chapter.test.coreQuestions;
     var attempt = TEST ? ((P.state.exam[LESSON.lesson] || {}).n || 1) : 1;
     $$('.quiz-c').forEach(function (q) {
-      var key = LESSON.lesson + '#' + q.dataset.q + (attempt > 1 ? '/' + attempt : '');
+      if (coreQuestions) $('.predict-title', q).append(coreQuestions.includes(q.dataset.q) ? ' · основной путь' : ' · углубление по желанию');
+      var key = TEST ? D.testQuestionKey(LESSON.lesson, q.dataset.q, attempt) : LESSON.lesson + '#' + q.dataset.q;
       var list = $('ul', q); if (!list) return;
       var opts = el('div', 'quiz-opts'), correct = -1, whys = [];
       $$(':scope > li', list).forEach(function (li, i) {
@@ -437,25 +443,52 @@
       var saved = P.state.quiz[key];
       if (saved) answer(saved.a, false);
     });
-    if (TEST) testResult();
+    if (TEST) {
+      var questions = $('.test-questions');
+      if (questions && $('.quiz-c[data-answered]', questions)) questions.open = true;
+      testResult();
+    }
+    if (ordersTest) {
+      var project = el('p'), projectLink = el('a', '', 'Открыть шаг «Отчёт в файл»');
+      projectLink.href = '14-project.html#task-file';
+      var status = el('span');
+      project.appendChild(status); project.appendChild(projectLink);
+      $('#test-result').before(project);
+      function showReportStatus() {
+        var task = P.task(orderReportKey);
+        status.textContent = task && task.monthlyReportAccepted ? 'Проект: файл отчёта принят. ' :
+          task && task.solved ? 'Проект: прежняя версия зачтена. Обновлённый отчёт можно проверить отдельно. ' : 'Проект: файл отчёта ещё не сдан. ';
+      }
+      showReportStatus();
+      P.onChange(showReportStatus);
+    }
 
     // итог теста главы: сколько верно, какие уроки повторить, новая попытка
     function testResult() {
       var box = $('#test-result'); if (!box) return;
-      var qs = $$('.quiz-c'), done = qs.filter(function (x) { return x.dataset.answered; });
+      var all = $$('.quiz-c'), qs = all;
       box.textContent = '';
+      if (coreQuestions) {
+        qs = all.filter(function (q) { return coreQuestions.includes(q.dataset.q); });
+        var extra = all.filter(function (q) { return !coreQuestions.includes(q.dataset.q); });
+        var tried = extra.filter(function (q) { return q.dataset.answered; });
+        var correct = tried.filter(function (q) { return q.dataset.answered === 'ok'; });
+        box.appendChild(el('p', 'muted', 'Углубления по желанию. Отвечено ' + tried.length + ' из ' + extra.length + ', верно ' + correct.length + '.'));
+      }
+      var done = qs.filter(function (x) { return x.dataset.answered; });
       if (done.length < qs.length) {
-        box.appendChild(el('p', 'muted', 'Отвечено ' + done.length + ' из ' + qs.length + '. Итог появится, когда ответите на все вопросы.'));
+        box.appendChild(el('p', 'muted', (coreQuestions ? 'Основной путь. ' : '') + 'Отвечено ' + done.length + ' из ' + qs.length + '. Итог появится, когда ответите на все ' + (coreQuestions ? 'основные ' : '') + 'вопросы.'));
         return;
       }
       var ok = qs.filter(function (x) { return x.dataset.answered === 'ok'; }).length, pct = Math.round(100 * ok / qs.length);
       var head = el('div', 'exam-score ' + (pct >= 80 ? 'good' : pct >= 50 ? 'mid' : 'low'));
-      head.appendChild(el('b', '', ok + ' из ' + qs.length));
-      head.appendChild(el('span', '', pct >= 80 ? ' — глава усвоена. Можно идти дальше.' : pct >= 50 ? ' — неплохо, но стоит повторить темы ниже.' : ' — лучше вернуться к урокам ниже, а потом пройти тест ещё раз.'));
-      box.appendChild(head);
+      head.appendChild(el('b', '', (coreQuestions ? 'Основной путь · ' : '') + ok + ' из ' + qs.length + (ordersTest ? ' по теории' : '')));
+      if (!ordersTest) head.appendChild(el('span', '', pct >= 80 ? ' — глава усвоена. Можно идти дальше.' : pct >= 50 ? ' — неплохо, но стоит повторить темы ниже.' : ' — лучше вернуться к урокам ниже, а потом пройти тест ещё раз.'));
+      box.prepend(head);
+      if (coreQuestions && tried.length === extra.length) box.appendChild(el('p', '', 'Всего верно ' + (ok + correct.length) + ' из ' + all.length + '.'));
       var miss = {};
-      qs.forEach(function (x) {
-        if (x.dataset.answered === 'ok' || !x.dataset.lesson) return;
+      all.forEach(function (x) {
+        if (x.dataset.answered !== 'fail' || !x.dataset.lesson) return;
         (miss[x.dataset.lesson] = miss[x.dataset.lesson] || []).push(x.dataset.q.replace('c', ''));
       });
       var ids = Object.keys(miss);
@@ -567,11 +600,13 @@
       var run = runner(out, function () { saveCode(); return { code: cm.getValue(), setup: t.setup, files: LESSON.files }; });
       var check = runner(out, function () {
         saveCode();
-        return { code: cm.getValue(), setup: t.setup, check: t.check, files: LESSON.files };
+        return { code: cm.getValue(), setup: t.setup, check: t.check, files: LESSON.files, orderReport: k === orderReportKey };
       }, function (res) {
         if (res.stopped || !res.check) return;
         var e = P.task(k) || {};
-        P.updateTask(k, { att: (e.att || 0) + 1 });
+        var attemptUpdate = { att: (e.att || 0) + 1 };
+        if (res.check.passed && k === orderReportKey) attemptUpdate.monthlyReportAccepted = true;
+        P.updateTask(k, attemptUpdate);
         verdict.textContent = '';
         if (res.check.passed) {
           var wasSolved = !!e.solved, wasDone = progressNow().done;
@@ -583,6 +618,12 @@
             : wasSolved && after.due === null && e.due ? 'Верно, и без подсказок — задача усвоена.'
             : ['Верно!', 'Отлично, задача решена.', 'Да, так и есть.'][idx % 3];
           verdict.appendChild(el('span', '', msg));
+          if (res.reportText != null) {
+            var download = el('a', 'btn', 'Скачать report.md');
+            download.download = 'report.md';
+            download.href = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(res.reportText);
+            verdict.appendChild(download);
+          }
           if (t.explain && !$('.x-explain', extras)) addExtra('Разбор', t.explain, 'x-explain');
           var next = tasks[idx + 1];
           if (next) {
@@ -710,15 +751,26 @@
 
   // ---------- прогресс урока и главы ----------
   var lastComplete = null;   // null — ещё не считали (без поздравления при открытии урока)
-  function progressNow() { return D.lessonProgress(prefix(), LESSON.tasks); }
+  function progressNow() {
+    var p = D.lessonProgress(prefix(), LESSON.tasks);
+    if (EXAM) { p.done = p.all; p.total = p.count; }
+    return p;
+  }
   function updateProgress(wasDone) {
     var p = progressNow();
     var m = $('#lesson-meter');
     var theory = LESSON.mode === 'lesson' && p.secs;
     if (m) {
-      var parts = (theory ? 'Теория ' + p.read + ' из ' + p.secs + ' · задачи ' : '') + p.done + ' из ' + p.total + (theory ? '' : ' задач');
       $('i', m).style.width = ((p.total + (theory ? p.secs : 0)) ? 100 * (p.done + (theory ? p.read : 0)) / (p.total + (theory ? p.secs : 0)) : 0) + '%';
-      $('span', m).textContent = parts + ((theory ? p.complete : p.done >= p.total) ? ' — урок пройден' : '');
+      var status = !EXAM && p.complete ? ' — урок пройден' : '';
+      var details = $$('.meter-details [data-meter]', m);
+      if (details.length) {
+        var counts = { read: p.read, done: p.done, star: p.all - p.done, status: status };
+        details.forEach(function (field) { field.textContent = counts[field.dataset.meter]; });
+      } else {
+        var parts = (theory ? 'Теория ' + p.read + ' из ' + p.secs + ' · задачи ' : '') + p.done + ' из ' + p.total + (theory ? '' : ' задач');
+        $('span', m).textContent = parts + status;
+      }
     }
     var e = D.lessonEntry(LESSON.lesson);
     if (e) {
@@ -730,7 +782,7 @@
     var next = $('.pager .next');
     if (next) next.classList.toggle('ready', p.done >= p.total);
     var nowComplete = LESSON.mode === 'lesson' ? p.complete : p.done >= p.total;
-    if (lastComplete === false && nowComplete && (p.total || p.secs)) toast('Урок пройден! Задачи со звёздочкой — по желанию.', 3500);
+    if (!EXAM && lastComplete === false && nowComplete && (p.total || p.secs)) toast('Урок пройден! Задачи со звёздочкой — по желанию.', 3500);
     lastComplete = nowComplete;
   }
 

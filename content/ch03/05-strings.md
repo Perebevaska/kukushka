@@ -187,7 +187,8 @@ reviews.loc[cold, ["shop_id", "rating", "text"]].head()
 import pandas as pd
 df = pd.read_csv("clients_raw.csv")
 digits = df["phone"].str.replace(r"\D", "", regex=True)
-phone10 = digits.str[-10:]
+valid = digits.str.fullmatch(r"[78]?\d{10}", na=False)
+phone10 = digits.where(valid).str[-10:]
 pd.DataFrame({"было": df["phone"], "стало": phone10}).head(8)
 ```
 
@@ -277,6 +278,8 @@ print(p10.tolist())
 - **`capitalize()` для составных названий.** «флэт уайт» → «Флэт уайт» — правильно, но «санкт-петербург» → «Санкт-петербург»; сверяйте со справочником.
 :::
 
+Перед нормализацией телефона проверьте всю запись: добавочный номер (`+7 (912) 345-67-89 доб. 123`) требует отдельной сверки. Последние десять цифр такой строки дали бы чужой правдоподобный номер `3456789123` и могли бы склеить двух клиентов.
+
 ## Практика
 
 ## task: city-lower | Регистр и пробелы | warmup
@@ -357,7 +360,8 @@ n_cold = reviews["text"].str.contains("холодн|остыл", case=False, na=
 import pandas as pd
 df = pd.read_csv("clients_raw.csv")
 digits = df["phone"].str.replace(r"\D", "", regex=True)
-phone10 = digits.str[-10:]
+valid = digits.str.fullmatch(r"[78]?\d{10}", na=False)
+phone10 = digits.where(valid).str[-10:]
 print(phone10[0])
 ```
 
@@ -369,10 +373,10 @@ assert _lines == [str(want)], f'Должно вывестись {want}. Сейч
 ```
 
 ### hint
-Сначала убрать не-цифры, потом взять последние 10 символов.
+Сначала убрать не-цифры, проверить полное соответствие 10 цифрам либо 11 с 7/8, затем взять последние 10 только у допустимых номеров. Добавочный номер предварительно откладывают на сверку.
 
 ### hint
-Сначала цифры (`digits`), потом последние 10 (`phone10`), и только потом печатаем первый элемент: `phone10[0]`.
+Сначала цифры (`digits`), затем маска полного формата (`valid`), потом последние 10 допустимых (`phone10`), и только потом печатаем первый элемент: `phone10[0]`.
 
 ## task: city-clean | Город начисто | base
 
@@ -436,11 +440,11 @@ df = pd.read_csv("clients_raw.csv")
 ```python
 import pandas as _pd
 p0 = _pd.read_csv('clients_raw.csv')['phone']
-want = p0.str.replace(r'\D', '', regex=True).str[-10:]
+want = p0.str.replace(r'\D', '', regex=True).where(p0.str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
 d = need('df', _pd.DataFrame)
 assert 'phone10' in d.columns, 'Нет столбца phone10.'
 got = d['phone10']
-assert got.isna().sum() == p0.isna().sum(), 'Число пропусков изменилось.'
+assert got.isna().sum() == want.isna().sum(), 'Неизвестные или невалидные номера должны остаться пропусками.'
 assert (got.fillna('-') == want.fillna('-')).all(), f'phone10 не совпадает с ожидаемым. Например, {p0[got.fillna("-") != want.fillna("-")].iloc[0]!r} → {got[got.fillna("-") != want.fillna("-")].iloc[0]!r}.'
 assert need('n_bad') == (want.dropna().str.len() != 10).sum(), f'n_bad = {need("n_bad")}.'
 ```
@@ -455,7 +459,8 @@ assert need('n_bad') == (want.dropna().str.len() != 10).sum(), f'n_bad = {need("
 ```python
 import pandas as pd
 df = pd.read_csv("clients_raw.csv")
-df["phone10"] = df["phone"].str.replace(r"\D", "", regex=True).str[-10:]
+digits = df["phone"].str.replace(r"\D", "", regex=True)
+df["phone10"] = digits.where(digits.str.fullmatch(r"[78]?\d{10}")).str[-10:]
 n_bad = (df["phone10"].dropna().str.len() != 10).sum()
 ```
 
@@ -610,7 +615,7 @@ df = pd.read_csv("clients_raw.csv")
 import pandas as _pd
 d = _pd.read_csv('clients_raw.csv')
 d['client_id'] = d['client_id'].str.strip().str.upper()
-d['p'] = d['phone'].str.replace(r'\D', '', regex=True).str[-10:]
+d['p'] = d['phone'].str.replace(r'\D', '', regex=True).where(d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
 n = d.dropna(subset=['p']).groupby('p')['client_id'].nunique()
 want = sorted(n[n > 1].index)
 got = need('shared')
@@ -629,7 +634,8 @@ assert got == want, f'shared = {got[:5]}…, а нужно {len(want)} теле�
 import pandas as pd
 df = pd.read_csv("clients_raw.csv")
 df["client_id"] = df["client_id"].str.strip().str.upper()
-df["phone10"] = df["phone"].str.replace(r"\D", "", regex=True).str[-10:]
+digits = df["phone"].str.replace(r"\D", "", regex=True)
+df["phone10"] = digits.where(digits.str.fullmatch(r"[78]?\d{10}")).str[-10:]
 cards = df.groupby("phone10")["client_id"].nunique()
 shared = sorted(cards[cards > 1].index)
 ```

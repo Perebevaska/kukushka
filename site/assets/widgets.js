@@ -109,20 +109,20 @@
       text(svg, 350, 237, 'глубина дерева', 'mut sm');
       if (base) { svgEl('line', { x1: 60, y1: Y(base), x2: 640, y2: Y(base), 'class': 'ln-err dash' }, svg); text(svg, 636, Y(base) - 6, '«всегда вовремя» ' + pct(base), 'err sm', 'end'); }
       svgEl('path', { d: line('train'), 'class': 'ln' }, svg);
-      svgEl('path', { d: line('test'), 'class': 'ln-acc' }, svg);
+      svgEl('path', { d: line('validation'), 'class': 'ln-acc' }, svg);
       text(svg, X(rows.length) - 4, Y(rows[rows.length - 1].train) - 8, 'обучение', 'ink2 sm', 'end');
-      text(svg, X(rows.length) - 4, Y(rows[rows.length - 1].test) + 16, 'тест', 'acc sm b', 'end');
+      text(svg, X(rows.length) - 4, Y(rows[rows.length - 1].validation) + 16, 'валидация', 'acc sm b', 'end');
       var r = rows[dep - 1];
       svgEl('line', { x1: X(dep), y1: 20, x2: X(dep), y2: 200, 'class': 'ln-mut dash' }, svg);
       svgEl('circle', { cx: X(dep), cy: Y(r.train), r: 5, 'class': 'box' }, svg);
-      svgEl('circle', { cx: X(dep), cy: Y(r.test), r: 5, 'class': 'box-acc' }, svg);
-      var gap = r.train - r.test, best = rows.reduce(function (a, b) { return b.test > a.test ? b : a; });
-      info.innerHTML = 'Глубина ' + dep + ': обучение <b>' + pct(r.train) + '</b>, тест <b>' + pct(r.test) + '</b>, разрыв ' + num(gap * 100, 1) + ' п.п. ' +
-        (gap <= 0.03 && r.test < base + 0.005 ? 'Дерево слишком простое: на тесте не лучше правила «всегда вовремя» — это недообучение.' :
-         r.test < base ? 'На тесте хуже простого правила «всегда вовремя» — дерево запомнило шум.' :
+      svgEl('circle', { cx: X(dep), cy: Y(r.validation), r: 5, 'class': 'box-acc' }, svg);
+      var gap = r.train - r.validation, best = rows.reduce(function (a, b) { return b.validation > a.validation ? b : a; });
+      info.innerHTML = 'Глубина ' + dep + ': обучение <b>' + pct(r.train) + '</b>, валидация <b>' + pct(r.validation) + '</b>, разрыв ' + num(gap * 100, 1) + ' п.п. ' +
+        (gap <= 0.03 && r.validation < base + 0.005 ? 'Дерево слишком простое: на валидации не лучше правила «всегда вовремя» — это недообучение.' :
+         r.validation < base ? 'На валидацияе хуже простого правила «всегда вовремя» — дерево запомнило шум.' :
          gap > 0.06 ? 'Разрыв растёт — дерево начинает запоминать обучающие строки.' :
-         dep === best.depth ? 'Это лучшая глубина по тесту.' : 'Обучение и тест близко — дереву можно верить.') +
-        ' Лучший тест — на глубине ' + best.depth + ' (' + pct(best.test) + ').';
+         dep === best.depth ? 'Это лучшая глубина по валидацияу.' : 'Обучение и валидация близко — дереву можно верить.') +
+        ' Лучший валидация — на глубине ' + best.depth + ' (' + pct(best.validation) + ').';
     }
     draw(3);
   };

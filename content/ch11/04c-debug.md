@@ -285,6 +285,8 @@ print("после 300 шагов на одном батче:", loss.item())     
 
 В архиве курса блокнот лежит в папке `notebooks/extra/`, данные (`deliveries.csv`) он находит сам в папке `data` курса. Поставьте `torch` (`uv add torch`, глава 2) и выполняйте сверху вниз; на обычном ноутбуке весь блокнот выполняется за несколько минут.
 
+Ширина, эпоха и dropout выбираются по валидации при общих разбиениях. Сначала зафиксируйте конфигурацию и процедуру подготовки, затем единожды получите итог на финальном тесте. Это правило одинаково для браузера и практикума PyTorch.
+
 ## Практика
 
 ## task: dropout | Dropout руками | base
@@ -346,6 +348,7 @@ import numpy as np
 from sklearn.datasets import make_moons
 from sklearn.model_selection import train_test_split
 X, y = make_moons(600, noise=0.3, random_state=1)
+X, X_final, y, y_final = train_test_split(X,y,test_size=.25,random_state=42)
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=60, random_state=0)
 
 def accuracy(params, X, y):

@@ -451,6 +451,13 @@ r0 = P0.iloc[0].copy(); r0['avg_check'] = float('nan')
 assert f(r0) == [], 'Пропуск среднего чека — допустим (визитов не было): pd.isna(v).'
 r1 = P0.iloc[0].copy(); r1['delivery_share'] = 3.0
 assert any(str(x).startswith('delivery_share') for x in f(r1)), 'delivery_share = 3.0 — нарушение.'
+for _visits, _delivery, _check in [(0, .5, 800), (-1, .5, 800), (-1, 3., 800), (-1, 3., 4000)]:
+    _row = _pd.Series(dict(avg_check=_check, delivery_share=_delivery, visits_90d=_visits))
+    _problems = f(_row)
+    assert isinstance(_problems, list) and all(isinstance(v, str) for v in _problems), 'range_problems возвращает список строк с именами полей.'
+    _expected = set(_rp(_row))
+    assert all(any(v.startswith(k) for v in _problems) for k in _expected), f'Для {_row.to_dict()} нужны все нарушения: {sorted(_expected)}. Не прекращайте проверку после первого поля.'
+    assert all(any(v.startswith(k) for k in _expected) for v in _problems), f'Для {_row.to_dict()} лишние нарушения: {_problems}; ноль визитов допустим.'
 ```
 
 ### hint
@@ -575,7 +582,7 @@ print(speed, best_small, round(speedup, 2), sep="\n")
 
 ## task: advice | Шаг 8. Рекомендация | base
 
-Все цифры собраны — теперь решение за вами. Руководитель CRM ждёт одну рекомендацию. Какую дать? Запишите в `advice` номер варианта:
+Все цифры собраны — теперь решение за вами. Свяжите каждое действие с наблюдаемым симптомом:422 — контракт входа;500 — внутренняя ошибка/отсутствующее поле; p95 вышепорога — задержка. Сначала назовите время/версию/пример строки, затем гипотезу и проверку; один HTTP статус не устанавливает причину. Руководитель CRM ждёт одну рекомендацию. Какую дать? Запишите в `advice` номер варианта:
 
 1. Откатиться на 1.0: она работала до 5 ноября без проблем.
 2. Не откатываться. Добавить в сервис проверку входа с диапазонами, выкатить лес из 60 деревьев после замера скорости, а сайт и приложение 3.2 пусть исправляют запросы у себя.

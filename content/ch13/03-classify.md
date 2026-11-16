@@ -570,7 +570,7 @@ print(share_unsure, acc_sure, acc_unsure, *unsure_examples, sep="\n")
 
 ## task: recall95 | Не пропустить жалобу | plus
 
-Отдел заботы о гостях хочет видеть почти все жалобы: полнота класса «недоволен» на тесте — не ниже 0.95. Для конвейера тональности (обучен в заготовке) найдите наибольший порог `thr` из сетки `np.arange(0.05, 0.96, 0.01)`, при котором полнота ≥ 0.95 (округлите до 2 знаков). Сохраните `precision_at` — точность при этом пороге (3 знака), `n_flagged` — сколько тестовых отзывов отправится на разбор и `precision_05`, `recall_05` — точность и полноту при пороге 0.5 (3 знака).
+Отдел заботы о гостях хочет видеть почти все жалобы: целевая полнота класса «недоволен» на валидации — не ниже 0.95. Для конвейера тональности (обучен в заготовке) на отдельной внутренней валидации найдите наибольший порог `thr` из сетки `np.arange(0.05, 0.96, 0.01)`, при котором полнота ≥ 0.95 (округлите до 2 знаков). Сохраните `precision_at` — точность при этом пороге (3 знака), `n_flagged` — сколько отзывов валидации отправится на разбор и `precision_05`, `recall_05` — точность и полноту при пороге 0.5 (3 знака).
 
 ### setup
 ```python
@@ -581,7 +581,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 r = pd.read_csv("reviews_text.csv")
 y = (r["rating"] <= 3).astype(int)
-X_train, X_test, y_train, y_test = train_test_split(r["text"], y, test_size=0.25, random_state=42, stratify=y)
+X_dev,X_test,y_dev,y_test = train_test_split(r["text"],y,test_size=.25,random_state=42,stratify=y)
+X_train,X_validation,y_train,y_validation = train_test_split(X_dev,y_dev,test_size=1/3,random_state=42,stratify=y_dev)
 model = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)
 ```
 
@@ -590,7 +591,7 @@ model = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(
 import numpy as np
 from sklearn.metrics import precision_score, recall_score
 
-p = model.predict_proba(X_test)[:, 1]
+p = model.predict_proba(X_validation)[:, 1]
 
 ```
 
@@ -598,7 +599,7 @@ p = model.predict_proba(X_test)[:, 1]
 ```python
 import numpy as _np
 from sklearn.metrics import precision_score as _ps, recall_score as _rs
-m, Xt, yt = need('model'), need('X_test'), need('y_test')
+m, Xt, yt = need('model'), need('X_validation'), need('y_validation')
 p = m.predict_proba(Xt)[:, 1]
 ok = [t for t in _np.arange(0.05, 0.96, 0.01) if _rs(yt, (p >= t).astype(int)) >= 0.95]
 t = max(ok)
@@ -606,6 +607,10 @@ assert close(need('thr'), round(t, 2), 0.0051), f'thr = {need("thr")}, а нуж
 assert close(need('precision_at'), round(_ps(yt, (p >= t).astype(int)), 3), 0.0011), f'precision_at = {need("precision_at")}.'
 assert need('n_flagged') == int((p >= t).sum()), f'n_flagged = {need("n_flagged")}.'
 assert close(need('precision_05'), round(_ps(yt, (p >= 0.5).astype(int)), 3), 0.0011) and close(need('recall_05'), round(_rs(yt, (p >= 0.5).astype(int)), 3), 0.0011), 'precision_05, recall_05 — при пороге 0.5.'
+_pt = m.predict_proba(need('X_test'))[:,1]
+assert close(need('test_recall'),round(_rs(need('y_test'),_pt>=need('thr')),3)), 'test_recall: фактическая полнота на финальном тесте, она может оказаться ниже0.95.'
+assert need('test_flagged')==int((_pt>=need('thr')).sum()), 'test_flagged: фактическая длина очереди по фиксированному порогу.'
+
 ```
 
 ### hint
@@ -625,21 +630,25 @@ thr = round(max(good), 2)
 import numpy as np
 from sklearn.metrics import precision_score, recall_score
 
-p = model.predict_proba(X_test)[:, 1]
-good = [t for t in np.arange(0.05, 0.96, 0.01) if recall_score(y_test, (p >= t).astype(int)) >= 0.95]
+p = model.predict_proba(X_validation)[:, 1]
+good = [t for t in np.arange(0.05, 0.96, 0.01) if recall_score(y_validation, (p >= t).astype(int)) >= 0.95]
 t = max(good)
 thr = round(t, 2)
 pred_t = (p >= t).astype(int)
-precision_at = round(precision_score(y_test, pred_t), 3)
+precision_at = round(precision_score(y_validation, pred_t), 3)
 n_flagged = int(pred_t.sum())
 pred_05 = (p >= 0.5).astype(int)
-precision_05 = round(precision_score(y_test, pred_05), 3)
-recall_05 = round(recall_score(y_test, pred_05), 3)
+precision_05 = round(precision_score(y_validation, pred_05), 3)
+recall_05 = round(recall_score(y_validation, pred_05), 3)
 print(thr, precision_at, n_flagged, precision_05, recall_05)
+p_test=model.predict_proba(X_test)[:,1]
+test_recall=round(recall_score(y_test,p_test>=thr),3)
+test_flagged=int((p_test>=thr).sum())
+
 ```
 
 ### explain
-При пороге 0.5 модель находит около 92 % жалоб, и 96 % найденного — действительно жалобы. Чтобы поймать 95 %, порог приходится опустить до 0.11 — и точность падает до 0.60: на разбор уходит 438 отзывов из 600 тестовых, из них почти 40 % — довольные гости. Последние проценты полноты стоят дорого, потому что оставшиеся жалобы — это неверные метки и смешанные отзывы, похожие на хорошие. Требование «не ниже 0.95» стоит обсудить с заказчиком, показав эту цену.
+При пороге 0.5 модель находит около 92 % жалоб, и 96 % найденного — действительно жалобы. Чтобы поймать 95 %, порог приходится опустить до 0.11 — и точность падает до 0.60: на разбор уходит 438 отзывов из 600 тестовых, из них почти 40 % — довольные гости. Последние проценты полноты стоят дорого, потому что оставшиеся жалобы — это неверные метки и смешанные отзывы, похожие на хорошие. После фиксации thr измерьте фактические полноту, точность и длину очереди на закрытом тесте. Полнота там может оказаться ниже 0.95: порог не гарантирует перенос требования на новый поток. Требование стоит обсудить с заказчиком, показав эту цену.
 
 ## task: topics | Темы | plus
 

@@ -43,6 +43,12 @@
       if (COURSE[i].id + '/' + COURSE[i].lessons[j].id === id) return { ch: COURSE[i], ls: COURSE[i].lessons[j] };
     return null;
   };
+  D.testQuestionKey = function (lesson, question, attempt) {
+    var ch = COURSE.find(function (c) { return c.id + '/test' === lesson; });
+    var revision = ch && ch.test && ch.test.revisions && ch.test.revisions[question];
+    var id = revision ? question + '-' + revision : question;
+    return lesson + '#' + id + (attempt > 1 ? '/' + attempt : '');
+  };
   D.allTasks = function () {
     var out = [];
     COURSE.forEach(function (ch) {
@@ -90,6 +96,7 @@
       var n = Object.assign({}, ts(y) >= ts(x) ? y : x);
       var s = [x.solved, y.solved].filter(Boolean).sort();
       n.solved = s[0] || null;
+      if (x.monthlyReportAccepted || y.monthlyReportAccepted) n.monthlyReportAccepted = true;
       out.tasks[k] = n;
     });
     // словари «ключ → {…, t}»: заметки, ответы на вопросы, «понятно/непонятно», контрольные
@@ -320,15 +327,17 @@
     });
     $$('[data-ctest]', scope).forEach(function (a) {
       var id = a.dataset.ctest + '/test', n = +a.dataset.n || 0, att = ((P.state && P.state.exam[id]) || {}).n || 1;
+      var chapter = COURSE.find(function (c) { return c.id === a.dataset.ctest; });
+      var core = chapter && chapter.test && chapter.test.coreQuestions;
       var ans = 0, ok = 0;
-      Object.keys((P.state && P.state.quiz) || {}).forEach(function (k) {
-        if (k.indexOf(id + '#') !== 0) return;
-        var suf = k.split('#')[1].split('/')[1];
-        if ((suf ? +suf : 1) !== att) return;
-        ans++; if (P.state.quiz[k].ok) ok++;
-      });
-      a.dataset.done = ans >= n && n ? (ok / n >= 0.8 ? 'all' : 'part') : (ans ? 'part' : '');
-      var pc = $('[data-p]', a); if (pc) pc.textContent = ans ? ok + '/' + n : '';
+      for (var i = 1; i <= n; i++) {
+        if (core && core.indexOf('c' + i) < 0) continue;
+        var answer = P.state && P.state.quiz[D.testQuestionKey(id, 'c' + i, att)];
+        if (answer) { ans++; if (answer.ok) ok++; }
+      }
+      var total = core ? core.length : n;
+      a.dataset.done = ans >= total && total ? (ok / total >= 0.8 ? 'all' : 'part') : (ans ? 'part' : '');
+      var pc = $('[data-p]', a); if (pc) pc.textContent = ans ? ok + '/' + total + (core ? ' осн.' : '') : '';
     });
     $$('[data-lesson]', scope).forEach(function (a) {
       var e = D.lessonEntry(a.dataset.lesson); if (!e || !(e.ls.tasks.length || (e.ls.secs || []).length)) return;

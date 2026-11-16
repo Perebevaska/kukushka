@@ -615,6 +615,8 @@ lift_rule_60 = round(y_test[X_test["days_since_last"].nlargest(60).index].mean()
 ### explain
 Модель в топ-60 — лифт 4.25, в топ-150 — 3.19. Правило «давность визита» в топ-60 даёт 3.96: 53 уходящих из 60 против 57 у модели. На маленьком бюджете простой список почти так же хорош — самых давно не приходивших найти легко. Разница растёт с бюджетом, а лифт удобен для отчёта: «каждый бонус попадает к уходящему вчетверо чаще случайного».
 
+`risk` в следующей задаче — NumPy-массив в том же порядке, что и `y_test`. Если нужен Series, задайте `index=y_test.index`: случайная позиционная перестановка не должна присвоить риск чужому ID.
+
 ## task: gains-plot | Кривая охвата | base
 
 Постройте кривую охвата для модели и диагональ случайного выбора на одном графике. Подпишите оси: X — `"доля гостей с бонусом"`, Y — `"доля пойманных уходящих"`. Сохраните в `at10` долю пойманных уходящих, если бонус получили первые 10 % гостей (60 человек), 3 знака.
@@ -648,6 +650,7 @@ from sklearn.ensemble import RandomForestClassifier
 ### check
 ```python
 import numpy as _np, pandas as _pd
+from matplotlib.colors import to_rgba as _to_rgba
 from sklearn.model_selection import train_test_split as _tts
 from sklearn.ensemble import RandomForestClassifier as _RF
 g = _pd.read_csv('guests_churn.csv'); y = g['churned']
@@ -655,12 +658,37 @@ X = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dty
 a, b, c, d = _tts(X, y, test_size=0.25, random_state=42, stratify=y)
 r = _RF(n_estimators=100, min_samples_leaf=5, random_state=0).fit(a, c).predict_proba(b)[:, 1]
 cg = _np.cumsum(d.values[_np.argsort(-r)]) / d.sum()
+share = _np.arange(1,len(d)+1)/len(d)
 ax = ax_of(0)
-assert len(ax.lines) >= 2, f'На графике {len(ax.lines)} линий, нужны кривая модели и диагональ.'
+ax.figure.canvas.draw()
+assert min(ax.get_xlim())<=1e-8 and max(ax.get_xlim())>=1-1e-8 and min(ax.get_ylim())<=1e-8 and max(ax.get_ylim())>=1-1e-8, 'Покажите обе доли от 0 до 1: кривая, диагональ и точка 10 % должны быть видны в пределах осей.'
 assert ax.get_xlabel() == 'доля гостей с бонусом' and ax.get_ylabel() == 'доля пойманных уходящих', 'Проверьте подписи осей — они должны совпадать с условием дословно.'
-ys = [l.get_ydata() for l in ax.lines]
-assert any(len(v) == len(d) and close(v[59], cg[59]) for v in ys), 'Не нашёл кривую модели: 600 точек, по Y — доля пойманных уходящих.'
-assert close(need('at10'), round(cg[59], 3)), f'at10 = {need("at10")}, а нужно {round(cg[59], 3)}.'
+def _visible(line):
+    alpha=line.get_alpha()
+    return line.get_visible() and line.get_linewidth()>0 and line.get_linestyle() not in ('None','none',' ','') and (alpha is None or alpha>0) and _to_rgba(line.get_color())[3]>0
+def _points(line):
+    x,y=_np.asarray(line.get_xdata(),dtype=float),_np.asarray(line.get_ydata(),dtype=float)
+    if x.ndim!=1 or y.shape!=x.shape or len(x)<2 or not _np.isfinite(x).all() or not _np.isfinite(y).all():return None
+    # ax.axline stores technical [0,1] coordinates; compare its rendered path.
+    rendered=ax.transData.inverted().transform(line.get_transform().transform(_np.c_[x,y]))
+    x,y=rendered[:,0],rendered[:,1]
+    if _np.all(_np.diff(x)<0):x,y=x[::-1],y[::-1]
+    if not _np.all(_np.diff(x)>0):return None
+    return x,y
+model_curve=diagonal=False
+for line in ax.lines:
+    if not _visible(line):continue
+    points=_points(line)
+    if points is None:continue
+    x,y=points
+    if len(x)==len(cg)+1 and _np.allclose([x[0],y[0]],[0,0],rtol=0,atol=1e-8):
+        curve_x,curve_y=x[1:],y[1:]
+    else:curve_x,curve_y=x,y
+    if len(curve_x)==len(cg) and _np.allclose(curve_x,share,rtol=0,atol=1e-8) and _np.allclose(curve_y,cg,rtol=0,atol=1e-8):model_curve=True
+    if _np.allclose(x,y,rtol=0,atol=1e-8) and x[0]<=1e-8 and x[-1]>=1-1e-8:diagonal=True
+assert model_curve, 'Нужна видимая кривая модели: для каждого числа выбранных гостей сверьте X (долю гостей) и Y (накопленную долю уходящих). Начало (0, 0) можно добавить.'
+assert diagonal, 'Добавьте видимую диагональ случайного выбора от (0, 0) до (1, 1): все её точки должны иметь X=Y.'
+assert close(need('at10'), round(cg[59], 3)), f'at10 = {need("at10")}, а нужно {round(cg[59], 3)}: первые 60 гостей после сортировки риска по убыванию.'
 ```
 
 ### hint

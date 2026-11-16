@@ -401,6 +401,7 @@ dd = need('diffs')
 assert len(dd) == 3000, f'В diffs {len(dd)} значений, а нужно 3000.'
 assert abs(_np.mean(dd)) < 0.01, 'Среднее разниц при перемешивании должно быть около нуля.'
 assert need('p_value') <= 0.005, f'p_value = {need("p_value")} — для снега разница почти никогда не получается случайно.'
+assert 0 <= need('p_value') <= 1, 'p_value должен быть вероятностью от 0 до 1.'
 ```
 
 ### hint
@@ -607,7 +608,7 @@ assert abs(same[0]) < 1e-12 and same[1] > 0.9, f'Для одинаковых м�
 far = f(_np.array([10.0, 11, 12, 13, 14, 15]), _np.array([1.0, 2, 3, 4, 5, 6]), 2000)
 assert close(far[0], 9) and far[1] < 0.01, f'Для сильно разных массивов разница 9 и p очень мало, а получилось {far}.'
 r = need('res')
-assert len(r) == 2 and r[1] <= 1, 'res — пара (разница, p-value).'
+assert len(r) == 2 and 0 <= r[1] <= 1, 'res — пара (разница, p-value).'
 ```
 
 ### hint

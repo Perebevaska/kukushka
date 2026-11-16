@@ -366,7 +366,7 @@ low_rate = round(bike["late"].iloc[half:].mean(), 3)
 
 ## task: calib | Калибровка | plus
 
-Проверьте калибровку модели на тесте. Разбейте вероятности на группы `pd.cut(..., [0, 0.25, 0.5, 0.75, 1])` и сохраните в `cal` таблицу с индексом-группой и тремя столбцами: `pred` — средняя вероятность в группе, `fact` — фактическая доля опозданий, `n` — число доставок. Пустые группы не нужны. В `worst` сохраните наибольший модуль расхождения `|pred − fact|` среди групп — число ≥ 0, 3 знака.
+Проверьте калибровку модели на тесте. Разбейте вероятности на группы `pd.cut(..., [0, 0.25, 0.5, 0.75, 1], include_lowest=True)` и сохраните в `cal` таблицу с индексом-группой и тремя столбцами: `pred` — средняя вероятность в группе, `fact` — фактическая доля опозданий, `n` — число доставок. Пустые группы не нужны. Проверьте `cal["n"].sum() == len(probabilities)` (подставьте своё имя массива): вероятности 0 и 1 тоже должны попасть ровно в одну корзину. Для [0,.25,.5,.75,1] всего должно учитываться пять прогнозов. В `worst` сохраните наибольший модуль расхождения `|pred − fact|` среди групп — число ≥ 0, 3 знака.
 
 ### starter
 ```python
@@ -397,7 +397,7 @@ X = _pd.get_dummies(ok[['distance_km', 'items', 'promised_min', 'hour', 'courier
 a, b, c, e = _tts(X, y, test_size=0.25, random_state=42)
 w = _LR(max_iter=2000).fit(a, c).predict_proba(b)[:, 1]
 r = _pd.DataFrame({'p': w, 'late': e})
-g = _pd.cut(r['p'], [0, 0.25, 0.5, 0.75, 1])
+g = _pd.cut(r['p'], [0, 0.25, 0.5, 0.75, 1], include_lowest=True)
 ref = r.groupby(g, observed=True).agg(pred=('p', 'mean'), fact=('late', 'mean'), n=('p', 'size'))
 t = need('cal', _pd.DataFrame)
 assert {'pred', 'fact', 'n'} <= set(t.columns), f'Столбцы cal: {list(t.columns)}. Нужны pred, fact и n.'
@@ -407,6 +407,8 @@ assert all(close(x, z, 1e-3) for x, z in zip(t['pred'], ref['pred'])), 'pred н�
 assert all(close(x, z, 1e-3) for x, z in zip(t['fact'], ref['fact'])), 'fact не совпадает: это доля опозданий (среднее late) в группе.'
 wv = round((ref['pred'] - ref['fact']).abs().max(), 3)
 assert close(need('worst'), wv), f'worst = {need("worst")}, а нужно {wv}. Возьмите модуль разницы .abs() и максимум.'
+assert int(t['n'].sum()) == len(w), 'Все вероятности, включая 0 и 1, должны попасть в корзины.'
+
 ```
 
 ### hint
@@ -429,7 +431,7 @@ X = pd.get_dummies(ok[["distance_km", "items", "promised_min", "hour", "courier"
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
 p = LogisticRegression(max_iter=2000).fit(X_train, y_train).predict_proba(X_test)[:, 1]
 risk = pd.DataFrame({"p": p, "late": y_test})
-risk["group"] = pd.cut(risk["p"], [0, 0.25, 0.5, 0.75, 1])
+risk["group"] = pd.cut(risk["p"], [0, 0.25, 0.5, 0.75, 1], include_lowest=True)
 cal = risk.groupby("group", observed=True).agg(pred=("p", "mean"), fact=("late", "mean"), n=("p", "size"))
 worst = round((cal["pred"] - cal["fact"]).abs().max(), 3)
 ```

@@ -598,7 +598,7 @@ print(summary)
 
 ## task: idempotent | Повторный запуск | base
 
-Готовая `run_batch` — в заготовке. Запустите её **дважды** за одну дату `"2026-12-14"` (папка `"out"`) и убедитесь, что файл не задвоился: `rows_after_1`, `rows_after_2` — число строк в `out/scores_2026-12-14.csv` после первого и второго запуска. Затем покажите, как ломается неидемпотентная версия: функция `run_batch_append` (в заготовке) дописывает результаты в общий `out/all_scores.csv`. Удалите этот файл, если он есть, запустите её дважды и сохраните `rows_append` — сколько строк в нём после двух запусков, и `dup_guests` — сколько `guest_id` встречается в нём больше одного раза.
+Готовая `run_batch` — в заготовке. Вход для этой задачи —`export_14.csv` (200 гостей), не `export.csv` из предыдущего упражнения. Запустите её **дважды** за одну дату `"2026-12-14"` (папка `"out"`) и убедитесь, что файл не задвоился: `rows_after_1`, `rows_after_2` — число строк в `out/scores_2026-12-14.csv` после первого и второго запуска. Затем покажите, как ломается неидемпотентная версия: функция `run_batch_append` (в заготовке) дописывает результаты в общий `out/all_scores.csv`. Удалите этот файл, если он есть, запустите её дважды и сохраните `rows_append` — сколько строк в нём после двух запусков, и `dup_guests` — сколько `guest_id` встречается в нём больше одного раза.
 
 ### setup
 ```python
@@ -642,6 +642,14 @@ import pandas as pd
 assert need('rows_after_1') == 200 and need('rows_after_2') == 200, f'rows_after_1 = {need("rows_after_1")}, rows_after_2 = {need("rows_after_2")}: после повтора должно остаться 200.'
 assert need('rows_append') == 400, f'rows_append = {need("rows_append")}: два запуска с дозаписью дают 400 строк (удалите all_scores.csv перед опытом).'
 assert need('dup_guests') == 200, f'dup_guests = {need("dup_guests")}.'
+import pandas as _pd
+_output=_pd.read_csv('out/scores_2026-12-14.csv')
+_source=_pd.read_csv('export_14.csv')
+assert _output.guest_id.is_unique and set(_output.guest_id)==set(_source.guest_id), 'Фактический файл должен содержать200 разных ID именно export_14.csv.'
+_expected=_score('export_14.csv').set_index('guest_id').sort_index()
+_actual=_output.set_index('guest_id').sort_index()
+assert all(close(a,b,1e-4) for a,b in zip(_actual.proba,_expected.proba)), 'Файл должен содержать реальные прогнозы входных строк.'
+
 ```
 
 ### hint
@@ -786,7 +794,7 @@ ax.set_xlabel("час"); ax.set_ylabel("запросов за неделю")
 
 ## task: write-log | Записать строку журнала | plus
 
-Напишите `log_request(path, request_id, client, status, latency_ms, error="")`: дописать в файл `path` одну строку JSON с полями `ts` (текущее время, `datetime.now().isoformat(timespec="seconds")`), `request_id`, `client`, `status`, `latency_ms`, `error`; русские буквы — без экранирования; строка заканчивается `"\n"`. Удалите `my_log.jsonl`, если он есть, запишите три запроса из заготовки и прочитайте файл в DataFrame `mine`.
+Напишите `log_request(path, request_id, client, status, latency_ms, error="")`: дописать в файл `path` одну строку JSON с полями `ts` (текущее время, `datetime.now().isoformat(timespec="seconds")`), `request_id`, `client`, `status`, `latency_ms`, `error`; русские буквы — без экранирования; строка заканчивается `"\n"`. Удалите `my_log.jsonl`, если он есть, запишите три запроса из списка `calls_to_log` заготовки (кортежи request_id, client, status, latency_ms, error) и прочитайте файл в DataFrame `mine`.
 
 ### setup
 ```python
@@ -962,7 +970,7 @@ assert need('n_runs') == 30, f'n_runs = {need("n_runs")}: по будням 8:00
 Разделите задачу: `field_match(field, value)` проверяет одно поле. Поле — список частей через запятую (`field.split(",")`); подходит, если подходит хоть одна часть.
 
 ### hint
-Часть бывает трёх видов: `"*"` или `"*/n"` (шаг: `value % n == 0`), `"a-b"` (диапазон: `a <= value <= b`), просто число (`value == int(part)`).
+Если одновременно ограничены день месяца и день недели, в обычном cron эти два условия соединены **ИЛИ**, прочие поля — И. Укажите принятую семантику явно и проверьте дату, где совпало только календарное число, затем только день недели. Часть бывает трёх видов: `"*"` или `"*/n"` (шаг: `value % n == 0`), `"a-b"` (диапазон: `a <= value <= b`), просто число (`value == int(part)`).
 
 ### hint
 ```python

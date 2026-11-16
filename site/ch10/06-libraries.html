@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CatBoost и LightGBM в своём Jupyter — DS для аналитиков</title>
-<link rel="icon" href="../assets/favicon.svg?v=d95e37c391">
-<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=d95e37c391">
-<link rel="stylesheet" href="../assets/app.css?v=d95e37c391">
+<link rel="icon" href="../assets/favicon.svg?v=0c562e3774">
+<link rel="stylesheet" href="../assets/vendor/codemirror/codemirror.css?v=0c562e3774">
+<link rel="stylesheet" href="../assets/app.css?v=0c562e3774">
 <script>try{var t=localStorage.getItem('dsc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
-<body class="page-lesson" data-root="../" data-v="d95e37c391">
+<body class="page-lesson" data-root="../" data-v="0c562e3774">
 <a class="skip" href="#main">К уроку</a>
 <header class="topbar">
   <button class="icon-btn only-narrow" id="menu-btn" aria-label="Содержание главы" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
@@ -196,9 +196,9 @@ print(toy)</code></pre></div>
 
 cb = CatBoostRegressor(iterations=3000, learning_rate=0.05, depth=6,
                        random_seed=0, verbose=0, early_stopping_rounds=100)
-cb.fit(X[fit], y[fit],
+cb.fit(X_dev[fit], y[fit],
        cat_features=[&quot;shop_id&quot;, &quot;format&quot;],     # категории строками, без get_dummies
-       eval_set=(X[val], y[val]),              # по ней выбирается число деревьев
+       eval_set=(X_dev[val], y[val]),              # по ней выбирается число деревьев
        use_best_model=True)                    # оставить лучшее число деревьев
 print(cb.get_best_iteration() + 1)             # сколько деревьев осталось
 pred = cb.predict(X[test])</code></pre>
@@ -215,7 +215,7 @@ pred = cb.predict(X[test])</code></pre>
 X_c = X.astype({&quot;shop_id&quot;: &quot;category&quot;, &quot;format&quot;: &quot;category&quot;})   # категории — тип category
 lg = lgb.LGBMRegressor(n_estimators=3000, learning_rate=0.05, num_leaves=7, min_child_samples=10,
                        random_state=0, verbose=-1)
-lg.fit(X_c[fit], y[fit], eval_X=X_c[val], eval_y=y[val],
+lg.fit(dev_cat[fit], y[fit], eval_X=dev_cat[val], eval_y=y[val],
        callbacks=[lgb.early_stopping(100, verbose=False)])
 print(lg.best_iteration_)
 pred = lg.predict(X_c[test])                   # прогноз — по лучшему числу деревьев</code></pre>
@@ -288,62 +288,62 @@ pred = lg.predict(X_c[test])                   # прогноз — по луч�
 <p>Условная схема: два дерева по 4 листа. Слева рост по уровням, как у <code>GradientBoosting</code> и CatBoost. Справа рост по листьям, как у LightGBM: дерево однобокое, а его сложность задаёт <code>num_leaves</code>.</p>
 </figcaption></figure>
 <h3>Сравнение: качество и время</h3>
-<p>Время обучения и прогноза меряют тем же секундомером, что в главе 9: <code>t0 = time.perf_counter()</code> до <code>fit</code> и <code>time.perf_counter() - t0</code> после. Прогноз быстрый, поэтому его повторяют несколько раз и берут лучшее время. В блокноте так собрана таблица по всем моделям. Вот она с нашего компьютера (секунды у вас будут другими, качество — тем же с точностью до версий библиотек):</p>
+<p>Пример прогона с scikit-learn 1.8.0, CatBoost 1.2.10 и LightGBM 4.7.0. При подготовке апрельского и июльского выпусков для будущей погоды использованы средние из доступной на тот момент истории. После ранней остановки модель обучена с выбранным числом деревьев на всех данных до июля. Три колонки времени измерены на одном компьютере при одинаковом числе потоков.</p>
 <table>
 <thead>
 <tr>
-<th>модель</th>
-<th>RMSE, тыс. ₽</th>
-<th>деревьев</th>
-<th>fit, с</th>
-<th>predict, мс</th>
+<th>Модель</th>
+<th style="text-align:right">RMSE, тыс. ₽</th>
+<th style="text-align:right">Деревья</th>
+<th style="text-align:right">Подбор и финальный fit, с</th>
+<th style="text-align:right">Только финальный fit, с</th>
+<th style="text-align:right">Пакетный predict, мс</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>CatBoost</td>
-<td>6.55</td>
-<td>706</td>
-<td>3.64</td>
-<td>3.6</td>
-</tr>
-<tr>
-<td>LightGBM, 7 листьев</td>
-<td>6.98</td>
-<td>702</td>
-<td>0.23</td>
-<td>32.4</td>
+<td style="text-align:right">9.02</td>
+<td style="text-align:right">225</td>
+<td style="text-align:right">0.75</td>
+<td style="text-align:right">0.31</td>
+<td style="text-align:right">0.69</td>
 </tr>
 <tr>
 <td>HGB, категории</td>
-<td>7.27</td>
-<td>191</td>
-<td>0.49</td>
-<td>15.6</td>
+<td style="text-align:right">9.12</td>
+<td style="text-align:right">56</td>
+<td style="text-align:right">0.63</td>
+<td style="text-align:right">0.04</td>
+<td style="text-align:right">2.19</td>
 </tr>
 <tr>
 <td>HGB, get_dummies</td>
-<td>7.35</td>
-<td>163</td>
-<td>0.35</td>
-<td>8.8</td>
+<td style="text-align:right">9.13</td>
+<td style="text-align:right">67</td>
+<td style="text-align:right">0.77</td>
+<td style="text-align:right">0.06</td>
+<td style="text-align:right">1.39</td>
 </tr>
 <tr>
 <td>LightGBM</td>
-<td>7.88</td>
-<td>137</td>
-<td>0.13</td>
-<td>7.7</td>
+<td style="text-align:right">12.65</td>
+<td style="text-align:right">120</td>
+<td style="text-align:right">0.08</td>
+<td style="text-align:right">0.02</td>
+<td style="text-align:right">2.42</td>
+</tr>
+<tr>
+<td>LightGBM, 7 листьев</td>
+<td style="text-align:right">13.26</td>
+<td style="text-align:right">330</td>
+<td style="text-align:right">0.05</td>
+<td style="text-align:right">0.02</td>
+<td style="text-align:right">3.65</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Как читать результат.</strong></p>
-<ul>
-<li><strong>Главное: признаки и честная проверка важнее выбора библиотеки.</strong> Между лучшей и худшей моделью в таблице 1.3 тыс. ₽ RMSE (6.55 против 7.88). А в проекте бустинг выиграл у линейной модели больше 7 тыс. ₽ — за счёт того, что сам нашёл взаимодействия признаков.</li>
-<li><strong>Качество.</strong> Лучший — CatBoost. LightGBM с настройками по умолчанию — худший, а с мелкими деревьями (7 листьев) поднимается на второе место. На маленьких данных сравнение «из коробки» — во многом сравнение настроек по умолчанию.</li>
-<li><strong>Тренд.</strong> Ловушка шага 7 проекта никуда не делась: HGB и LightGBM занижают прогноз второго полугодия на 1.75–3.49 тыс. ₽ в день. CatBoost на этом периоде почти не смещён (0.12), но рассчитывать на это нельзя — тренд лучше снимать явно.</li>
-<li><strong>Время.</strong> На четырёх тысячах строк все модели обучаются за секунды, и время ничего не решает. В таблице быстрее всех обучился LightGBM с настройками по умолчанию (0.13 с), но при повторном запуске у нас первой оказалась строка «LightGBM, 7 листьев» (0.12 с), а LightGBM по умолчанию и оба HGB — около 0.3 с: на долях секунды порядок меняется от запуска к запуску. Устойчиво одно: дольше всех обучается CatBoost, у него около 700 деревьев глубины 6. Зато прогноз у CatBoost самый быстрый: его деревья симметричные, на каждом уровне одно и то же условие, и такое дерево применяется к строке очень быстро.</li>
-</ul>
+<p>В этом полугодии ошибка CatBoost и обеих версий HGB близка. Уменьшение числа листьев LightGBM на этом наборе увеличило ошибку. Для планирования ночного запуска важна длительность подбора и повторного обучения, а для ежедневной выдачи — время прогноза на одинаковом пакете. Повторите замер в своём окружении.</p>
 <div class="quiz-c" data-q="c1"><div class="predict-title">Проверьте себя</div>
 <p>Для ранней остановки CatBoost нужен <code>eval_set</code>. Какие данные туда передать в прогнозе выручки по дням?</p>
 <ul>
@@ -378,6 +378,7 @@ pred = lg.predict(X_c[test])                   # прогноз — по луч�
 </ul>
 </aside>
 <div class="practice-link"><span>Потренироваться — задача:</span><a href="#task-speed-table"><b>1</b> Таблица «качество и время»</a></div>
+<p>В локальном блокноте запишите фактические версии CatBoost/LightGBM, доступность каждой библиотеки и отдельно время подбора/ранней остановки и финального fit. Сравнивайте одинаковую операцию, горизонт и доступные признаки; отсутствие библиотеки отмечается как пропущенный запуск, а не как нулевая длительность.</p>
 <div class="fb" data-sec="catboost-и-lightgbm-на-своём-компьютере"><span>Понятно объяснено?</span><button type="button" class="fb-btn" data-v="1">Да</button><button type="button" class="fb-btn" data-v="-1">Не очень</button></div></article>
     <section class="practice" id="practice">
       <h2>Практика</h2>
@@ -391,12 +392,12 @@ pred = lg.predict(X_c[test])                   # прогноз — по луч�
     <span class="task-state" aria-hidden="true"></span>
   </header>
   <a class="task-ref" href="#catboost-и-lightgbm-на-своём-компьютере">↑ К теории: CatBoost и LightGBM на своём компьютере</a>
-  <div class="task-text prose"><p>Соберите в браузере такую же таблицу, как в блокноте с CatBoost и LightGBM, для трёх моделей sklearn на доставках. Модели и разбиение уже в заготовке. Для каждой модели замерьте <code>time.perf_counter()</code> время обучения в секундах (<code>fit_s</code>) и время прогноза на тесте в миллисекундах (<code>predict_ms</code>), посчитайте RMSE на тесте (<code>rmse</code>, 3 знака). Сохраните DataFrame <code>table</code>: индекс — названия моделей из словаря <code>models</code>, столбцы <code>rmse</code>, <code>fit_s</code>, <code>predict_ms</code>, строки отсортированы по <code>rmse</code> от лучшей. Ещё сохраните <code>best</code> — название модели с наименьшей ошибкой и <code>fastest_fit</code> — название модели, которая обучилась быстрее всех.</p>
+  <div class="task-text prose"><p>Соберите в браузере такую же таблицу, как в блокноте с CatBoost и LightGBM, для трёх моделей sklearn на доставках. Модели и разбиение уже в заготовке. Для каждой модели вызовите <code>fit_s = timed_fit(name, model, X_tr, y_tr)</code>, затем <code>pred, predict_ms = timed_predict(name, model, X_te)</code>. Эти готовые функции сами вызывают fit/predict и измеряют интервал через <code>time.perf_counter()</code> непосредственно вокруг вызова: <code>fit_s</code> — секунды, <code>predict_ms</code> — миллисекунды. Сохраните возвращённые интервалы без округления; посчитайте RMSE на тесте (<code>rmse</code>, 3 знака). Сохраните DataFrame <code>table</code>: индекс — названия моделей из словаря <code>models</code>, столбцы <code>rmse</code>, <code>fit_s</code>, <code>predict_ms</code>, строки отсортированы по <code>rmse</code> от лучшей. Ещё сохраните <code>best</code> — название модели с наименьшей ошибкой и <code>fastest_fit</code> — название модели, которая обучилась быстрее всех.</p>
 </div>
   <div class="task-ui"></div>
 </section>
     </section>
-    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>CatBoost, LightGBM и XGBoost — тот же градиентный бустинг, интерфейс как у sklearn (<code>fit</code>, <code>predict</code>). В браузере их нет, работают в своём Jupyter; шпаргалка по параметрам — таблица в начале урока.</li><li>Для ранней остановки нужна отдельная валидация — последний период обучающих данных, не тест: три части <code>fit</code>, <code>val</code>, <code>test</code>.</li><li>Модели сравнивают одной таблицей «модель | RMSE | деревьев | fit, с | predict, мс»; время меряют <code>time.perf_counter()</code> вплотную вокруг <code>fit</code> и <code>predict</code>, в одном запуске на одном компьютере.</li><li>Признаки и честная проверка дают больше, чем выбор библиотеки: разница между библиотеками на данных проекта — около 1.3 тыс. ₽ RMSE, выигрыш бустинга у линейной модели — больше 7 тыс. ₽.</li></ul></section>
+    <section class="recap" id="recap"><h2>Что запомнить</h2><ul><li>CatBoost, LightGBM и XGBoost — тот же градиентный бустинг, интерфейс как у sklearn (<code>fit</code>, <code>predict</code>). В браузере их нет, работают в своём Jupyter; шпаргалка по параметрам — таблица в начале урока.</li><li>Для ранней остановки нужна отдельная валидация — последний период обучающих данных, не тест: три части <code>fit</code>, <code>val</code>, <code>test</code>.</li><li>Модели сравнивают одной таблицей «модель | RMSE | деревьев | fit, с | predict, мс»; время меряют <code>time.perf_counter()</code> вплотную вокруг <code>fit</code> и <code>predict</code>, в одном запуске на одном компьютере.</li><li>Сравнивайте библиотеки при одной дате выпуска и одной информации о погоде. Выигрыш в RMSE и затраты времени берите из одной таблицы собственного прогона.</li></ul></section>
     
     <section class="notes" id="notes">
       <div class="notes-head"><h2>Мои заметки</h2><span class="muted" id="notes-state"></span></div>
@@ -409,15 +410,15 @@ pred = lg.predict(X_c[test])                   # прогноз — по луч�
   <nav class="toc" aria-label="На этой странице"><div class="toc-title">На странице</div><ol><li><a href="#catboost-и-lightgbm-на-своём-компьютере">CatBoost и LightGBM на своём компьютере</a></li><li><a href="#practice">Практика</a></li><li><a href="#recap">Что запомнить</a></li><li><a href="#notes">Мои заметки</a></li></ol></nav>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script type="application/json" id="lesson-data">{"lesson": "ch10/06-libraries", "title": "CatBoost и LightGBM в своём Jupyter", "chapter": "Градиентный спуск и бустинг", "tasks": [{"id": "speed-table", "title": "Таблица «качество и время»", "level": "base", "starter": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_squared_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmodels = {\n    \"GradientBoosting\": GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(max_iter=200, max_depth=3, random_state=0),\n    \"RandomForest\": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=0),\n}", "setup": "", "check": "import numpy as _np, pandas as _pd\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB, HistGradientBoostingRegressor as _H, RandomForestRegressor as _RF\nfrom sklearn.metrics import mean_squared_error as _mse\nref = {}\nfor k, m in {'GradientBoosting': _GB(n_estimators=200, max_depth=3, random_state=0), 'HistGradientBoosting': _H(max_iter=200, max_depth=3, random_state=0),\n             'RandomForest': _RF(n_estimators=100, min_samples_leaf=5, random_state=0)}.items():\n    ref[k] = round(float(_np.sqrt(_mse(y_te, m.fit(X_tr, y_tr).predict(X_te)))), 3)\nt = need('table', _pd.DataFrame)\nassert set(t.index) == set(ref), f'Индекс table — названия моделей {sorted(ref)}, а сейчас {list(t.index)}.'\nassert {'rmse', 'fit_s', 'predict_ms'} <= set(t.columns), f'Нужны столбцы rmse, fit_s, predict_ms, а сейчас {list(t.columns)}.'\nfor k in ref:\n    assert close(t.loc[k, 'rmse'], ref[k], 0.0011), f'{k}: rmse = {t.loc[k, \"rmse\"]}, а нужно {ref[k]}. RMSE — корень из mean_squared_error на тесте.'\nassert (t['fit_s'] > 0).all() and (t['fit_s'] < 600).all(), f'fit_s = {t[\"fit_s\"].tolist()}: время обучения в секундах — разность двух показаний perf_counter().'\nassert (t['predict_ms'] > 0).all(), 'predict_ms должно быть положительным.'\nassert t['predict_ms'].max() > 1, f'predict_ms = {t[\"predict_ms\"].round(4).tolist()}: похоже на секунды. Время прогноза в миллисекундах — разность perf_counter(), умноженная на 1000.'\nassert list(t.index) == list(t.sort_values('rmse').index), 'Строки table должны идти по возрастанию rmse: .sort_values(\"rmse\").'\nassert need('best') == t['rmse'].idxmin(), f'best = {need(\"best\")!r}, а меньше всего ошибка у {t[\"rmse\"].idxmin()!r}.'\nassert need('fastest_fit') == t['fit_s'].idxmin(), f'fastest_fit = {need(\"fastest_fit\")!r}, а по вашей же таблице быстрее всех обучилась {t[\"fit_s\"].idxmin()!r}.'", "hints": ["<p>В цикле по <code>models.items()<\/code> для каждой модели: засечь время, обучить, остановить секундомер; затем так же с прогнозом. Строки таблицы удобно копить словарями в списке.<\/p>\n", "<p><code>t0 = time.perf_counter(); model.fit(X_tr, y_tr); fit_s = time.perf_counter() - t0<\/code>. Для прогноза — то же, умноженное на 1000. RMSE — <code>np.sqrt(mean_squared_error(y_te, pred))<\/code>.<\/p>\n", "<div class=\"cell\"><pre class=\"cell-src\"><code>rows = []\nfor name, model in models.items():\n    ...\n    rows.append({&quot;model&quot;: name, &quot;rmse&quot;: round(float(rmse), 3), &quot;fit_s&quot;: fit_s, &quot;predict_ms&quot;: predict_ms})\ntable = pd.DataFrame(rows).set_index(&quot;model&quot;).sort_values(&quot;rmse&quot;)\nbest = table.index[0]\nfastest_fit = table[&quot;fit_s&quot;].idxmin()<\/code><\/pre><\/div>\n"], "solution": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_squared_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmodels = {\n    \"GradientBoosting\": GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(max_iter=200, max_depth=3, random_state=0),\n    \"RandomForest\": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=0),\n}\n\nrows = []\nfor name, model in models.items():\n    t0 = time.perf_counter()\n    model.fit(X_tr, y_tr)\n    fit_s = time.perf_counter() - t0\n\n    t0 = time.perf_counter()\n    pred = model.predict(X_te)\n    predict_ms = (time.perf_counter() - t0) * 1000\n\n    rmse = np.sqrt(mean_squared_error(y_te, pred))\n    rows.append({\"model\": name, \"rmse\": round(float(rmse), 3), \"fit_s\": fit_s, \"predict_ms\": predict_ms})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")\nbest = table.index[0]\nfastest_fit = table[\"fit_s\"].idxmin()\nprint(table.round(3))\nprint(\"лучший:\", best, \"| быстрее всех обучился:\", fastest_fit)", "explain": "<p>Лучшая ошибка у классического <code>GradientBoosting<\/code> (RMSE 4.907), чуть хуже <code>HistGradientBoosting<\/code> (5.053) с теми же 200 деревьями глубины 3, у леса — 5.811. Время — ваше собственное, поэтому проверка сравнивает <code>fastest_fit<\/code> с вашей же таблицей. В браузере у нас быстрее всех обучился <code>HistGradientBoosting<\/code>, но на 1400 строках разница — доли секунды (у нас 0.2 с против 0.4–0.5 с). Его преимущество растёт с размером данных: он ищет пороги только между 255 интервалами каждого признака, а не перебирает все значения. Если в таблицу попали секунды вместо миллисекунд для прогноза, числа будут вида 0.03 вместо 30 — это видно сразу, поэтому единицы измерения пишут прямо в названии столбца.<\/p>\n", "parsons": ""}], "files": ["deliveries.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
-<script src="../assets/vendor/codemirror/codemirror.js?v=d95e37c391"></script>
-<script src="../assets/vendor/codemirror/python.js?v=d95e37c391"></script>
-<script src="../assets/vendor/codemirror/matchbrackets.js?v=d95e37c391"></script>
-<script src="../assets/vendor/codemirror/closebrackets.js?v=d95e37c391"></script>
-<script src="../assets/course.js?v=d95e37c391"></script>
-<script src="../assets/search.js?v=d95e37c391" defer></script>
-<script src="../assets/core.js?v=d95e37c391"></script>
-<script src="../assets/lesson.js?v=d95e37c391"></script>
+<script type="application/json" id="lesson-data">{"lesson": "ch10/06-libraries", "title": "CatBoost и LightGBM в своём Jupyter", "chapter": "Градиентный спуск и бустинг", "tasks": [{"id": "speed-table", "title": "Таблица «качество и время»", "level": "base", "starter": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_squared_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmodels = {\n    \"GradientBoosting\": GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(max_iter=200, max_depth=3, random_state=0),\n    \"RandomForest\": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=0),\n}", "setup": "from time import perf_counter as _measurement_clock\n_measurements = {}\ndef timed_fit(name, model, features, target):\n    \"\"\"Обучить модель; вернуть длительность вызова fit в секундах.\"\"\"\n    start = _measurement_clock()\n    model.fit(features, target)\n    elapsed = _measurement_clock() - start\n    _measurements[name] = dict(model=model, train=features.copy(), target=target.copy(), fit_s=elapsed)\n    return elapsed\n\ndef timed_predict(name, model, features):\n    \"\"\"Вернуть (пакетный прогноз, длительность predict в миллисекундах).\"\"\"\n    start = _measurement_clock()\n    prediction = model.predict(features)\n    elapsed_ms = (_measurement_clock() - start) * 1000\n    record = _measurements[name]\n    assert record['model'] is model, 'Передайте в timed_predict ту же модель, что в timed_fit.'\n    record.update(test=features.copy(), predict_ms=elapsed_ms)\n    return prediction, elapsed_ms", "check": "import numpy as _np, pandas as _pd\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB, HistGradientBoostingRegressor as _H, RandomForestRegressor as _RF\nfrom sklearn.metrics import mean_squared_error as _mse\nref = {}\nfor k, m in {'GradientBoosting': _GB(n_estimators=200, max_depth=3, random_state=0), 'HistGradientBoosting': _H(max_iter=200, max_depth=3, random_state=0),\n             'RandomForest': _RF(n_estimators=100, min_samples_leaf=5, random_state=0)}.items():\n    ref[k] = round(float(_np.sqrt(_mse(y_te, m.fit(X_tr, y_tr).predict(X_te)))), 3)\nt = need('table', _pd.DataFrame)\nassert set(t.index) == set(ref), f'Индекс table — названия моделей {sorted(ref)}, а сейчас {list(t.index)}.'\nassert {'rmse', 'fit_s', 'predict_ms'} <= set(t.columns), f'Нужны столбцы rmse, fit_s, predict_ms, а сейчас {list(t.columns)}.'\nfor k in ref:\n    assert close(t.loc[k, 'rmse'], ref[k], 0.0011), f'{k}: rmse = {t.loc[k, \"rmse\"]}, а нужно {ref[k]}. RMSE — корень из mean_squared_error на тесте.'\nassert t.index.is_unique, 'Названия моделей в table не должны повторяться.'\nfor _name in t.index:\n    assert _name in _measurements, f'{_name}: вызовите timed_fit для финального обучения.'\n    _record = _measurements[_name]\n    assert 'predict_ms' in _record, f'{_name}: вызовите timed_predict после timed_fit.'\n    assert _record['train'].equals(X_tr) and _record['target'].equals(y_tr), f'{_name}: timed_fit должен обучать на финальной тренировочной части.'\n    assert _record['test'].equals(X_te), f'{_name}: timed_predict должен получать весь финальный тест.'\n    for _col in ('fit_s', 'predict_ms'):\n        assert _np.isfinite(t.loc[_name, _col]) and close(t.loc[_name, _col], _record[_col], 1e-9), f'{_name}: {_col} не совпало с фактическим интервалом. Запишите результат timed_fit/timed_predict без подмены и округления.'\nassert list(t.index) == list(t.sort_values('rmse').index), 'Строки table должны идти по возрастанию rmse: .sort_values(\"rmse\").'\nassert need('best') == t['rmse'].idxmin(), f'best = {need(\"best\")!r}, а меньше всего ошибка у {t[\"rmse\"].idxmin()!r}.'\nassert need('fastest_fit') == t['fit_s'].idxmin(), f'fastest_fit = {need(\"fastest_fit\")!r}, а по вашей же таблице быстрее всех обучилась {t[\"fit_s\"].idxmin()!r}.'", "hints": ["<p>В цикле по <code>models.items()<\/code> для каждой модели: засечь время, обучить, остановить секундомер; затем так же с прогнозом. Строки таблицы удобно копить словарями в списке.<\/p>\n", "<p><code>fit_s = timed_fit(name, model, X_tr, y_tr)<\/code>, затем <code>pred, predict_ms = timed_predict(name, model, X_te)<\/code>. Единицы уже преобразованы внутри функций. RMSE — <code>np.sqrt(mean_squared_error(y_te, pred))<\/code>.<\/p>\n", "<div class=\"cell\"><pre class=\"cell-src\"><code>rows = []\nfor name, model in models.items():\n    ...\n    rows.append({&quot;model&quot;: name, &quot;rmse&quot;: round(float(rmse), 3), &quot;fit_s&quot;: fit_s, &quot;predict_ms&quot;: predict_ms})\ntable = pd.DataFrame(rows).set_index(&quot;model&quot;).sort_values(&quot;rmse&quot;)\nbest = table.index[0]\nfastest_fit = table[&quot;fit_s&quot;].idxmin()<\/code><\/pre><\/div>\n"], "solution": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_squared_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmodels = {\n    \"GradientBoosting\": GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(max_iter=200, max_depth=3, random_state=0),\n    \"RandomForest\": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=0),\n}\n\nrows = []\nfor name, model in models.items():\n    fit_s = timed_fit(name, model, X_tr, y_tr)\n    pred, predict_ms = timed_predict(name, model, X_te)\n\n    rmse = np.sqrt(mean_squared_error(y_te, pred))\n    rows.append({\"model\": name, \"rmse\": round(float(rmse), 3), \"fit_s\": fit_s, \"predict_ms\": predict_ms})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")\nbest = table.index[0]\nfastest_fit = table[\"fit_s\"].idxmin()\nprint(table.round(3))\nprint(\"лучший:\", best, \"| быстрее всех обучился:\", fastest_fit)", "explain": "<p>Лучшая ошибка у классического <code>GradientBoosting<\/code> (RMSE 4.907), чуть хуже <code>HistGradientBoosting<\/code> (5.053) с теми же 200 деревьями глубины 3, у леса — 5.811. Время — ваше собственное: проверка связывает строки таблицы с интервалами, возвращёнными timed_fit/timed_predict, и сравнивает fastest_fit с минимумом этой таблицы. В браузере у нас быстрее всех обучился <code>HistGradientBoosting<\/code>, но на 1400 строках разница — доли секунды (у нас 0.2 с против 0.4–0.5 с). Его преимущество растёт с размером данных: он ищет пороги только между 255 интервалами каждого признака, а не перебирает все значения. Если в таблицу попали секунды вместо миллисекунд для прогноза, числа будут вида 0.03 вместо 30 — это видно сразу, поэтому единицы измерения пишут прямо в названии столбца.<\/p>\n", "parsons": ""}], "files": ["deliveries.csv"], "mode": "lesson", "display": true, "topics": {}}</script>
+<script src="../assets/vendor/codemirror/codemirror.js?v=0c562e3774"></script>
+<script src="../assets/vendor/codemirror/python.js?v=0c562e3774"></script>
+<script src="../assets/vendor/codemirror/matchbrackets.js?v=0c562e3774"></script>
+<script src="../assets/vendor/codemirror/closebrackets.js?v=0c562e3774"></script>
+<script src="../assets/course.js?v=0c562e3774"></script>
+<script src="../assets/search.js?v=0c562e3774" defer></script>
+<script src="../assets/core.js?v=0c562e3774"></script>
+<script src="../assets/lesson.js?v=0c562e3774"></script>
 
 
 </body>

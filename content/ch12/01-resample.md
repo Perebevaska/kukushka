@@ -543,7 +543,7 @@ s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime"
 import pandas as _pd
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
 m = s0.resample('MS').sum(); g = (m.pct_change() * 100).round(1)
-pdm = s0.resample('D').sum().resample('MS').mean().round(1); gp = (pdm.pct_change() * 100).round(1)
+_raw_daily=s0.resample('D').sum().resample('MS').mean(); pdm=_raw_daily.round(1); gp=(_raw_daily.pct_change()*100).round(1)
 assert list(need('monthly').values) == list(m.values), 'monthly — s.resample("MS").sum().'
 assert all(close(a, b, 0.06) for a, b in zip(need('growth').dropna().values, g.dropna().values)), f'growth = {list(need("growth").round(1))}, а нужно {list(g)}.'
 assert all(close(a, b, 0.06) for a, b in zip(need('per_day').values, pdm.values)), f'per_day = {list(need("per_day"))}, а нужно {list(pdm)}.'
@@ -568,7 +568,7 @@ s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime"
 monthly = s.resample("MS").sum()
 growth = (monthly.pct_change() * 100).round(1)
 per_day = s.resample("D").sum().resample("MS").mean().round(1)
-growth_per_day = (per_day.pct_change() * 100).round(1)
+growth_per_day = (s.resample("D").sum().resample("MS").mean().pct_change() * 100).round(1)
 slowest_month = growth.idxmin().month
 slowest_month_per_day = growth_per_day.idxmin().month
 print(pd.DataFrame({"заказов": monthly, "рост %": growth, "в день": per_day, "рост в день %": growth_per_day}))

@@ -9,7 +9,7 @@ recap:
   - "Строки с пропусками в начале ряда (нет истории для лагов) удаляют."
   - "Подозрительно хорошее качество на временном ряде — почти всегда признак из будущего."
   - "Тест на утечку: испортить ответ в часе t и посмотреть, какие признаки строки t изменились. Изменился — значит, видит ответ."
-  - "Для проверки в этом уроке — маска по дате: обучение до августа, тест — август. Подробно о проверке по времени — в следующем уроке."
+  - "Для проверки в этом уроке — маска по дате: учимся на данных до июля, сравниваем варианты на июле. Подробно о проверке по времени — в следующем уроке."
 ---
 
 ## Ряд как таблица
@@ -39,6 +39,7 @@ recap:
 ```python
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s.loc[:"2026-07-31"]
 
 df = pd.DataFrame({"y": s})
 df["hour"] = df.index.hour
@@ -77,17 +78,17 @@ df = df.dropna()
 В этом уроке прогноз — на **один час вперёд**: в 11:59 мы знаем всё до 11:00 включительно и предсказываем 12:00. Поэтому лаг 1 здесь честен. Если прогноз нужен на сутки или на неделю вперёд (например, для графика смен), лага 1 в момент прогноза ещё не будет: честны только лаги не короче горизонта. Как считать горизонт и какие лаги тогда остаются — урок «Прогноз: ориентиры, горизонт и метрики».
 :::
 
-Сравним бустинг на разных наборах признаков. Обучение — март–июль, тест — август.
+Сравним бустинг на разных наборах признаков. Обучение — март–июнь, проверка — июль.
 
-| признаки | RMSE на августе |
+| признаки | RMSE на июле |
 |---|---|
-| только календарь | ≈ 4.60 |
-| + лаги 1, 24, 168 | ≈ 4.33 |
-| + среднее за сутки | ≈ 4.26 |
+| только календарь | ≈ 4.25 |
+| + лаги 1, 24, 168 | ≈ 4.01 |
+| + среднее за сутки | ≈ 4.14 |
 
-Как получены эти числа — в задаче «Какие признаки помогают»: одна и та же модель (`HistGradientBoostingRegressor`), одно и то же разбиение по времени, меняется только список столбцов. Числа посчитаны в sklearn 1.9; в другой версии бустинг может дать разницу в третьем знаке, порядок наборов от этого не меняется.
+Числа получены в задаче «Какие признаки помогают» на июле с одной моделью и разбиением. Изменяется только список столбцов. Добавление среднего за сутки на этой проверке повысило ошибку относительно одних лагов.
 
-RMSE — корень из средней квадратичной ошибки (глава 6), в заказах в час. Календарь даёт основное, лаги добавляют знание о текущем уровне. У линейной регрессии без лагов дела совсем плохи (около 7.8): «час» для неё — просто число, и суточный профиль с тремя пиками прямой не описать. С теми же лагами, что у бустинга в таблице, она подтягивается до 4.5: лаг 24 и лаг 168 сами несут этот профиль. Другой способ помочь линейной модели — закодировать час категорией; он разобран в задаче «Час как число и как категория».
+RMSE измеряется в заказах в час. Лаги добавляют информацию об уровне спроса. Линейная модель с числовым часом плохо описывает несколько пиков за день. Попробуйте дать каждому часу отдельный коэффициент в задаче «Час как число и как категория».
 
 ::: predict
 ```python static
@@ -125,6 +126,7 @@ import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s.loc[:"2026-07-31"]
 
 def make(s, leak):
     df = pd.DataFrame({"y": s})
@@ -137,7 +139,7 @@ def make(s, leak):
 
 for leak in (False, True):
     df = make(s, leak)
-    train = df.index < "2026-08-01"
+    train = df.index < "2026-07-01"
     X, y = df.drop(columns="y"), df["y"]
     p = HistGradientBoostingRegressor(random_state=0).fit(X[train], y[train]).predict(X[~train])
     print("с утечкой" if leak else "честно   ", "RMSE:", round(float(np.sqrt(((y[~train] - p) ** 2).mean())), 3))
@@ -146,7 +148,7 @@ for leak in (False, True):
 **Что здесь происходит:**
 
 - `make(s, leak)` строит одну и ту же таблицу признаков; отличается только `roll_24`: с `leak=True` окно включает текущий час.
-- `train = df.index < "2026-08-01"` — маска обучающих строк: всё до августа. Тест — август (`~train`).
+- `train = df.index < "2026-07-01"` — маска обучающих строк: март–июнь. Июль — валидация (`~train`).
 - RMSE считается вручную: корень из среднего квадрата ошибок.
 
 С утечкой RMSE заметно лучше — и это обман: в реальной работе в момент прогноза текущего часа ещё нет. Утечка небольшая (один час из 24 в окне), поэтому и «улучшение» скромное. Если бы окно было короче, например 3 часа, разрыв был бы огромным.
@@ -178,6 +180,7 @@ for leak in (False, True):
 import pandas as pd
 
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s.loc[:"2026-07-31"]
 
 def features(s):
     df = pd.DataFrame(index=s.index)
@@ -208,25 +211,31 @@ print(changed)
 
 {{practice: leak-test}}
 
+Проверка доступности меняет **весь** неизвестный к выпуску хвост независимыми значениями и пересобирает признаки. Одинаковая прибавка ко всем будущим часам не выявит их разность. Контрпримеры: текущий y,shift(-1), разность двух будущих часов; честный shift(1) на регулярном индексе должен сохраняться. Дополнительно сравните вариант только по доступному префиксу, даты источников и индексы строк: обмен месяцев не является корректным разбиением.
+
 ## Практика
 
 ## task: calendar | Календарные признаки | warmup
 
-Соберите DataFrame `df` со столбцами `y` (заказы), `hour`, `dow`, `weekend` (1 для субботы и воскресенья). Сохраните `weekend_share` — долю выходных часов (3 знака).
+Используйте часы до 1 августа из заготовки. Август отложен для итоговой проверки модели. Соберите DataFrame `df` со столбцами `y` (заказы), `hour`, `dow`, `weekend` (1 для субботы и воскресенья). Сохраните `weekend_share` — долю выходных часов (3 знака).
 
 ### starter
 ```python
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-
+s = s[s.index < '2026-08-01']
 ```
 
 ### check
 ```python
 import pandas as _pd
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+s0 = s0[s0.index < '2026-08-01']
 d = need('df', _pd.DataFrame)
 assert {'y', 'hour', 'dow', 'weekend'} <= set(d.columns), f'Столбцы df: {list(d.columns)}.'
+assert d.index.equals(s0.index), 'Проверьте календарь и порядок строк: здесь нужны все часы до 1 августа, август в таблицу не входит.'
+assert _pd.Series(d['y'], index=d.index).eq(s0).all(), 'Сохраните фактические заказы каждого часа в колонке y.'
+assert d['weekend'].eq((d.index.dayofweek >= 5).astype(int)).all(), 'Проверьте weekend для каждого часа субботы и воскресенья.'
 assert (d['hour'].values == s0.index.hour).all() and (d['dow'].values == s0.index.dayofweek).all(), 'hour и dow — из индекса: .index.hour, .index.dayofweek.'
 assert close(need('weekend_share'), round((s0.index.dayofweek >= 5).mean(), 3)), f'weekend_share = {need("weekend_share")}.'
 ```
@@ -241,6 +250,7 @@ assert close(need('weekend_share'), round((s0.index.dayofweek >= 5).mean(), 3)),
 ```python
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s[s.index < '2026-08-01']
 df = pd.DataFrame({"y": s})
 df["hour"] = df.index.hour
 df["dow"] = df.index.dayofweek
@@ -282,13 +292,13 @@ assert _lines == ['4392'], f'Сейчас: {_lines}.'
 ```python
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s[s.index < '2026-08-01']
 features = {
     "a": s.shift(1),
     "b": s.rolling(3).mean(),
     "c": s.shift(1).rolling(3).mean(),
     "d": s.shift(-1),
 }
-
 ```
 
 ### check
@@ -306,6 +316,7 @@ assert sorted(need('leaky')) == ['b', 'd'], f'leaky = {need("leaky")}. b вкл�
 ```python
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s[s.index < '2026-08-01']
 features = {
     "a": s.shift(1),
     "b": s.rolling(3).mean(),
@@ -323,13 +334,14 @@ leaky = ["b", "d"]
 ```python
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-
+s = s[s.index < '2026-08-01']
 ```
 
 ### check
 ```python
 import pandas as _pd
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+s0 = s0[s0.index < '2026-08-01']
 d = need('make_features')(s0)
 cols = ['y', 'hour', 'dow', 'weekend', 'lag_1', 'lag_24', 'lag_168', 'roll_24']
 assert set(cols) <= set(d.columns), f'Столбцы: {list(d.columns)}.'
@@ -351,6 +363,7 @@ assert need('first_ts') == s0.index[168], f'first_ts = {need("first_ts")}.'
 ```python
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s[s.index < '2026-08-01']
 
 def make_features(s):
     df = pd.DataFrame({"y": s})
@@ -372,7 +385,7 @@ first_ts = df.index[0]
 
 ## task: feature-sets | Какие признаки помогают | base
 
-С помощью `make_features` из заготовки сравните `HistGradientBoostingRegressor(random_state=0)` на трёх наборах признаков: только календарь (`hour`, `dow`, `weekend`), календарь + лаги (`lag_1`, `lag_24`, `lag_168`), всё. Обучение — до 2026-08-01, тест — август. Сохраните словарь `rmse` (`{"календарь": ..., "лаги": ..., "всё": ...}`, 3 знака).
+С помощью `make_features` из заготовки сравните `HistGradientBoostingRegressor(random_state=0)` на трёх наборах признаков: только календарь (`hour`, `dow`, `weekend`), календарь + лаги (`lag_1`, `lag_24`, `lag_168`), всё. Обучение — до 1 июля, валидация — июль. Сохраните словарь `rmse` (`{"календарь": ..., "лаги": ..., "всё": ...}`, 3 знака).
 
 ### setup
 ```python
@@ -396,9 +409,9 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s[s.index < '2026-08-01']
 df = make_features(s)
-train = df.index < "2026-08-01"
-
+train = df.index < "2026-07-01"
 ```
 
 ### check
@@ -406,7 +419,8 @@ train = df.index < "2026-08-01"
 import numpy as _np, pandas as _pd
 from sklearn.ensemble import HistGradientBoostingRegressor as _H
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
-d = make_features(s0); tr = d.index < '2026-08-01'; y = d['y']
+s0 = s0[s0.index < '2026-08-01']
+d = make_features(s0); tr = d.index < '2026-07-01'; y = d['y']
 sets = {'календарь': ['hour', 'dow', 'weekend'], 'лаги': ['hour', 'dow', 'weekend', 'lag_1', 'lag_24', 'lag_168'],
         'всё': ['hour', 'dow', 'weekend', 'lag_1', 'lag_24', 'lag_168', 'roll_24']}
 got = need('rmse', dict)
@@ -417,7 +431,7 @@ for k, c in sets.items():
 ```
 
 ### hint
-Сначала таблица признаков и разбиение по дате (`df.index < "2026-08-01"`), потом цикл по наборам столбцов.
+Сначала таблица признаков и разбиение по дате (`df.index < "2026-07-01"`), потом цикл по наборам столбцов.
 
 ### hint
 Словарь наборов столбцов и цикл; RMSE: `np.sqrt(((y_test - p) ** 2).mean())`.
@@ -428,8 +442,9 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s[s.index < '2026-08-01']
 df = make_features(s)
-train = df.index < "2026-08-01"
+train = df.index < "2026-07-01"
 
 sets = {
     "календарь": ["hour", "dow", "weekend"],
@@ -444,7 +459,7 @@ for name, cols in sets.items():
 ```
 
 ### explain
-Календарь знает типичный профиль (час, день недели), но не знает, какая сейчас неделя — удачная или нет: RMSE ≈ 4.596. Лаги добавляют свежую информацию о самом ряде, и ошибка падает до ≈ 4.332. Скользящее среднее за сутки сглаживает шум отдельных часов и даёт ещё немного: ≈ 4.256 (числа из sklearn 1.9; в другой версии третий знак может отличаться — проверка сравнивает с тем, что посчитала ваша среда). Сравнение наборов на одном тесте — честный способ решить, нужен ли признак: если ошибка не уменьшается, признак только усложняет модель.
+На июле RMSE календарной модели — около 4,25 заказа в час. С лагами получается 4,01, со средним за сутки — 4,14. На этих данных дополнительное среднее проиграло набору с одними лагами.
 
 ## task: leak-test | Автоматический тест на утечку | base
 
@@ -460,6 +475,7 @@ for name, cols in sets.items():
 ```python
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s[s.index < '2026-08-01']
 def features(s):
     df = pd.DataFrame(index=s.index)
     df["lag_24"] = s.shift(24)                                   # то же время вчера
@@ -477,19 +493,29 @@ import pandas as pd
 
 def leak_test(features, s, t):
     ...
-
 ```
 
 ### check
 ```python
 import pandas as _pd
-s0, f0 = need('s'), need('features')
-t = _pd.Timestamp('2026-07-15 12:00')
-sp = s0.copy(); sp[t] += 1000
-ch = sorted(c for c in f0(s0).columns if f0(sp).loc[t, c] != f0(s0).loc[t, c])
-assert need('leaking', list) == ch, f'leaking = {need("leaking")}, а нужно {ch}.'
-lt = need('leak_test')
-assert lt(f0, s0, _pd.Timestamp('2026-05-10 09:00')) == ch, 'leak_test должна работать для любого момента t, а не только для 15 июля.'
+import numpy as _np
+s0,f0=need('s'),need('features')
+def _expected(features,t):
+    original=features(s0).loc[t]; changed=set()
+    for sign in (1,-1):
+        spoiled=s0.copy(); tail=spoiled.index>=t
+        spoiled.loc[tail]+=sign*(1000+_np.arange(int(tail.sum()))**2)
+        altered=features(spoiled).loc[t]
+        same=(altered==original)|(altered.isna()&original.isna())
+        changed.update(same.index[~same])
+    return sorted(changed)
+assert need('leaking')==_expected(f0,_pd.Timestamp('2026-07-15 12:00')), 'Проверяйте весь неизвестный хвост, включая следующий час.'
+lt=need('leak_test')
+for t in [_pd.Timestamp('2026-05-10 09:00'),_pd.Timestamp('2026-07-15 12:00')]:
+    assert lt(f0,s0.copy(),t)==_expected(f0,t), 'Проверка должна работать для другого момента.'
+    def _toy(z):
+        return _pd.DataFrame(dict(prev=z.shift(1),now=z,next=z.shift(-1),future_difference=z.shift(-1)-z.shift(-2)))
+    assert lt(_toy,s0.copy(),t)==['future_difference','next','now'], 'Честный prev сохраняется; текущее, будущее и разность двух будущих часов должны обнаруживаться.'
 ```
 
 ### hint
@@ -504,15 +530,21 @@ assert lt(f0, s0, _pd.Timestamp('2026-05-10 09:00')) == ch, 'leak_test долж�
 ### solution
 ```python
 import pandas as pd
+import numpy as np
 
 def leak_test(features, s, t):
-    spoiled = s.copy()
-    spoiled[t] = spoiled[t] + 1000
-    changed = features(spoiled).loc[t] != features(s).loc[t]
-    return sorted(changed[changed].index)
+    original=features(s).loc[t]
+    changed=set()
+    for sign in (1,-1):
+        spoiled=s.copy()
+        tail=spoiled.index>=t
+        spoiled.loc[tail]=spoiled.loc[tail]+sign*(1000+np.arange(int(tail.sum()))**2)
+        altered=features(spoiled).loc[t]
+        same=(altered==original)|(altered.isna()&original.isna())
+        changed.update(same.index[~same])
+    return sorted(changed)
 
-leaking = leak_test(features, s, pd.Timestamp("2026-07-15 12:00"))
-print(leaking)
+leaking=leak_test(features,s,pd.Timestamp('2026-07-15 12:00'))
 ```
 
 ### explain
@@ -520,17 +552,18 @@ print(leaking)
 
 ## task: onehot-hours | Час как число и как категория | plus
 
-Линейная регрессия на признаке «час» как числе не может описать суточный профиль с несколькими пиками. Сравните три линейные регрессии (обучение — до 1 августа, тест — август): `num` — признаки `hour` и `dow` числами; `onehot` — те же признаки, закодированные `pd.get_dummies(df[["hour", "dow"]].astype(str))`; `onehot_trend` — `onehot` плюс номер часа от начала ряда `t = np.arange(len(df))`. Сохраните `rmse` — словарь `{"num": …, "onehot": …, "onehot_trend": …}` (3 знака) и `n_onehot_cols` — число столбцов после кодирования.
+Линейная регрессия на признаке «час» как числе не может описать суточный профиль с несколькими пиками. Сравните три линейные регрессии (обучение — до 1 июля, валидация — июль): `num` — признаки `hour` и `dow` числами; `onehot` — те же признаки, закодированные `pd.get_dummies(df[["hour", "dow"]].astype(str))`; `onehot_trend` — `onehot` плюс номер часа от начала ряда `t = np.arange(len(df))`. Сохраните `rmse` — словарь `{"num": …, "onehot": …, "onehot_trend": …}` (3 знака) и `n_onehot_cols` — число столбцов после кодирования.
 
 ### setup
 ```python
 import numpy as np
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s[s.index < '2026-08-01']
 df = pd.DataFrame({"y": s})
 df["hour"] = df.index.hour
 df["dow"] = df.index.dayofweek
-train = df.index < "2026-08-01"
+train = df.index < "2026-07-01"
 ```
 
 ### starter
@@ -541,7 +574,6 @@ from sklearn.linear_model import LinearRegression
 
 def rmse(a, b):
     return round(float(np.sqrt(((a - b) ** 2).mean())), 3)
-
 ```
 
 ### check
@@ -593,13 +625,13 @@ print(rmse, n_onehot_cols)
 ```
 
 ### explain
-Час числом — RMSE около 7.8: прямая не может подняться утром, опуститься днём и снова подняться вечером. Тот же час, закодированный 24 флагами, — около 5.0: у каждого часа свой коэффициент, и профиль описывается точно. Добавленный тренд (номер часа) снимает ещё часть ошибки (около 4.5): заказов в августе больше, чем в среднем за обучение. Это та же мысль, что в главе 6: для линейной модели категория должна быть закодирована, а не записана числом. Деревьям это не так важно — они сами режут «час» на интервалы.
+Час как число даёт RMSE около 7,18. При отдельном индикаторе каждого часа получается 4,50, с линейным трендом — 4,21. Сравните числа на своих июльских строках.
 
-Почему здесь 31 столбец без `drop_first` (урок «Категориальные признаки и утечки» главы 6)? Полный набор флагов вместе со свободным членом — мультиколлинеарность: коэффициенты определены неоднозначно, и читать их нельзя. Но прогноз от этого не меняется: с `drop_first=True` получается 29 столбцов и тот же RMSE 5.034. Для прогноза хватает полного набора, для интерпретации коэффициентов берите `drop_first=True`.
+Почему здесь 31 столбец без `drop_first` (урок «Категориальные признаки и утечки» главы 6)? Полный набор флагов вместе со свободным членом — мультиколлинеарность: коэффициенты определены неоднозначно, и читать их нельзя. Но прогноз от этого не меняется: с `drop_first=True` получается 29 столбцов и сопоставимая ошибка на июле. Для прогноза хватает полного набора, для интерпретации коэффициентов берите `drop_first=True`.
 
 ## task: promo-feature | Признак «день акции» | star
 
-В уроке «Временной ряд: индекс-дата, resample и скользящие окна» (задача «Почему пятницы») выяснилось, что всплески — пятничные акции, о которых известно заранее: 17 апреля, 22 мая, 19 июня, 24 июля, 21 августа, с 10 до 20 часов. Добавьте к `make_features(s)` признак `promo` (1 в эти часы) и сравните RMSE бустинга на августе с ним и без него. Отдельно посчитайте RMSE только на часах акции 21 августа. Сохраните `rmse_without`, `rmse_with`, `promo_without`, `promo_with` (3 знака).
+В уроке «Временной ряд: индекс-дата, resample и скользящие окна» (задача «Почему пятницы») выяснилось, что всплески — пятничные акции, о которых известно заранее: 17 апреля, 22 мая, 19 июня, 24 июля, с 10 до 20 часов. Добавьте к `make_features(s)` признак `promo` (1 в эти часы) и сравните RMSE бустинга на июле с ним и без него. Отдельно посчитайте RMSE только на часах акции 24 июля. Сохраните `rmse_without`, `rmse_with`, `promo_without`, `promo_with` (3 знака).
 
 ### setup
 ```python
@@ -623,8 +655,8 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
-
+s = s[s.index < '2026-08-01']
+promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-07-24"])
 ```
 
 ### check
@@ -632,11 +664,12 @@ promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-
 import numpy as _np, pandas as _pd
 from sklearn.ensemble import HistGradientBoostingRegressor as _H
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
-pdays = _pd.to_datetime(['2026-04-17', '2026-05-22', '2026-06-19', '2026-07-24', '2026-08-21'])
+s0 = s0[s0.index < '2026-08-01']
+pdays = _pd.to_datetime(['2026-04-17', '2026-05-22', '2026-06-19', '2026-07-24', '2026-07-24'])
 d = make_features(s0)
 d['promo'] = (d.index.normalize().isin(pdays) & (d.index.hour >= 10) & (d.index.hour <= 20)).astype(int)
-tr = d.index < '2026-08-01'; y = d['y']
-pm = (d.index[~tr].normalize() == _pd.Timestamp('2026-08-21')) & (d.index[~tr].hour >= 10) & (d.index[~tr].hour <= 20)
+tr = d.index < '2026-07-01'; y = d['y']
+pm = (d.index[~tr].normalize() == _pd.Timestamp('2026-07-24')) & (d.index[~tr].hour >= 10) & (d.index[~tr].hour <= 20)
 r = lambda a, b: float(_np.sqrt(((a - b) ** 2).mean()))
 c0 = [c for c in d.columns if c not in ('y', 'promo')]
 p0 = _H(random_state=0).fit(d.loc[tr, c0], y[tr]).predict(d.loc[~tr, c0])
@@ -651,7 +684,7 @@ for k, v in w.items():
 Признак: `df.index.normalize().isin(promo_days) & (df.index.hour >= 10) & (df.index.hour <= 20)`. `normalize()` обнуляет время, оставляя дату.
 
 ### hint
-Часы акции в тесте — та же маска для 21 августа; прогнозы обеих моделей сравнивайте на этих часах.
+Часы акции в тесте — та же маска для 24 июля; прогнозы обеих моделей сравнивайте на этих часах.
 
 ### solution
 ```python
@@ -659,12 +692,13 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
+s = s[s.index < '2026-08-01']
+promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-07-24"])
 
 df = make_features(s)
 hours = df.index.hour
 df["promo"] = (df.index.normalize().isin(promo_days) & (hours >= 10) & (hours <= 20)).astype(int)
-train = df.index < "2026-08-01"
+train = df.index < "2026-07-01"
 y = df["y"]
 base_cols = [c for c in df.columns if c not in ("y", "promo")]
 
@@ -675,7 +709,7 @@ p_without = HistGradientBoostingRegressor(random_state=0).fit(df.loc[train, base
 p_with = HistGradientBoostingRegressor(random_state=0).fit(df.loc[train, base_cols + ["promo"]], y[train]).predict(df.loc[~train, base_cols + ["promo"]])
 y_test = y[~train].values
 test_idx = df.index[~train]
-promo_mask = (test_idx.normalize() == pd.Timestamp("2026-08-21")) & (test_idx.hour >= 10) & (test_idx.hour <= 20)
+promo_mask = (test_idx.normalize() == pd.Timestamp("2026-07-24")) & (test_idx.hour >= 10) & (test_idx.hour <= 20)
 rmse_without = round(rmse(y_test, p_without), 3)
 rmse_with = round(rmse(y_test, p_with), 3)
 promo_without = round(rmse(y_test[promo_mask], p_without[promo_mask]), 3)
@@ -683,4 +717,4 @@ promo_with = round(rmse(y_test[promo_mask], p_with[promo_mask]), 3)
 ```
 
 ### explain
-За весь август разница небольшая — акция одна. Но в часы акции ошибка без признака огромная: модель не знает, что будет всплеск, и узнаёт о нём только через лаг 1, с опозданием на час. С признаком она готова заранее. Для бизнеса именно эти часы самые важные: в акцию не хватает рук.
+Сравните две пары ошибок на июле. Первая относится ко всем часам, вторая — только к часам акции 24 июля. В эти часы заранее известный календарь меняет прогноз ещё до первого всплеска заказов.

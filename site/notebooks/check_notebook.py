@@ -156,37 +156,46 @@ def check_commented_code(nb, rep: Report) -> None:
                     'хранит git, а в отчёте они путают читателя. Если код нужен — раскомментируйте и объясните, зачем.')
 
 
+def meaningful_conclusion(text: str) -> bool:
+    """Структурный минимум; предметный смысл по-прежнему проверяет рецензент."""
+    words = re.findall(r"[A-Za-zА-Яа-яЁё]{2,}", text)
+    return len(words) >= 4 and len(text.strip()) >= 20
+
+
 def check_sections(nb, rep: Report) -> None:
-    sections = []           # [заголовок, [ячейки раздела]]
+    sections = []
     for i, c in enumerate(nb.cells):
         heads = SECTION.findall(c.source) if c.cell_type == 'markdown' else []
         if heads:
-            sections.append([heads[-1].strip(), [], i])
+            sections.append([heads[-1].strip(), []])
             rest = SECTION.split(c.source)[-1].strip()
-            if rest and len(sections) > 0:
-                sections[-1][1].append((i, 'md-text'))
+            if meaningful_conclusion(rest):
+                sections[-1][1].append('conclusion')
             continue
-        if sections:
-            kind = c.cell_type if c.cell_type == 'code' else ('md-text' if c.source.strip() else 'empty')
-            if c.cell_type == 'code' and not c.source.strip():
-                kind = 'empty'
-            sections[-1][1].append((i, kind))
+        if not sections:
+            continue
+        if c.cell_type == 'markdown':
+            if meaningful_conclusion(c.source):
+                sections[-1][1].append('conclusion')
+        elif c.cell_type == 'code' and c.source.strip():
+            sections[-1][1].append('code')
+            # Только фактически отрисованный Markdown после исполнения, а не текст кода.
+            for output in c.get('outputs', []):
+                value = output.get('data', {}).get('text/markdown', '')
+                if isinstance(value, list):
+                    value = ''.join(value)
+                if meaningful_conclusion(value):
+                    sections[-1][1].append('conclusion')
     if not sections:
-        rep.err('В блокноте нет разделов «## …». Нужна структура: ## Цель → ## Данные → ## Предобработка → '
-                '## Анализ и модели → ## Выводы (возьмите project-template.ipynb).')
+        rep.err('В блокноте нет разделов «## …». Нужна структура: ## Цель → ## Данные → ## Предобработка → ## Анализ и модели → ## Выводы.')
         return
-    for title, cells, start in sections:
-        kinds = [k for _, k in cells if k != 'empty']
-        if 'code' not in kinds:
-            continue
-        last_code = max(j for j, k in enumerate(kinds) if k == 'code')
-        if 'md-text' not in kinds[last_code + 1:]:
-            rep.err(f'Раздел «{title}» заканчивается кодом без вывода. Добавьте после последней ячейки кода '
-                    'markdown-ячейку: что показал код (с числами) и что это значит для бизнеса.')
-    last_title, last_cells, _ = sections[-1]
-    if not re.search(r'вывод|итог|рекоменд|заключ', last_title, re.I):
-        rep.note(f'Последний раздел — «{last_title}». Обычно блокнот заканчивается разделом «Выводы и рекомендации» '
-                 'с ответом на вопрос из «Цели».')
+    for title, kinds in sections:
+        if 'code' in kinds:
+            last_code = max(j for j, kind in enumerate(kinds) if kind == 'code')
+            if 'conclusion' not in kinds[last_code + 1:]:
+                rep.err(f'Раздел «{title}» заканчивается кодом без содержательного вывода. Добавьте Markdown-ячейку или display(Markdown(conclusion)): что показал код и что это значит для бизнеса. Точку или одно число выводом не считаем.')
+    if not re.search(r'вывод|итог|рекоменд|заключ', sections[-1][0], re.I):
+        rep.note('Обычно блокнот заканчивается разделом «Выводы и рекомендации» с ответом на вопрос из «Цели».')
 
 
 def check_first_cell(nb, rep: Report) -> None:
@@ -225,7 +234,7 @@ def check_placeholders(nb, rep: Report) -> None:
 
 PROJECT_MARK = '@@dsc-project@@'          # та же метка, что в dsc._project_json
 LESSON = re.compile(r'^ch\d\d/[\w.-]+$')
-MARKS = {'ok': '✓', 'partial': '✓', 'fail': '✗', 'error': '✗', 'skip': '–'}
+MARKS = {'ok': '✓', 'partial': '◐', 'fail': '✗', 'error': '✗', 'skip': '–'}
 
 
 def find_course(course: str | None, nb_path: Path) -> Path | None:
@@ -295,19 +304,21 @@ def print_project(lesson: str, results: list, rep: Report) -> None:
         line = f'  {MARKS.get(r["status"], "?")} {r["id"]} — {r["title"]}'
         print(line + (f': {r["msg"]}' if r['msg'] else ''))
     n = len(results)
-    ok = sum(r['status'] in ('ok', 'partial') for r in results)
+    ok = sum(r['status'] == 'ok' for r in results)
+    partial = [r for r in results if r['status'] == 'partial']
     bad = [r for r in results if r['status'] in ('fail', 'error')]
     skip = [r for r in results if r['status'] == 'skip']
     summary = f'Совпало с эталоном: {ok} из {n}'
+    summary += f', частично проверено: {len(partial)}' if partial else ''
     summary += f', не совпало: {len(bad)}' if bad else ''
     summary += f', не проверено: {len(skip)}' if skip else ''
     print(summary + '.')
     if bad:
         rep.err('Не совпали с эталоном задачи урока: ' + ', '.join(r['id'] for r in bad)
                 + '. Сообщения — в «Сверке с эталонами» выше; имена переменных должны быть такими, как в задачах урока.')
-    if skip:
-        rep.note('Без ячейки задачи не проверить: ' + ', '.join(r['id'] for r in skip)
-                 + '. Их проверка смотрит на печать, код или график самой задачи — решите их на сайте или в практикуме главы.')
+    if skip or partial:
+        rep.note('Остались непроверенные действия в задачах ' + ', '.join(r['id'] for r in skip + partial)
+                 + '. Причина указана рядом с каждой задачей.')
 
 
 # ---------- запуск ----------
@@ -414,15 +425,18 @@ def main() -> int:
     check_first_cell(nb, rep)
     check_paths(nb, rep)
     check_commented_code(nb, rep)
-    check_sections(nb, rep)
     check_placeholders(nb, rep)
     project = None
+    sections_nb = nb
     if not args.no_run:
         ran = run_notebook(path, nb, args.timeout, args.kernel, rep, extra)
+        if ran:
+            sections_nb = ran[0]
         if extra is not None:
             project = read_project(ran[1], rep) if ran else None
             if ran is None:
                 rep.err('Сверка с эталонами не выполнилась: блокнот не запустился.')
+    check_sections(sections_nb, rep)
 
     print(f'\nПроверка блокнота {path.name}')
     print('=' * (17 + len(path.name)))

@@ -1,0 +1,33 @@
+{
+  "task_before": {
+    "lesson": "ch11/04b-softmax",
+    "kind": "task",
+    "id": "batches",
+    "starter": "import numpy as np\nX = np.arange(20).reshape(10, 2)\ny = np.arange(10)",
+    "setup": "",
+    "check": "import numpy as _np\nf = need('batches')\nX0 = _np.arange(20).reshape(10, 2); y0 = _np.arange(10)\nfor _seed in (0, 17):\n    _rng = _np.random.default_rng(_seed)\n    _reference_rng = _np.random.default_rng(_seed)\n    # Два последовательных вызова — две эпохи с состоянием переданного RNG.\n    for _epoch in range(2):\n        got = list(f(X0, y0, 4, _rng))\n        assert [len(b[1]) for b in got] == [4, 4, 2], 'Батчи по 4 строки, последний — остаток.'\n        assert all(_np.array_equal(b[0][:, 0] // 2, b[1]) for b in got), 'X_batch и y_batch должны соответствовать одним и тем же строкам.'\n        _order = _np.concatenate([b[1] for b in got])\n        assert _np.array_equal(_order, _reference_rng.permutation(len(y0))), f'При seed={_seed}, эпоха {_epoch + 1}: используйте перестановку переданного rng, не фиксируйте seed внутри batches.'\nassert list(need('sizes')) == [4, 4, 2] and need('covered') == True, f'sizes = {need(\"sizes\")}, covered = {need(\"covered\")}.'",
+    "solution": "import numpy as np\nX = np.arange(20).reshape(10, 2)\ny = np.arange(10)\n\ndef batches(X, y, size, rng):\n    order = rng.permutation(len(y))\n    for start in range(0, len(y), size):\n        idx = order[start:start + size]\n        yield X[idx], y[idx]\n\nparts = list(batches(X, y, 4, np.random.default_rng(0)))\nsizes = [len(b) for _, b in parts]\ncovered = sorted(np.concatenate([b for _, b in parts]).tolist()) == list(range(10))",
+    "files": [],
+    "display": true
+  },
+  "programs": [
+    {
+      "lesson": "ch11/04b-softmax",
+      "task": "batches",
+      "description": "lost feature column",
+      "code": "import numpy as np\nX = np.arange(20).reshape(10, 2)\ny = np.arange(10)\n\ndef batches(X, y, size, rng):\n    order = rng.permutation(len(y))\n    for start in range(0, len(y), size):\n        idx = order[start:start + size]\n        yield X[idx, :1], y[idx]\n\nparts = list(batches(X, y, 4, np.random.default_rng(0)))\nsizes = [len(b) for _, b in parts]\ncovered = sorted(np.concatenate([b for _, b in parts]).tolist()) == list(range(10))",
+      "expected": false,
+      "observed_before": true,
+      "phase": "additional"
+    },
+    {
+      "lesson": "ch11/04b-softmax",
+      "task": "batches",
+      "description": "size argument replaced by four",
+      "code": "import numpy as np\nX = np.arange(20).reshape(10, 2)\ny = np.arange(10)\n\ndef batches(X, y, size, rng):\n    size = 4\n    order = rng.permutation(len(y))\n    for start in range(0, len(y), size):\n        idx = order[start:start + size]\n        yield X[idx], y[idx]\n\nparts = list(batches(X, y, 4, np.random.default_rng(0)))\nsizes = [len(b) for _, b in parts]\ncovered = sorted(np.concatenate([b for _, b in parts]).tolist()) == list(range(10))",
+      "expected": false,
+      "observed_before": true,
+      "phase": "additional"
+    }
+  ]
+}

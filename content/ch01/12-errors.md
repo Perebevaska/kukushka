@@ -276,10 +276,11 @@ text = "двадцать"
 ### check
 ```python
 assert printed_line('Не число'), 'Для «двадцать» должно вывестись «Не число».'
-assert 'except ValueError' in _code, 'Ловите именно ValueError.'
-g = {}
-exec(_code.replace('"двадцать"', '"20"', 1), g)
-assert g.get('n') == 20, 'Для text = "20" в n должно оказаться число 20.'
+import ast
+assert any(isinstance(node, ast.ExceptHandler) and isinstance(node.type, ast.Name)
+           and node.type.id == 'ValueError' for node in ast.walk(ast.parse(_code))), 'Ловите именно ValueError.'
+for text, expected in [('20', 20), ('-8', -8)]:
+    assert rerun_with(text=text).get('n') == expected, f'Для text = {text!r} в n должно оказаться число {expected}.'
 ```
 
 ### hint

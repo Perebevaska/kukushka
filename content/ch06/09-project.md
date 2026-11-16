@@ -1,10 +1,10 @@
 ---
 title: "Проект: кто из гостей уйдёт"
 lead: "Финал главы. Отдел лояльности хочет вернуть гостей, которые вот-вот перестанут ходить в «Зерно», — но бонусы стоят денег, и раздавать их всем подряд нельзя. Строим модель оттока от осмотра данных до списка гостей для акции: ищем утечку, подбираем модель честной валидацией и считаем, насколько модель лучше правила."
-files: [guests_churn.csv]
+files: [guests_churn.csv, guests_churn_dates.csv, guests_current.csv]
 recap:
   - "Проект ML начинается не с модели, а с вопроса: что предсказываем, к какому моменту и какие данные известны в этот момент."
-  - "Пропуск — тоже информация: средний чек пуст, потому что визитов не было, и честное заполнение — 0."
+  - "Пропуск — тоже информация: средний чек пуст, потому что визитов не было, для модели можно использовать 0 как технический код вместе с признаком отсутствия визитов. Средний чек без покупок по-прежнему не определён."
   - "Подозрительно высокое качество — повод искать утечку: признак, который становится известен вместе с ответом или после него."
   - "Схема: отложить тест (stratify), выбрать модель и настройки кросс-валидацией на обучающей части, один раз проверить на тесте."
   - "Сравнивайте модель не только с «всегда нет», но и с правилом, которое бизнес уже использует."
@@ -15,7 +15,9 @@ recap:
 
 > Мы хотим запустить акцию удержания: гостям, которые скорее всего перестанут к нам ходить, отправить бонус на следующий визит. Бюджет — на 10 % гостей. Сейчас мы считаем гостя «уходящим», если он не был у нас больше 45 дней, но к этому моменту возвращать его, кажется, поздно. Можно ли заранее найти тех, кто уйдёт, и насколько такой список лучше нашего правила?
 
-Данные — `guests_churn.csv`: срез по гостям с картой лояльности на 1 октября и итог следующих 60 дней.
+Перед обучением запишите одну строку решения: один гость → признаки, известные на 1 октября → предложить бонус в пределах бюджета 10 % → через 60 дней сверить, вернулся ли гость.
+
+Данные — `guests_churn.csv`: исторический срез по гостям с картой лояльности на 1 октября и созревший итог следующих 60 дней. В `guests_churn_dates.csv` по guest_id зафиксированы срез 2026-10-01, окно цели `[2026-10-01, 2026-11-30)` и доступность метки 2026-11-30. Это таблица для оценки исторического прогноза. В дату рабочей рассылки нужен новый срез доступных на неё признаков: список по октябрьским признакам к декабрю уже устарел.
 
 Столбцы: `guest_id`, `city`, `tenure_months` — сколько месяцев гость с нами, `app` — пользуется ли приложением (1/0), `visits_90d` — визитов за последние 90 дней, `days_since_last` — дней с последнего визита, `avg_check` — средний чек за 90 дней, `delivery_share` — доля заказов с доставкой, `fav_category` — что чаще берёт (кофе / не кофе / еда), `promo_used` — сколько раз пользовался акциями, `complaints` — число жалоб, `card_blocked` — заблокирована ли карта (1/0; по правилам программы карту блокируют автоматически, если гость не приходил 60 дней). Целевой признак `churned` — не пришёл ни разу за 60 дней после среза (1/0).
 
@@ -25,7 +27,7 @@ recap:
 
 ## Разберём вместе: как распознать утечку до обучения
 
-Шаг 3 — самый коварный в проекте, поэтому разберём логику заранее на выдуманном признаке. Пусть в таблице есть столбец «анкета удалена» (1/0) — гость попросил стереть свои данные. Посмотрим на маленькую сводку:
+Диагностику шага 3 проводим только внутри обучающей части; финальные ID из шага 4 в неё не входят. Шаг 3 — самый коварный в проекте, поэтому разберём логику заранее на выдуманном признаке. Пусть в таблице есть столбец «анкета удалена» (1/0) — гость попросил стереть свои данные. Посмотрим на маленькую сводку:
 
 | анкета удалена | гостей | ушли |
 |---|---|---|
@@ -58,7 +60,7 @@ recap:
 :::
 
 ::: warn Типичные ошибки проекта
-- **Пустой чек заменён средним.** Пропуск здесь означает «визитов не было», честное значение — 0.
+- **Пустой чек заменён средним.** Пропуск здесь означает «визитов не было», для модели 0 служит техническим кодом при известном нуле визитов, а не наблюдаемым средним чеком.
 - **Признак-следствие.** Всё, что заполняется после ухода, — вон из `X`, как бы хорошо оно ни предсказывало.
 - **Модель выбрана по тесту.** Выбор — по кросс-валидации на train, тест — один раз.
 - **Отчёт одной accuracy.** Директору важно, сколько уходящих попало в список акции и сколько бонусов ушло зря.
@@ -227,6 +229,8 @@ def _ref():
 import pandas as pd
 g = pd.read_csv("guests_churn.csv")
 g["avg_check"] = g["avg_check"].fillna(0)
+g = g.loc[_ref()[3].index].copy()
+
 ```
 
 ### starter
@@ -241,7 +245,7 @@ cols = ["tenure_months", "app", "visits_90d", "days_since_last", "avg_check",
 ### check
 ```python
 from sklearn.tree import DecisionTreeClassifier as _T
-_g = _ref()[0]
+_g = _ref()[0].loc[_ref()[3].index]
 _c = ['tenure_months', 'app', 'visits_90d', 'days_since_last', 'avg_check', 'delivery_share', 'promo_used', 'complaints', 'card_blocked']
 _a, _b, _ya, _yb = _tts0(_g[_c], _g['churned'], test_size=0.25, random_state=42, stratify=_g['churned'])
 _m = _T(max_depth=3, random_state=0).fit(_a, _ya)
@@ -278,7 +282,7 @@ print(acc_all, top_feature, acc_clean, blocked_churn)
 ```
 
 ### explain
-98 % правильных от дерева из трёх вопросов — слишком хорошо, чтобы быть правдой, и почти вся важность у одного признака. Спрашиваем у владельцев данных, что такое `card_blocked`: карту блокируют автоматически после 60 дней без визитов — то есть **по итогам того же периода**, за который мы считаем отток. На 1 октября этого признака ещё нет: он почти совпадает с ответом. Это утечка, и из признаков её убираем. Честное качество — около 87 %.
+98 % правильных от дерева из трёх вопросов — слишком хорошо, чтобы быть правдой, и почти вся важность у одного признака. Спрашиваем у владельцев данных, что такое `card_blocked`: карту блокируют автоматически после 60 дней без визитов — то есть **по итогам того же периода**, за который мы считаем отток. В этой выгрузке это флаг, выгруженный по окончании целевого периода, а не состояние на 1 октября: он почти совпадает с ответом. Блокировка, уже известная до даты прогноза по иным причинам, была бы другим признаком и потребовала бы отдельного определения. Это утечка, и из признаков её убираем. Честное качество — около 87 %.
 
 ## task: prepare | Шаг 4. Признаки и разбиение | base
 
@@ -319,11 +323,18 @@ _g, _X, _y, _Xtr, _Xte, _ytr, _yte, _k = _ref()
 _x = need('X', _pd0.DataFrame)
 assert 'card_blocked' not in _x.columns, 'card_blocked в X — это утечка из шага 3, уберите его.'
 assert 'guest_id' not in _x.columns and 'churned' not in _x.columns, 'guest_id и churned не признаки: номер гостя ничего не говорит о нём, а churned — ответ.'
-assert list(_x.columns) == list(_X.columns), f'Столбцы X: {list(_x.columns)}, а ожидались {list(_X.columns)}. get_dummies от g без трёх столбцов, dtype=int.'
+assert _x.columns.is_unique and set(_x.columns) == set(_X.columns), f'Столбцы X: {list(_x.columns)}, а ожидались {list(_X.columns)}. get_dummies от g без трёх столбцов, dtype=int.'
 assert (need('y') == _y).all(), 'y — столбец churned.'
 assert list(need('X_test').index) == list(_Xte.index), 'X_test — не те строки: test_size=0.25, random_state=42, stratify=y.'
 assert list(need('X_train').index) == list(_Xtr.index) and list(need('y_test').index) == list(_yte.index), 'X_train / y_test не совпадают с ожидаемым разбиением.'
 assert close(need('train_rate'), round(_ytr.mean(), 3)) and close(need('test_rate'), round(_yte.mean(), 3)), f'train_rate, test_rate = {need("train_rate")}, {need("test_rate")}, а ожидалось {round(_ytr.mean(), 3)}, {round(_yte.mean(), 3)}.'
+for _name, _want in [('X', _X), ('y', _y), ('X_train', _Xtr), ('X_test', _Xte), ('y_train', _ytr), ('y_test', _yte)]:
+    _actual = need(_name, type(_want))
+    if isinstance(_want, _pd0.DataFrame):
+        assert _actual.columns.is_unique and set(_actual.columns) == set(_want.columns), f'{_name}: проверьте названия признаков.'
+        _actual = _actual.reindex(columns=_want.columns)
+    assert _actual.index.equals(_want.index) and _np0.array_equal(_actual.to_numpy(), _want.to_numpy()), f'{_name}: значения признаков/меток не соответствуют ID; перестановка значений при прежнем индексе недопустима.'
+
 ```
 
 ### hint
@@ -573,11 +584,11 @@ table
 ```
 
 ### explain
-Лес впереди: около 86–87 % против 82 % у правила. Здесь, в отличие от опозданий, у оттока много причин, и они переплетаются: давность визита, частота, жалобы, стаж, приложение. Одним порогом их не охватить — и лес выигрывает у правила уже не 1–2, а около 4 п.п. А вот лес и дерево различаются меньше, чем разброс между фолдами (стандартное отклонение 2–3 п.п.): уверенно назвать лес лучше дерева нельзя. Лес берём за устойчивость — он меньше зависит от случайностей разбиения, — а не за разницу в доли пункта.
+Лес впереди: около 86–87 % против 82 % у правила. Здесь, в отличие от опозданий, у оттока много причин, и они переплетаются: давность визита, частота, жалобы, стаж, приложение. Одним порогом их не охватить — и лес выигрывает у правила уже не 1–2, а около 4 п.п. А вот лес и дерево различаются меньше, чем разброс между фолдами (стандартное отклонение 2–3 п.п.): уверенно назвать лес лучше дерева нельзя. На этих пяти фолдах у дерева mean≈0.8561,std≈0.0181, у леса mean≈0.8656,std≈0.0276: среднее выше у леса, разброс тоже выше у леса. Это не свидетельство большей устойчивости. До открытия теста задайте критерий выбора — например, максимум среднего на общих фолдах с предпочтением простой модели при заранее допустимой разнице. Разброс пяти значений сам по себе не является тестом значимости сравнения.
 
 ## task: final | Шаг 8. Финальная проверка на тесте | base
 
-Победитель шага 7 — лес (его отрыв от дерева меньше разброса между фолдами; берём лес за устойчивость — см. разбор шага 7). Обучите `RandomForestClassifier(n_estimators=100, min_samples_leaf=3, random_state=0)` на всей обучающей части и сохраните в `model`. Теперь — один раз — посчитайте на тесте (3 знака):
+Для учебного эталона далее используем лес, выбранный по среднему качеству на общих фолдах. В блокноте до открытия теста зафиксируйте собственный критерий и объясните, какие числа его поддерживают. Обучите `RandomForestClassifier(n_estimators=100, min_samples_leaf=3, random_state=0)` на всей обучающей части и сохраните в `model`. Теперь — один раз — посчитайте на тесте (3 знака):
 
 - `test_acc` — долю правильных ответов леса;
 - `base_test` — модели «никто не уйдёт»;
@@ -621,6 +632,11 @@ _w = round(_RF(n_estimators=100, min_samples_leaf=3, random_state=0).fit(_Xtr, _
 assert close(need('test_acc'), _w), f'test_acc = {need("test_acc")}, а ожидалось {_w}. Учим на X_train, проверяем на X_test.'
 assert close(need('base_test'), round((_yte == 0).mean(), 3)), f'base_test = {need("base_test")}. «Никто не уйдёт» права там, где в y_test стоит 0.'
 assert close(need('rule_test'), round(((_Xte['days_since_last'] > 45) == _yte).mean(), 3)), f'rule_test = {need("rule_test")}: правило на X_test, сравнение с y_test.'
+_actual = _m.predict(_Xte)
+_ref_prediction = _RF(n_estimators=100, min_samples_leaf=3, random_state=0).fit(_Xtr, _ytr).predict(_Xte)
+assert _np0.array_equal(_actual, _ref_prediction), 'Переданная model выдаёт другие прогнозы. Проверьте обучение по настоящим y_train, а не сохранённое число accuracy.'
+assert close(need('test_acc'), round((_actual == _yte).mean(), 3)), 'test_acc должна быть пересчитана из прогнозов переданной model.'
+
 ```
 
 ### hint
@@ -642,12 +658,18 @@ print(test_acc, base_test, rule_test)
 ### explain
 На тесте лес прав в 90 % случаев, правило — в 85 %, «никто не уйдёт» — в 78 %. Тест оказался чуть «проще» кросс-валидации (так бывает, урок «Честное сравнение моделей»), но порядок моделей тот же. Эти цифры — для отчёта: при выборе модели тест не участвовал.
 
+Для сравнения списков заранее фиксируем один состав кандидатов и одинаковый бюджет 60 контактов. Сравните верх риска и верх давности на этих же людях; при равенстве используйте меньший guest_id. Бинарное правило, отметившее 65 человек, нельзя напрямую сравнивать со списком 60. Найденные будущие уходы не равны числу спасённых бонусом гостей: эффект бонуса потребует эксперимента.
+
+Дополнительно для рабочей выдачи постройте `current_risk` — Series вероятностей для `guests_current.csv` с индексом guest_id, и `current_ids` —240 ID (10 % от 2400) по риску по убыванию, затем guest_id по возрастанию. Используйте ту же подготовку и принятую модель, переобученную на доступной зрелой истории. Исторический top60 служит оценкой, текущие 240 адресатов — выдачей на 2026-12-01.
+
 ## task: top | Шаг 9. Список для акции | plus
+
+Для исторического сравнения равного бюджета сохраните также `rule_top_ids` —60 ID по days_since_last убыванию, затем guest_id возрастанию, и `rule_top_rate` —долю будущих уходов среди этих 60. Сравните с `top_rate` модели.
 
 Курс обучил лес из шага 8 — он в `model`. Бюджета хватает на 10 % гостей. Отберите их по риску на тестовой части:
 
 - `risk` — Series с вероятностью ухода (`predict_proba(X_test)[:, 1]`) и индексом `X_test`;
-- `top` — 10 % тестовых гостей с наибольшим риском: `risk.nlargest(60)`;
+- `top` — 10 % тестовых гостей с наибольшим риском; при равенстве берите меньший guest_id;
 - `top_ids` — список их `guest_id` (из `g`) в том же порядке;
 - `top_rate` — доля ушедших среди них (3 знака);
 - `lift` — во сколько раз `top_rate` больше доли ушедших во всём тесте (1 знак);
@@ -686,17 +708,33 @@ import pandas as pd
 ```python
 from sklearn.ensemble import RandomForestClassifier as _RF
 _g, _X, _y, _Xtr, _Xte, _ytr, _yte, _k = _ref()
-_m = _RF(n_estimators=100, min_samples_leaf=3, random_state=0).fit(_Xtr, _ytr)
+_m = need('model')
 _r = _pd0.Series(_m.predict_proba(_Xte)[:, 1], index=_Xte.index)
-_t = _r.nlargest(60)
+_t = _r.loc[_g.loc[_r.index].sort_values('guest_id').index].sort_values(ascending=False, kind='stable').head(60)
 _x = need('risk', _pd0.Series)
 assert len(_x) == len(_Xte) and list(_x.index) == list(_Xte.index), 'risk — Series длиной с X_test и с его индексом: pd.Series(..., index=X_test.index).'
 assert close(float((_x - _r).abs().max()), 0, 1e-9), 'risk — вероятность класса 1 (уйдёт): второй столбец predict_proba.'
+_top = need('top', _pd0.Series)
+assert _top.index.equals(_t.index) and _np0.allclose(_top, _t), 'top: сверяются строки Series по риску и guest_id при ничьей.'
 assert list(need('top_ids')) == list(_g.loc[_t.index, 'guest_id']), 'top_ids — guest_id 60 гостей с наибольшим риском, в порядке убывания риска: g.loc[top.index, "guest_id"].'
 _tr = _yte.loc[_t.index].mean()
 assert close(need('top_rate'), round(_tr, 3)), f'top_rate = {need("top_rate")}, а ожидалось {round(_tr, 3)}.'
 assert close(need('lift'), round(_tr / _yte.mean(), 1)), f'lift = {need("lift")}, а ожидалось {round(_tr / _yte.mean(), 1)}.'
 assert close(need('already_gone'), round((_Xte.loc[_t.index, 'days_since_last'] > 45).mean(), 3)), f'already_gone = {need("already_gone")}. Доля гостей из top с days_since_last > 45 (смотрите X_test по индексу top).'
+_current = _pd0.read_csv('guests_current.csv').set_index('guest_id')
+assert 'churned' not in _current and 'card_blocked' not in _current, 'В рабочем срезе нет будущей метки и блокировки.'
+_current['avg_check'] = _current['avg_check'].fillna(0)
+_current_X = _pd0.get_dummies(_current.drop(columns='snapshot_date'), dtype=int).reindex(columns=_Xtr.columns, fill_value=0)
+_current_w = _pd0.Series(_m.predict_proba(_current_X)[:,1], index=_current.index)
+_current_got = need('current_risk', _pd0.Series)
+assert set(_current_got.index) == set(_current_w.index) and _np0.allclose(_current_got.reindex(_current_w.index), _current_w), 'current_risk: вероятности переданной модели по свежим признакам, индекс guest_id.'
+_order = _current_w.sort_index().sort_values(ascending=False, kind='stable').head(240).index.tolist()
+assert list(need('current_ids')) == _order, 'Рабочий список: 240 гостей по риску, при равенстве меньший guest_id.'
+
+_rule = _Xte.loc[_g.loc[_Xte.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)
+assert list(need('rule_top_ids')) == _g.loc[_rule.index, 'guest_id'].tolist(), 'Правило и модель сравниваем при одинаковых 60 местах и составе кандидатов, при ничьей меньший guest_id.'
+assert close(need('rule_top_rate'), round(_yte.loc[_rule.index].mean(), 3)), 'Пересчитайте долю уходов в том же бюджете правила.'
+
 ```
 
 ### hint
@@ -709,16 +747,26 @@ assert close(need('already_gone'), round((_Xte.loc[_t.index, 'days_since_last'] 
 ```python
 import pandas as pd
 risk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)
-top = risk.nlargest(60)
+top = risk.loc[g.loc[risk.index].sort_values("guest_id").index].sort_values(ascending=False, kind="stable").head(60)
 top_ids = list(g.loc[top.index, "guest_id"])
 top_rate = round(y_test.loc[top.index].mean(), 3)
 lift = round(top_rate / y_test.mean(), 1)
 already_gone = round((X_test.loc[top.index, "days_since_last"] > 45).mean(), 3)
 print(top_ids[:5], top_rate, lift, already_gone)
+current = pd.read_csv('guests_current.csv').set_index('guest_id')
+current['avg_check'] = current['avg_check'].fillna(0)
+current_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)
+current_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)
+current_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(240).index.tolist()
+
+rule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)
+rule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()
+rule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)
+
 ```
 
 ### explain
-Из 60 самых рискованных гостей уходят больше 90 % — в 4 раза чаще, чем в среднем. Список точный. Но две трети в нём — гости, которые не были больше 45 дней, то есть те, кого правило уже нашло и кого, по словам заказчика, возвращать поздно. Самое ценное в модели может быть не в том, что она повторяет правило, а в том, что она видит среди тех, кто ещё ходит, — это следующий шаг. И ещё одна оговорка: список здесь построен по тестовым 600 гостям, чтобы знать, чего от него ждать. В работе лес обучат на всех 2 400 гостях и отранжируют всех — тогда «10 % самых рискованных» — это 240 гостей для акции.
+Из 60 самых рискованных гостей уходят больше 90 % — в 4 раза чаще, чем в среднем. Список точный. Но две трети в нём — гости, которые не были больше 45 дней, то есть те, кого правило уже нашло и кого, по словам заказчика, возвращать поздно. Самое ценное в модели может быть не в том, что она повторяет правило, а в том, что она видит среди тех, кто ещё ходит, — это следующий шаг. И ещё одна оговорка: список здесь построен по тестовым 600 гостям, чтобы знать, чего от него ждать. Для рабочей выдачи после принятия оценки можно переобучить модель на доступной истории, но ранжировать надо свежий срез кандидатов на дату акции без будущих полей. Свежие признаки на 2026-12-01 даны в `guests_current.csv` без `churned` и `card_blocked`; исторические 600 строк не являются готовой рассылкой.
 
 Итог для отдела лояльности:
 
@@ -777,9 +825,9 @@ _xq, _yq = _Xte[_q], _yte[_q]
 assert close(need('quiet_rate'), round(_yq.mean(), 3)), f'quiet_rate = {need("quiet_rate")}, а ожидалось {round(_yq.mean(), 3)}. Гости теста с days_since_last <= 45.'
 _kk = int(len(_xq) * 0.1)
 assert need('k') == _kk, f'k = {need("k")}, а ожидалось {_kk}.'
-_r = _pd0.Series(_m.predict_proba(_xq)[:, 1], index=_xq.index).nlargest(_kk)
+_r = _pd0.Series(_m.predict_proba(_xq)[:, 1], index=_xq.index).sort_index().sort_values(ascending=False, kind='stable').head(_kk)
 assert close(need('model_rate'), round(_yq.loc[_r.index].mean(), 3)), f'model_rate = {need("model_rate")}, а ожидалось {round(_yq.loc[_r.index].mean(), 3)}. Риск считайте только для «тихих» гостей и берите nlargest(k).'
-_dd = _xq['days_since_last'].nlargest(_kk)
+_dd = _xq['days_since_last'].sort_index().sort_values(ascending=False, kind='stable').head(_kk)
 assert close(need('days_rate'), round(_yq.loc[_dd.index].mean(), 3)), f'days_rate = {need("days_rate")}, а ожидалось {round(_yq.loc[_dd.index].mean(), 3)}. nlargest(k) по days_since_last среди тех же гостей.'
 ```
 
@@ -796,9 +844,9 @@ quiet = X_test["days_since_last"] <= 45
 Xq, yq = X_test[quiet], y_test[quiet]
 quiet_rate = round(yq.mean(), 3)
 k = int(len(Xq) * 0.1)
-by_model = pd.Series(model.predict_proba(Xq)[:, 1], index=Xq.index).nlargest(k)
+by_model = pd.Series(model.predict_proba(Xq)[:, 1], index=Xq.index).sort_index().sort_values(ascending=False, kind="stable").head(k)
 model_rate = round(yq.loc[by_model.index].mean(), 3)
-by_days = Xq["days_since_last"].nlargest(k)
+by_days = Xq["days_since_last"].sort_index().sort_values(ascending=False, kind="stable").head(k)
 days_rate = round(yq.loc[by_days.index].mean(), 3)
 print(quiet_rate, k, model_rate, days_rate)
 ```
@@ -806,4 +854,4 @@ print(quiet_rate, k, model_rate, days_rate)
 ### explain
 Среди гостей, которые ещё ходят, уходит около 15 %, и правило «45 дней» никого из них не отмечает. Если просто взять тех, кто дольше всех не был, в списке окажется около трети будущих ушедших. Модель среди тех же гостей находит список, где уходят три из четырёх, — она складывает сразу несколько сигналов: жалобы, редкие визиты, небольшой стаж, нет приложения. Это и есть место, где машинное обучение выигрывает у правила аналитика: причин много, и ни одна по отдельности не решает.
 
-Рекомендация: бонусы — в первую очередь «тихим» гостям из верха списка модели, пока они ещё приходят; тем, кто уже пропал на 45+ дней, нужна другая, более дорогая кампания. Эффект акции проверить A/B-тестом. Глава 6 пройдена: в главе 7 научимся оценивать модели не только долей правильных ответов, а подбор настроек поручим `GridSearchCV`.
+Гипотеза для следующей проверки — предложение «тихим» гостям из верхушки риска. При одинаковых 53 местах на 535 ещё активных гостях сравниваем прогноз и давность с тем же разрешением ничьих; стоимость и результат кампании по этим меткам неизвестны. Эффект акции проверить A/B-тестом. Глава 6 пройдена: в главе 7 научимся оценивать модели не только долей правильных ответов, а подбор настроек поручим `GridSearchCV`.

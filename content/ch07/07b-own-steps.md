@@ -428,16 +428,29 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 
 class RateBy(TransformerMixin, BaseEstimator):
-    def __init__(self, by="city"):
-        self.by = by
+    def __init__(self, by="city", n_splits=5, random_state=42):
+        self.by, self.n_splits, self.random_state = by, n_splits, random_state
     def fit(self, X, y):
-        self.rates_ = y.groupby(X[self.by]).mean()   # доля ушедших по городам — только по обучению
-        self.overall_ = y.mean()                      # для города, которого не было
+        y = pd.Series(__import__('numpy').asarray(y), index=X.index)
+        self.rates_ = y.groupby(X[self.by]).mean()
+        self.overall_ = y.mean()
         return self
     def transform(self, X):
         X = X.copy()
         X["churn_rate_" + self.by] = X[self.by].map(self.rates_).fillna(self.overall_)
         return X
+    def fit_transform(self, X, y=None, **fit_params):
+        import numpy as np
+        target = pd.Series(np.asarray(y), index=X.index)
+        output = X.copy()
+        encoded = np.empty(len(X))
+        folds = KFold(n_splits=self.n_splits, shuffle=True, random_state=self.random_state)
+        for train, valid in folds.split(X):
+            rates = target.iloc[train].groupby(X.iloc[train][self.by]).mean()
+            encoded[valid] = X.iloc[valid][self.by].map(rates).fillna(target.iloc[train].mean())
+        output["churn_rate_" + self.by] = encoded
+        self.fit(X, target)  # statistics for subsequent unseen rows
+        return output
 
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
@@ -456,7 +469,7 @@ pipe.fit(X_train, y_train)
 print(pipe.named_steps["rate"].rates_.round(3).to_dict())
 ```
 
-Город здесь заменён одним столбцом — долей ушедших: от 0.207 в Перми до 0.276 в Тюмени. AUC 0.8769 — на уровне базы (0.8773): на четырёх городах выигрыша нет. Такое кодирование полезно, когда значений сотни (улицы, товары), а one-hot раздул бы таблицу. И только внутри конвейера: посчитанная по всей таблице доля содержит ответ того же гостя.
+Город здесь заменён одним столбцом — долей ушедших: от 0.207 в Перми до 0.276 в Тюмени. AUC 0.8769 — на уровне базы (0.8773): на четырёх городах выигрыша нет. Такое кодирование полезно, когда значений сотни (улицы, товары), а one-hot раздул бы таблицу. Конвейер защищает внешний проверочный фолд, но обычный fit_transform через fit→transform всё ещё включает собственную метку обучающей строки в её среднее. Для train нужны out-of-fold значения: для каждой строки статистика рассчитывается без её внутреннего фолда; затем fit сохраняет средние полного train для transform новых данных. Для новой категории резерв — общий средний ответ train. Проверяйте это на категории из одного наблюдения, а не только на четырёх больших городах.
 :::
 
 ::: quiz

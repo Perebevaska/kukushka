@@ -360,13 +360,13 @@ df = pd.read_csv("orders_3m.csv")
 
 ### check
 ```python
+# include-check: ch04_bars.py
 import pandas as _pd
 want = _pd.read_csv('orders_3m.csv')['shop_id'].value_counts()
 ax = ax_of()
-h = [p.get_height() for p in ax.patches]
-assert len(h) == len(want), f'Столбцов {len(h)}, а кофеен {len(want)}.'
-assert sorted(h, reverse=True) == sorted(want.values, reverse=True), 'Высоты столбцов должны быть числом заказов.'
-assert h == sorted(h, reverse=True), 'Отсортируйте столбцы по убыванию.'
+visible = _check_category_bars(ax, want.to_dict())
+values = [value for _, value in visible]
+assert values == sorted(values, reverse=True), 'В видимом порядке слева направо число заказов должно убывать.'
 assert ax.get_ylabel() == 'заказов', f'Подпись оси Y: {ax.get_ylabel()!r}.'
 ```
 
@@ -436,13 +436,12 @@ df = pd.read_csv("orders_3m.csv")
 
 ### check
 ```python
+# include-check: ch04_bars.py
 import pandas as _pd
-vc = _pd.read_csv('orders_3m.csv')['drink'].value_counts()
+want = _pd.read_csv('orders_3m.csv')['drink'].value_counts()
 ax = ax_of()
-w = [p.get_width() for p in ax.patches]
-assert len(w) == len(vc), f'Столбцов {len(w)}, а напитков {len(vc)}. Нужен ax.barh.'
-assert sorted(w) == sorted(vc.values), 'Длины столбцов — число заказов напитка.'
-assert w == sorted(w), 'Самый популярный должен быть наверху: у barh первый столбец — внизу, поэтому сортируйте по возрастанию.'
+visible = _check_category_bars(ax, want.to_dict(), horizontal=True)
+assert close(visible[0][1], float(want.max())), 'Наверху должен быть напиток с максимальным числом заказов. Учитывайте направление оси Y; invert_yaxis() тоже допустим.'
 assert ax.get_title() == 'Заказы по напиткам', f'Заголовок: {ax.get_title()!r}.'
 ```
 
@@ -470,7 +469,7 @@ ax.set_title("Заказы по напиткам")
 
 ## task: pandas-plot | Через pandas | base
 
-Нарисуйте выручку по размерам напитка (S, M, L — в этом порядке) через `plot(kind="bar")` у Series. Заголовок передайте параметром `title="Выручка по размерам"`.
+Нарисуйте выручку по размерам напитка (S, M, L — в этом порядке) через `plot(kind="bar")` или эквивалентный `plot.bar(...)` у Series. Заголовок передайте параметром `title="Выручка по размерам"`.
 
 ### starter
 ```python
@@ -483,15 +482,38 @@ df = pd.read_csv("orders_3m.csv")
 
 ### check
 ```python
+# include-check: ch04_bars.py
 import pandas as _pd
-want = _pd.read_csv('orders_3m.csv').groupby('size')['amount'].sum().reindex(['S', 'M', 'L'])
+import matplotlib.pyplot as _plt
+from unittest.mock import patch as _patch
+want = _pd.read_csv('orders_3m.csv').groupby('size')['amount'].sum()
 ax = ax_of()
-h = [p.get_height() for p in ax.patches]
-assert h == [float(v) for v in want.values], f'Высоты: {h}. Нужна выручка по размерам в порядке S, M, L.'
-labels = [t.get_text() for t in ax.get_xticklabels()]
-assert labels == ['S', 'M', 'L'], f'Подписи по оси X: {labels}. Порядок S, M, L задаётся через reindex(["S", "M", "L"]).'
-assert ax.get_title() == 'Выручка по размерам'
-assert '.plot(' in _code, 'Нарисуйте через метод plot у Series.'
+visible = _check_category_bars(ax, want.to_dict())
+assert [name for name, _ in visible] == ['S','M','L'], 'Видимый порядок по оси X — S, M, L.'
+assert ax.get_title() == 'Выручка по размерам', 'Заголовок должен быть «Выручка по размерам».'
+# Observe an actual Series bar call, including helpers and arbitrary pandas chains.
+# Stop the short replay at that call; the finished original chart was checked above.
+_Accessor = type(_pd.Series(dtype=float).plot)
+_original_plot = _Accessor.__call__
+class _SeriesBarSeen(Exception):
+    pass
+def _observe_plot(self, *args, **kwargs):
+    kind = kwargs.get('kind', args[0] if args else 'line')
+    if isinstance(self._parent, _pd.Series) and kind == 'bar':
+        raise _SeriesBarSeen()
+    return _original_plot(self, *args, **kwargs)
+_before = set(_plt.get_fignums())
+_seen = False
+try:
+    with _patch.object(_Accessor, '__call__', _observe_plot):
+        try:
+            exec(_code, {'__name__': '__main__'})
+        except _SeriesBarSeen:
+            _seen = True
+finally:
+    for _number in set(_plt.get_fignums()) - _before:
+        _plt.close(_number)
+assert _seen, 'Нарисуйте столбцы именно через Series.plot(kind="bar") или Series.plot.bar(...), а не ax.bar вместе с посторонним ax.plot.'
 ```
 
 ### hint

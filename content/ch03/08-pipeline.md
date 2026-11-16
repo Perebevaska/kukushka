@@ -67,12 +67,12 @@ print(clean_phone(pd.Series(["8 (912) 345-67-89"])).tolist())
 
 Маленькие функции удобно проверять по отдельности: подали несколько хитрых значений — посмотрели на ответ. Если в следующей выгрузке появится новый вариант написания, исправлять придётся в одном месте.
 
-Для коротких кодов пригодится ещё один приём: нормализовать текст, взять первую букву `str[0]` и перевести её словарём через `map`. Всё, чего в словаре нет, `map` превратит в пропуск (так он вёл себя в уроке «Категоризация: CASE WHEN в pandas»), — для «прочего» это как раз то, что нужно:
+Нормализованный текст переводят через точный словарь `map`; всё неизвестное становится пропуском. Первой буквы недостаточно: «не знаю» не должно превратиться в «нет».
 
 ```python
 import pandas as pd
 answer = pd.Series(["да", "Да ", "нет", "?", None])
-print(answer.str.strip().str.lower().str[0].map({"д": "да", "н": "нет"}).tolist())
+print(answer.str.strip().str.lower().map({"да": "да", "нет": "нет"}).tolist())
 ```
 
 «да» и «Да » стали «да», «нет» остался «нет», а «?» и пропуск — пропусками.
@@ -362,7 +362,7 @@ print(pd.read_csv("t.csv").columns.tolist())
 import pandas as pd
 
 SYNONYMS = {"соц. сети": "соцсети", "от друзей": "друзья", "проходил мимо": "мимо",
-            "2гис": "карты", "яндекс карты": "карты"}
+            "2 гис": "карты", "яндекс карты": "карты"}
 
 def clean_city(s):
     return (s.str.strip().str.lower().str.removeprefix("г.").str.strip()
@@ -406,11 +406,13 @@ clients.info()
 clients.head()
 ```
 
-В `parse_birth` возраст проверяется через даты, а не через годы, как в уроке «Аномалии и проверка на здравый смысл»: «родился не раньше 1926-12-01 и не позже 2012-12-01» — это и есть возраст от 14 до 100 лет на 1 декабря 2026 (2026 − 100 = 1926, 2026 − 14 = 2012). На наших анкетах оба фильтра оставляют одни и те же 263 даты, зато здесь не нужно отдельно считать возраст.
+В `parse_birth` сначала вычислите полные годы на 1 декабря 2026 и сохраните даты для возрастов 14–100 включительно. Простая граница рождения «не раньше 1926-12-01» ошибочно исключила бы часть людей со 100 полными годами. В день перед 101-летием возраст ещё 100; в день 101-летия дата перестаёт соответствовать правилу.
 
 Сравните `info()` с уроком «Первый осмотр: что не так с данными»: даты стали датами, бонусы — числами, анкеты не повторяются. Пропусков стало больше — это заглушки и невозможные значения, честно превращённые в `NaN`.
 
 {{practice: full, january}}
+
+Правило нормализации пола — точное соответствие `м/муж → М`, `ж/жен → Ж` после обрезки пробелов и смены регистра. «море» и «желаю пропустить» остаются неизвестными: первая буква не заменяет словарь. Телефон с добавочным отправляют на сверку вместо выбора последних десяти цифр.
 
 ## Практика
 
@@ -477,14 +479,14 @@ clean_gender(pd.Series(["М", "муж", "ж", None, "жен "]))
 ```python
 import pandas as _pd
 f = need('clean_gender')
-t = _pd.Series(['М', 'муж', 'ж', None, 'жен ', 'Ж', 'м', 'x'])
+t = _pd.Series(['М', 'муж', 'ж', None, 'жен ', 'Ж', 'м', 'x', 'море', 'желаю пропустить'])
 g = [None if _pd.isna(x) else x for x in f(t)]
-want = ['М', 'М', 'Ж', None, 'Ж', 'Ж', 'М', None]
+want = ['М', 'М', 'Ж', None, 'Ж', 'Ж', 'М', None, None, None]
 assert g == want, f'clean_gender({t.tolist()}) = {g}, а нужно {want}.'
 ```
 
 ### hint
-Достаточно первой буквы в нижнем регистре: `s.str.strip().str.lower().str[0]`.
+Нормализуйте всё значение: `s.str.strip().str.lower()`. Используйте точный словарь `{"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"}`; «море» и «желаю пропустить» в нём отсутствуют.
 
 ### hint
 Дальше — словарь через `map`: всё, чего нет в словаре, станет пропуском. Здесь это и нужно.
@@ -494,7 +496,7 @@ assert g == want, f'clean_gender({t.tolist()}) = {g}, а нужно {want}.'
 import pandas as pd
 
 def clean_gender(s):
-    return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
 
 clean_gender(pd.Series(["М", "муж", "ж", None, "жен "]))
 ```
@@ -840,13 +842,13 @@ def clean_phone(s):
     return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
-    return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
 
 def parse_birth(s):
     iso = pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
     ru = pd.to_datetime(s, format="%d.%m.%Y", errors="coerce")
     born = iso.fillna(ru)
-    return born.where(born.between("1926-12-01", "2012-12-01"))
+    return born.where((2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')).between(14, 100))
 
 def clean_bonus(s):
     b = pd.to_numeric(s.str.replace(" ", ""), errors="coerce")
@@ -866,11 +868,11 @@ _r = _pd.read_csv('clients_raw.csv')
 _d = _r.drop_duplicates().copy()
 _d['client_id'] = _d['client_id'].str.strip().str.upper()
 _d['name'] = _d['name'].str.strip().str.capitalize()
-_d['gender'] = _d['gender'].str.strip().str.lower().str[0].map({'м': 'М', 'ж': 'Ж'})
+_d['gender'] = _d['gender'].str.strip().str.lower().map({'м': 'М', 'муж': 'М', 'ж': 'Ж', 'жен': 'Ж'})
 _b = _pd.to_datetime(_d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(_d['birth_date'], format='%d.%m.%Y', errors='coerce'))
-_d['birth_date'] = _b.where(_b.between('1926-12-01', '2012-12-01'))
+_d['birth_date'] = _b.where((2026 - _b.dt.year - (_b.dt.strftime('%m%d') > '1201')).between(14, 100))
 _d['city'] = _d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip().replace({'екб': 'екатеринбург'}).str.capitalize()
-_d['phone'] = _d['phone'].str.replace(r'\D', '', regex=True).str[-10:]
+_d['phone'] = _d['phone'].str.replace(r'\D', '', regex=True).where(_d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
 _d['signup_date'] = _pd.to_datetime(_d['signup_date'])
 _n = _pd.to_numeric(_d['bonus'].str.replace(' ', ''), errors='coerce')
 _d['bonus'] = _n.mask((_n < 0) | (_n > 10_000))
@@ -886,6 +888,18 @@ for col in ['name', 'gender', 'birth_date', 'city', 'phone', 'signup_date', 'bon
     a, w = g[col], want[col]
     same = (a.isna() == w.isna()) & ((a == w) | w.isna())
     assert same.all(), f'Столбец {col} не совпадает, например у {g.index[~same][0]}: {a[~same].iloc[0]!r}, а нужно {w[~same].iloc[0]!r}.'
+_fn = need('clean_clients')
+_raw = _pd.read_csv('clients_raw.csv').iloc[:6].copy()
+_raw['client_id'] = ['BOUND'+str(i) for i in range(6)]
+_raw['birth_date'] = ['2012-12-01', '1926-05-01', '1925-12-01', '2012-12-02', '1927-12-01', '1925-12-02']
+_raw['gender'] = ['море', 'желаю пропустить', 'муж', 'жен', 'М', 'Ж']
+_raw['phone'] = ['+7 912 345-67-89 доб.12', '9123456789', '29123456789', '89123456789', None, '12']
+_out = _fn(_raw.copy()).set_index('client_id').reindex(_raw['client_id'])
+assert _out.index.is_unique and len(_out) == 6, 'Очистка должна сохранять по одной анкете на карту.'
+assert _out['phone'].isna().tolist() == [True, False, True, False, True, True], 'Телефон с добавочным/неверным префиксом нельзя обрезать до похожего номера.'
+assert _out['gender'].isna().tolist() == [True, True, False, False, False, False], 'Пол: только значения из словаря, а не первая буква произвольного слова.'
+assert _out['birth_date'].notna().tolist() == [True, True, False, False, True, True], 'На 01.12.2026 сохраняем 14–100 полных лет включительно.'
+
 ```
 
 ### hint
@@ -911,13 +925,13 @@ def clean_phone(s):
     return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
-    return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
 
 def parse_birth(s):
     iso = pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
     ru = pd.to_datetime(s, format="%d.%m.%Y", errors="coerce")
     born = iso.fillna(ru)
-    return born.where(born.between("1926-12-01", "2012-12-01"))
+    return born.where((2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')).between(14, 100))
 
 def clean_bonus(s):
     b = pd.to_numeric(s.str.replace(" ", ""), errors="coerce")
@@ -984,7 +998,7 @@ assert need('jan_cities') == {'Уфа', 'Пермь', 'Казань', 'Екат�
 «Пермь, Россия»: всё после запятой не нужно — `str.split(",").str[0]`.
 
 ### hint
-«гор.» убирайте **до** «г.»: иначе от «гор. Уфа» останется «ор. уфа».
+`removeprefix("г.")` не меняет «гор. уфа»: строка не начинается с точного префикса «г.». Удалите также «гор.», затем пробелы. Не отрезайте произвольные первые буквы: «Горячий Ключ» должен сохраниться.
 
 ### solution
 ```python

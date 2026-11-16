@@ -26,7 +26,9 @@ recap:
 5. Источники: сколько гостей и денег приносит каждый.
 6. Возраст и деньги: кто из активных гостей тратит больше.
 7. Проверка между таблицами: в своём ли городе заказывают гости.
-8. Отчёт одной функцией.
+8. Отчёт одной функцией (углубление).
+
+Минимальная сдача основного маршрута — блокнот с очисткой, журналом, проверками ключей и диапазонов, качеством данных, таблицами шагов 3–7 и содержательными выводами. Функция `report(raw, orders)` из шага 8 дополнительно упаковывает эти же расчёты для повторного использования.
 
 ::: figure project-guests
 Поток данных проекта: из каких файлов какие таблицы получаются и какой шаг на какой таблице строится.
@@ -80,12 +82,12 @@ recap:
 Шаги в браузере ниже — тренировка: каждый проверяется сразу. Но маркетингу нужен не набор зелёных галочек, а отчёт, который можно открыть, перезапустить на январской выгрузке и прочитать. Поэтому после шагов соберите проект в Jupyter — так же, как проект главы 2.
 
 1. **Скачайте шаблон** [project-template.ipynb](../notebooks/project-template.ipynb) в папку проекта из урока про uv и положите рядом папку `data/` с тремя файлами: `clients_raw.csv`, `orders_3m.csv`, `shops.csv`. Переименуйте шаблон, например, в `guests.ipynb`.
-2. **Поправьте первую ячейку.** У вас `data/` рядом с блокнотом — `DATA = Path('data')`. Шаблон общий для всех глав, поэтому в нём есть импорты `sklearn` (библиотеки машинного обучения — она понадобится в главах про модели) и пример модели в разделе 4. В этом проекте моделей нет: удалите эти импорты и пример, вы ничего не пропустили.
+2. **Выполните первую ячейку без изменений.** Сверьте найденный путь `DATA`, загрузите из него три файла главы и откройте первую строку каждой таблицы. Демонстрационные ячейки анализа по `daily_sales.csv` замените собственным анализом анкет.
 3. **Раздел «2. Данные»** — загрузка трёх файлов и осмотр по чек-листу из урока «Первый осмотр: что не так с данными»: размер и типы, пропуски, варианты написания, дубли. Сырые файлы не меняйте.
-4. **Раздел «3. Предобработка»** — функция очистки анкет из шага 1, журнал потерь и контракт из урока «Очистка целиком: функция и проверки». Очищенные анкеты сохраните в `clients_clean.csv`. В выводе — журнал словами: «из 307 строк выгрузки осталось 293 анкеты: 8 полных дублей, 6 повторных анкет».
+4. **Раздел «3. Предобработка»** — функция очистки анкет из шага 1, журнал потерь и контракт из урока «Очистка целиком: функция и проверки». Очищенные анкеты сохраните в закрытой папке `private/clients_clean.csv`. Путь к файлу не должен попадать в список публичных артефактов; в портфолио достаточно агрегатов без имён, телефонов и номеров карт. В выводе — журнал словами: «из 307 строк выгрузки осталось 293 анкеты: 8 полных дублей, 6 повторных анкет».
 5. **Раздел «3.1. Качество данных»** — отдельный `## 3.1. Качество данных` сразу после предобработки: что после очистки осталось неизвестным (шаг 2) и какие проблемы надо исправлять в самой CRM. Для каждой такой проблемы — тикет-словарь из урока «Аномалии и проверка на здравый смысл»: где, правило, сколько строк, примеры номеров карт, как найти. Персональные данные гостей в тикеты не попадают.
 6. **Раздел «4. Анализ»** — шаги 3–7, по своему `##` на каждый, например `## 4.3. Откуда приходят гости`: скрипт самопроверки ищет вывод после каждого `##`, а подзаголовки `###` он не проверяет. После каждого раздела — markdown-вывод с цифрами и размером групп.
-7. **Раздел «5. Выводы и рекомендации»** — отчёт из шага 8 и три части: что сделали, что нашли, что предлагаем маркетингу и владельцу CRM. Все пометки ✎ замените своим текстом.
+7. **Раздел «5. Выводы и рекомендации»** — краткая сводка результатов шагов 1–7 и три части: что сделали, что нашли, что предлагаем маркетингу и владельцу CRM. Все пометки ✎ замените своим текстом.
 8. **Самопроверка.** **Kernel → Restart Kernel and Run All Cells**, затем [check_notebook.py](../notebooks/check_notebook.py) рядом с блокнотом:
 
    ```sh
@@ -93,7 +95,7 @@ recap:
    ```
 
    Исправьте всё, что скрипт нашёл, и запустите снова — до чистого результата. Сверка чисел с эталонами шагов — по желанию, команда в блоке «Для любопытных» ниже.
-9. **В портфолио.** Выложите блокнот в отдельный репозиторий, как в уроке про git в главе 2. Папку `data/` добавьте в `.gitignore`: в анкетах имена и телефоны гостей, им не место в открытом репозитории. В README опишите, откуда взять данные.
+9. **В портфолио.** Выложите блокнот в отдельный репозиторий, как в уроке про git в главе 2. Папки `data/` и `private/` добавьте в `.gitignore`: в анкетах имена и телефоны гостей, им не место в открытом репозитории. В README опишите, откуда взять данные.
 
 ::: deep Сверка чисел с эталонами шагов
 Если переменные в блокноте названы как в шагах ниже (`clients`, `guests`, `home_pct`…), скрипт может сверить ваши числа с эталонами курса:
@@ -106,7 +108,7 @@ uv run python check_notebook.py guests.ipynb --project ch03/09-project --course 
 :::
 
 ::: note Сделайте в своём блокноте
-1. Пройдите шаги 1–8 в браузере.
+1. Пройдите обязательные шаги 1–7 в браузере. Шаг 8 со звёздочкой — по желанию: упаковка отчёта в одну функцию.
 2. Перенесите решения в шаблон: очистка — функцией, журнал и контракт — в предобработку, тикеты — в «3.1. Качество данных».
 3. Restart & Run All, затем `check_notebook.py` — до чистого результата.
 4. Проверка на повторяемость: замените в первой ячейке имя файла анкет на копию с другим именем и перезапустите — отчёт должен пересчитаться без единой правки в коде.
@@ -136,13 +138,13 @@ def _ref_clean(raw):
     d = raw.drop_duplicates().copy()
     d['client_id'] = d['client_id'].str.strip().str.upper()
     d['name'] = d['name'].str.strip().str.capitalize()
-    d['gender'] = d['gender'].str.strip().str.lower().str[0].map({'м': 'М', 'ж': 'Ж'})
+    d['gender'] = d['gender'].str.strip().str.lower().map({'м': 'М', 'муж': 'М', 'ж': 'Ж', 'жен': 'Ж'})
     b = _pd0.to_datetime(d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(
         _pd0.to_datetime(d['birth_date'], format='%d.%m.%Y', errors='coerce'))
-    d['birth_date'] = b.where(b.between('1926-12-01', '2012-12-01'))
+    d['birth_date'] = b.where((2026 - b.dt.year - (b.dt.strftime('%m%d') > '1201')).between(14, 100))
     d['city'] = (d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip()
                  .replace({'екб': 'екатеринбург'}).str.capitalize())
-    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).str[-10:]
+    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).where(d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
     d['signup_date'] = _pd0.to_datetime(d['signup_date'])
     n = _pd0.to_numeric(d['bonus'].str.replace(' ', ''), errors='coerce')
     d['bonus'] = n.mask((n < 0) | (n > 10_000))
@@ -154,7 +156,7 @@ def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
-    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
+    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
     return a, g
 def _ref_lump(s):
     vc = s.value_counts()
@@ -188,13 +190,13 @@ def clean_phone(s):
     return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
-    return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
 
 def parse_birth(s):
     iso = pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
     ru = pd.to_datetime(s, format="%d.%m.%Y", errors="coerce")
     born = iso.fillna(ru)
-    return born.where(born.between("1926-12-01", "2012-12-01"))
+    return born.where((2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')).between(14, 100))
 
 def clean_bonus(s):
     b = pd.to_numeric(s.str.replace(" ", ""), errors="coerce")
@@ -224,6 +226,18 @@ r = _pd.read_csv('clients_raw.csv')
 wl = {'выгрузка': len(r), 'без полных дублей': len(r.drop_duplicates()), 'анкет': len(want)}
 got = {k: int(v) for k, v in dict(need('log')).items()}
 assert got == wl, f'log = {got}, а нужно {wl}.'
+_fn = need('clean_clients')
+_raw = _pd.read_csv('clients_raw.csv').iloc[:6].copy()
+_raw['client_id'] = ['BOUND'+str(i) for i in range(6)]
+_raw['birth_date'] = ['2012-12-01', '1926-05-01', '1925-12-01', '2012-12-02', '1927-12-01', '1925-12-02']
+_raw['gender'] = ['море', 'желаю пропустить', 'муж', 'жен', 'М', 'Ж']
+_raw['phone'] = ['+7 912 345-67-89 доб.12', '9123456789', '29123456789', '89123456789', None, '12']
+_out = _fn(_raw.copy()).set_index('client_id').reindex(_raw['client_id'])
+assert _out.index.is_unique and len(_out) == 6, 'Очистка должна сохранять по одной анкете на карту.'
+assert _out['phone'].isna().tolist() == [True, False, True, False, True, True], 'Телефон с добавочным/неверным префиксом нельзя обрезать до похожего номера.'
+assert _out['gender'].isna().tolist() == [True, True, False, False, False, False], 'Пол: только значения из словаря, а не первая буква произвольного слова.'
+assert _out['birth_date'].notna().tolist() == [True, True, False, False, True, True], 'На 01.12.2026 сохраняем 14–100 полных лет включительно.'
+
 ```
 
 ### hint
@@ -249,13 +263,13 @@ def clean_phone(s):
     return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
-    return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
 
 def parse_birth(s):
     iso = pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
     ru = pd.to_datetime(s, format="%d.%m.%Y", errors="coerce")
     born = iso.fillna(ru)
-    return born.where(born.between("1926-12-01", "2012-12-01"))
+    return born.where((2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')).between(14, 100))
 
 def clean_bonus(s):
     b = pd.to_numeric(s.str.replace(" ", ""), errors="coerce")
@@ -297,13 +311,13 @@ def _ref_clean(raw):
     d = raw.drop_duplicates().copy()
     d['client_id'] = d['client_id'].str.strip().str.upper()
     d['name'] = d['name'].str.strip().str.capitalize()
-    d['gender'] = d['gender'].str.strip().str.lower().str[0].map({'м': 'М', 'ж': 'Ж'})
+    d['gender'] = d['gender'].str.strip().str.lower().map({'м': 'М', 'муж': 'М', 'ж': 'Ж', 'жен': 'Ж'})
     b = _pd0.to_datetime(d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(
         _pd0.to_datetime(d['birth_date'], format='%d.%m.%Y', errors='coerce'))
-    d['birth_date'] = b.where(b.between('1926-12-01', '2012-12-01'))
+    d['birth_date'] = b.where((2026 - b.dt.year - (b.dt.strftime('%m%d') > '1201')).between(14, 100))
     d['city'] = (d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip()
                  .replace({'екб': 'екатеринбург'}).str.capitalize())
-    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).str[-10:]
+    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).where(d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
     d['signup_date'] = _pd0.to_datetime(d['signup_date'])
     n = _pd0.to_numeric(d['bonus'].str.replace(' ', ''), errors='coerce')
     d['bonus'] = n.mask((n < 0) | (n > 10_000))
@@ -315,7 +329,7 @@ def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
-    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
+    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
     return a, g
 def _ref_lump(s):
     vc = s.value_counts()
@@ -371,7 +385,7 @@ missing_pct
 
 ## task: age | Шаг 3. Портрет по возрасту и городам | base
 
-Добавьте в `clients` столбцы `age` (полных лет на 1 декабря 2026: `2026 - год рождения`, минус один, если день рождения ещё не наступил) и `age_group` (`pd.cut` с `right=False`, границы 14, 25, 35, 45, 60, 100 и подписи `"14–24"`, `"25–34"`, `"35–44"`, `"45–59"`, `"60–99"`). Сохраните:
+Добавьте в `clients` столбцы `age` (полных лет на 1 декабря 2026: `2026 - год рождения`, минус один, если день рождения ещё не наступил) и `age_group` (`pd.cut` с `right=False`, границы 14, 25, 35, 45, 60, 101 и подписи `"14–24"`, `"25–34"`, `"35–44"`, `"45–59"`, `"60–100"`). Сохраните:
 
 - `median_age` — медианный возраст;
 - `age_counts` — словарь «группа → число анкет»;
@@ -385,13 +399,13 @@ def _ref_clean(raw):
     d = raw.drop_duplicates().copy()
     d['client_id'] = d['client_id'].str.strip().str.upper()
     d['name'] = d['name'].str.strip().str.capitalize()
-    d['gender'] = d['gender'].str.strip().str.lower().str[0].map({'м': 'М', 'ж': 'Ж'})
+    d['gender'] = d['gender'].str.strip().str.lower().map({'м': 'М', 'муж': 'М', 'ж': 'Ж', 'жен': 'Ж'})
     b = _pd0.to_datetime(d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(
         _pd0.to_datetime(d['birth_date'], format='%d.%m.%Y', errors='coerce'))
-    d['birth_date'] = b.where(b.between('1926-12-01', '2012-12-01'))
+    d['birth_date'] = b.where((2026 - b.dt.year - (b.dt.strftime('%m%d') > '1201')).between(14, 100))
     d['city'] = (d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip()
                  .replace({'екб': 'екатеринбург'}).str.capitalize())
-    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).str[-10:]
+    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).where(d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
     d['signup_date'] = _pd0.to_datetime(d['signup_date'])
     n = _pd0.to_numeric(d['bonus'].str.replace(' ', ''), errors='coerce')
     d['bonus'] = n.mask((n < 0) | (n > 10_000))
@@ -403,7 +417,7 @@ def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
-    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
+    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
     return a, g
 def _ref_lump(s):
     vc = s.value_counts()
@@ -439,6 +453,13 @@ got = {str(k): int(v) for k, v in dict(need('age_counts')).items()}
 assert got == {k: int(v) for k, v in g.value_counts().items()}, f'age_counts = {got}.'
 gc = {k: int(v) for k, v in dict(need('by_city')).items()}
 assert gc == {k: int(v) for k, v in c['city'].value_counts().items()}, f'by_city = {gc}.'
+assert cc['client_id'].is_unique and set(cc['client_id']) == set(c['client_id']), 'Возраст должен быть привязан к каждому client_id.'
+_z = cc.set_index('client_id').reindex(c['client_id'])
+for _col, _expected in [('age', a), ('age_group', g.astype(object))]:
+    _actual = _z[_col].reset_index(drop=True).astype(object)
+    _expected = _expected.reset_index(drop=True).astype(object)
+    assert ((_actual == _expected) | (_actual.isna() & _expected.isna())).all(), f'{_col}: проверьте значения по client_id, а не только медиану и размеры групп.'
+
 ```
 
 ### hint
@@ -451,8 +472,8 @@ assert gc == {k: int(v) for k, v in c['city'].value_counts().items()}, f'by_city
 ```python
 import pandas as pd
 clients["age"] = 2026 - clients["birth_date"].dt.year - (clients["birth_date"].dt.strftime("%m%d") > "1201")
-clients["age_group"] = pd.cut(clients["age"], bins=[14, 25, 35, 45, 60, 100],
-                              labels=["14–24", "25–34", "35–44", "45–59", "60–99"], right=False)
+clients["age_group"] = pd.cut(clients["age"], bins=[14, 25, 35, 45, 60, 101],
+                              labels=["14–24", "25–34", "35–44", "45–59", "60–100"], right=False)
 median_age = clients["age"].median()
 age_counts = dict(clients["age_group"].value_counts())
 by_city = dict(clients["city"].value_counts())
@@ -477,13 +498,13 @@ def _ref_clean(raw):
     d = raw.drop_duplicates().copy()
     d['client_id'] = d['client_id'].str.strip().str.upper()
     d['name'] = d['name'].str.strip().str.capitalize()
-    d['gender'] = d['gender'].str.strip().str.lower().str[0].map({'м': 'М', 'ж': 'Ж'})
+    d['gender'] = d['gender'].str.strip().str.lower().map({'м': 'М', 'муж': 'М', 'ж': 'Ж', 'жен': 'Ж'})
     b = _pd0.to_datetime(d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(
         _pd0.to_datetime(d['birth_date'], format='%d.%m.%Y', errors='coerce'))
-    d['birth_date'] = b.where(b.between('1926-12-01', '2012-12-01'))
+    d['birth_date'] = b.where((2026 - b.dt.year - (b.dt.strftime('%m%d') > '1201')).between(14, 100))
     d['city'] = (d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip()
                  .replace({'екб': 'екатеринбург'}).str.capitalize())
-    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).str[-10:]
+    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).where(d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
     d['signup_date'] = _pd0.to_datetime(d['signup_date'])
     n = _pd0.to_numeric(d['bonus'].str.replace(' ', ''), errors='coerce')
     d['bonus'] = n.mask((n < 0) | (n > 10_000))
@@ -495,7 +516,7 @@ def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
-    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
+    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
     return a, g
 def _ref_lump(s):
     vc = s.value_counts()
@@ -533,6 +554,9 @@ assert (gg['revenue'].reindex(ww.index) == ww['revenue']).all(), 'revenue не �
 assert close(need('active_pct'), round((w['orders'] > 0).mean() * 100, 1)), f'active_pct = {need("active_pct")}.'
 o = _ref_orders()
 assert need('n_orphans') == len(set(o['client_id'].dropna()) - set(w['client_id'])), f'n_orphans = {need("n_orphans")}.'
+assert gg.index.is_unique and set(gg.index) == set(ww.index), 'Проверьте ключ client_id.'
+assert (gg['orders'].reindex(ww.index) == ww['orders']).all(), 'orders — число заказов гостя, а не сумма qty.'
+
 ```
 
 ### hint
@@ -576,13 +600,13 @@ def _ref_clean(raw):
     d = raw.drop_duplicates().copy()
     d['client_id'] = d['client_id'].str.strip().str.upper()
     d['name'] = d['name'].str.strip().str.capitalize()
-    d['gender'] = d['gender'].str.strip().str.lower().str[0].map({'м': 'М', 'ж': 'Ж'})
+    d['gender'] = d['gender'].str.strip().str.lower().map({'м': 'М', 'муж': 'М', 'ж': 'Ж', 'жен': 'Ж'})
     b = _pd0.to_datetime(d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(
         _pd0.to_datetime(d['birth_date'], format='%d.%m.%Y', errors='coerce'))
-    d['birth_date'] = b.where(b.between('1926-12-01', '2012-12-01'))
+    d['birth_date'] = b.where((2026 - b.dt.year - (b.dt.strftime('%m%d') > '1201')).between(14, 100))
     d['city'] = (d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip()
                  .replace({'екб': 'екатеринбург'}).str.capitalize())
-    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).str[-10:]
+    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).where(d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
     d['signup_date'] = _pd0.to_datetime(d['signup_date'])
     n = _pd0.to_numeric(d['bonus'].str.replace(' ', ''), errors='coerce')
     d['bonus'] = n.mask((n < 0) | (n > 10_000))
@@ -594,7 +618,7 @@ def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
-    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
+    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
     return a, g
 def _ref_lump(s):
     vc = s.value_counts()
@@ -637,6 +661,8 @@ assert (b['active_pct'] - t['act'].round(1)).abs().max() < 1e-9, 'active_pct н�
 assert (b['avg_revenue'] - t['avg'].round(0)).abs().max() < 1e-9, 'avg_revenue не совпадает — среднее по всем гостям источника, с нулями.'
 assert list(b['clients']) == sorted(b['clients'], reverse=True), 'Отсортируйте по clients по убыванию.'
 assert need('best_source') == t.loc[t['clients'] >= 20, 'avg'].idxmax(), f'best_source = {need("best_source")!r}.'
+assert b[['clients', 'active_pct', 'avg_revenue']].notna().all().all(), 'Расчётные сегментные величины не должны быть NaN: проверьте все группы.'
+
 ```
 
 ### hint
@@ -686,13 +712,13 @@ def _ref_clean(raw):
     d = raw.drop_duplicates().copy()
     d['client_id'] = d['client_id'].str.strip().str.upper()
     d['name'] = d['name'].str.strip().str.capitalize()
-    d['gender'] = d['gender'].str.strip().str.lower().str[0].map({'м': 'М', 'ж': 'Ж'})
+    d['gender'] = d['gender'].str.strip().str.lower().map({'м': 'М', 'муж': 'М', 'ж': 'Ж', 'жен': 'Ж'})
     b = _pd0.to_datetime(d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(
         _pd0.to_datetime(d['birth_date'], format='%d.%m.%Y', errors='coerce'))
-    d['birth_date'] = b.where(b.between('1926-12-01', '2012-12-01'))
+    d['birth_date'] = b.where((2026 - b.dt.year - (b.dt.strftime('%m%d') > '1201')).between(14, 100))
     d['city'] = (d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip()
                  .replace({'екб': 'екатеринбург'}).str.capitalize())
-    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).str[-10:]
+    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).where(d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
     d['signup_date'] = _pd0.to_datetime(d['signup_date'])
     n = _pd0.to_numeric(d['bonus'].str.replace(' ', ''), errors='coerce')
     d['bonus'] = n.mask((n < 0) | (n > 10_000))
@@ -704,7 +730,7 @@ def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
-    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
+    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
     return a, g
 def _ref_lump(s):
     vc = s.value_counts()
@@ -748,6 +774,8 @@ assert b['guests_n'].to_dict() == t['n'].to_dict(), f'guests_n = {b["guests_n"].
 assert (b['avg_orders'] - t['o'].round(1).reindex(b.index)).abs().max() < 1e-9, 'avg_orders не совпадает.'
 assert (b['avg_revenue'] - t['r'].round(1).reindex(b.index)).abs().max() < 1e-9, 'avg_revenue не совпадает.'
 assert str(need('best_group')) == t['r'].idxmax(), f'best_group = {need("best_group")!r}.'
+assert b[['guests_n', 'avg_orders', 'avg_revenue']].notna().all().all(), 'Расчётные сегментные величины не должны быть NaN: проверьте все группы.'
+
 ```
 
 ### hint
@@ -784,13 +812,13 @@ def _ref_clean(raw):
     d = raw.drop_duplicates().copy()
     d['client_id'] = d['client_id'].str.strip().str.upper()
     d['name'] = d['name'].str.strip().str.capitalize()
-    d['gender'] = d['gender'].str.strip().str.lower().str[0].map({'м': 'М', 'ж': 'Ж'})
+    d['gender'] = d['gender'].str.strip().str.lower().map({'м': 'М', 'муж': 'М', 'ж': 'Ж', 'жен': 'Ж'})
     b = _pd0.to_datetime(d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(
         _pd0.to_datetime(d['birth_date'], format='%d.%m.%Y', errors='coerce'))
-    d['birth_date'] = b.where(b.between('1926-12-01', '2012-12-01'))
+    d['birth_date'] = b.where((2026 - b.dt.year - (b.dt.strftime('%m%d') > '1201')).between(14, 100))
     d['city'] = (d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip()
                  .replace({'екб': 'екатеринбург'}).str.capitalize())
-    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).str[-10:]
+    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).where(d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
     d['signup_date'] = _pd0.to_datetime(d['signup_date'])
     n = _pd0.to_numeric(d['bonus'].str.replace(' ', ''), errors='coerce')
     d['bonus'] = n.mask((n < 0) | (n > 10_000))
@@ -802,7 +830,7 @@ def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
-    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
+    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
     return a, g
 def _ref_lump(s):
     vc = s.value_counts()
@@ -875,7 +903,7 @@ home_pct
 ```
 
 ### explain
-«Свой город» — 85.1 % заказов (1007 из 1183, где известны оба города), «странников» — 73 из 260 гостей с заказами. Сеть живёт на местных гостях: акции и рекламу разумно планировать по городам, а продажи в каждом городе прогнозировать по его жителям. Интереснее остальные 176 заказов «в гостях». 117 из них сделали 27 гостей из Екатеринбурга и Москвы: кофеен с заказами там нет, и эти люди пьют кофе «Зерна» в поездках, чаще всего в Казани (99 заказов). Гости из Екатеринбурга — готовая аудитория для кофейни EKB-1: им можно написать ещё до её открытия. Ещё одна деталь: среди 73 странников 14 гостей без города в анкете. В `home_pct` их заказы не вошли — сравнивать не с чем, а в `travelers` вошли: там город анкеты не нужен. Когда два показателя считаются по разным подмножествам, это стоит подписать в отчёте.
+«Свой город» — 85.1 % заказов с известной парой городов (1007 из 1183). Всего в источнике 2089 заказов: у 906 сравнить города нельзя; 1007/2089 ≈ 48.2 % — доля подтверждённых совпадений среди всех заказов, а не оценка неизвестных. «Странников» — 73 из 260 гостей с заказами. Известные пары чаще совпадают, но распространить 85.1 % на заказы с неизвестным городом без допущений нельзя. Интереснее остальные 176 заказов «в гостях». 117 из них сделали 27 гостей из Екатеринбурга и Москвы: кофеен с заказами там нет, и эти люди пьют кофе «Зерна» в поездках, чаще всего в Казани (99 заказов). Перед предложением об открытии EKB-1 сверьте фактическую дату открытия и даты регистрации: отсутствие заказов в выгрузке не означает, что точка ещё не открыта. Использование анкет в маркетинге требует согласованного назначения выгрузки. Ещё одна деталь: среди 73 странников 14 гостей без города в анкете. В `home_pct` их заказы не вошли — сравнивать не с чем, а в `travelers` вошли: там город анкеты не нужен. Когда два показателя считаются по разным подмножествам, это стоит подписать в отчёте.
 
 ## task: report | Шаг 8. Отчёт одной функцией | star
 
@@ -886,7 +914,7 @@ home_pct
 - `"median_age"` — медианный возраст на 1 декабря 2026;
 - `"avg_revenue_active"` — средняя выручка активного гостя (1 знак).
 
-Функция должна работать на любом периоде заказов — например, только на ноябре.
+Функция должна работать на любом периоде заказов — например, только на ноябре — и использовать именно переданную `raw`, без чтения исходного файла внутри. Новая анкета без заказов увеличит `clients` и знаменатель `active_pct`, сохранив выручку активных. Перестановка дат рождения между ID должна менять возрастные показатели соответствующих карт, даже когда общая медиана остаётся прежней.
 
 ### setup
 ```python
@@ -896,13 +924,13 @@ def _ref_clean(raw):
     d = raw.drop_duplicates().copy()
     d['client_id'] = d['client_id'].str.strip().str.upper()
     d['name'] = d['name'].str.strip().str.capitalize()
-    d['gender'] = d['gender'].str.strip().str.lower().str[0].map({'м': 'М', 'ж': 'Ж'})
+    d['gender'] = d['gender'].str.strip().str.lower().map({'м': 'М', 'муж': 'М', 'ж': 'Ж', 'жен': 'Ж'})
     b = _pd0.to_datetime(d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(
         _pd0.to_datetime(d['birth_date'], format='%d.%m.%Y', errors='coerce'))
-    d['birth_date'] = b.where(b.between('1926-12-01', '2012-12-01'))
+    d['birth_date'] = b.where((2026 - b.dt.year - (b.dt.strftime('%m%d') > '1201')).between(14, 100))
     d['city'] = (d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip()
                  .replace({'екб': 'екатеринбург'}).str.capitalize())
-    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).str[-10:]
+    d['phone'] = d['phone'].str.replace(r'\D', '', regex=True).where(d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
     d['signup_date'] = _pd0.to_datetime(d['signup_date'])
     n = _pd0.to_numeric(d['bonus'].str.replace(' ', ''), errors='coerce')
     d['bonus'] = n.mask((n < 0) | (n > 10_000))
@@ -914,7 +942,7 @@ def _ref_orders():
     return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
-    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 100], labels=['14–24', '25–34', '35–44', '45–59', '60–99'], right=False)
+    g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
     return a, g
 def _ref_lump(s):
     vc = s.value_counts()
@@ -948,13 +976,13 @@ def clean_phone(s):
     return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
-    return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
 
 def parse_birth(s):
     iso = pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
     ru = pd.to_datetime(s, format="%d.%m.%Y", errors="coerce")
     born = iso.fillna(ru)
-    return born.where(born.between("1926-12-01", "2012-12-01"))
+    return born.where((2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')).between(14, 100))
 
 def clean_bonus(s):
     b = pd.to_numeric(s.str.replace(" ", ""), errors="coerce")
@@ -989,12 +1017,17 @@ import pandas as _pd
 raw = _pd.read_csv('clients_raw.csv')
 o = _ref_orders()
 f = need('report')
-for part, name in ((o, 'вся осень'), (o[o['datetime'].dt.month == 11], 'только ноябрь')):
-    g = _ref_guests(o=part)
+_extra = raw.iloc[[0]].copy()
+_extra['client_id'] = 'C-NEW-ACCEPTANCE'
+_extra['birth_date'] = '1980-04-03'
+_extra['signup_date'] = '2026-11-30'
+_new = _pd.concat([raw, _extra, _extra], ignore_index=True)
+for _raw, part, name in ((raw, o, 'вся осень'), (raw, o[o['datetime'].dt.month == 11], 'только ноябрь'), (_new, o, 'новая CRM с гостем без заказов')):
+    g = _ref_guests(c=_ref_clean(_raw), o=part)
     act = g[g['orders'] > 0]
     want = {'clients': len(g), 'active_pct': round((g['orders'] > 0).mean() * 100, 1),
             'median_age': float(g['age'].median()), 'avg_revenue_active': round(act['revenue'].mean(), 1)}
-    got = f(raw.copy(), part.copy())
+    got = f(_raw.copy(), part.copy())
     assert isinstance(got, dict), 'report должна возвращать словарь.'
     got = {k: round(float(v), 1) for k, v in got.items()}
     want = {k: round(float(v), 1) for k, v in want.items()}
@@ -1024,13 +1057,13 @@ def clean_phone(s):
     return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
-    return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
 
 def parse_birth(s):
     iso = pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
     ru = pd.to_datetime(s, format="%d.%m.%Y", errors="coerce")
     born = iso.fillna(ru)
-    return born.where(born.between("1926-12-01", "2012-12-01"))
+    return born.where((2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')).between(14, 100))
 
 def clean_bonus(s):
     b = pd.to_numeric(s.str.replace(" ", ""), errors="coerce")

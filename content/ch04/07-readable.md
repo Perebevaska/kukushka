@@ -474,6 +474,8 @@ ax.spines[["top", "right"]].set_visible(False)
 ### explain
 Горизонтальные столбцы, отсортированные по доле, сразу дают рейтинг: латте (17.6 %) и капучино (16.1 %) впереди, эспрессо (2.9 %) — последний. Круговая диаграмма с одиннадцатью секторами не позволяла даже отличить латте от капучино.
 
+Перед сдачей сопоставьте каждую подпись с высотой: пеший — 37, вело — 32, авто — 31 минута на данных этой главы. Перестановка категорий допустима, если сохранены все пары и требуемый порядок; единственный столбец лидера не представляет сравнение всех групп.
+
 ## task: title | Заголовок-вывод | base
 
 Нарисуйте медианное время доставки по типу курьера (время 1–299 минут, столбцы по убыванию) и сделайте заголовок-вывод, который **вычисляется из данных**: «<тип> — самые медленные: медиана N мин», где тип и N берутся из таблицы (N — целое). Подпишите ось Y: «минут».
@@ -499,7 +501,11 @@ want = f'{m.index[0]} — самые медленные: медиана {int(m.i
 assert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'
 assert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'
 h = [p.get_height() for p in ax.patches]
-assert h == sorted(h, reverse=True) and close(h[0], m.iloc[0]), 'Столбцы — медианы по убыванию.'
+_labels = [t.get_text() for t in ax.get_xticklabels()]
+assert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'
+assert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'
+for _label, _height in zip(_labels, h):
+    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'
 assert ax.get_ylabel() == 'минут'
 ```
 
@@ -714,15 +720,16 @@ df = pd.read_csv("orders_3m.csv")
 
 ### check
 ```python
+# include-check: ch04_bars.py
 import pandas as _pd
-want = (_pd.read_csv('orders_3m.csv')['channel'].value_counts(normalize=True) * 100).round(1)
-sh = need('shares', _pd.Series)
-assert all(close(sh[k], v) for k, v in want.items()), f'shares = {sh.to_dict()}, а нужно {want.to_dict()}.'
+want = (_pd.read_csv('orders_3m.csv')['channel'].value_counts(normalize=True)*100).round(1)
+shares = need('shares',_pd.Series)
+assert shares.index.is_unique and set(shares.index)==set(want.index), 'shares должна содержать каждый канал ровно один раз.'
+assert all(close(shares[name],value) for name,value in want.items()), f'shares = {shares.to_dict()}, а нужно {want.to_dict()}.'
 ax = ax_of(0)
-assert len(ax.patches) == 3, 'Нужно три горизонтальных столбца.'
-ws = [p.get_width() for p in ax.patches]
-assert ws[-1] == max(ws), 'Самый большой канал должен быть наверху — у barh это последний столбец. Сортируйте по возрастанию: shares.sort_values().'
-assert ax.get_xlim()[0] == 0 and ax.get_xlim()[1] == 100, f'Ось X: {ax.get_xlim()}, нужна от 0 до 100.'
+visible = _check_category_bars(ax,want.to_dict(),horizontal=True)
+assert close(visible[0][1],float(want.max())), 'Наверху должен быть канал с максимальной долей. Допустим и обратный порядок данных с invert_yaxis().'
+assert close(ax.get_xlim()[0],0) and close(ax.get_xlim()[1],100), f'Ось X: {ax.get_xlim()}, нужна от 0 до 100.'
 assert ax.get_xlabel() == 'доля заказов, %', 'Подпись оси X должна быть «доля заказов, %».'
 ```
 

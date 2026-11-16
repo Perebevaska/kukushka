@@ -503,7 +503,8 @@ def gen_chapter5(rnd: random.Random) -> None:
 # ---------- глава 6: кто из гостей уйдёт ----------
 
 def gen_chapter6(rnd: random.Random) -> None:
-    """guests_churn.csv: гости программы лояльности на 1 декабря 2026.
+    """guests_churn.csv: исторический срез лояльности на 1 октября 2026.
+    Метка за [1 октября, 30 ноября), доступна 30 ноября; рабочий срез — 1 декабря.
     churned — не пришёл ни разу за следующие 60 дней. card_blocked — утечка:
     карту блокируют после 60 дней без визитов, то есть уже по итогам периода."""
     import math
@@ -548,6 +549,8 @@ def gen_chapter6(rnd: random.Random) -> None:
         w.writerow(['guest_id', 'city', 'tenure_months', 'app', 'visits_90d', 'days_since_last', 'avg_check',
                     'delivery_share', 'fav_category', 'promo_used', 'complaints', 'card_blocked', 'churned'])
         w.writerows(rows)
+    from gen_ch06_snapshots import write_snapshots
+    write_snapshots(OUT)
     print(f'guests_churn.csv: {len(rows)}')
 
 
@@ -555,7 +558,7 @@ def gen_chapter6(rnd: random.Random) -> None:
 
 def gen_chapter7(rnd: random.Random) -> None:
     """catering_leads.csv: заявки компаний на кофе-кейтеринг (январь 2026 — сентябрь 2026).
-    converted — заключили договор (≈ 12 %). contract_rub — утечка: сумма договора,
+    converted — заключили договор в течение 30 дней после заявки (≈ 12 %). contract_rub — утечка: сумма договора,
     известна только после сделки (пусто, если сделки нет)."""
     import math
     channels = {'сайт': 40, 'звонок': 20, 'рекомендация': 12, 'соцсети': 18, 'выставка': 6, 'тендер': 4}
@@ -604,6 +607,8 @@ def gen_chapter7(rnd: random.Random) -> None:
         w.writerow(['lead_id', 'created', 'channel', 'event_type', 'city', 'company_size', 'guests', 'budget_pp',
                     'days_to_event', 'manager', 'response_hours', 'repeat_client', 'tasting', 'contract_rub', 'converted'])
         w.writerows(rows)
+    from gen_ch07_labels import write_label_dates
+    write_label_dates(OUT)
     print(f'catering_leads.csv: {len(rows)}')
 
 
@@ -878,12 +883,15 @@ def gen_chapter13(rnd: random.Random) -> None:
             text = rnd2.choice(openers) + ', '.join(parts).capitalize() + '.' + rnd2.choice(closers_neg)
         else:
             text = rnd2.choice(openers) + (rnd2.choice(pos[other]) + ', но ' + rnd2.choice(neg[topic])).capitalize() + '.'
-        new_rows.append([d.isoformat(), shop, typo2(text)])
+        new_rows.append([d.isoformat(), shop, typo2(text), kind, topic])
     new_rows.sort(key=lambda x: x[0])
     with open(OUT / 'reviews_new.csv', 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
         w.writerow(['review_id', 'date', 'shop_id', 'text'])
-        w.writerows([[f'N-{50001 + i}'] + row for i, row in enumerate(new_rows)])
+        w.writerows([[f'N-{50001 + i}'] + row[:3] for i, row in enumerate(new_rows)])
+    with open(OUT / 'reviews_new_gold.csv','w',newline='',encoding='utf-8') as f:
+        w=csv.writer(f); w.writerow(['review_id','complaint','topic','label_source'])
+        w.writerows([[f'N-{50001+i}',int(row[3] != 'pos'),row[4],'synthetic_kind_neg_or_mixed'] for i,row in enumerate(new_rows)])
     print(f'reviews_new.csv: {len(new_rows)}')
 
 
@@ -948,7 +956,7 @@ def draw(rng, cls, light=1.0, warm=0.0):
     return (np.clip(img, 0, 1) * 255).round().astype(np.uint8)
 
 
-def gen_chapter14(seed: int) -> None:
+def gen_chapter14(seed: int, variant="") -> None:
     """showcase.npz: 2000 кадров ячеек витрины 32×32 (оттенки серого, uint8) при дневном свете, метки 0–3.
     showcase_day.npz: один день с камеры над витриной — 12 ячеек × кадр каждые 15 минут 07:00–22:00.
     Ячейки 0–3 — круассаны, 4–7 — маффины, 8–11 — печенье; товар раскупают, в 13:00 и 17:00 допекают.
@@ -957,26 +965,34 @@ def gen_chapter14(seed: int) -> None:
     rng = np.random.default_rng(seed)
     y = rng.choice(4, size=2000)
     X = np.stack([draw(rng, c) for c in y])
-    np.savez_compressed(OUT / 'showcase.npz', X=X, y=y, classes=np.array(CV_CLASSES))
+    np.savez_compressed(OUT / f'showcase{variant}.npz', X=X, y=y, classes=np.array(CV_CLASSES))
 
     product = np.repeat([1, 2, 3], 4)
     stock = rng.integers(3, 9, 12)
+    initial_stock = stock.copy(); demand_tape=[]; refill_tape=[]
     times, slots, labels, frames = [], [], [], []
     for k in range(61):
         minutes = 7 * 60 + 15 * k
         hhmm = f'{minutes // 60:02d}:{minutes % 60:02d}'
         if hhmm in ('13:00', '17:00'):
-            stock = np.where(stock == 0, rng.integers(4, 9, 12), stock)
+            refill = rng.integers(4, 9, 12)
+            refill_tape.append(refill.copy())
+            stock = np.where(stock == 0, refill, stock)
         busy = 0.35 if hhmm < '10:00' or '12:00' <= hhmm < '14:00' else 0.2
-        stock = np.maximum(stock - (rng.random(12) < busy), 0)
+        demand = rng.random(12) < busy
+        demand_tape.append(demand.copy())
+        stock = np.maximum(stock - demand, 0)
         evening = hhmm >= '18:00'
         for s in range(12):
             c = int(product[s]) if stock[s] > 0 else 0
             frames.append(draw(rng, c, light=0.6 if evening else 1.0, warm=0.03 if evening else 0.0))
             times.append(hhmm); slots.append(s); labels.append(c)
-    np.savez_compressed(OUT / 'showcase_day.npz', X=np.stack(frames), slot=np.array(slots), time=np.array(times),
+    np.savez_compressed(OUT / f'showcase_day{variant}.npz', X=np.stack(frames), slot=np.array(slots), time=np.array(times),
                         y=np.array(labels), classes=np.array(CV_CLASSES))
-    print(f'showcase.npz: {len(X)}, showcase_day.npz: {len(frames)}')
+    np.savez_compressed(OUT / f'showcase_inventory{variant}.npz', initial=initial_stock,demand=np.array(demand_tape),refill=np.array(refill_tape))
+    print(f'showcase{variant}.npz: {len(X)}, showcase_day{variant}.npz: {len(frames)}')
+    if seed == 14014 and not variant:
+        gen_chapter14(14015, variant='_next')
 
 
 # ---------- глава 15: журнал сервиса прогноза оттока ----------

@@ -6,7 +6,7 @@ recap:
   - "CatBoost, LightGBM и XGBoost — тот же градиентный бустинг, интерфейс как у sklearn (`fit`, `predict`). В браузере их нет, работают в своём Jupyter; шпаргалка по параметрам — таблица в начале урока."
   - "Для ранней остановки нужна отдельная валидация — последний период обучающих данных, не тест: три части `fit`, `val`, `test`."
   - "Модели сравнивают одной таблицей «модель | RMSE | деревьев | fit, с | predict, мс»; время меряют `time.perf_counter()` вплотную вокруг `fit` и `predict`, в одном запуске на одном компьютере."
-  - "Признаки и честная проверка дают больше, чем выбор библиотеки: разница между библиотеками на данных проекта — около 1.3 тыс. ₽ RMSE, выигрыш бустинга у линейной модели — больше 7 тыс. ₽."
+  - "Сравнивайте библиотеки при одной дате выпуска и одной информации о погоде. Выигрыш в RMSE и затраты времени берите из одной таблицы собственного прогона."
 ---
 
 Этот урок — после проекта «Прогноз дневной выручки»: данные, функция `prep` и разбиение по времени (`fit` — до апреля 2025, `val` — апрель–июнь, `test` — второе полугодие) взяты оттуда.
@@ -72,9 +72,9 @@ from catboost import CatBoostRegressor
 
 cb = CatBoostRegressor(iterations=3000, learning_rate=0.05, depth=6,
                        random_seed=0, verbose=0, early_stopping_rounds=100)
-cb.fit(X[fit], y[fit],
+cb.fit(X_dev[fit], y[fit],
        cat_features=["shop_id", "format"],     # категории строками, без get_dummies
-       eval_set=(X[val], y[val]),              # по ней выбирается число деревьев
+       eval_set=(X_dev[val], y[val]),              # по ней выбирается число деревьев
        use_best_model=True)                    # оставить лучшее число деревьев
 print(cb.get_best_iteration() + 1)             # сколько деревьев осталось
 pred = cb.predict(X[test])
@@ -95,7 +95,7 @@ import lightgbm as lgb
 X_c = X.astype({"shop_id": "category", "format": "category"})   # категории — тип category
 lg = lgb.LGBMRegressor(n_estimators=3000, learning_rate=0.05, num_leaves=7, min_child_samples=10,
                        random_state=0, verbose=-1)
-lg.fit(X_c[fit], y[fit], eval_X=X_c[val], eval_y=y[val],
+lg.fit(dev_cat[fit], y[fit], eval_X=dev_cat[val], eval_y=y[val],
        callbacks=[lgb.early_stopping(100, verbose=False)])
 print(lg.best_iteration_)
 pred = lg.predict(X_c[test])                   # прогноз — по лучшему числу деревьев
@@ -114,22 +114,17 @@ pred = lg.predict(X_c[test])                   # прогноз — по луч�
 
 ### Сравнение: качество и время
 
-Время обучения и прогноза меряют тем же секундомером, что в главе 9: `t0 = time.perf_counter()` до `fit` и `time.perf_counter() - t0` после. Прогноз быстрый, поэтому его повторяют несколько раз и берут лучшее время. В блокноте так собрана таблица по всем моделям. Вот она с нашего компьютера (секунды у вас будут другими, качество — тем же с точностью до версий библиотек):
+Пример прогона с scikit-learn 1.8.0, CatBoost 1.2.10 и LightGBM 4.7.0. При подготовке апрельского и июльского выпусков для будущей погоды использованы средние из доступной на тот момент истории. После ранней остановки модель обучена с выбранным числом деревьев на всех данных до июля. Три колонки времени измерены на одном компьютере при одинаковом числе потоков.
 
-| модель | RMSE, тыс. ₽ | деревьев | fit, с | predict, мс |
-|---|---|---|---|---|
-| CatBoost | 6.55 | 706 | 3.64 | 3.6 |
-| LightGBM, 7 листьев | 6.98 | 702 | 0.23 | 32.4 |
-| HGB, категории | 7.27 | 191 | 0.49 | 15.6 |
-| HGB, get_dummies | 7.35 | 163 | 0.35 | 8.8 |
-| LightGBM | 7.88 | 137 | 0.13 | 7.7 |
+| Модель | RMSE, тыс. ₽ | Деревья | Подбор и финальный fit, с | Только финальный fit, с | Пакетный predict, мс |
+|---|---:|---:|---:|---:|---:|
+| CatBoost | 9.02 | 225 | 0.75 | 0.31 | 0.69 |
+| HGB, категории | 9.12 | 56 | 0.63 | 0.04 | 2.19 |
+| HGB, get_dummies | 9.13 | 67 | 0.77 | 0.06 | 1.39 |
+| LightGBM | 12.65 | 120 | 0.08 | 0.02 | 2.42 |
+| LightGBM, 7 листьев | 13.26 | 330 | 0.05 | 0.02 | 3.65 |
 
-**Как читать результат.**
-
-- **Главное: признаки и честная проверка важнее выбора библиотеки.** Между лучшей и худшей моделью в таблице 1.3 тыс. ₽ RMSE (6.55 против 7.88). А в проекте бустинг выиграл у линейной модели больше 7 тыс. ₽ — за счёт того, что сам нашёл взаимодействия признаков.
-- **Качество.** Лучший — CatBoost. LightGBM с настройками по умолчанию — худший, а с мелкими деревьями (7 листьев) поднимается на второе место. На маленьких данных сравнение «из коробки» — во многом сравнение настроек по умолчанию.
-- **Тренд.** Ловушка шага 7 проекта никуда не делась: HGB и LightGBM занижают прогноз второго полугодия на 1.75–3.49 тыс. ₽ в день. CatBoost на этом периоде почти не смещён (0.12), но рассчитывать на это нельзя — тренд лучше снимать явно.
-- **Время.** На четырёх тысячах строк все модели обучаются за секунды, и время ничего не решает. В таблице быстрее всех обучился LightGBM с настройками по умолчанию (0.13 с), но при повторном запуске у нас первой оказалась строка «LightGBM, 7 листьев» (0.12 с), а LightGBM по умолчанию и оба HGB — около 0.3 с: на долях секунды порядок меняется от запуска к запуску. Устойчиво одно: дольше всех обучается CatBoost, у него около 700 деревьев глубины 6. Зато прогноз у CatBoost самый быстрый: его деревья симметричные, на каждом уровне одно и то же условие, и такое дерево применяется к строке очень быстро.
+В этом полугодии ошибка CatBoost и обеих версий HGB близка. Уменьшение числа листьев LightGBM на этом наборе увеличило ошибку. Для планирования ночного запуска важна длительность подбора и повторного обучения, а для ежедневной выдачи — время прогноза на одинаковом пакете. Повторите замер в своём окружении.
 
 ::: quiz
 Для ранней остановки CatBoost нужен `eval_set`. Какие данные туда передать в прогнозе выручки по дням?
@@ -153,11 +148,36 @@ pred = lg.predict(X_c[test])                   # прогноз — по луч�
 
 {{practice: speed-table}}
 
+В локальном блокноте запишите фактические версии CatBoost/LightGBM, доступность каждой библиотеки и отдельно время подбора/ранней остановки и финального fit. Сравнивайте одинаковую операцию, горизонт и доступные признаки; отсутствие библиотеки отмечается как пропущенный запуск, а не как нулевая длительность.
+
 ## Практика
 
 ## task: speed-table | Таблица «качество и время» | base
 
-Соберите в браузере такую же таблицу, как в блокноте с CatBoost и LightGBM, для трёх моделей sklearn на доставках. Модели и разбиение уже в заготовке. Для каждой модели замерьте `time.perf_counter()` время обучения в секундах (`fit_s`) и время прогноза на тесте в миллисекундах (`predict_ms`), посчитайте RMSE на тесте (`rmse`, 3 знака). Сохраните DataFrame `table`: индекс — названия моделей из словаря `models`, столбцы `rmse`, `fit_s`, `predict_ms`, строки отсортированы по `rmse` от лучшей. Ещё сохраните `best` — название модели с наименьшей ошибкой и `fastest_fit` — название модели, которая обучилась быстрее всех.
+Соберите в браузере такую же таблицу, как в блокноте с CatBoost и LightGBM, для трёх моделей sklearn на доставках. Модели и разбиение уже в заготовке. Для каждой модели вызовите `fit_s = timed_fit(name, model, X_tr, y_tr)`, затем `pred, predict_ms = timed_predict(name, model, X_te)`. Эти готовые функции сами вызывают fit/predict и измеряют интервал через `time.perf_counter()` непосредственно вокруг вызова: `fit_s` — секунды, `predict_ms` — миллисекунды. Сохраните возвращённые интервалы без округления; посчитайте RMSE на тесте (`rmse`, 3 знака). Сохраните DataFrame `table`: индекс — названия моделей из словаря `models`, столбцы `rmse`, `fit_s`, `predict_ms`, строки отсортированы по `rmse` от лучшей. Ещё сохраните `best` — название модели с наименьшей ошибкой и `fastest_fit` — название модели, которая обучилась быстрее всех.
+
+### setup
+```python
+from time import perf_counter as _measurement_clock
+_measurements = {}
+def timed_fit(name, model, features, target):
+    """Обучить модель; вернуть длительность вызова fit в секундах."""
+    start = _measurement_clock()
+    model.fit(features, target)
+    elapsed = _measurement_clock() - start
+    _measurements[name] = dict(model=model, train=features.copy(), target=target.copy(), fit_s=elapsed)
+    return elapsed
+
+def timed_predict(name, model, features):
+    """Вернуть (пакетный прогноз, длительность predict в миллисекундах)."""
+    start = _measurement_clock()
+    prediction = model.predict(features)
+    elapsed_ms = (_measurement_clock() - start) * 1000
+    record = _measurements[name]
+    assert record['model'] is model, 'Передайте в timed_predict ту же модель, что в timed_fit.'
+    record.update(test=features.copy(), predict_ms=elapsed_ms)
+    return prediction, elapsed_ms
+```
 
 ### starter
 ```python
@@ -197,9 +217,15 @@ assert set(t.index) == set(ref), f'Индекс table — названия мо�
 assert {'rmse', 'fit_s', 'predict_ms'} <= set(t.columns), f'Нужны столбцы rmse, fit_s, predict_ms, а сейчас {list(t.columns)}.'
 for k in ref:
     assert close(t.loc[k, 'rmse'], ref[k], 0.0011), f'{k}: rmse = {t.loc[k, "rmse"]}, а нужно {ref[k]}. RMSE — корень из mean_squared_error на тесте.'
-assert (t['fit_s'] > 0).all() and (t['fit_s'] < 600).all(), f'fit_s = {t["fit_s"].tolist()}: время обучения в секундах — разность двух показаний perf_counter().'
-assert (t['predict_ms'] > 0).all(), 'predict_ms должно быть положительным.'
-assert t['predict_ms'].max() > 1, f'predict_ms = {t["predict_ms"].round(4).tolist()}: похоже на секунды. Время прогноза в миллисекундах — разность perf_counter(), умноженная на 1000.'
+assert t.index.is_unique, 'Названия моделей в table не должны повторяться.'
+for _name in t.index:
+    assert _name in _measurements, f'{_name}: вызовите timed_fit для финального обучения.'
+    _record = _measurements[_name]
+    assert 'predict_ms' in _record, f'{_name}: вызовите timed_predict после timed_fit.'
+    assert _record['train'].equals(X_tr) and _record['target'].equals(y_tr), f'{_name}: timed_fit должен обучать на финальной тренировочной части.'
+    assert _record['test'].equals(X_te), f'{_name}: timed_predict должен получать весь финальный тест.'
+    for _col in ('fit_s', 'predict_ms'):
+        assert _np.isfinite(t.loc[_name, _col]) and close(t.loc[_name, _col], _record[_col], 1e-9), f'{_name}: {_col} не совпало с фактическим интервалом. Запишите результат timed_fit/timed_predict без подмены и округления.'
 assert list(t.index) == list(t.sort_values('rmse').index), 'Строки table должны идти по возрастанию rmse: .sort_values("rmse").'
 assert need('best') == t['rmse'].idxmin(), f'best = {need("best")!r}, а меньше всего ошибка у {t["rmse"].idxmin()!r}.'
 assert need('fastest_fit') == t['fit_s'].idxmin(), f'fastest_fit = {need("fastest_fit")!r}, а по вашей же таблице быстрее всех обучилась {t["fit_s"].idxmin()!r}.'
@@ -209,7 +235,7 @@ assert need('fastest_fit') == t['fit_s'].idxmin(), f'fastest_fit = {need("fastes
 В цикле по `models.items()` для каждой модели: засечь время, обучить, остановить секундомер; затем так же с прогнозом. Строки таблицы удобно копить словарями в списке.
 
 ### hint
-`t0 = time.perf_counter(); model.fit(X_tr, y_tr); fit_s = time.perf_counter() - t0`. Для прогноза — то же, умноженное на 1000. RMSE — `np.sqrt(mean_squared_error(y_te, pred))`.
+`fit_s = timed_fit(name, model, X_tr, y_tr)`, затем `pred, predict_ms = timed_predict(name, model, X_te)`. Единицы уже преобразованы внутри функций. RMSE — `np.sqrt(mean_squared_error(y_te, pred))`.
 
 ### hint
 ```python
@@ -246,13 +272,8 @@ models = {
 
 rows = []
 for name, model in models.items():
-    t0 = time.perf_counter()
-    model.fit(X_tr, y_tr)
-    fit_s = time.perf_counter() - t0
-
-    t0 = time.perf_counter()
-    pred = model.predict(X_te)
-    predict_ms = (time.perf_counter() - t0) * 1000
+    fit_s = timed_fit(name, model, X_tr, y_tr)
+    pred, predict_ms = timed_predict(name, model, X_te)
 
     rmse = np.sqrt(mean_squared_error(y_te, pred))
     rows.append({"model": name, "rmse": round(float(rmse), 3), "fit_s": fit_s, "predict_ms": predict_ms})
@@ -265,4 +286,4 @@ print("лучший:", best, "| быстрее всех обучился:", fast
 ```
 
 ### explain
-Лучшая ошибка у классического `GradientBoosting` (RMSE 4.907), чуть хуже `HistGradientBoosting` (5.053) с теми же 200 деревьями глубины 3, у леса — 5.811. Время — ваше собственное, поэтому проверка сравнивает `fastest_fit` с вашей же таблицей. В браузере у нас быстрее всех обучился `HistGradientBoosting`, но на 1400 строках разница — доли секунды (у нас 0.2 с против 0.4–0.5 с). Его преимущество растёт с размером данных: он ищет пороги только между 255 интервалами каждого признака, а не перебирает все значения. Если в таблицу попали секунды вместо миллисекунд для прогноза, числа будут вида 0.03 вместо 30 — это видно сразу, поэтому единицы измерения пишут прямо в названии столбца.
+Лучшая ошибка у классического `GradientBoosting` (RMSE 4.907), чуть хуже `HistGradientBoosting` (5.053) с теми же 200 деревьями глубины 3, у леса — 5.811. Время — ваше собственное: проверка связывает строки таблицы с интервалами, возвращёнными timed_fit/timed_predict, и сравнивает fastest_fit с минимумом этой таблицы. В браузере у нас быстрее всех обучился `HistGradientBoosting`, но на 1400 строках разница — доли секунды (у нас 0.2 с против 0.4–0.5 с). Его преимущество растёт с размером данных: он ищет пороги только между 255 интервалами каждого признака, а не перебирает все значения. Если в таблицу попали секунды вместо миллисекунд для прогноза, числа будут вида 0.03 вместо 30 — это видно сразу, поэтому единицы измерения пишут прямо в названии столбца.

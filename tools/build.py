@@ -23,6 +23,7 @@ from mdit_py_plugins.dollarmath import dollarmath_plugin
 ROOT = Path(__file__).resolve().parent.parent
 CONTENT = ROOT / 'content'
 SITE = ROOT / 'site'
+CHECKS = ROOT / 'tools' / 'checks'
 
 LEVELS = {
     'warmup': 'Разминка',
@@ -73,7 +74,11 @@ def make_md() -> MarkdownIt:
             ref = tokens[idx].info.strip()[len('quiz'):].strip()
             attr = f' data-lesson="{html.escape(ref)}"' if ref else ''
             title = f'Вопрос {env["quiz"]}' if env.get('test') else 'Проверьте себя'
-            return (f'<div class="quiz-c" data-q="c{env["quiz"]}"{attr}><div class="predict-title">{title}</div>\n')
+            qid = f'c{env["quiz"]}'
+            revision = env.get('quiz_revisions', {}).get(qid)
+            if revision:
+                qid += '-' + revision
+            return (f'<div class="quiz-c" data-q="{html.escape(qid)}"{attr}><div class="predict-title">{title}</div>\n')
         return '</div>\n'
     md.use(container_plugin, name='quiz', render=quiz_render)
 
@@ -161,6 +166,13 @@ def _code_of(block: str, where: str) -> str:
     return m.group(1).rstrip('\n')
 
 
+def _include_check(match):
+    path = CHECKS / match[1]
+    if not path.is_file():
+        raise FormatError(f'нет общей проверки tools/checks/{path.name}')
+    return path.read_text(encoding='utf-8').rstrip()
+
+
 def parse_task(head: str, body: str, where: str) -> dict:
     parts = [p.strip() for p in head.split('|')]
     if len(parts) not in (3, 4):
@@ -183,6 +195,8 @@ def parse_task(head: str, body: str, where: str) -> dict:
             task['explain_md'] = block.strip()
         else:
             task[name] = _code_of(block, w) if block.strip() else ''
+            if name == 'check':
+                task[name] = re.sub(r'^# include-check: ([\w-]+\.py)$', _include_check, task[name], flags=re.M)
     if task['parsons']:
         task['solution'] = task['solution'] or task['parsons']
     for req in ('check', 'solution'):
@@ -225,7 +239,7 @@ def parse_lesson(path: Path) -> dict:
         quotes = re.findall(r'^  > ', q, re.M)
         if opts.count('x') != 1 or len(opts) < 2 or len(quotes) < len(opts):
             raise FormatError(f'{path.name}: в ::: quiz нужен ровно один «- [x]», минимум два варианта и объяснение «  > …» у каждого')
-    env: dict = {}
+    env: dict = {'quiz_revisions': meta.get('revisions', {})}
     return {'meta': meta, 'theory_md': theory, 'theory': render(theory, env), 'tasks': tasks,
             'cells': env.get('cells', 0)}
 
@@ -240,6 +254,7 @@ def _build_version() -> str:
     files = sorted(p for p in (SITE / 'assets').glob('*') if p.suffix in ('.css', '.js', '.py', '.svg')
                    and p.name not in ('course.js', 'search.js'))
     files += sorted(CONTENT.rglob('*.md')) + sorted(CONTENT.rglob('*.yaml')) + [Path(__file__)]
+    files += sorted(CHECKS.glob('*.py'))
     for f in files:
         h.update(f.name.encode()); h.update(f.read_bytes())
     return h.hexdigest()[:10]
@@ -416,12 +431,23 @@ def parse_chapter_extra(ch: dict) -> dict:
         body = src[m.end():] if m else src
         env: dict = {'test': name == 'test'}
         n = check_quizzes(body, path.name)
+        opening = ''
+        if name == 'test' and n:
+            first_quiz = re.search(r'^::: quiz\b', body, re.M)
+            if first_quiz and body[:first_quiz.start()].strip():
+                opening = render(body[:first_quiz.start()], {})
+                body = body[first_quiz.start():]
+        out[name] = {'meta': meta, 'html': render(body, env), 'n': n}
         if name == 'test':
+            out[name]['opening'] = opening
             lessons = {ls['id'] for ls in ch.get('lessons', [])}
-            for ref in re.findall(r'^::: quiz\s+(\S+)', body, re.M):
+            refs = re.findall(r'^::: quiz[ \t]+(\S+)', body, re.M)
+            for ref in refs:
                 if ref not in lessons:
                     raise FormatError(f'{ch["id"]}/test.md: ссылка на урок {ref}, которого нет в главе')
-        out[name] = {'meta': meta, 'html': render(body, env), 'n': n}
+            if ch['id'] == 'ch02':
+                core = {ls['id'] for ls in ch['lessons'] if ls.get('core')}
+                out[name]['coreQuestions'] = [f'c{i}' for i, ref in enumerate(refs, 1) if ref in core]
     return out
 
 
@@ -588,11 +614,32 @@ def write_chapter_pages(course, ch, extra, index_data):
         shell('_intro', f'Глава {ch["n"]}. {ch["title"]}', f'О главе · ≈ {fmt_minutes(chapter_minutes(ch))}', inner, prev + nxt)
     if 'test' in extra:
         t = extra['test']
-        inner = f'''<p class="lead">{t["n"]} вопросов по всей главе — на понимание, без кода. После каждого ответа — объяснение всех вариантов, в конце — итог и уроки, которые стоит повторить.</p>
-    <article class="prose theory test-body">{t["html"]}</article>
+        lead = f'{t["n"]} вопросов по всей главе — на понимание, без кода. После каждого ответа — объяснение всех вариантов, в конце — итог и уроки, которые стоит повторить.'
+        if 'coreQuestions' in t:
+            core = len(t['coreQuestions'])
+            lead = f'На основном пути ответьте на {core} вопросов. Остальные {t["n"] - core} вопросов относятся к углублениям. У каждого маршрута свой результат.'
+        questions = t['html']
+        if t['opening']:
+            questions = (f'{t["opening"]}<details class="test-questions"><summary>Перейти к вариантам ответа</summary>'
+                         f'{questions}</details>')
+        inner = f'''<p class="lead">{lead}</p>
+    <article class="prose theory test-body">{questions}</article>
     <section class="test-result" id="test-result" aria-live="polite"></section>'''
         prev = link(f'{last["id"]}.html', 'prev', '← Последний урок', last['title']) if last else '<span class="prev empty"></span>'
-        if next_ch:
+        if ch['id'] == 'ch08':
+            nxt = link('../ch15/01-artifact.html', 'next', 'Основной путь →', 'Сохранить модель и подготовить выпускной проект')
+            routes = [
+                ('ch09', 'Матрица признаков', 'проверить линейный прогноз после смены представления'),
+                ('ch10', 'Таблица продаж', 'сравнить бустинг и простую модель на будущих датах'),
+                ('ch11', 'Таблица и изображения цифр', 'проверить нейросеть и оценить очередь ручной проверки'),
+                ('ch12', 'Почасовой спрос', 'спланировать следующий день'),
+                ('ch13', 'Отзывы гостей', 'найти жалобы и проверить их на новых текстах'),
+                ('ch14', 'Кадры витрины', 'собрать события для сотрудника кофейни'),
+            ]
+            links = ''.join(f'<li><a href="../{cid}/index.html">{source}</a> — {goal}.</li>'
+                            for cid, source, goal in routes)
+            inner += (f'<details class="prose"><summary>Выбрать углубление по задаче</summary><ul>{links}</ul></details>')
+        elif next_ch:
             nh = f'{root}{next_ch["id"]}/index.html' if (CONTENT / next_ch['id'] / 'intro.md').exists() else f'{root}index.html#{next_ch["id"]}'
             nxt = link(nh, 'next', f'Глава {next_ch["n"]} →', next_ch['title'])
         else:
@@ -646,6 +693,14 @@ def build(check_only: bool = False, export_path: Path | None = None) -> int:
         return 1 if errors else 0
 
     for ch in course['chapters']:
+        test_meta = None
+        if 'test' in ch.get('_extra', {}):
+            test = ch['_extra']['test']
+            test_meta = {'url': f'{ch["id"]}/test.html', 'n': test['n']}
+            if 'coreQuestions' in test:
+                test_meta['coreQuestions'] = test['coreQuestions']
+            if test['meta'].get('revisions'):
+                test_meta['revisions'] = test['meta']['revisions']
         index_data.append({
             'id': ch['id'], 'n': ch['n'], 'title': ch['title'], 'goal': ch.get('goal', ''),
             'lessons': [{
@@ -665,7 +720,7 @@ def build(check_only: bool = False, export_path: Path | None = None) -> int:
                           for t in built[(ch['id'], ex['id'])]['tasks']],
             } for ex in ch.get('exams', []) if (ch['id'], ex['id']) in built],
             'intro': f'{ch["id"]}/index.html' if 'intro' in ch.get('_extra', {}) else None,
-            'test': {'url': f'{ch["id"]}/test.html', 'n': ch['_extra']['test']['n']} if 'test' in ch.get('_extra', {}) else None,
+            'test': test_meta,
         })
 
     for ch in course['chapters']:
@@ -844,6 +899,7 @@ def write_lesson(course, ch, ls, L, avail, index_data):
     root = '../'
     is_exam = bool(ls.get('exam'))
     theory_html, toc = with_toc(L['theory'])
+    n_sections = len(toc)
     theory_html = add_feedback(theory_html, toc)
     num = {t['id']: (i, t['title']) for i, t in enumerate(L['tasks'], 1)}
     task_sec = {}
@@ -931,7 +987,17 @@ def write_lesson(course, ch, ls, L, avail, index_data):
     prv = pager_link(prev_ls, 'prev', '← Предыдущий') if prev_ls or 'intro' not in extra else \
         '<a class="prev" href="index.html"><span class="pl">← О главе</span><span class="pt">' + html.escape(ch['title']) + '</span></a>'
 
-    n_base = sum(1 for t in L['tasks'] if t['level'] != 'star')
+    n_base = len(L['tasks']) if is_exam else sum(1 for t in L['tasks'] if t['level'] != 'star')
+    meter_label = f'<span>0 из {n_base}</span>'
+    if ch['id'] == 'ch01' and not is_exam:
+        counts = []
+        if n_sections:
+            counts.append(f'Теория <span data-meter="read">0</span> из {n_sections}')
+        counts.append(f'Обязательные задачи <span data-meter="done">0</span> из {n_base}')
+        n_star = len(L['tasks']) - n_base
+        if n_star:
+            counts.append(f'★ по желанию <span data-meter="star">0</span> из {n_star}')
+        meter_label = '<span class="meter-details">' + ' · '.join(counts) + '<span data-meter="status"></span></span>'
     data_html = data_files_block(root, meta.get('files', []))
     theory_html = link_data(root, theory_html)
     tasks_html = [link_data(root, t) for t in tasks_html]
@@ -946,7 +1012,7 @@ def write_lesson(course, ch, ls, L, avail, index_data):
       <h1>{html.escape(title)}</h1>
       {f'<p class="lead">{inline(meta["lead"])}</p>' if meta.get("lead") else ''}
       {data_html}
-      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div><span>0 из {n_base}</span></div>
+      <div class="lesson-meter" id="lesson-meter"><div class="meter"><i></i></div>{meter_label}</div>
     </div>
     <article class="prose theory">{theory_html}</article>
     <section class="practice" id="practice">

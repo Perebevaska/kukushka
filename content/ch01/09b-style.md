@@ -43,7 +43,7 @@ print(avg_check(84530, 260))
 - Отступ — **4 пробела**, а не 2.
 - `if Orders==0: return 0` → две строки: условие отдельно, действие с отступом под ним. Вокруг `==` — пробелы.
 - `Revenue/Orders` → `revenue / orders`: пробелы вокруг арифметики делают выражение читаемым.
-- `ndigits = 2` → `ndigits=2`: у **именованного аргумента** пробелов вокруг `=` как раз нет. Это единственное место, где `=` пишут слитно.
+- У **именованного аргумента** вызова пишем `round(x, ndigits=2)`. То же правило у параметра по умолчанию без аннотации типа: в определении `def rub(amount, decimals=0):` и в вызове `rub(325.12, decimals=2)` знак `=` пишется без пробелов.
 - Две пустые строки после функции отделяют её от остального кода.
 
 ## Главные правила одной таблицей
@@ -55,6 +55,7 @@ print(avg_check(84530, 260))
 | отступ | 2 пробела или табуляция | 4 пробела |
 | присваивание и сравнение | `x=a+b`, `if x==0:` | `x = a + b`, `if x == 0:` |
 | именованный аргумент | `round(x, ndigits = 2)` | `round(x, ndigits=2)` |
+| параметр по умолчанию без аннотации | `def rub(amount, decimals = 0):` | `def rub(amount, decimals=0):` |
 | запятая | `f(a,b)` | `f(a, b)` |
 | инструкции | `if x: return 0` | `if x:` и `return 0` на новой строке |
 | длина строки | 150 символов | до 79–88 символов; длинное выражение — в скобках на несколько строк |
@@ -123,8 +124,10 @@ print(revenue,share)
 
 ### check
 ```python
-import io as _io, tokenize as _tk
+import ast as _ast, io as _io, tokenize as _tk
 assert need('revenue') == 84460 and need('share') == 6.4, f'Расчёт изменился: revenue = {need("revenue")!r}, share = {need("share")!r}. Должно быть 84460 и 6.4 — меняются только пробелы.'
+_original = 'cups=412\nprice=205\nrevenue=cups*price\nshare=round(revenue/1314000*100,ndigits=1)\nprint(revenue,share)'
+assert _ast.dump(_ast.parse(_code)) == _ast.dump(_ast.parse(_original)), 'Сохраните исходные переменные, вычисления и print. В этом упражнении меняются только пробелы.'
 _toks = [t for t in _tk.generate_tokens(_io.StringIO(_code).readline) if t.type not in (_tk.COMMENT, _tk.NL, _tk.NEWLINE, _tk.INDENT, _tk.DEDENT, _tk.ENDMARKER)]
 _depth = 0
 for _k, _t in enumerate(_toks):
@@ -169,7 +172,7 @@ print(revenue, share)
 
 ## task: snake | Имена по PEP 8 | warmup
 
-Код считает средний чек правильно, но имена переменных написаны в стиле других языков. Переименуйте их по PEP 8: `TotalRevenue` → `total_revenue`, `OrdersCount` → `orders_count`, `avgCheck` → `avg_check`. Число `0.2` — ставка НДС, она не меняется: сделайте его константой `VAT_RATE` и посчитайте через неё `vat` — НДС, входящий в средний чек (`avg_check * VAT_RATE / (1 + VAT_RATE)`, округлить до двух знаков).
+Код считает средний чек правильно, но имена переменных написаны в стиле других языков. Переименуйте их по PEP 8: `TotalRevenue` → `total_revenue`, `OrdersCount` → `orders_count`, `avgCheck` → `avg_check`. В этом учебном примере договоримся о ставке НДС 20%. Вынесите её в константу `VAT_RATE = 0.2` и посчитайте через неё `vat` — НДС, входящий в средний чек (`avg_check * VAT_RATE / (1 + VAT_RATE)`, округлить до двух знаков).
 
 ### starter
 ```python
@@ -188,7 +191,7 @@ _names = {n.id for n in _ast.walk(_tree) if isinstance(n, _ast.Name) and isinsta
 _bad = sorted(x for x in _names if x != x.lower() and x != x.upper())
 assert not _bad, f'Остались имена не в snake_case: {_bad}. Маленькие буквы и подчёркивание между словами.'
 assert {'total_revenue', 'orders_count', 'avg_check', 'VAT_RATE', 'vat'} <= _names, f'Нужны переменные total_revenue, orders_count, avg_check, VAT_RATE и vat. Сейчас присваиваются: {sorted(_names)}.'
-assert need('VAT_RATE') == 0.2, f'VAT_RATE = {need("VAT_RATE")!r}. Ставка НДС — 0.2.'
+assert need('VAT_RATE') == 0.2, f'VAT_RATE = {need("VAT_RATE")!r}. В учебном примере задана ставка 0.2.'
 assert need('avg_check') == 325.12, f'avg_check = {need("avg_check")!r}. Переименование не должно менять расчёт.'
 assert need('vat') == 54.19, f'vat = {need("vat")!r}. Формула та же, только вместо 0.2 — VAT_RATE.'
 assert '0.2' not in _code.replace('VAT_RATE = 0.2', '').replace('VAT_RATE=0.2', ''), 'Число 0.2 должно встречаться только один раз — в объявлении VAT_RATE. Дальше используйте константу.'
@@ -373,13 +376,13 @@ print(result)
 
 ## task: review | Найдите нарушения | plus
 
-Коллега прислал код на проверку. Все строки работают, но некоторые нарушают PEP 8. Запишите в список `bad` номера строк с нарушениями.
+Коллега прислал код на проверку. Все строки работают, но некоторые нарушают PEP 8. Запишите в список `bad` номера строк с нарушениями. Ошибку в имени отмечайте в строке, где переменной дали имя.
 
 ```text
 1  VAT_RATE = 0.2
 2  avgCheck = 325.12
-3  vat = round(avg_check * VAT_RATE / (1 + VAT_RATE), ndigits = 2)
-4  cities = ["Пермь", "Казань", "Тюмень"]
+3  vat = round(avgCheck * VAT_RATE / (1 + VAT_RATE), ndigits = 2)
+4  daily_revenue = [84460, 106524, 63558]
 5  if vat > 50: print("крупный НДС")
 6  month_total = sum(daily_revenue)
 ```
@@ -393,7 +396,8 @@ bad = []
 ```python
 _b = need('bad')
 assert isinstance(_b, (list, tuple, set)), 'bad — список номеров строк, например [1, 4].'
-_got = sorted(int(x) for x in _b)
+assert all(type(x) is int for x in _b), 'Номера строк — целые числа от 1 до 6.'
+_got = sorted(_b)
 _hint = {
     1: 'Строка 1 в порядке: константа заглавными, пробелы вокруг =.',
     2: 'Строка 2: avgCheck — имя не в snake_case, нужно avg_check.',

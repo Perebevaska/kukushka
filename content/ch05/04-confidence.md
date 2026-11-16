@@ -537,8 +537,11 @@ d = _pd.read_csv('deliveries.csv')
 t = d.loc[d['actual_min'].between(1, 299) & (d['courier'] == 'вело'), 'actual_min'].to_numpy()
 assert close(need('med'), _np.median(t)), f'med = {need("med")}.'
 lo, hi = need('lo'), need('hi')
-assert lo <= _np.median(t) <= hi and 0 < hi - lo <= 4, f'Интервал {lo}–{hi} не похож на бутстрэп-ДИ медианы: он должен накрывать медиану и быть шириной в пару минут.'
-assert 'choice(' in _code, 'Перевыборка — с возвращением: rng.choice(t, size=len(t), replace=True).'
+_rng = _np.random.default_rng(12)
+_boot = [_np.median(_rng.choice(t, size=len(t), replace=True)) for _ in range(5000)]
+_wlo, _whi = _np.percentile(_boot, [2.5, 97.5])
+assert close(lo, _wlo, 0.051) and close(hi, _whi, 0.051), f'95% процентильный ДИ медианы: {_wlo}…{_whi}, а у вас {lo}…{hi}. Не заменяйте рассчитанные границы.'
+
 ```
 
 ### hint
@@ -594,6 +597,14 @@ ys = [float(v) for v in pts[0].get_ydata()]
 assert all(close(a, b) for a, b in zip(ys, m.values)), 'Точки — доля опозданий по кофейням, по возрастанию.'
 assert ax.collections, 'Не видно «усов» интервала: передайте yerr.'
 assert ax.get_ylabel() == 'доля опозданий'
+from statsmodels.stats.proportion import proportion_confint as _pc
+_g = o.groupby('shop_id')['late'].agg(['sum','size','mean']).sort_values('mean')
+_lo, _hi = _pc(_g['sum'], _g['size'], method='wilson')
+
+_segments = [seg for collection in ax.collections if hasattr(collection, 'get_segments') for seg in collection.get_segments() if len(seg) == 2 and close(seg[0][0], seg[1][0])]
+for _i, (_low, _high) in enumerate(zip(_lo, _hi)):
+    assert any(close(seg[0][0], _i) and close(min(seg[:,1]), _low, 1e-6) and close(max(seg[:,1]), _high, 1e-6) for seg in _segments), f'Группа {_i}: неверные концы 95% интервала Уилсона; нулевые/произвольные усы не подходят.'
+
 ```
 
 ### hint

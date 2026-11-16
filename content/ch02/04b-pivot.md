@@ -345,6 +345,10 @@ d = _pd.read_csv('orders_3m.csv')
 p = need('pv', _pd.DataFrame)
 assert p.shape == (6, 3), f'Размер сводной {p.shape}, а нужно 6 строк × 3 столбца.'
 assert need('ufa_l') == ((d['shop_id'] == 'UFA-1') & (d['size'] == 'L')).sum(), f'ufa_l = {need("ufa_l")}.'
+_w = _pd.crosstab(d['shop_id'], d['size'])
+assert set(p.index) == set(_w.index) and set(p.columns) == set(_w.columns), 'Ключи сводной: shop_id × size.'
+assert (p.reindex(index=_w.index, columns=_w.columns).fillna(0) == _w).all().all(), 'В сводной нужны числа заказов, а не суммы qty или amount.'
+
 ```
 
 ### hint
@@ -391,7 +395,8 @@ assert w.shape == _want.shape, f'Форма wide — {w.shape}, а нужна {_
 assert list(w.columns) == list(_want.columns), f'Столбцы wide: {list(w.columns)}. В столбцы должен уйти внутренний уровень индекса — канал.'
 assert int(w.loc['KZN-1', 'доставка']) == int(_want.loc['KZN-1', 'доставка']), 'В ячейках должна быть сумма amount.'
 assert tuple(need('wide_shape')) == _want.shape, f'wide_shape = {need("wide_shape")}, а нужно {_want.shape}.'
-assert calls('unstack'), 'Разверните Series методом unstack().'
+assert set(w.index) == set(_want.index), 'Индекс wide — shop_id.'
+assert (w.reindex(index=_want.index, columns=_want.columns).fillna(0) == _want.fillna(0)).all().all(), 'В каждой ячейке нужна сумма amount.'
 ```
 
 ### hint

@@ -99,6 +99,8 @@ def task_cells(ch: str, ls_id: str, t: dict, exam: bool) -> list:
     if t['level'] == 'star':
         foot.append('задача по желанию')
     text = f'### {t["title"]} · {level}\n\n{t["text"]}'
+    if (ch, ls_id) == ('ch01', '14-project') or key == 'ch10/05-project/release-row':
+        text = f'<a id="task-{t["id"]}"></a>\n\n' + text
     if foot:
         text += '\n\n*' + ' · '.join(foot) + '*'
     starter = t['starter'].rstrip('\n') or '# ваш код'   # у магии %%task тело ячейки не может быть пустым

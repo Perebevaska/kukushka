@@ -229,7 +229,7 @@ print(lam, empty, exp_empty)
 ```
 
 ### explain
-У UFA-1 в среднем 2.02 доставки в день. Пустых дней было 14, формула ждёт 12.0 — близко, разница в пределах случайности ($\sqrt{12} ≈ 3.5$). Значит, пустые дни — не сбой выгрузки и не закрытая кофейня, а обычное следствие малого потока. Без `reindex` эти 14 дней пропали бы: среднее стало бы 2.39, а вопрос «сколько пустых дней» вообще не имел бы ответа.
+У UFA-1 в среднем 2.02 доставки в день. Пустых дней было 14, формула ждёт 12.0 — близко, разница в пределах случайности ($\sqrt{12} ≈ 3.5$). Частота пустых дней совместима с таким ориентиром, но сама по себе не исключает сбой или закрытие. Для этого проверьте порядок пустых дней, журнал работы и полноту источника. Без `reindex` эти 14 дней пропали бы: среднее стало бы 2.39, а вопрос «сколько пустых дней» вообще не имел бы ответа.
 
 ## task: minute-flat | Ровные минуты | base
 
@@ -358,7 +358,7 @@ table.round(3)
 
 ## task: weekday-sqrt | Ровно ли по дням недели | plus
 
-За осень (91 день) каждый день недели встретился ровно 13 раз. Если бы день недели на доставку не влиял, заказы легли бы по дням недели ровно. Проверьте правилом $\sqrt{n}$: посчитайте `counts` — число доставок по `created.dt.dayofweek` (0 — понедельник, 6 — воскресенье; `dt.dayofweek` — то же, что `dt.weekday` из главы 2), `expected` — сколько пришлось бы на день при ровном распределении (1 знак), и `steps` — отклонение каждого дня в «шагах»: `(counts − expected) / √expected`, 1 знак, в `expected` — неокруглённое значение. В `loud` сохраните список дней (номеров), где отклонение по модулю 2 шага и больше.
+За осень (91 день) каждый день недели встретился ровно 13 раз. Если бы день недели на доставку не влиял, заказы легли бы по дням недели ровно. Проверьте правилом $\sqrt{n}$: посчитайте `counts` — число доставок по `created.dt.dayofweek` (0 — понедельник, 6 — воскресенье; `dt.dayofweek` — то же, что `dt.weekday` из главы 2), `expected` — точное число доставок, делённое на семь; при показе округлите до одного знака, и `steps` — отклонение каждого дня в «шагах»: `(counts − expected) / √expected`, 1 знак, в `expected` — неокруглённое значение. Отбор `loud` делайте по округлённым `steps`, как указано для результата. В `loud` сохраните список дней (номеров), где отклонение по модулю 2 шага и больше.
 
 ### starter
 ```python
@@ -379,7 +379,7 @@ e = len(d) / 7
 st = ((c - e) / _m.sqrt(e)).round(1)
 cc = need('counts', _pd.Series)
 assert [int(i) for i in cc.sort_index().index] == list(range(7)) and [int(x) for x in cc.sort_index().values] == [int(x) for x in c.values], 'counts — d["created"].dt.dayofweek.value_counts().sort_index().'
-assert close(need('expected'), round(e, 1), 0.051), f'expected = {need("expected")}: все доставки / 7.'
+assert close(need('expected'), e, 1e-9), f'expected = {need("expected")}: все доставки / 7.'
 s = need('steps', _pd.Series).sort_index()
 assert len(s) == 7 and all(close(a, b, 0.051) for a, b in zip(s.values, st.values)), f'steps = {[float(x) for x in s.values]}, а нужно {[float(x) for x in st.values]}: (counts − expected) / √expected.'
 want = sorted(int(i) for i in st.index[st.abs() >= 2])
@@ -400,10 +400,10 @@ import pandas as pd
 d = pd.read_csv("deliveries.csv", parse_dates=["created"])
 counts = d["created"].dt.dayofweek.value_counts().sort_index()
 e = len(d) / 7
-expected = round(e, 1)
+expected = e
 steps = ((counts - e) / math.sqrt(e)).round(1)
 loud = list(steps.index[steps.abs() >= 2])
-print(counts.tolist(), expected, steps.tolist(), loud)
+print(counts.tolist(), round(expected, 1), steps.tolist(), loud)
 ```
 
 ### explain

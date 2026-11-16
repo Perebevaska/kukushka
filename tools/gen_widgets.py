@@ -10,18 +10,19 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA, OUT = ROOT / 'site' / 'data', ROOT / 'content' / 'widgets'
 OUT.mkdir(exist_ok=True)
 
-# 1. Глубина дерева: доля правильных на обучении и тесте (как в уроке 2 главы 6)
+# 1. Глубина дерева: доля правильных на обучении и внутренней валидации (как в уроке 2 главы 6)
 d = pd.read_csv(DATA / 'deliveries.csv', parse_dates=['created'])
 ok = d[d['actual_min'].between(1, 299)].copy()
 ok['hour'] = ok['created'].dt.hour
 X = ok[['distance_km', 'items', 'promised_min', 'hour']]
 y = ok['actual_min'] > ok['promised_min']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_dev, _, y_dev, _ = train_test_split(X, y, test_size=0.25, random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)
 rows = []
 for depth in range(1, 16):
     m = DecisionTreeClassifier(max_depth=depth, random_state=0).fit(X_train, y_train)
-    rows.append({'depth': depth, 'train': round(m.score(X_train, y_train), 4), 'test': round(m.score(X_test, y_test), 4)})
-base = round(float((~y_test).mean()), 4)
+    rows.append({'depth': depth, 'train': round(m.score(X_train, y_train), 4), 'validation': round(m.score(X_val, y_val), 4)})
+base = round(float((~y_val).mean()), 4)
 (OUT / 'tree-depth.json').write_text(json.dumps({'rows': rows, 'base': base}, ensure_ascii=False))
 
 # 2. Порог: вероятности леса на тесте (как в уроке 3 главы 7)

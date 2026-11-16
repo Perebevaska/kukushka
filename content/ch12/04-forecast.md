@@ -24,7 +24,8 @@ import numpy as np
 import pandas as pd
 
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-test = s["2026-08-01":]
+s = s.loc[:"2026-07-31"]
+test = s["2026-07-01":]
 
 def rmse(pred):
     return float(np.sqrt(((test - pred[test.index]) ** 2).mean()))
@@ -41,22 +42,27 @@ for name, pred in naive.items():
 
 **Что здесь происходит:**
 
-- `test = s["2026-08-01":]` — тестовый период: весь август.
-- Каждый наивный прогноз — это просто сдвинутый ряд: в строке «12:00 15 августа» у `s.shift(168)` стоит значение «12:00 8 августа».
+- `test = s["2026-07-01":]` — июльская валидация. Август оставляем для финального проекта.
+- Каждый наивный прогноз — это просто сдвинутый ряд: в строке «12:00 18 июля» у `s.shift(168)` стоит значение «12:00 11 июля».
 - `pred[test.index]` — берём прогнозы только для часов теста.
 - `pd.concat([...], axis=1).mean(axis=1)` — четыре сдвинутых ряда ставим рядом столбцами и усредняем по строке: среднее «этого часа» за 4 прошлые недели.
 
-::: figure ts-naive
-Четыре наивных прогноза для одного часа — субботы 15 августа, 12:00 (факт — 19 заказов): каждый берёт значение из прошлого. Справа — RMSE каждого способа на всём августе.
-:::
+Для субботы 18 июля в 12:00 факт составил 14 заказов. В таблице одна колонка описывает этот час, другая — все часы июльской проверки.
 
-«Час назад» и «вчера» дают одинаковые 5.95 — это совпадение, а не ошибка в коде: в третьем знаке они уже расходятся (5.947 и 5.952). «Неделю назад» лучше «вчера» (совпадает тип дня), а среднее за 4 недели — около 4.35 — почти так же хорошо, как бустинг из урока «Признаки для прогноза ряда» (4.26). Это частая ситуация с рядами: сезонность настолько сильная, что простое «как обычно в это время» уже хороший прогноз. Задача модели — уточнять его: замечать текущий уровень, тренд, акции.
+| Способ | Прогноз на этот час, заказов | RMSE за июль, заказов в час |
+|---|---:|---:|
+| Час назад | 19 | 5,58 |
+| Вчера в тот же час | 10 | 5,73 |
+| Неделю назад | 14 | 5,30 |
+| Среднее четырёх прошлых недель | 19 | 4,24 |
+
+В выбранный час недельный лаг попал точно. По всему июлю среднее четырёх недель даёт меньшую ошибку. Поэтому ориентир выбирают по всему заранее выделенному периоду.
 
 ::: quiz
-Бустинг из урока «Признаки для прогноза ряда» дал RMSE 4.26, а наивное «среднее за 4 недели» — около 4.35. Какой вывод разумен?
+Представьте другой сервис с одинаковым горизонтом и одними часами проверки. У бустинга RMSE 3,41 заказа в час, у простого недельного среднего — 3,46. Какой вывод разумен?
 
 - [x] Модель почти ничего не добавила к «как обычно в это время»; её ценность измеряют именно приростом над таким ориентиром
-  > Без сравнения с наивным прогнозом 4.26 выглядело бы как успех модели, хотя основную работу делает сезонность.
+  > Без сравнения с наивным прогнозом 3,41 выглядело бы как успех модели, хотя основную работу делает сезонность.
 - [ ] Бустинг лучше — значит, всё в порядке, сравнение с наивным прогнозом лишнее
   > Разница меньше десятой доли заказа: стоит ли модель своей сложности, видно только рядом с простым ориентиром.
 - [ ] Наивный прогноз нечестный: он подглядывает в будущее
@@ -79,7 +85,8 @@ import numpy as np
 import pandas as pd
 
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-test = s["2026-08-01":]
+s = s.loc[:"2026-07-31"]
+test = s["2026-07-01":]
 pred = s.shift(168)[test.index]
 err = test - pred
 print("MAE: ", round(float(err.abs().mean()), 2))
@@ -104,7 +111,7 @@ print("часов с нулём в тесте:", int((test == 0).sum()))
 - `err = test - pred` — ошибка по каждому часу (Series).
 - `err.abs().mean()` — MAE; `np.sqrt((err ** 2).mean())` — RMSE; `err.abs().sum() / test.sum()` — WAPE.
 
-В тесте есть часы с нулём заказов — на них MAPE не посчитать вовсе. WAPE около 0.37: наивный прогноз «как неделю назад» в сумме ошибается на 37 % заказов.
+В тесте есть часы с нулём заказов — на них MAPE не посчитать вовсе. WAPE около 0,376: наивный прогноз «как неделю назад» в сумме ошибается на 37,6 % суммарного числа заказов.
 
 ::: predict
 ```python static
@@ -135,7 +142,7 @@ print(round(float(np.abs(fact - pred).sum() / fact.sum()), 2))
 :::
 
 ::: warn Типичные ошибки
-- **Сравнивать метрики на разных периодах.** RMSE на августе и RMSE на июле — разные экзамены: в августе заказов больше, и ошибки в штуках крупнее. Модели и ориентиры сравнивают на одном и том же тестовом отрезке.
+- **Сравнивать метрики на разных периодах.** Вычисляйте их для модели и ориентира на одних часах и с одинаковым горизонтом. Так изменение состава выборки не повлияет на сравнение.
 - **MAPE на ряду с нулями.** Деление на ноль даёт `inf`, а ночной час с одним заказом раздувает среднее. Для таких рядов — WAPE или MAE.
 - **Одна метрика без знака ошибки.** MAE и RMSE не говорят, в какую сторону ошибается модель. Средняя ошибка со знаком `(факт − прогноз).mean()` показывает систематический недопрогноз (задача «Систематический недопрогноз»).
 :::
@@ -160,6 +167,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s.loc[:"2026-07-31"]
 
 def make(s, lags, roll_shift):
     df = pd.DataFrame({"y": s})
@@ -174,7 +182,7 @@ def make(s, lags, roll_shift):
 
 for name, lags, roll_shift in [("на час вперёд", (1, 24, 168), 1), ("на завтра", (24, 48, 168), 24)]:
     df = make(s, lags, roll_shift)
-    train = df.index < "2026-08-01"
+    train = df.index < "2026-07-01"
     X, y = df.drop(columns="y"), df["y"]
     p = LinearRegression().fit(X[train], y[train]).predict(X[~train])
     print(f"{name}: RMSE {np.sqrt(((y[~train] - p) ** 2).mean()):.2f}")
@@ -186,7 +194,7 @@ for name, lags, roll_shift in [("на час вперёд", (1, 24, 168), 1), ("
 - Для горизонта «на час» — лаги 1, 24, 168 и среднее за сутки, сдвинутое на 1 час. Для горизонта «на завтра» — лаги не короче 24 часов (24, 48, 168) и среднее, сдвинутое на 24 часа: в момент прогноза (полночь) завтрашних часов ещё нет. В этом разделе и в задачах урока отсечка — полночь, поэтому лаг 24 законен.
 - `mean4w` — наивный прогноз как признак: его можно посчитать заранее на любой день вперёд в пределах недели.
 
-На час вперёд — около 4.1, на завтра — около 4.3. Чем дальше горизонт, тем меньше свежей информации и тем хуже прогноз. Обратите внимание на признак `mean4w` — наивный прогноз «среднее за 4 недели» стал признаком, и модель уточняет его. С ним линейная регрессия на горизонте «на завтра» даже обгоняет бустинг: 4.28 против 4.49 (задача «Цена горизонта»). Сезонность уже сидит в `mean4w` и лагах, и сложной модели почти нечего добавить.
+На июльской валидации эта линейная модель даёт примерно 3,95 заказа в час при прогнозе на час и 4,13 при выпуске в полночь на завтра. Для второго горизонта часть свежих фактов ещё недоступна.
 
 ::: deep Рекурсивный прогноз
 Ещё один способ прогнозировать на много шагов: обучить модель на час вперёд и применять её по очереди — спрогнозировали 00:00, подставили прогноз как «лаг 1» для 01:00 и так далее. Это **рекурсивный** прогноз; ошибки в нём накапливаются. Подход из примера выше — отдельная модель с подходящими лагами — называется **прямым**.
@@ -224,24 +232,27 @@ print([k for k in lags if k >= horizon_hours])
 Почему: для самого дальнего часа (23:00 завтра — 28 часов после последнего известного часа 19:00) лаги 1 и 24 указывают на часы, которых в момент прогноза ещё нет. Законны только лаги не короче горизонта.
 :::
 
+Для среднего по четырём неделям заранее задайте поведение короткой истории: если нужны все четыре сопоставимых часа, при нехватке истории результат отсутствует и используется явно выбранный резерв. Среднее по одному доступному часу не называют средним четырёх недель. Окно и резерв выбираются на раннем периоде.
+
 ## Практика
 
 ## task: naive | Наивные прогнозы | warmup
 
-Посчитайте на тесте (август) MAE трёх наивных прогнозов: `s.shift(1)`, `s.shift(24)`, `s.shift(168)`. Сохраните словарь `mae` (`{1: ..., 24: ..., 168: ...}`, 3 знака) и `best_lag`.
+Посчитайте на июльской валидации MAE трёх наивных прогнозов: `s.shift(1)`, `s.shift(24)`, `s.shift(168)`. Сохраните словарь `mae` (`{1: ..., 24: ..., 168: ...}`, 3 знака) и `best_lag`.
 
 ### starter
 ```python
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-test = s["2026-08-01":]
-
+s = s[s.index < '2026-08-01']
+test = s["2026-07-01":]
 ```
 
 ### check
 ```python
 import pandas as _pd
-s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']; t = s0['2026-08-01':]
+s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']; s0 = s0[s0.index < '2026-08-01']; t = s0['2026-07-01':]
+s0 = s0[s0.index < '2026-08-01']
 w = {k: round(float((t - s0.shift(k)[t.index]).abs().mean()), 3) for k in (1, 24, 168)}
 got = need('mae', dict)
 assert all(k in got and close(got[k], v, 0.002) for k, v in w.items()), f'mae = {got}, а нужно {w}.'
@@ -258,7 +269,8 @@ MAE одного прогноза: `(test - pred).abs().mean()`; удобно н
 ```python
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-test = s["2026-08-01":]
+s = s[s.index < '2026-08-01']
+test = s["2026-07-01":]
 mae = {k: round(float((test - s.shift(k)[test.index]).abs().mean()), 3) for k in (1, 24, 168)}
 best_lag = min(mae, key=mae.get)
 ```
@@ -286,7 +298,6 @@ def rmse(fact, pred):
 
 def wape(fact, pred):
     ...
-
 ```
 
 ### check
@@ -325,15 +336,15 @@ print(m)
 
 ## task: wape | WAPE против MAPE | warmup
 
-Напишите функцию `wape(fact, pred)`. Для прогноза «неделю назад» на августе сохраните `w` (3 знака) и `zeros` — число часов теста с нулевым фактом (на них MAPE не определена).
+Напишите функцию `wape(fact, pred)`. Для прогноза «неделю назад» на июле сохраните `w` (3 знака) и `zeros` — число часов теста с нулевым фактом (на них MAPE не определена).
 
 ### starter
 ```python
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-test = s["2026-08-01":]
+s = s[s.index < '2026-08-01']
+test = s["2026-07-01":]
 pred = s.shift(168)[test.index]
-
 ```
 
 ### check
@@ -341,7 +352,8 @@ pred = s.shift(168)[test.index]
 import numpy as _np, pandas as _pd
 f = need('wape')
 assert close(f(_np.array([10, 0, 20]), _np.array([12, 1, 18])), 5 / 30), 'wape([10, 0, 20], [12, 1, 18]) должна быть 5/30.'
-s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']; t = s0['2026-08-01':]; p = s0.shift(168)[t.index]
+s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']; s0 = s0[s0.index < '2026-08-01']; t = s0['2026-07-01':]; p = s0.shift(168)[t.index]
+s0 = s0[s0.index < '2026-08-01']
 assert close(need('w'), round(float((t - p).abs().sum() / t.sum()), 3), 0.002), f'w = {need("w")}.'
 assert need('zeros') == int((t == 0).sum()), f'zeros = {need("zeros")}.'
 ```
@@ -357,7 +369,8 @@ WAPE — сумма модулей ошибок, делённая на сумм�
 import numpy as np
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-test = s["2026-08-01":]
+s = s[s.index < '2026-08-01']
+test = s["2026-07-01":]
 pred = s.shift(168)[test.index]
 
 def wape(fact, pred):
@@ -395,14 +408,15 @@ assert _lines == ["['lag_24', 'lag_48', 'lag_168', 'roll']"], f'Сейчас: {_
 
 ## task: bias | Систематический недопрогноз | base
 
-У прогноза бывает не только разброс, но и **смещение** — средняя ошибка со знаком. Для прогноза «среднее за 4 недели» (`m4` в заготовке) на августе посчитайте `bias` — среднюю ошибку `факт − прогноз` (3 знака), `share_under` — долю часов, где прогноз меньше факта (3 знака), и `ratio` — сумма факта / сумма прогноза (3 знака). В заготовке есть и поправленный прогноз `adj`: `m4`, умноженный на коэффициент `_k` — во сколько раз факт за последнюю неделю выше прогноза `m4` за ту же неделю. Если прогноз отстаёт от роста, `_k > 1` и подтягивает его вверх. Для `adj` — посчитайте для него `bias_adj` и сравните RMSE: `rmse_m4`, `rmse_adj` (3 знака).
+У прогноза бывает не только разброс, но и **смещение** — средняя ошибка со знаком. Для прогноза «среднее за 4 недели» (`m4` в заготовке) на июле посчитайте `bias` — среднюю ошибку `факт − прогноз` (3 знака), `share_under` — долю часов, где прогноз меньше факта (3 знака), и `ratio` — сумма факта / сумма прогноза (3 знака). В заготовке есть и поправленный прогноз `adj`: `m4`, умноженный на коэффициент `_k` — во сколько раз факт за последнюю неделю выше прогноза `m4` за ту же неделю. Если прогноз отстаёт от роста, `_k > 1` и подтягивает его вверх. Для `adj` — посчитайте для него `bias_adj` и сравните RMSE: `rmse_m4`, `rmse_adj` (3 знака).
 
 ### setup
 ```python
 import numpy as np
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-test = s["2026-08-01":]
+s = s[s.index < '2026-08-01']
+test = s["2026-07-01":]
 _m4 = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)
 m4 = _m4[test.index]
 # _k: средний факт за последнюю неделю / средний прогноз m4 за ту же неделю (shift(1) — только прошлое)
@@ -413,7 +427,6 @@ adj = m4 * _k[test.index]
 ### starter
 ```python
 import numpy as np
-
 ```
 
 ### check
@@ -453,27 +466,28 @@ print(bias, share_under, ratio, bias_adj, rmse_m4, rmse_adj)
 ```
 
 ### explain
-«Среднее за 4 недели» смотрит в прошлое, а заказы растут, поэтому в августе он в сумме недооценивает заказы примерно на 6 %: в среднем на 0.6 заказа в час. Для штатного расписания такое смещение важнее разброса — оно систематически оставляет смены без рук (проект главы). Поправка на рост почти убирает смещение, но RMSE не улучшает: случайный шум часов никуда не делся. Смещение и разброс — разные свойства прогноза, и проверять нужно оба.
+В июле средняя ошибка со знаком равна +0,406 заказа в час. Отношение суммарного факта к прогнозу — 1,044. Поправка по предыдущей неделе уменьшает среднюю ошибку до −0,044, но увеличивает RMSE с 4,239 до 4,271. Выбор зависит от принятой меры потерь.
 
-Почему прогноз ниже факта лишь в 49 % часов, а в сумме недооценивает на 6 %? Ошибки разного размера. Недопрогноз приходится на пиковые часы: в четверти часов с наибольшим фактом прогноз ниже факта в 82 % случаев. Когда прогноз занижен, он в среднем ошибается на 3.7 заказа, а когда завышен — на 2.7: перепрогнозы мельче. Доля часов и сумма ошибок отвечают на разные вопросы.
+Недопрогноз возник в 49,6 % часов. Его доля и сумма нехватки отвечают на разные вопросы: вклад часа с недостачей десяти заказов больше вклада часа с недостачей одного.
 
 ## task: mean4w | Сильный наивный прогноз | base
 
-Постройте прогноз «среднее за этот час в k прошлых недель» для k = 1, 2, 4, 8 и посчитайте RMSE на августе. Сохраните словарь `rmse_k` (3 знака) и `best_k`. Нужная история для k = 8 есть: тест начинается после 22 недель данных.
+Постройте прогноз «среднее за этот час в k прошлых недель» для k = 1, 2, 4, 8 и посчитайте RMSE на июле. Сохраните словарь `rmse_k` (3 знака) и `best_k`. Нужная история для k = 8 есть: к началу июля уже есть история для восьми недель.
 
 ### starter
 ```python
 import numpy as np
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-test = s["2026-08-01":]
-
+s = s[s.index < '2026-08-01']
+test = s["2026-07-01":]
 ```
 
 ### check
 ```python
 import numpy as _np, pandas as _pd
-s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']; t = s0['2026-08-01':]
+s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']; s0 = s0[s0.index < '2026-08-01']; t = s0['2026-07-01':]
+s0 = s0[s0.index < '2026-08-01']
 w = {}
 for k in (1, 2, 4, 8):
     p = _pd.concat([s0.shift(168 * j) for j in range(1, k + 1)], axis=1).mean(axis=1)
@@ -494,7 +508,8 @@ assert need('best_k') == min(w, key=w.get), f'best_k = {need("best_k")}.'
 import numpy as np
 import pandas as pd
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-test = s["2026-08-01":]
+s = s[s.index < '2026-08-01']
+test = s["2026-07-01":]
 
 rmse_k = {}
 for k in (1, 2, 4, 8):
@@ -504,7 +519,7 @@ best_k = min(rmse_k, key=rmse_k.get)
 ```
 
 ### explain
-Чем больше недель в среднем, тем лучше: случайности отдельных недель усредняются, и 8 недель (4.14) обгоняют 4 (4.353). Более того, 4.14 лучше бустинга из урока «Признаки для прогноза ряда» (4.256 на том же августе, причём с лагом 1, то есть на час вперёд). Ориентир надо подбирать так же тщательно, как модель: слабый ориентир делает любую модель «победителем». Но бесконечно растягивать окно нельзя — оно отстаёт от тренда: старые недели с меньшим числом заказов тянут прогноз вниз. Здесь рост умеренный, и усреднение шума пока важнее. Компромисс между шумом и запаздыванием — то же, что выбор окна скользящего среднего.
+При окнах 1, 2, 4 и 8 недель июльский RMSE равен примерно 5,301, 4,535, 4,239 и 4,089. На июльской проверке лучшим оказалось окно в восемь недель. Зафиксируйте выбор до оценки на следующем месяце.
 
 ## task: horizon-gap | Цена горизонта | base
 
@@ -532,7 +547,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-
+s = s[s.index < '2026-08-01']
 ```
 
 ### check
@@ -540,9 +555,10 @@ s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime"
 import numpy as _np, pandas as _pd
 from sklearn.ensemble import HistGradientBoostingRegressor as _H
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+s0 = s0[s0.index < '2026-08-01']
 w = {}
 for k, lags, rs in [('h', (1, 24, 168), 1), ('d', (24, 48, 168), 24)]:
-    d = make(s0, lags, rs); tr = d.index < '2026-08-01'; X, y = d.drop(columns='y'), d['y']
+    d = make(s0, lags, rs); tr = d.index < '2026-07-01'; X, y = d.drop(columns='y'), d['y']
     p = _H(random_state=0).fit(X[tr], y[tr]).predict(X[~tr]); w[k] = float(_np.sqrt(((y[~tr] - p) ** 2).mean()))
 assert close(need('rmse_hour'), round(w['h'], 3), 0.002) and close(need('rmse_day'), round(w['d'], 3), 0.002), f'rmse_hour, rmse_day = {need("rmse_hour")}, {need("rmse_day")}.'
 assert close(need('gap_pct'), round((w['d'] / w['h'] - 1) * 100, 1), 0.15), f'gap_pct = {need("gap_pct")}.'
@@ -560,11 +576,12 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s[s.index < '2026-08-01']
 
 res = {}
 for name, lags, roll_shift in [("hour", (1, 24, 168), 1), ("day", (24, 48, 168), 24)]:
     df = make(s, lags, roll_shift)
-    train = df.index < "2026-08-01"
+    train = df.index < "2026-07-01"
     X, y = df.drop(columns="y"), df["y"]
     p = HistGradientBoostingRegressor(random_state=0).fit(X[train], y[train]).predict(X[~train])
     res[name] = float(np.sqrt(((y[~train] - p) ** 2).mean()))
@@ -573,7 +590,7 @@ gap_pct = round((res["day"] / res["hour"] - 1) * 100, 1)
 ```
 
 ### explain
-Для прогноза на завтра в момент прогноза неизвестны последние 23 часа, поэтому самые свежие лаги (`lag_1`) использовать нельзя: ближайший разрешённый — `lag_24`. Модель теряет информацию о том, что происходило час назад, и ошибка растёт с 4.114 до 4.489 — на 9.1 %. Это нормальная цена горизонта, а не недостаток модели. У линейной регрессии из теории цена меньше: 4.10 → 4.28, около 4 %, — и на завтра она обгоняет бустинг. Признаки с готовой сезонностью (`mean4w`, лаги 24 и 168) оставляют сложной модели мало работы. Если оценивать прогноз на завтра по качеству прогноза на час вперёд, ожидания будут завышены: на практике модель ошибётся сильнее.
+В июле RMSE бустинга вырос с 4,160 для часового горизонта до 4,366 для выпуска в полночь на завтра. Для всех часов завтрашнего дня можно использовать лаг 24. Лаг 1 оказался бы неизвестен при выпуске для большинства этих часов.
 
 ## task: leak-horizon | Утечка из-за горизонта | plus
 
@@ -601,7 +618,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-
+s = s[s.index < '2026-08-01']
 ```
 
 ### check
@@ -609,9 +626,10 @@ s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime"
 import numpy as _np, pandas as _pd
 from sklearn.linear_model import LinearRegression as _LR
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+s0 = s0[s0.index < '2026-08-01']
 w = {}
 for k, lags, rs in [('leak', (1, 24, 48, 168), 1), ('fair', (24, 48, 168), 24)]:
-    d = make(s0, lags, rs); tr = d.index < '2026-08-01'; X, y = d.drop(columns='y'), d['y']
+    d = make(s0, lags, rs); tr = d.index < '2026-07-01'; X, y = d.drop(columns='y'), d['y']
     p = _LR().fit(X[tr], y[tr]).predict(X[~tr]); w[k] = round(float(_np.sqrt(((y[~tr] - p) ** 2).mean())), 3)
 assert close(need('rmse_leak'), w['leak'], 0.002) and close(need('rmse_fair'), w['fair'], 0.002), f'rmse_leak, rmse_fair = {need("rmse_leak")}, {need("rmse_fair")}, а нужно {w["leak"]}, {w["fair"]}.'
 assert need('fooled') == (w['leak'] < w['fair']), f'fooled = {need("fooled")}.'
@@ -629,11 +647,12 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s[s.index < '2026-08-01']
 
 res = {}
 for name, lags, roll_shift in [("leak", (1, 24, 48, 168), 1), ("fair", (24, 48, 168), 24)]:
     df = make(s, lags, roll_shift)
-    train = df.index < "2026-08-01"
+    train = df.index < "2026-07-01"
     X, y = df.drop(columns="y"), df["y"]
     p = LinearRegression().fit(X[train], y[train]).predict(X[~train])
     res[name] = round(float(np.sqrt(((y[~train] - p) ** 2).mean())), 3)
@@ -670,7 +689,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
-
+s = s[s.index < '2026-08-01']
 ```
 
 ### check
@@ -678,7 +697,8 @@ s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime"
 import numpy as _np, pandas as _pd
 from sklearn.linear_model import LinearRegression as _LR
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
-d = make(s0, (24, 48, 168), 24); tr = d.index < '2026-08-01'; X, y = d.drop(columns='y'), d['y']
+s0 = s0[s0.index < '2026-08-01']
+d = make(s0, (24, 48, 168), 24); tr = d.index < '2026-07-01'; X, y = d.drop(columns='y'), d['y']
 e = (y[~tr] - _LR().fit(X[tr], y[tr]).predict(X[~tr])).abs()
 mh = e.groupby(e.index.hour).mean()
 got = need('mae_by_hour', _pd.Series)
@@ -699,9 +719,10 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+s = s[s.index < '2026-08-01']
 
 df = make(s, (24, 48, 168), 24)
-train = df.index < "2026-08-01"
+train = df.index < "2026-07-01"
 X, y = df.drop(columns="y"), df["y"]
 p = LinearRegression().fit(X[train], y[train]).predict(X[~train])
 err = (y[~train] - p).abs()

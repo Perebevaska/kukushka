@@ -26,7 +26,7 @@
   * утечки: июльские заказы оплачены абонементом (payment = 'абонемент',
     price = 0), июльские сессии в приложении у купивших выше; признаки нужно
     считать строго до 1 июля 2026;
-  * гости, не попавшие в пилот, — те, кому осенью решать, отправлять ли предложение.
+  * гости вне пилота образуют аудиторию на дату июльского среза.
 Файлы других уроков этот скрипт не трогает.
 """
 import datetime as dt
@@ -217,11 +217,19 @@ def main():
     allrows = [(r[0], r[1], r[2], r[3], r[4], r[5], r[6]) for r in pre] + jul
     allrows.sort(key=lambda r: r[2])
     orders, items = [], []
+    redeemed = set()
     for k, (gid, shop, ts, ch, its, paid_sub, app) in enumerate(allrows, start=1):
         oid = f'Q{k:06d}'
-        pay = 'абонемент' if paid_sub else ('приложение' if app and rng.random() < 0.6 else 'карта')
+        day_key = (gid, ts.astype('datetime64[D]'))
+        eligible_today = paid_sub and day_key not in redeemed
+        if eligible_today:
+            redeemed.add(day_key)
+        if paid_sub:
+            pay = 'абонемент' if eligible_today else 'карта'
+        else:
+            pay = 'приложение' if app and rng.random() < 0.6 else 'карта'
         total = 0
-        first_cov = paid_sub
+        first_cov = eligible_today
         for it in its:
             price = PRICE[it]
             if first_cov and (it in COFFEE or it in OTHER):
@@ -258,7 +266,8 @@ def main():
     topics = ['долгое ожидание', 'ошибка в заказе', 'качество напитка', 'доставка', 'приложение']
     for i in np.nonzero(g['_complain'].values)[0]:
         for _ in range(1 + rng.poisson(0.3)):
-            day = rng.integers(0, (END - START).days)
+            first_day = max(0, (pd.Timestamp(g['reg_date'].values[i]) - START).days)
+            day = rng.integers(first_day, (END - START).days)
             comp.append((g['guest_id'].values[i],
                          (START + pd.Timedelta(days=int(day), hours=int(rng.integers(9, 21)))).strftime('%Y-%m-%d %H:%M:%S'),
                          rng.choice(topics)))

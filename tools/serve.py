@@ -53,6 +53,8 @@ def merge(a: dict, b: dict) -> dict:
         newer = dict(y if _ts(y) >= _ts(x) else x)
         solved = [s for s in (x.get('solved'), y.get('solved')) if s]
         newer['solved'] = min(solved) if solved else None
+        if x.get('monthlyReportAccepted') or y.get('monthlyReportAccepted'):
+            newer['monthlyReportAccepted'] = True
         out['tasks'][key] = newer
     for m in MAPS:   # словари «ключ → {…, t}»
         out[m] = {}

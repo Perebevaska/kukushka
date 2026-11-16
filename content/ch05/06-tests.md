@@ -21,7 +21,7 @@ recap:
 | Изменилось ли «после» по сравнению с «до»? | пары измерений на одних объектах | парный t-тест `ttest_rel` |
 | Различаются ли доли двух групп? | 0/1, две группы | z-тест для долей `proportions_ztest` |
 | Связаны ли две категории? | таблица сопряжённости | хи-квадрат `chi2_contingency` |
-| Различаются ли группы, если данные сильно скошены или это оценки 1–5? | числа или порядковые | Манна — Уитни `mannwhitneyu` |
+| Различаются ли ранги/распределения двух независимых групп (например, оценки 1–5)? | числа или порядковые | Манна — Уитни `mannwhitneyu` |
 
 Все тесты устроены одинаково: H₀ — «различий нет», результат — статистика и p-value.
 
@@ -208,7 +208,9 @@ print(f"p = {res.pvalue:.1e}")
 
 Его статистика U — сколько пар «значение из первой группы больше значения из второй» (ничья считается за половину пары). Если группы одинаковы, U около половины всех пар; чем дальше от половины, тем меньше p.
 
-Он же подходит для сильно скошенных чисел (время, деньги) с выбросами, когда среднее «тянется» хвостом.
+Для скошенных денег сначала уточните вопрос: средняя выручка остаётся средним, даже если её тянет хвост. Манна — Уитни проверяет ранговую гипотезу о распределениях и не заменяет тест равенства средних. Для средних можно использовать Уэлча с оценкой ограничений или бутстрэп разности средних.
+
+Пример: A=[0,0,0,0,10], B=[2,2,2,2,2]. Оба средних равны 2; при этом B больше A в 20 из 25 пар. H₀ о равенстве средних и H₀ о совпадении распределений — разные утверждения.
 
 ::: predict
 ```python static
@@ -378,6 +380,7 @@ pv = float(need('p_value'))
 if pv == 0:
     raise AssertionError('p_value = 0.0 — это след округления. Сохраните res.pvalue как есть, без round.')
 assert abs(pv / r.pvalue - 1) < 1e-3, f'p_value = {pv}, а нужно около {r.pvalue:.2e}.'
+assert 0 <= need('p_value') <= 1, 'p_value должен быть вероятностью от 0 до 1.'
 ```
 
 ### hint
@@ -426,6 +429,7 @@ r = _st.ttest_1samp(t, 30)
 assert close(need('mean_30'), round(t.mean(), 1)), f'mean_30 = {need("mean_30")}.'
 assert close(need('p_value'), r.pvalue, 6e-5), f'p_value = {need("p_value")}, а нужно около {r.pvalue:.4f}. Тест — stats.ttest_1samp(t30, 30).'
 assert need('beyond') == bool(t.mean() > 30 and r.pvalue < 0.05), 'beyond — среднее больше 30 и p < 0.05.'
+assert 0 <= need('p_value') <= 1, 'p_value должен быть вероятностью от 0 до 1.'
 ```
 
 ### hint
@@ -501,6 +505,7 @@ m = o.pivot_table(index='shop_id', columns=o['created'].dt.month, values='late',
 r = _st.ttest_rel(m[11], m[10])
 assert close(need('mean_change'), round((m[11] - m[10]).mean() * 100, 1)), f'mean_change = {need("mean_change")}.'
 assert close(need('p_value'), round(r.pvalue, 3)), f'p_value = {need("p_value")}, а нужно {round(r.pvalue, 3)}. Тест — ttest_rel(ноябрь, октябрь).'
+assert 0 <= need('p_value') <= 1, 'p_value должен быть вероятностью от 0 до 1.'
 ```
 
 ### hint
@@ -601,6 +606,7 @@ r = ok.dropna(subset=['rating'])
 s = r['weather'] == 'снег'
 assert close(need('med_snow'), r.loc[s, 'rating'].median()) and close(need('med_other'), r.loc[~s, 'rating'].median()), 'Медианы оценок не совпадают.'
 assert close(need('p_value'), round(_st.mannwhitneyu(r.loc[s, 'rating'], r.loc[~s, 'rating']).pvalue, 4)), f'p_value = {need("p_value")}.'
+assert 0 <= need('p_value') <= 1, 'p_value должен быть вероятностью от 0 до 1.'
 ```
 
 ### hint
@@ -690,8 +696,10 @@ add_5min = p_greater < 0.05
 - `kind="category"` (любое число групп) → `"chi2_contingency"`;
 - `kind="mean"`, `groups=1` → `"ttest_1samp"`;
 - `kind="mean"`, `groups=2`, `paired=True` → `"ttest_rel"`;
-- `kind="mean"`, `groups=2`, `skewed=True` → `"mannwhitneyu"`;
-- `kind="mean"`, `groups=2` (иначе) → `"ttest_ind"`.
+- `kind="rank"`, `groups=2`, независимые группы → `"mannwhitneyu"`;
+- `kind="mean"`, `groups=2` (иначе, в том числе `skewed=True`) → `"ttest_ind"` (Уэлча вызывают с `equal_var=False`).
+
+Сначала запишите параметр и H₀, затем выбирайте тест. `skewed` — информация для оценки предпосылок, а не команда менять гипотезу о среднем на ранги.
 
 ### starter
 ```python
@@ -705,7 +713,7 @@ choose_test("mean", 2)
 ```python
 f = need('choose_test')
 cases = [(('share', 2), {}, 'proportions_ztest'), (('category', 3), {}, 'chi2_contingency'), (('category', 2), {}, 'chi2_contingency'),
-         (('mean', 1), {}, 'ttest_1samp'), (('mean', 2), {'paired': True}, 'ttest_rel'), (('mean', 2), {'skewed': True}, 'mannwhitneyu'),
+         (('mean', 1), {}, 'ttest_1samp'), (('mean', 2), {'paired': True}, 'ttest_rel'), (('mean', 2), {'skewed': True}, 'ttest_ind'), (('rank', 2), {}, 'mannwhitneyu'), (('mean', 2), {'paired': True, 'skewed': True}, 'ttest_rel'),
          (('mean', 2), {}, 'ttest_ind')]
 for args, kw, want in cases:
     got = f(*args, **kw)
@@ -716,7 +724,7 @@ for args, kw, want in cases:
 Сначала разберите `kind`, внутри «mean» — число групп, потом `paired` и `skewed`.
 
 ### hint
-Порядок проверок внутри «mean» важен: `groups == 1` → `paired` → `skewed` → иначе `ttest_ind`.
+Отдельно обработайте `kind="rank"` для независимых двух групп. Внутри `mean`: `groups == 1` → `paired` → иначе `ttest_ind`; флаг `skewed` не подменяет гипотезу.
 
 ### solution
 ```python
@@ -729,7 +737,7 @@ def choose_test(kind, groups, paired=False, skewed=False):
         return "ttest_1samp"
     if paired:
         return "ttest_rel"
-    if skewed:
+    if kind == "rank":
         return "mannwhitneyu"
     return "ttest_ind"
 
@@ -737,7 +745,7 @@ choose_test("mean", 2)
 ```
 
 ### explain
-Функция повторяет логику аналитика: что сравниваем (доли, категории, средние), сколько групп, связаны ли наблюдения, похоже ли распределение на колокол. Проверку `paired` до `skewed` делают потому, что для парных скошенных данных есть свой тест (Уилкоксона), а не Манна — Уитни.
+Функция повторяет логику аналитика: что сравниваем (доли, категории, средние), сколько групп, связаны ли наблюдения, похоже ли распределение на колокол. Для парных данных учитывается зависимость наблюдений. Манна — Уитни в этой функции выбирается отдельным `kind="rank"` для независимых групп; флаг `skewed` не меняет параметр гипотезы.
 
 ## task: agree | Формула и перемешивание согласны | plus
 
@@ -759,18 +767,7 @@ rng = np.random.default_rng(2)
 
 ### check
 ```python
-from statsmodels.stats.proportion import proportions_ztest as _z
-import numpy as _np
-import pandas as _pd
-d = _pd.read_csv('deliveries.csv')
-ok = d[d['actual_min'].between(1, 299)]
-x = ok[ok['shop_id'].isin(['KZN-2', 'KZN-1'])]
-late = (x['actual_min'] > x['promised_min']).to_numpy()
-g = (x['shop_id'] == 'KZN-2').to_numpy()
-pz = _z([late[g].sum(), late[~g].sum()], [g.sum(), (~g).sum()])[1]
-assert close(need('p_z'), pz, 6e-5), f'p_z = {need("p_z")}, а нужно около {pz:.6f}.'
-assert abs(need('p_perm') - pz) < 0.004, f'p_perm = {need("p_perm")} — должно быть близко к p_z = {pz:.4f}.'
-assert close(need('diff_pp'), round((late[g].mean() - late[~g].mean()) * 100, 1)), f'diff_pp = {need("diff_pp")}.'
+# include-check: ch05_agree.py
 ```
 
 ### hint
@@ -793,12 +790,13 @@ rng = np.random.default_rng(2)
 z, p_z = proportions_ztest([late[grp].sum(), late[~grp].sum()], [grp.sum(), (~grp).sum()])
 observed = late[grp].mean() - late[~grp].mean()
 diffs = np.array([late[s].mean() - late[~s].mean() for s in (rng.permutation(grp) for _ in range(4000))])
-p_perm = (np.abs(diffs) >= abs(observed)).mean()
+k = np.count_nonzero(np.abs(diffs) >= abs(observed) - 1e-12)
+p_perm = (k + 1) / (4000 + 1)
 diff_pp = round(observed * 100, 1)
 ```
 
 ### explain
-Формула и симуляция дают почти одно и то же p. Формулы — это сокращённый путь, который работает, когда выборки достаточно большие. Перемешивание — запасной вариант на любой случай.
+На этих достаточно больших группах формула и симуляция дают близкие p-value. Перестановочный тест задаёт распределение разницы при обмене групповых меток и требует обменности наблюдений при нулевой гипотезе: зависимости между строками и способ назначения групп нужно учитывать. На маленьких группах его p-value может заметно отличаться от асимптотического z-теста. Число случайных перемешиваний определяет точность оценки. Поправка `(k + 1) / (4000 + 1)` учитывает наблюдаемое разбиение вместе со случайными: даже если ни одно из 4 000 перемешиваний не дало столь же сильного отличия, p не равно нулю. Проверка также принимает прежнюю оценку `k / 4000`. Перестановочный тест не служит универсальной заменой любому статистическому методу.
 
 ## task: report | Фраза для отчёта | star
 

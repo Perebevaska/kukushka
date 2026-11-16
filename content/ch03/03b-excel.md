@@ -103,7 +103,7 @@ plan[["Код", "Янв", "Фев", "Год"]]
 ```python static
 import io
 import pandas as pd
-text = "отчёт за неделю\nкод;сумма\nA;5\nB;7\nИтого;12"
+text = "отчёт за неделю\n код;сумма\nA;5\nB;7\n Итого;12"
 df = pd.read_csv(io.StringIO(text), sep=";", skiprows=1)
 print(df["сумма"].sum())
 ```
@@ -492,7 +492,7 @@ worst = done.idxmin()
 - `heads` — словарь «имя листа → номер этой строки» (считая с нуля, как в таблице, прочитанной с `header=None`);
 - `pf` — таблицу с кодами кофеен в индексе (без «Итого») и двумя столбцами: `план` и `факт` — суммы за январь–сентябрь, один знак после запятой.
 
-Числа `3` и `4` для шапок вписывать нельзя — найдите их.
+В этой управленческой сводке складывайте записанные суммы: пустая ячейка добавляет 0 к итогу, в том числе если пусты все девять месяцев. Такой итог описывает внесённые в книгу суммы. При добавлении служебных строк на любой лист он должен сохраниться.
 
 ### starter
 ```python
@@ -504,22 +504,41 @@ months = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", 
 ### check
 ```python
 import pandas as _pd
-m = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен']
-c = _code.replace(' ', '')
-assert not ('skiprows=3' in c or 'skiprows=4' in c or 'header=3' in c or 'header=4' in c), 'Высоту шапки нужно найти кодом, а не вписать: ищите строку, где в первом столбце «Код».'
-h = need('heads', dict)
-assert set(h) == {'План', 'Факт'}, f'Ключи heads: {list(h)}. Нужны имена листов «План» и «Факт».'
-assert int(h['План']) == 3 and int(h['Факт']) == 4, f'heads = {{"План": {int(h["План"])}, "Факт": {int(h["Факт"])}}}. Номер строки — индекс в таблице, прочитанной с header=None.'
-want = {}
-for name, sk in [('План', 3), ('Факт', 4)]:
-    t = _pd.read_excel('zerno_finance.xlsx', sheet_name=name, skiprows=sk)
-    want[name] = t[t['Код'] != 'Итого'].set_index('Код')[m].sum(axis=1).round(1)
-pf = need('pf', _pd.DataFrame)
-assert list(pf.columns) == ['план', 'факт'], f'Столбцы pf: {list(pf.columns)}. Нужны «план» и «факт».'
-assert 'Итого' not in pf.index and set(pf.index) == set(want['План'].index), f'Индекс pf: {sorted(map(str, pf.index))}. Нужны семь кодов кофеен без «Итого».'
-for col, name in [('план', 'План'), ('факт', 'Факт')]:
-    bad = [k for k in want[name].index if not close(pf.loc[k, col], want[name][k], 0.051)]
-    assert not bad, f'{col} у {bad[0]}: {float(pf.loc[bad[0], col])}, ожидалось {float(want[name][bad[0]])}.'
+from pathlib import Path as _Path
+from io import BytesIO as _BytesIO
+import openpyxl as _xl
+_m = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен']
+def _validate(_h, _pf):
+    assert isinstance(_h, dict) and set(_h) == {'План', 'Факт'}, 'heads — словарь с ключами «План» и «Факт».'
+    _sheets = _pd.read_excel('zerno_finance.xlsx', sheet_name=['План', 'Факт'], header=None)
+    _heads = {n: int(t.index[t[0] == 'Код'][0]) for n, t in _sheets.items()}
+    assert _h == _heads, f'heads={_h}, по содержимому книги нужно {_heads}. Ищите «Код» отдельно на каждом листе.'
+    assert isinstance(_pf, _pd.DataFrame) and list(_pf.columns) == ['план', 'факт'], 'pf — таблица с колонками план и факт.'
+    for _col, _name in [('план', 'План'), ('факт', 'Факт')]:
+        _t = _pd.read_excel('zerno_finance.xlsx', sheet_name=_name, skiprows=_heads[_name])
+        _want = _t[_t['Код'] != 'Итого'].set_index('Код')[_m].sum(axis=1).round(1)
+        assert _pf.index.is_unique and set(_pf.index) == set(_want.index), 'Индекс pf — коды кофеен без «Итого».'
+        for _key in _want.index:
+            assert close(_pf.loc[_key, _col], _want[_key], .051), f'{_col} у {_key}: ожидалось {_want[_key]}.'
+_validate(need('heads'), need('pf'))
+_path = _Path('zerno_finance.xlsx')
+_original = _path.read_bytes()
+try:
+    _book = _xl.load_workbook(_BytesIO(_original))
+    for _name, _n in [('План', 2), ('Факт', 1)]:
+        _book[_name].insert_rows(1, _n)
+        _book[_name].cell(1, 1, 'Предварительные данные')
+    _buf = _BytesIO()
+    _book.save(_buf)
+    _path.write_bytes(_buf.getvalue())
+    _env = {'__name__': '__main__'}
+    try:
+        exec(compile(_code, '<header-probe>', 'exec'), _env)
+    except Exception as _e:
+        raise AssertionError(f'После добавления служебных строк код не завершился: {_e}. Ищите заголовок на каждом листе.') from None
+    _validate(_env.get('heads'), _env.get('pf'))
+finally:
+    _path.write_bytes(_original)
 ```
 
 ### hint

@@ -388,7 +388,8 @@ import pandas as _pd
 d = _pd.read_csv('orders_3m.csv')
 want = round(d[d['channel'] == 'доставка']['amount'].mean(), 2)
 assert close(need('avg_check_delivery'), want, 0.006), f'avg_check_delivery = {need("avg_check_delivery")}, а нужно {want}.'
-assert 'read_csv' not in _code, 'Решите без pandas — запросом к файлу.'
+import ast as _ast
+assert not any(isinstance(n, _ast.Call) and isinstance(n.func, _ast.Attribute) and n.func.attr == 'read_csv' and isinstance(n.func.value, _ast.Name) and n.func.value.id in ('pd', 'pandas') for n in _ast.walk(_ast.parse(_code))), 'Решите запросом к файлу DuckDB: read_csv в SQL допустим.'
 ```
 
 ### hint

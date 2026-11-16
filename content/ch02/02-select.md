@@ -476,7 +476,7 @@ assert need('revenue_big_delivery') == want, f'revenue_big_delivery = {need("rev
 Условия: канал равен «доставка» и сумма больше 500.
 
 ### hint
-`df[(условие1) & (условие2)]["amount"].sum()` — каждое условие в скобках.
+`df[(условие 1) & (условие 2)]["amount"].sum()` — каждое условие в скобках.
 
 ### solution
 ```python

@@ -364,7 +364,9 @@ revenue = [41200, 38900, 45100, 39800, 52300, 61700, 58400]
 ```python
 assert need('total') == 337400, f'total = {need("total")}. Проверьте, что total = 0 стоит до цикла, а не внутри.'
 assert calls('sum') == 0, 'В этой задаче sum использовать нельзя.'
-assert 'for' in _code, 'Нужен цикл for.'
+import ast
+assert any(isinstance(node, ast.For) for node in ast.walk(ast.parse(_code))), 'Нужен цикл for.'
+assert rerun_with(revenue=[125, 75, 350]).get('total') == 550, 'Пересчитайте сумму по списку: для [125, 75, 350] ожидается 550.'
 ```
 
 ### hint
@@ -579,7 +581,7 @@ assert c == [-5.6, 15.9, -11.8, 31.4], f'changes = {c}. Формула: (сег�
 ```
 
 ### hint
-Начните цикл со второго дня: `for i in range(1, len(revenue)):`. Тогда «вчера» — это `revenue[i - 1]`.
+Сохраните выручку первого дня в `previous` и пройдите по остальным дням: `for today in revenue[1:]:`. После расчёта изменения запишите в `previous` сегодняшнюю выручку. Если уже прочитали про `range`, можно идти по индексам со второго дня.
 
 ### hint
 `round((revenue[i] - revenue[i - 1]) / revenue[i - 1] * 100, 1)`
@@ -593,4 +595,4 @@ for i in range(1, len(revenue)):
 ```
 
 ### explain
-В SQL это `LAG(revenue) OVER (ORDER BY day)`, в pandas — `pct_change()`.
+Для второго дня получаем `(38900 - 41200) / 41200 * 100`, то есть −5,6% после округления. В SQL во внутреннем запросе возьмите выручку предыдущего дня как `LAG(revenue) OVER (ORDER BY day) AS prev`. Во внешнем посчитайте `ROUND((revenue - prev) * 100.0 / NULLIF(prev, 0), 1)` и оставьте строки с `prev IS NOT NULL`. В pandas для этого ряда с ненулевой выручкой результат даёт `s.pct_change().mul(100).round(1).iloc[1:]`.
