@@ -1,15 +1,15 @@
 ---
 title: "Проект: о чём жалуются гости"
 files: [reviews_text.csv, reviews_new.csv, reviews_new_gold.csv]
-lead: "Финал главы. С сентября сеть собирает отзывы с карт — без оценок и без тем, просто тексты. Управляющая хочет каждую неделю видеть, где выросла доля текстов с жалобой и какие темы требуют проверки. Обучаем две модели на размеченных отзывах, размечаем ими новые, выбираем точку и период с ростом жалоб и формулируем гипотезу для операционной проверки — и поправляем долю негатива на ошибки самой модели."
+lead: "По учебным отзывам с карт найдите точку и неделю, где изменилась доля сигналов модели. Сравните долю сигналов и их основные темы в двух периодах, прочитайте примеры и предложите управляющей действие, которое поможет проверить причину."
 recap:
-  - "Модель для разметки обучают на старых размеченных данных и честно оценивают на отложенной части; для работы её переобучают на всех данных."
-  - "Для многоклассовой модели смотрят F1 по каждому классу и macro-F1: доля правильных прячет провал на редкой теме. Если модель недосчитывает редкий класс, счётчики по темам в отчёте занижены; `class_weight=\"balanced\"` поднимает полноту редкого класса ценой общей точности."
-  - "Перенос на новый источник — риск: тексты могут отличаться. Перед выводами читают примеры и смотрят, правдоподобна ли разметка."
-  - "Сравнивают «до» и «после», а не только уровень: самая недовольная точка и точка, где стало хуже, — разные вопросы."
-  - "Сначала определяют, у какой точки и когда изменилась доля жалоб. Возможное объяснение проверяют по другим данным."
-  - "При переносимых TPR и FPR приближение к доле жалоб можно получить по формуле: (p − FPR) / (TPR − FPR)."
-  - "Цитаты из отзывов убеждают руководителя лучше процентов — давайте и то и другое."
+  - "Сначала оцените модель на отложенных текстах. После оценки обучите её на полной исторической выборке."
+  - "Проверьте F1 каждой темы, macro-F1 и количество прогнозов. Балансировка классов меняет и счётчики, и качество. Сравните их на одном тесте."
+  - "Разметка карт может отличаться от ранних звёзд в приложении. Для вывода о реальных жалобах нужны независимо размеченные людьми отзывы из обоих периодов."
+  - "У точки с самой большой долей сигналов в октябре и у точки с наибольшим приростом к сентябрю могут быть разные ID."
+  - "Сначала определите, где изменилась доля сигналов. Проверьте гипотезу о причине по независимому операционному источнику."
+  - "Поправка (p − FPR) / (TPR − FPR) требует переносимых на новую цель и период частот ошибок и ненулевого знаменателя."
+  - "Покажите числители, знаменатели и исходные ID цитат. Цитата помогает понять конкретную ситуацию; распространённость темы оценивают по всем подходящим строкам."
 ---
 
 ## Задача
@@ -20,31 +20,52 @@ recap:
 >
 > *Управляющая сетью*
 
+## Итог проекта — письмо управляющей
+
+Подготовьте письмо по собственной сводной. Его можно написать по базовому маршруту; в карточках `weekly` и `why` те же расчёты разбираются подробнее. Укажите точку и понедельник, с которого начинается «после». Для каждого периода приведите **число сигналов / все отзывы точки**. Затем для выбранной темы дайте другую пару чисел — **сигналы этой темы / все сигналы точки в периоде**. Отметьте малые группы, если они меняют вашу интерпретацию.
+
+Приведите дословную цитату и исходный `review_id`. Что именно она подтверждает? Что в ней осталось за пределами присвоенной основной темы? Назовите действие управляющей для проверки гипотезы. Например, по журналу доставок можно отдельно узнать число опозданий среди всех доставок. Если считать нужно обоснованные жалобы в реальном потоке, укажите, как получить независимую человеческую разметку **обоих периодов** по общей инструкции и оценить неопределённость. Сохраните письмо рядом со сводной.
+
+## Перенос в службу поддержки
+
+За каждую из двух недель поддержка получила по 1 000 обращений. В первую неделю прежняя версия классификатора отметила 100 обращений. Со второй недели работает новая версия, она отметила 140. Руководитель предлагает написать «доля обоснованных жалоб выросла на 4 процентных пункта» и перевести сотрудника из другой очереди.
+
+Какое решение вы подпишете сегодня? Что запросите для следующего решения? Обоснуйте ответ числами. Запишите ответ перед открытием разбора.
+
+<details>
+<summary>Разбор после собственного решения</summary>
+
+Очередь выросла со 100 до 140 сигналов на 1000 обращений. Если каждый сигнал проверяет сотрудник, нагрузка выросла на 40 проверок. Чтобы решить, выросла ли доля обоснованных жалоб, независимо разметьте выборки из всех обращений обеих недель, включая обращения без сигнала. Используйте одно определение жалобы и оцените неопределённость разницы. Прогон обеих версий по одним и тем же ID поможет отдельно измерить влияние смены классификатора.
+
+</details>
+
 ## План
 
-До открытия разбора выберите по собственной таблице проблемную точку, период и свидетельства: максимальный уровень и максимальный прирост — разные критерии. Не подставляйте готовую точку до расчёта. В отчёте единица — отзыв, число уникальных гостей и доля недовольных среди всех посетителей здесь неизвестны.
+До открытия разбора выберите по собственной таблице проблемную точку, период и свидетельства: максимальный уровень и максимальный прирост — разные критерии. Не подставляйте готовую точку до расчёта. В отчёте единица — отзыв. Здесь нет ID гостя и общего числа посетителей.
 
 
-1. Две модели на размеченных `reviews_text.csv`: тональность (`rating <= 3` — недоволен) и тема. Оценка на отложенной части, затем переобучение на всех данных.
+1. Две модели на размеченных `reviews_text.csv`: низкий рейтинг (`rating <= 3`) и тема. Оценка на отложенной части, затем переобучение на всех данных.
    Для темы — не только доля правильных, но и F1 по каждой теме: в отчёте будут счётчики по темам, и редкая тема не должна теряться.
 2. Присоедините к каждому отзыву его прогноз и тему по ID. В первом сравнении используйте календарные месяцы — сентябрь и октябрь.
-3. Доля недовольных по точкам: уровень и рост.
+3. Доля сигналов по точкам. Сравните уровень в октябре и прирост относительно сентября.
 4. Постройте понедельную таблицу, выберите точку для разбора, проверьте объём наблюдений и найдите дату изменения.
 5. Для выбранной точки и даты сравните темы до и после, приложите цитаты с ID и сформулируйте гипотезу.
 6. Поправка доли на ошибки модели.
 
 Обе модели — TF-IDF слов и биграмм + логистическая регрессия (урок «Классификация текстов»).
 
+У отзывов 41 и 73 может быть одинаковый текст. При групповом разбиении эти отзывы должны попасть на одну сторону границы train/test (`GROUP BY text`). Если таблица прогнозов вернулась в порядке 73, 41 и первый прогноз высокий, он относится к ID 73. Присоедините прогноз по исходному `review_id` (`JOIN … USING (review_id)`), даже если pandas-индекс начинается с нуля. Если модель вернула только массив значений, сохраните рядом ID в том порядке, в каком подавали тексты.
+
 Для одного отзыва проследите цепочку: исходный `review_id` → текст → прогноз и тема → ячейка недельной таблицы → цитата в письме.
 
-Как работает поправка из шага 6, проще увидеть на игрушечных числах: пусть по-настоящему недовольны 10 % гостей, модель ловит 90 % из них (TPR) и ошибочно называет недовольными 5 % довольных (FPR).
+Рассмотрим 1 000 отзывов. Из них 100 содержат жалобу. Модель отметила 90 из этих 100 (TPR = 90 %) и ошибочно отметила 45 из 900 отзывов без жалобы (FPR = 5 %).
 
 ::: figure share-adjust
-Игрушечный пример поправки: модель видит 13.5 % «недовольных» вместо настоящих 10 % — ложные срабатывания на большой группе довольных перевешивают пропуски. Формула возвращает 10 %.
+В примере модель дала 135 сигналов на 1 000 отзывов, доля сигналов 13,5 %. По известным частотам ошибок восстанавливается доля отзывов с жалобой 10 %.
 :::
 
 ::: quiz
-Доля негативных отзывов в кофейне выросла с 10 % до 14 %, но классификатор ошибается. Как честно сказать о росте?
+Доля сигналов выросла с 10 % до 14 %. Частоты ошибок оценены на контрольной выборке, но перечитать все отзывы нельзя. Как оценить изменение доли жалоб?
 
 - [x] Поправить доли на известные ошибки модели — при переносимых частотах ошибок это даёт оценку доли; переносимость и выборочный разброс проверяем отдельно
   > Сырые доли от модели смещены: часть «негатива» — ложные срабатывания, часть пропущена.
@@ -53,7 +74,7 @@ recap:
 - [ ] Не сообщать ничего, пока модель не станет идеальной
   > Идеальной она не станет. Важно учесть ошибки, а не ждать.
 - [ ] Посчитать долю вручную по всем отзывам
-  > Идеально, но дорого. Поправка на ошибки модели — разумный компромисс.
+  > Сплошная проверка по единой инструкции тоже дала бы ответ, но для этой задачи доступна лишь выборочная разметка.
 :::
 
 ## task: models | Шаг 1. Две модели | base
@@ -193,6 +214,9 @@ print(text_quality)
 - `count_ratio` — во сколько раз модель недосчитывает редчайшую тему: число отзывов, которые модель **назвала** этой темой, делённое на настоящее число в тесте (3 знака);
 - `f1_rare_balanced` — F1 редчайшей темы у той же модели с `LogisticRegression(max_iter=1000, class_weight="balanced")` (3 знака).
 
+
+При расчёте F1 передавайте полный список шести тем через `labels=sorted(r["topic"].unique())` и `zero_division=0`. Тема без верных прогнозов получает F1 = 0; в macro-F1 она сохраняет тот же вес, что остальные.
+
 ### starter
 ```python
 import pandas as pd
@@ -275,14 +299,14 @@ X_train, X_test, t_train, t_test = train_test_split(
 
 pred = new_model().fit(X_train, t_train).predict(X_test)
 labels = sorted(r["topic"].unique())
-f1_by_topic = {k: round(float(v), 3) for k, v in zip(labels, f1_score(t_test, pred, average=None, labels=labels))}
-macro_f1 = round(float(f1_score(t_test, pred, average="macro")), 3)
+f1_by_topic = {k: round(float(v), 3) for k, v in zip(labels, f1_score(t_test, pred, average=None, labels=labels, zero_division=0))}
+macro_f1 = round(float(f1_score(t_test, pred, average="macro", labels=labels, zero_division=0)), 3)
 rarest = t_test.value_counts().idxmin()
 worst = min(f1_by_topic, key=f1_by_topic.get)
 count_ratio = round(float((pred == rarest).sum() / (t_test == rarest).sum()), 3)
 
 pred_b = new_model("balanced").fit(X_train, t_train).predict(X_test)
-f1_rare_balanced = round(float(f1_score(t_test, pred_b, labels=[rarest], average=None)[0]), 3)
+f1_rare_balanced = round(float(f1_score(t_test, pred_b, labels=[rarest], average=None, zero_division=0)[0]), 3)
 print(f1_by_topic, macro_f1, rarest, worst, count_ratio, f1_rare_balanced)
 ```
 
@@ -421,6 +445,20 @@ print(by_shop, worst_level, worst_growth)
 
 Соберите `weekly`: индекс — понедельник недели, столбцы — точки, значение — доля отзывов с сигналом модели. Выберите точку `focus_shop` и найдите её `jump_week` — неделю наибольшего роста относительно предшествующей. В `sept_max` сохраните максимум недельной доли этой точки до `jump_week` (три знака). Постройте график и посмотрите, сколько отзывов было в неделю скачка и удержался ли уровень позже. Запишите, какую точку и дату возьмёте для разбора тем.
 
+
+На графике покажите ту же зависимость: календарные недели и долю сигналов выбранной точки. Можно использовать линию или столбцы. Подписи, если вы их добавляете, должны соответствовать долям и выбранной точке. Порядок строк таблицы произвольный, если значения сохраняют свои даты и точки.
+
+
+После вычисления `weekly` и самостоятельного выбора `focus_shop` в браузере для столбцов используйте прямой matplotlib:
+
+```python
+fig, ax = plt.subplots()
+ax.bar(weekly.index.to_pydatetime(), weekly[focus_shop].to_numpy(), width=4)
+ax.set(xlabel="Понедельник недели", ylabel="Доля сигналов", title=str(focus_shop))
+```
+
+В текущей браузерной версии pandas `Series.plot(kind="bar")` с `DatetimeIndex` может завершиться `ValueError` ещё до проверки. Пример выше показывает ту же зависимость через matplotlib и не выбирает точку за вас.
+
 ### setup
 ```python
 import numpy as np
@@ -450,15 +488,74 @@ n0['week'] = n0['date'].dt.to_period('W').dt.start_time
 w = n0.pivot_table(index='week', columns='shop_id', values='neg', aggfunc='mean')
 got = need('weekly', _pd.DataFrame)
 assert got.shape == w.shape, f'weekly.shape = {got.shape}, а нужно {w.shape}.'
-assert ((got[w.columns].values - w.values) ** 2).max() < 1e-12, 'Доли по неделям не совпадают.'
+assert got.index.is_unique and got.columns.is_unique and set(got.index)==set(w.index) and set(got.columns)==set(w.columns), 'weekly: сохраните уникальные даты недель и точки.'
+assert ((got.reindex(index=w.index,columns=w.columns).values-w.values)**2).max()<1e-12, 'Доли должны соответствовать своей неделе и точке.'
 _shop=need('focus_shop')
 assert _shop in w.columns, 'Выберите точку из weekly.'
 jw = w[_shop].diff().idxmax()
 assert _pd.Timestamp(need('jump_week')) == jw, f'jump_week = {need("jump_week")}, а нужно {jw.date()}.'
 sm = round(float(w.loc[w.index < jw, _shop].max()), 3)
 assert close(need('sept_max'), sm, 0.0015), f'sept_max = {need("sept_max")}, а нужно {sm}.'
-assert got.index.equals(w.index), 'Недельные даты weekly должны соответствовать реальным датам отзывов, не только числам в ячейках.'
 
+import numpy as _np
+import matplotlib.dates as _md
+from matplotlib.container import BarContainer as _BarContainer
+_expected_dates = list(w.index)
+_expected_values = w[_shop].to_numpy()
+def _calendar_values(x, complete=True, axis=None, categorical=False):
+    values=list(x)
+    if not values: return None
+    candidates=[]
+    try: candidates.append([_pd.Timestamp(v.end_time).normalize() if isinstance(v,_pd.Period) else _pd.Timestamp(v).normalize() for v in values])
+    except (ValueError,TypeError,OverflowError): pass
+    try: candidates.append([_pd.Timestamp(_md.num2date(float(v))).tz_localize(None).normalize() for v in values])
+    except (ValueError,TypeError,OverflowError): pass
+    if categorical and axis is not None:
+        try:
+            locations=_np.asarray(axis.get_xticks(),dtype=float)
+            labels=axis.get_xticklabels()
+            mapped=[]
+            for coordinate in values:
+                matches=_np.flatnonzero(_np.isclose(locations,float(coordinate),rtol=0,atol=1e-8))
+                if len(matches)!=1:
+                    raise ValueError('Категориальный столбец должен иметь одну подпись даты на своей позиции.')
+                text=labels[int(matches[0])].get_text().strip()
+                mapped.append(_pd.Timestamp(text).normalize())
+            candidates.append(mapped)
+        except (ValueError,TypeError,OverflowError,IndexError):
+            pass
+    for dates in candidates:
+        if complete and len(dates)==len(_expected_dates) and set(dates)==set(_expected_dates): return dates
+        if not complete and all(date in _expected_dates for date in dates): return dates
+    return None
+def _matches_plot(x,y,shop=_shop,complete=True,axis=None,categorical=False):
+    dates=_calendar_values(x,complete=complete,axis=axis,categorical=categorical)
+    if dates is None: return False
+    try:
+        values=_np.asarray(y,dtype=float)
+        expected=w.loc[dates,shop].to_numpy()
+        return values.shape==expected.shape and _np.allclose(values,expected,atol=1e-6,rtol=0)
+    except (ValueError,TypeError): return False
+_plot_ok=False
+for _fig in figs:
+    for _ax in _fig.axes:
+        _labels=' '.join([_ax.get_title(),*[_t.get_text() for _t in (_ax.get_legend().texts if _ax.get_legend() else [])]])
+        _units=_ax.get_ylabel().lower()
+        _mentioned_shops={str(_key) for _key in w.columns if str(_key) in _labels}
+        if _mentioned_shops and _shop not in _mentioned_shops: continue
+        if _units and not any(_unit in _units for _unit in ['дол','share','fraction']): continue
+        for _line in _ax.lines:
+            _named_shop=_line.get_label()
+            if _named_shop in w.columns:
+                assert _matches_plot(_line.get_xdata(orig=True),_line.get_ydata(),shop=_named_shop,complete=False), 'Каждая серия с названием точки должна показывать её действительные доли по датам, включая выделенную линию.'
+            if _matches_plot(_line.get_xdata(orig=True),_line.get_ydata()): _plot_ok=True
+        for _container in _ax.containers:
+            if isinstance(_container,_BarContainer):
+                _named_shop=_container.get_label()
+                if _named_shop in w.columns:
+                    assert _matches_plot([b.get_x()+b.get_width()/2 for b in _container.patches],[b.get_height() for b in _container.patches],shop=_named_shop,complete=False,axis=_ax,categorical=True), 'Каждая серия столбцов с названием точки должна показывать её действительные доли по датам.'
+                if _matches_plot([b.get_x()+b.get_width()/2 for b in _container.patches],[b.get_height() for b in _container.patches],axis=_ax,categorical=True): _plot_ok=True
+assert _plot_ok, 'Покажите недельные доли выбранной точки по реальным датам; подписи, если они есть, должны сохранять долю и выбранную точку. Подойдёт линия или столбцы.'
 ```
 
 ### hint
@@ -481,7 +578,7 @@ print(weekly.round(2))
 print(jump_week.date(), sept_max)
 ax = weekly.plot(figsize=(9, 4), color="lightgray", legend=False)
 weekly[focus_shop].plot(ax=ax, color="crimson", lw=3, label=focus_shop)
-ax.set_ylabel("доля недовольных"); ax.legend()
+ax.set_ylabel("доля сигналов модели"); ax.legend()
 ```
 
 ### explain
@@ -489,7 +586,7 @@ ax.set_ylabel("доля недовольных"); ax.legend()
 
 ## task: why | Шаг 5. Темы и цитаты | plus
 
-Сохраните выбранную точку в `focus_shop`, дату раздела в `change_date`. Проверьте, что в каждом из двух периодов у точки есть хотя бы 30 отзывов. Создайте `period` по своей дате. Для отзывов с сигналом модели посчитайте доли тем по периодам в выбранной точке (`kzn`, имя таблицы для сдачи) и среди остальных (`others`). В `cause` запишите тему с наибольшим ростом доли. Из этой темы после границы возьмите пять текстов с наибольшей `p_neg` в порядке убывания и их исходные ID в том же порядке (`quotes` и `quote_ids`). Прочтите цитаты: действительно ли текст подтверждает тему модели?
+Сохраните выбранную точку в `focus_shop`, дату раздела в `change_date`. Проверьте, что в каждом из двух периодов у точки есть хотя бы 30 отзывов. Создайте `period` по своей дате. Для отзывов с сигналом модели посчитайте доли тем по периодам. Числитель — сигналы с данной основной темой, знаменатель — все сигналы соответствующего периода в той же группе. Для выбранной точки сохраните таблицу `kzn` (имя для сдачи), для остальных точек вместе — `others`. В `cause` запишите тему с наибольшим ростом доли. Из этой темы после границы возьмите пять текстов с наибольшей `p_neg` в порядке убывания и их исходные ID в том же порядке (`quotes` и `quote_ids`). Прочтите цитаты: действительно ли текст подтверждает тему модели?
 
 ### setup
 ```python
@@ -573,7 +670,7 @@ quote_ids = kb[(kb['period']=='после')&(kb['topic']==cause)].sort_values('p
 
 ## task: adjust | Шаг 6. Поправка на ошибки модели | star
 
-Доля «недовольных по модели» — не настоящая доля: модель пропускает часть недовольных и иногда ошибается в другую сторону. Если TPR — доля пойманных недовольных, а FPR — доля довольных, ошибочно названных недовольными, то наблюдаемая доля p = q · TPR + (1 − q) · FPR, откуда оценка q = (p − FPR) / (TPR − FPR), **если** TPR≠FPR и частоты ошибок переносятся на эту цель, точку и период. При неизменных TPR/FPR знак прироста сохраняется автоматически и не подтверждает сам перенос. Например, при истинной доле 10 %, TPR 80 % и росте FPR с 2,22 % до 6,67 % наблюдаемая доля вырастет 10→14 % без истинного роста.
+Обозначим через q долю отзывов с жалобой, через p — долю сигналов. Тогда p = q · TPR + (1 − q) · FPR, откуда q = (p − FPR) / (TPR − FPR) при TPR ≠ FPR. Частоты ошибок должны относиться к той же цели, точке и периоду. Если они стабильны и TPR > FPR, рост p соответствует росту q. При TPR < FPR направление обратное. При TPR = FPR сигналы не позволяют восстановить долю жалоб. Смена частот ошибок тоже меняет картину: при доле жалоб 10 %, TPR 80 % и росте FPR с 2,22 % до 6,67 % доля сигналов вырастет с 10 % до 14 % без роста жалоб.
 
 **1. Старый тест со звёздами.** Цель модели — рейтинг ≤ 3. На отложенной четверти размеченных отзывов вычислите `tpr` и `fpr`. Используйте разбиение и модель из шага 1. Примените эти две частоты к долям сигналов в KZN-2 до и после границы, сохраните поправки в словарь `adj = {"до": ..., "после": ...}` с точностью до трёх знаков.
 
@@ -634,19 +731,47 @@ t0 = float(((p == 1) & (d == 1)).sum() / (d == 1).sum()); f0 = float(((p == 1) &
 assert close(need('tpr'), t0, 0.002), f'tpr = {need("tpr")}, а нужно {t0:.3f}.'
 assert close(need('fpr'), f0, 0.002), f'fpr = {need("fpr")}, а нужно {f0:.3f}.'
 n0 = need('n', _pd.DataFrame)
+_source_n = _pd.read_csv('reviews_new.csv',parse_dates=['date'])
+assert n0.review_id.is_unique and set(n0.review_id)==set(_source_n.review_id), 'n должна содержать все исходные review_id без пропусков и дублей.'
+_aligned_n=n0.set_index('review_id').reindex(_source_n.review_id)
+for _key in ['shop_id','date','text']:
+    assert _aligned_n[_key].tolist()==_source_n[_key].tolist(), f'n/{_key}: сохраните исходное значение по review_id.'
+_expected_period = __import__('numpy').where(_source_n.date>='2026-10-05','после','до')
+assert _aligned_n.period.tolist()==list(_expected_period), 'В готовой n граница — 5 октября включительно.'
 obs = n0[n0['shop_id'] == 'KZN-2'].groupby('period')['neg'].mean()
 w = {k: round((obs[k] - f0) / (t0 - f0), 3) for k in ['до', 'после']}
 got = need('adj', dict)
 assert all(close(got[k], w[k], 0.003) for k in w), f'adj = {got}, а нужно {w}.'
-_gold=_pd.read_csv('reviews_new_gold.csv')
+_gold=_pd.read_csv('reviews_new_gold.csv').copy(deep=True)
 _labeled=n0.merge(_gold[['review_id','complaint']],on='review_id',validate='one_to_one')
 _audit=need('audit',_pd.DataFrame)
+assert _audit.index.is_unique and set(_audit.index)=={'до','после'}, 'audit: ровно два уникальных периода — до и после.'
+assert _audit.columns.is_unique and {'n','complaints','tpr','fpr','observed','manual','adjusted'} <= set(_audit.columns), 'audit: сохраните семь обязательных показателей из условия без дублей; дополнительные диагностические колонки допустимы.'
+_expected_audit={}
 for _period,_part in _labeled[_labeled.shop_id=='KZN-2'].groupby('period'):
     _target=_part.complaint; _tp=float(_part.loc[_target==1,'neg'].mean()); _fp=float(_part.loc[_target==0,'neg'].mean());_obs=float(_part.neg.mean())
     _want=dict(n=len(_part),complaints=int(_target.sum()),tpr=_tp,fpr=_fp,observed=_obs,manual=float(_target.mean()),adjusted=(_obs-_fp)/(_tp-_fp))
+    _expected_audit[_period] = _want.copy()
     for _key,_value in _want.items():
         assert close(_audit.loc[_period,_key],_value), f'audit {_period}/{_key}: разметка нового потока и исходные знаменатели, не частоты старых звёзд.'
-
+# Source copies prevent aliasing with learner variables while reordering input only in memory.
+_join_input = n0.copy(deep=True)
+_join_gold = _gold.copy(deep=True)
+_read_csv_original = _pd.read_csv
+def _reordered_gold_reader(filename,*args,**kwargs):
+    if str(filename).replace('\\','/').rsplit('/',1)[-1]=='reviews_new_gold.csv':
+        return _join_gold.sample(frac=1,random_state=29).reset_index(drop=True).copy(deep=True)
+    return _read_csv_original(filename,*args,**kwargs)
+try:
+    _pd.read_csv = _reordered_gold_reader
+    _rerun = rerun_with(n=_join_input.copy(deep=True),sent=need('sent'))
+finally:
+    _pd.read_csv = _read_csv_original
+_rerun_audit=_rerun.get('audit')
+assert isinstance(_rerun_audit,_pd.DataFrame) and _rerun_audit.index.is_unique and set(_rerun_audit.index)=={'до','после'}, 'На переставленных строках разметки audit сохраняет оба периода.'
+for _period,_values in _expected_audit.items():
+    for _key,_value in _values.items():
+        assert close(_rerun_audit.loc[_period,_key],_value), 'Соединяйте разметку по review_id: порядок строк gold не должен менять audit.'
 ```
 
 ### hint
@@ -690,9 +815,7 @@ audit=pd.DataFrame(rows).set_index('period')
 ### explain
 В `audit` сравните численности и частоты ошибок по синтетическим меткам новой партии по обе стороны границы. Поправка по старым звёздам предполагает перенос ошибок. Если состав отзывов или точность модели изменились, одна поправка на два периода может исказить величину роста.
 
-## Итог для управляющей сетью
-
-Напишите короткое письмо. Назовите выбранную точку и неделю, число отзывов до и после, долю сигналов модели и происхождение учебных меток и какой проверки на реальных отзывах ещё не хватает. Приведите цитаты с ID и объясните, поддерживают ли они вашу гипотезу. Если рост неустойчив или строк мало, укажите, какие дополнительные наблюдения изменят решение. Закончите одним проверяемым действием управляющей.
+После расчёта вернитесь к собственному письму из начала проекта. Подпишите доли сигналов, учебных меток жалобы и результат поправки.
 
 ::: tip
 Чтобы отчёт был еженедельным, модели сохраняют (`joblib.dump(sent, "sent.joblib")`, глава 15) и раз в неделю прогоняют через них свежую выгрузку. Раз в квартал модель проверяют на свежей ручной разметке пары сотен отзывов — гости могут начать писать иначе.

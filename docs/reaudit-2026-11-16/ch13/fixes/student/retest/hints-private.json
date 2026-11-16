@@ -1,0 +1,287 @@
+{
+  "01-text-prep/tokenize": [
+    "Сначала нижний регистр, потом поиск всех последовательностей русских букв.",
+    "`re.findall(r\"[а-яё]+\", text.lower())`."
+  ],
+  "01-text-prep/clean": [
+    "Порядок шагов важен: сначала `lower()`, потом `replace(\"ё\", \"е\")`, потом замена не-букв.",
+    "Всё, что не русская буква и не пробел: `re.sub(r\"[^а-я ]\", \" \", text)` (после замены «ё» она в шаблоне уже не нужна). Схлопнуть пробелы: `re.sub(r\" +\", \" \", text)`.",
+    "В конце — `.strip()`, чтобы убрать пробелы в начале и конце."
+  ],
+  "01-text-prep/vocab": [
+    "Счётчик заводится один раз до цикла: `words = Counter()`, а в цикле по отзывам пополняется.",
+    "`words.update(список_токенов)` для каждого отзыва; всего — `sum(words.values())`."
+  ],
+  "01-text-prep/p-stop": [
+    "`stop - keep` — разность множеств: стоп-слова без «не» и «но».",
+    "Фильтр токенов — списковое выражение с условием `if w not in stop - keep`."
+  ],
+  "01-text-prep/neg-words": [
+    "Доля отзывов с «не»: `group[\"text\"].map(lambda t: \"не\" in tokenize(t)).mean()`.",
+    "Пройдите по `counter_neg.most_common()` и берите слова, которых нет в множестве топ-100 позитивных, пока не наберётся 10."
+  ],
+  "01-text-prep/bag": [
+    "Словарь — все разные слова всех отзывов по алфавиту; строка мешка — сколько раз каждое слово словаря встречается в отзыве.",
+    "`vocab = sorted({w for d in docs for w in tokenize(d)})`; строка мешка — `[tokens.count(w) for w in vocab]`.",
+    "`same_bag = bow[0] == bow[2]` — списки сравниваются поэлементно."
+  ],
+  "01-text-prep/hapax": [
+    "Счётчик пополняется в цикле по отзывам: `words.update(tokenize(text))`.",
+    "Слова с частотой 1: `[w for w, n in words.items() if n == 1]` — и `sorted(...)`. Все употребления — `sum(words.values())`.",
+    "`share_once_vocab = round(len(once) / len(words), 4)`; `share_once_tokens = round(len(once) / sum(words.values()), 4)`."
+  ],
+  "01-text-prep/bigrams": [
+    "Множество биграмм отзыва: `set(zip(tokens, tokens[1:]))` — `set`, чтобы биграмма, встретившаяся в отзыве дважды, считалась один раз.",
+    "Два счётчика: для плохих и для хороших отзывов. Доля в плохих — `count_bad[bg] / число_плохих`; для биграмм, которых нет в одном из счётчиков, `Counter` вернёт 0.",
+    "```python\ndiff = {bg: cb[bg] / nb - cg[bg] / ng for bg in set(cb) | set(cg)}\ntop_bad = sorted(diff, key=lambda k: (-diff[k], k))[:5]\n```"
+  ],
+  "01-text-prep/rule": [
+    "Правило: «плохой отзыв», если среди токенов есть «не» или «но». Сравните прогноз с `(r[\"rating\"] <= 3).astype(int)`.",
+    "Прогноз — Series из 0/1: `r[\"text\"].map(lambda t: int(\"не\" in tokenize(t) or \"но\" in tokenize(t)))`."
+  ],
+  "01b-lemmas/stem-pairs": [
+    "Разные основы — множество: `{stem(w, 5) for w in words}`, его размер — `len(...)`.",
+    "`glued5 = stem(\"приветливые\", 5) == stem(\"привезли\", 5)`."
+  ],
+  "01b-lemmas/stem": [
+    "Множество всех слов: `{w for t in r[\"text\"] for w in tokenize(t)}`.",
+    "Обрезанное слово — `w[:5]`. Сколько разных «основ» — длина множества `{w[:5] for w in all_words}`."
+  ],
+  "01b-lemmas/lemma-text": [
+    "Словарь — `dict(zip(lem[\"word\"], lem[\"lemma\"]))`. В таблице есть все слова отзывов, поэтому `to_lemma[w]` не упадёт.",
+    "`\" \".join(to_lemma[w] for w in tokenize(text))`."
+  ],
+  "01b-lemmas/lemmas": [
+    "Сначала список всех токенов с повторами: `tokens = [w for t in r[\"text\"] for w in tokenize(t)]`. Разные слова — `set(tokens)`.",
+    "Словарь — `dict(zip(lem[\"word\"], lem[\"lemma\"]))`. Изменённые слова — `sum(1 for w in set(tokens) if to_lemma[w] != w)`. Для `share_known` сделайте второй словарь из колонки `known`.",
+    "```python\nknown = dict(zip(lem[\"word\"], lem[\"known\"]))\nshare_known = round(sum(known[w] for w in tokens) / len(tokens), 3)\n```"
+  ],
+  "01b-lemmas/lemma-top": [
+    "Токены плохих отзывов: `[w for t in r.loc[r[\"rating\"] <= 3, \"text\"] for w in tokenize(t)]`. Леммы — `to_lemma[w]` для каждого токена, счётчик — `Counter(...)`.",
+    "Формы «быть»: `sorted({w for w in tokens if to_lemma[w] == \"быть\"})` — множество, чтобы каждое слово попало один раз."
+  ],
+  "01b-lemmas/lemma-fix": [
+    "Отбор строк — маской `(lem[\"known\"] == 0) & (lem[\"count\"] >= 30)`, затем `sort_values(\"count\", ascending=False)` и колонка `word` списком.",
+    "Лемма с поправкой для слова `w`: сначала `l = to_lemma[w]`, потом `fixes.get(l, l)` — если леммы нет среди ключей, `get` вернёт её саму.",
+    "```python\nto_lemma = dict(zip(lem[\"word\"], lem[\"lemma\"]))\nc = Counter(fixes.get(to_lemma[w], to_lemma[w]) for t in r[\"text\"] for w in tokenize(t))\nn_barista = c[\"бариста\"]\ntop_drink = max([\"кофе\", \"капучино\", \"латте\", \"раф\"], key=lambda d: c[d])\n```"
+  ],
+  "02-tfidf/count": [
+    "Форма — `X.shape`, ненулевые — `X.nnz`, плотность — `X.nnz / (X.shape[0] * X.shape[1])`.",
+    "Номер столбца слова — `cv.vocabulary_[\"кофе\"]`; сумма по столбцу — `X[:, j].sum()`."
+  ],
+  "02-tfidf/p-tfidf": [
+    "Сначала тексты, потом матрица, потом нормы.",
+    "`fit_transform` нужен до того, как считать что-то по строкам матрицы."
+  ],
+  "02-tfidf/idf": [
+    "Векторайзер нужно обучить (`fit`) на всех отзывах — только после этого у него появляется `idf_`.",
+    "`pd.Series(tf.idf_, index=tf.get_feature_names_out())`, затем `.sort_values()` — в начале частые слова, в конце редкие."
+  ],
+  "02-tfidf/idf-by-hand": [
+    "df слова — в скольких отзывах оно встречается хотя бы раз; удобно взять из бинарного мешка: `CountVectorizer(binary=True)` и сумма по столбцу.",
+    "Натуральный логарифм — `np.log`. N — число отзывов `len(r)`. Формула: `np.log((1 + N) / (1 + df)) + 1`."
+  ],
+  "02-tfidf/ngrams": [
+    "Размер словаря — `len(cv.vocabulary_)` после `fit`.",
+    "Для каждого варианта создайте новый `CountVectorizer` с нужными параметрами (`ngram_range`, `min_df`) и обучите его на всех текстах."
+  ],
+  "02-tfidf/min-df": [
+    "Словарь размеров — словарное выражение по `min_df`: `len(CountVectorizer(min_df=m).fit(r[\"text\"]).vocabulary_)`.",
+    "Употреблений слов — сумма всех клеток матрицы: `cv.transform(r[\"text\"]).sum()`. Посчитайте её для полного и урезанного векторайзера и поделите.",
+    "Выпавшие слова — разность множеств ключей словарей: `sorted(set(full.vocabulary_) - set(cut.vocabulary_))[:5]`."
+  ],
+  "02-tfidf/keywords": [
+    "Строка отзыва `i` как обычный массив — `T[i].toarray()[0]`. Номера столбцов по убыванию веса — `np.argsort(-row)`.",
+    "Отбросьте нулевые веса (слов, которых в отзыве нет): `[j for j in np.argsort(-row) if row[j] > 0][:k]`, затем `names[j]`.",
+    "Совпадение с темой: `bool(set(keywords(i)) & MARKERS[r.loc[i, \"topic\"]])` — пересечение множеств непусто. Среднее таких `True/False` по 200 отзывам — доля."
+  ],
+  "02-tfidf/train-only": [
+    "Векторайзер — `fit` только на `text_train`, к `text_test` — `transform`. Слова теста, которых нет в словаре, просто пропадут.",
+    "Ненулевых клеток в каждой строке разреженной матрицы — `X.getnnz(axis=1)`.",
+    "Новые слова теста: токенизируйте тест тем же шаблоном и возьмите разность множеств со словарём `set(vec.vocabulary_)`."
+  ],
+  "02-tfidf/char-ngrams": [
+    "Нужны два векторайзера: словный (`TfidfVectorizer()`) и символьный (`TfidfVectorizer(analyzer=\"char_wb\", ngram_range=(3, 4))`), оба обученные на отзывах.",
+    "`cosine_similarity(vec.transform([\"выпечка\"]), vec.transform([\"ыпечка\"]))[0, 0]`."
+  ],
+  "03-classify/pipe": [
+    "Конвейер обучается одной строкой: `model = make_pipeline(...).fit(X_train, y_train)`; доля верных — `accuracy_score(y_test, model.predict(X_test))`.",
+    "`model.predict(new)` принимает список строк; `.tolist()` превратит ответ в обычный список."
+  ],
+  "03-classify/p-nb": [
+    "Данные → разбиение → конвейер → печать.",
+    "Наивный Байес работает со счётчиками, поэтому в конвейере `CountVectorizer`, а не `TfidfVectorizer`."
+  ],
+  "03-classify/baseline": [
+    "У `DummyClassifier` тот же интерфейс: `fit(X_train, y_train)` и `predict(X_test)` — тексты он даже не читает.",
+    "`f1_score(y_test, pred, zero_division=0)` — у базовой модели нет ни одного ответа «недоволен», и без параметра будет предупреждение."
+  ],
+  "03-classify/top-words": [
+    "Векторайзер — `model[0]`, регрессия — `model[-1]`.",
+    "`weights = pd.Series(model[-1].coef_[0], index=model[0].get_feature_names_out())`; дальше `sort_values(ascending=False).head(5)` для «плохих» слов и `sort_values().head(5)` для «хороших».",
+    "Вес одного слова — `weights[\"не\"]`."
+  ],
+  "03-classify/errors": [
+    "Ошибки — строки теста, где `model.predict(X_test) != y_test`.",
+    "`proba = model.predict_proba(X_test)`; уверенность в выбранном классе — `proba.max(axis=1)`.",
+    "«Уверенная ошибка» — ошибка, где уверенность больше порога из условия: `(conf[wrong] > порог).sum()`."
+  ],
+  "03-classify/unsure": [
+    "Маска сомнительных: `unsure = (p >= 0.2) & (p <= 0.8)`; верность ответа — `(p >= 0.5).astype(int) == y_test.values`.",
+    "Доля верных в группе — среднее маски верности по нужным строкам: `ok[unsure].mean()` и `ok[~unsure].mean()`.",
+    "Ближайшие к 0.5: `idx = np.argsort(np.abs(p - 0.5), kind=\"stable\")[:3]`, тексты — `X_test.values[idx]`."
+  ],
+  "03-classify/recall95": [
+    "Перебор: для каждого порога `t` из сетки — `recall_score(y_validation, (p >= t).astype(int))`. Оставьте пороги с полнотой ≥ 0.95 и возьмите наибольший.",
+    "Чем ниже порог, тем больше отзывов помечено и тем выше полнота. Поэтому «наибольший порог с полнотой ≥ 0.95» даёт максимально короткий список при нужной полноте.",
+    "```python\ngood = [t for t in np.arange(0.05, 0.96, 0.01) if recall_score(y_validation, (p >= t).astype(int)) >= 0.95]\nthr = round(max(good), 2)\n```"
+  ],
+  "03-classify/topics": [
+    "Матрица ошибок с подписями — `pd.crosstab(y_test, pred)`.",
+    "Полнота темы t: среди отзывов с настоящей темой t — доля, где модель сказала t. Удобно из `cm`: диагональ / сумма строки.",
+    "`recall = pd.Series(np.diag(cm.values) / cm.values.sum(axis=1), index=cm.index)`; худшая тема — `recall.idxmin()`."
+  ],
+  "03-classify/compare": [
+    "Четыре конвейера удобно положить в словарь `{\"words\": ..., \"bigrams\": ..., \"chars\": ..., \"nb\": ...}`.",
+    "Словарь конвейеров и цикл с `cross_val_score(model, X_train, y_train, cv=5, scoring=\"f1\").mean()`.",
+    "`best = max(cv_f1, key=cv_f1.get)` — ключ с наибольшим значением."
+  ],
+  "03b-labels/p-vote": [
+    "`pivot` нужен раньше, чем `nunique`: считать разные темы можно только в широкой таблице.",
+    "`nunique(axis=1)` — сколько разных значений в каждой строке; единогласно — когда оно равно 1."
+  ],
+  "03b-labels/vote": [
+    "Широкая таблица — `labels.pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")`. Голосование — функция от строки и `wide.apply(функция, axis=1)`.",
+    "Внутри функции: `counts = row.value_counts()`; лидер — `counts.index[0]`, его голоса — `counts.iloc[0]`. Ровно двое согласны, когда в строке две разные темы: `wide.nunique(axis=1) == 2`.",
+    "```python\ndef majority(row):\n    counts = row.value_counts()\n    return counts.index[0] if counts.iloc[0] >= 2 else None\n\nvote = wide.apply(majority, axis=1)\nn_no_majority = int(vote.isna().sum())\nshare_2of3 = ...\n```"
+  ],
+  "03b-labels/kappa": [
+    "Две части формулы: $p_o$ — `sum(a == b for a, b in zip(x, y)) / len(x)`; $p_e$ — цикл по темам из `set(x) | set(y)`.",
+    "Для темы `c` доля у первого — `x.count(c) / len(x)`, у второго — `y.count(c) / len(y)`; $p_e$ — сумма их произведений.",
+    "```python\ndef kappa(x, y):\n    x, y = list(x), list(y)\n    n = len(x)\n    p_o = sum(a == b for a, b in zip(x, y)) / n\n    p_e = sum((x.count(c) / n) * (y.count(c) / n) for c in set(x) | set(y))\n    return ...\n```"
+  ],
+  "03b-labels/golden": [
+    "Сравнение со столбцом золотых ответов: `wide.loc[gold.index, \"аня\"] == gold` — индексы совпадают, `.mean()` даёт долю верных.",
+    "Голосование на золотом наборе — `wide.loc[gold.index].apply(majority, axis=1)`; сравнение `== gold` для `None` даёт `False`, так что отзывы без большинства сами станут ошибками.",
+    "```python\ngold_acc = {a: round(float((wide.loc[gold.index, a] == gold).mean()), 3) for a in wide.columns}\nworst = min(gold_acc, key=gold_acc.get)\nrest = [a for a in wide.columns if a != worst]\nn_recheck = int((wide[rest[0]] != wide[rest[1]]).sum())\n```"
+  ],
+  "03b-labels/topic-check": [
+    "Маска согласия: `agree = wide[\"аня\"] == wide[\"борис\"]`; число — `int(agree.sum())`. Индексы `wide` и `topic` одинаковые, поэтому их можно сравнивать напрямую.",
+    "`match_ab = round(float((wide.loc[agree, \"аня\"] == topic[agree]).mean()), 3)`; голосование — `wide.apply(majority, axis=1)`, сравнение `== topic` для `None` даёт `False`."
+  ],
+  "03b-labels/train-labels": [
+    "Метки для обучения — три Series с индексом `wide.index`: `r.loc[wide.index, \"topic\"]`, `wide[\"аня\"]`, `wide[\"вика\"]`. Тексты для всех трёх одни — `train_text`.",
+    "```python\nlabels = {\"topic\": r.loc[wide.index, \"topic\"], \"аня\": wide[\"аня\"], \"вика\": wide[\"вика\"]}\nfor name, y in labels.items():\n    model = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(train_text, y)\n    ...\n```"
+  ],
+  "04-embeddings/cos": [
+    "Формула: косинус = скалярное произведение / (длина a × длина b).",
+    "`a @ b` — скалярное произведение, `np.linalg.norm(a)` — длина вектора."
+  ],
+  "04-embeddings/p-pool": [
+    "Словарь → слова → среднее → нормировка → сходство.",
+    "`np.mean([...], axis=0)` усредняет векторы поэлементно — по каждой из 4 координат."
+  ],
+  "04-embeddings/nearest": [
+    "Сначала функция `cosine`, как в первой задаче; потом сходство «кофе» с каждым другим словом словаря `vec`.",
+    "Словарь `{слово: cosine(...)}` → `pd.Series(...)` → `.sort_values(ascending=False)`; `top3 = list(sims.index[:3])`."
+  ],
+  "04-embeddings/lsa": [
+    "Номер отзыва `R-40002` в таблице: `i = r.index[r[\"review_id\"] == \"R-40002\"][0]`.",
+    "`Zn @ Zn[i]` — сходство всех отзывов с i-м. `np.argsort(-sim)` упорядочит по убыванию; первым будет сам отзыв."
+  ],
+  "04-embeddings/char-search": [
+    "Сходство: `sim = (T @ vec.transform([q]).T).toarray().ravel()` — массив длины 2400. Номера лучших — `np.argsort(-sim, kind=\"stable\")[:k]`.",
+    "Тексты по номерам: `list(r[\"text\"].values[idx])`.",
+    "Доля с «опоздал»: `sum(\"опоздал\" in t.lower() for t in top) / 5`."
+  ],
+  "04-embeddings/lsa-clf": [
+    "SVD встаёт в конвейер между векторайзером и моделью: `make_pipeline(TfidfVectorizer(), TruncatedSVD(k, random_state=0), LogisticRegression(max_iter=1000))`.",
+    "Цикл по `k`, внутри — `make_pipeline(...)`, `.fit(X_train, y_train)`, `accuracy_score(y_test, model.predict(X_test))`. `max(sorted(acc), key=acc.get)` при равенстве вернёт меньший ключ."
+  ],
+  "04-embeddings/skipgram": [
+    "Два вложенных цикла: внешний по позициям `i`, внутренний по `j` от `i - window` до `i + window`, с обрезкой по краям списка и пропуском `j == i`.",
+    "Границы окна: `range(max(0, i - window), min(len(tokens), i + window + 1))`. Частые соседи слова `w`: `Counter(c for x, c in pairs if x == w).most_common(3)` — это список пар (слово, счётчик).",
+    "```python\npairs = [p for t in r[\"text\"] for p in skipgram_pairs(tokenize(t))]\ndef top(w, k):\n    return [c for c, _ in Counter(c for x, c in pairs if x == w).most_common(k)]\ntop_courier = top(\"курьер\", 3)\nshared = set(top(\"дороговато\", 3)) & set(top(\"недорого\", 3))\n```"
+  ],
+  "04-embeddings/zero-shot": [
+    "Сначала LSA по всем отзывам, как в задаче «Похожие отзывы»: `Z`, затем `Zn`.",
+    "`D = svd.transform(tfidf.transform(list(desc.values())))`; после нормировки `Zn @ Dn.T` — матрица 2400 × 6, `argmax(axis=1)` — номер темы, `np.array(list(desc))[...]` — её название.",
+    "Доля самой частой темы: `r[\"topic\"].value_counts(normalize=True).iloc[0]`."
+  ],
+  "04b-transformers/pad-mask": [
+    "Чтобы дополнить, нужна длина самого длинного текста — её считают первой.",
+    "Маска — там, где id не равен 0 (id заполнителя `[PAD]`); сумма по строке — число настоящих токенов."
+  ],
+  "04b-transformers/wordpiece": [
+    "Внешний цикл идёт по позиции `start`, внутренний укорачивает конец `end` от `len(word)` до `start + 1`, пока кусок не найдётся в `ID`. Кусок не с начала слова — `\"##\" + word[start:end]`.",
+    "Если внутренний цикл дошёл до `end == start`, подходящего куска нет — сразу `return [\"[UNK]\"]`. Иначе добавьте кусок и сдвиньте `start = end`.",
+    "```python\nwhile start < len(word):\n    end = len(word)\n    while end > start:\n        piece = word[start:end] if start == 0 else \"##\" + word[start:end]\n        if piece in ID:\n            break\n        end -= 1\n    if end == start:\n        return [\"[UNK]\"]\n    ...\n```"
+  ],
+  "04b-transformers/attention": [
+    "Сначала `scores = X @ X.T`, затем копия для маски: `masked = scores.copy(); masked[:, mask == 0] = -np.inf`. Softmax — `np.exp(masked) / np.exp(masked).sum(axis=1, keepdims=True)`.",
+    "Для `pad_weight` повторите softmax на `scores` без маски и сложите веса первой строки в столбцах 3 и 4: `W_raw[0, 3:].sum()`."
+  ],
+  "04b-transformers/masked-pool": [
+    "Обнулите заполнители умножением на маску, сложите по позициям и поделите на число настоящих токенов. Чтобы маска умножилась на каждый признак, ей нужна третья ось: `mask[:, :, None]`.",
+    "Числитель — `(H * mask[:, :, None]).sum(axis=1)`, знаменатель — `mask.sum(axis=1, keepdims=True)`. Косинус — `a @ b / (np.linalg.norm(a) * np.linalg.norm(b))`.",
+    "```python\ndef mean_pool(H, mask):\n    return (H * mask[:, :, None]).sum(axis=1) / mask.sum(axis=1, keepdims=True)\n\npooled = mean_pool(H, attention_mask)\nnaive = H.mean(axis=1)\na, b = pooled[2], naive[2]\ncos_short = ...\nsame = bool(np.allclose(mean_pool(H_long, mask_long), pooled))\n```"
+  ],
+  "04b-transformers/truncate": [
+    "Длинный список: `ids[:max_len - 1] + [SEP]` — так длина будет ровно `max_len`, а последний id — `[SEP]`.",
+    "`lost = sum(len(a) - len(b) for a, b in zip(batch, cut))`."
+  ],
+  "04b-transformers/pad-waste": [
+    "Пакеты — срезы `lens[i:i + size]` для `i` в `range(0, len(lens), size)`. Последний пакет может быть короче — берите его реальную длину `len(chunk)`.",
+    "Заполнителей в пакете: `max(chunk) * len(chunk) - sum(chunk)`. Отсортированный вариант — `pad_count(sorted(lens))`."
+  ],
+  "04c-llm/parse-one": [
+    "Границы куска — `answer.index(\"{\")` и `answer.rindex(\"}\")`; правая граница среза не включается, поэтому к ней прибавляют 1.",
+    "`d = json.loads(answer[answer.index(\"{\"): answer.rindex(\"}\") + 1])`, тема — `d[\"topic\"]`."
+  ],
+  "04c-llm/parse-llm": [
+    "Начните с функции `parse(answer)`, возвращающей словарь `{\"sentiment\": ..., \"topic\": ..., \"ok\": ...}`; таблица — `pd.DataFrame([parse(a) for a in raw])`.",
+    "Если `answer` не строка (например, `None`), сразу верните негодную запись. Для строки `answer.find(\"{\")` и `answer.rfind(\"}\")` дают границы; если одной нет — ответ негоден. `json.loads` оберните в `try/except json.JSONDecodeError`."
+  ],
+  "04c-llm/llm-cost": [
+    "Входные токены: `sum((len(PROMPT) + len(t)) / 3 for t in new[\"text\"])`, затем `round(...)`. Выходные — `20 * len(new)`.",
+    "`cost = round(tokens_in / 1000 * 0.3 + tokens_out / 1000 * 1.5, 1)`. На инструкцию приходится `len(PROMPT) * len(new) / 3` токенов — поделите на неокруглённую сумму входных."
+  ],
+  "04c-llm/llm-check": [
+    "Годные ответы — те, что входят в список тем: `ans.isin(TOPICS)`; `None` туда не входит, так что одна маска покрывает оба случая.",
+    "Верный ответ — годный и совпадающий с настоящей темой: `ok = ans.isin(TOPICS) & (ans == true)`. Его среднее — доля верных среди всех.",
+    "Полнота по темам — среднее `ok` в группах настоящей темы: `ok.groupby(true).mean()`. Погрешность — `se = math.sqrt(acc * (1 - acc) / len(true))` по неокруглённой доле. Для `above_reference` сравните `acc - 2 * se` с 0.79. Такое сравнение не оценивает разницу двух моделей."
+  ],
+  "04c-llm/llm-same": [
+    "Обучающая часть — отзывы, которых нет среди проверочных: `rest = r[~r[\"review_id\"].isin(check[\"review_id\"])]`.",
+    "Верность модели — `ok_model = pd.Series(model.predict(check[\"text\"])) == check[\"topic\"]`; «только LLM» — `(ok_llm & ~ok_model).sum()`."
+  ],
+  "05-project/models": [
+    "Функция `new_model()` возвращает каждый раз новый, необученный конвейер — используйте её для всех четырёх моделей (две оценочные и две финальные).",
+    "Для отметки дословных повторов удобно использовать `X_test.isin(X_train)`. Индексы разбиения по группам возвращает `next(splitter.split(r, groups=r[\"text\"]))`. Два разбиения строк: для тональности `stratify=y`, для темы `stratify=r[\"topic\"]`. Финальные модели: `new_model().fit(r[\"text\"], y)` и `new_model().fit(r[\"text\"], r[\"topic\"])`."
+  ],
+  "05-project/rare": [
+    "F1 по каждой теме сразу — `f1_score(t_test, pred, average=None, labels=labels)`, где `labels = sorted(r[\"topic\"].unique())`; результат — массив в том же порядке, что `labels`. Macro-F1 — `average=\"macro\"`.",
+    "Редчайшая тема — `t_test.value_counts().idxmin()`, худшая по F1 — `min(f1_by_topic, key=f1_by_topic.get)`. Сколько раз модель назвала тему: `(pred == rarest).sum()`.",
+    "```python\npred = new_model().fit(X_train, t_train).predict(X_test)\nlabels = sorted(r[\"topic\"].unique())\nf1_by_topic = {k: round(float(v), 3) for k, v in zip(labels, f1_score(t_test, pred, average=None, labels=labels))}\n...\npred_b = new_model(\"balanced\").fit(X_train, t_train).predict(X_test)\nf1_rare_balanced = round(float(f1_score(t_test, pred_b, labels=[rarest], average=None)[0]), 3)\n```"
+  ],
+  "05-project/score": [
+    "Модели уже обучены — здесь только применение: `predict_proba` для вероятности, `predict` для темы.",
+    "`sent.predict_proba(n[\"text\"])[:, 1]`; `np.where(n[\"date\"] >= \"2026-10-01\", \"после\", \"до\")`."
+  ],
+  "05-project/shops": [
+    "`n.groupby([\"shop_id\", \"period\"])[\"neg\"].mean().unstack()` даст таблицу точки × периоды.",
+    "Рост — новый столбец `после − до`; сортировка — `.sort_values(\"рост\", ascending=False)`; лидеры — `.idxmax()` по нужному столбцу."
+  ],
+  "05-project/weekly": [
+    "Неделя: `n[\"date\"].dt.to_period(\"W\").dt.start_time` — понедельник недели каждой даты.",
+    "`n.pivot_table(index=\"week\", columns=\"shop_id\", values=\"neg\", aggfunc=\"mean\")`; `weekly[focus_shop].diff().idxmax()`."
+  ],
+  "05-project/why": [
+    "Сначала пересчитайте период по `change_date`. Оставьте строки с `neg == 1`, затем разделите их по условию `shop_id == focus_shop`. Для каждой доли знаменатель — число отмеченных отзывов в соответствующей группе и периоде.",
+    "Фильтр по точке и `pd.crosstab(...)`; `cause = (kzn[\"после\"] - kzn[\"до\"]).idxmax()`. Для цитат — фильтр по периоду и теме, `.sort_values(\"p_neg\", ascending=False)`, `.head(5)`."
+  ],
+  "05-project/adjust": [
+    "TPR и FPR считаются на **старых размеченных** отзывах: обучите модель на обучающей части и предскажите отложенную.",
+    "`tn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()`; `tpr = tp / (tp + fn)`, `fpr = fp / (fp + tn)`."
+  ]
+}

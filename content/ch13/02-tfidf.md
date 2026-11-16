@@ -522,10 +522,24 @@ def _kw(i, k=3):
     idx = [j for j in _np.argsort(-row, kind='stable') if row[j] > 0][:k]
     return [str(nm[j]) for j in idx]
 f = need('keywords')
-for i in range(5):
-    assert set(f(i)) == set(_kw(i)), f'keywords({i}) = {f(i)}, а нужно {_kw(i)}.'
+def _verify_words(words, i, k):
+    got = list(words)
+    row = T0[i].toarray()[0]
+    expected_n = min(k, int((row > 0).sum()))
+    assert len(got) == expected_n and len(set(got)) == len(got), f'keywords({i}, {k}): верните нужное число разных слов отзыва.'
+    indices = {str(word):j for j,word in enumerate(nm)}
+    assert all(word in indices and row[indices[word]] > 0 for word in got), 'Ключевые слова должны встречаться в этом отзыве.'
+    weights = [row[indices[word]] for word in got]
+    assert all(a >= b - 1e-12 for a,b in zip(weights,weights[1:])), 'Ключевые слова расположите по убыванию TF-IDF.'
+    if got:
+        cutoff = sorted(row[row>0], reverse=True)[expected_n-1]
+        assert min(weights) >= cutoff - 1e-12, 'Возьмите слова с наибольшими весами TF-IDF.'
+for _i,_k in [(i,3) for i in range(5)] + [(10,2),(199,4)]:
+    _verify_words(f(_i,_k),_i,_k)
 g = need('kw', dict)
-assert sorted(g) == [0, 1, 2, 3, 4], 'kw — словарь для отзывов 0…4.'
+assert set(g) == set(range(5)), 'kw — словарь для отзывов 0…4.'
+for _i in range(5):
+    _verify_words(g[_i],_i,3)
 w = _np.mean([bool(set(_kw(i)) & M[r0.loc[i, 'topic']]) for i in range(200)])
 assert close(need('share_topic_word'), round(float(w), 3), 0.006), f'share_topic_word = {need("share_topic_word")}, а нужно {w:.3f}.'
 ```

@@ -72,7 +72,12 @@ def ask(prompt, system=None, model=None, temperature=0.0, max_tokens=400):
     messages = ([{'role': 'system', 'content': system}] if system else []) + [{'role': 'user', 'content': prompt}]
     data = _request('POST', '/chat/completions', {'model': model, 'messages': messages,
                                                   'temperature': temperature, 'max_tokens': max_tokens})
-    text = data['choices'][0]['message'].get('content') or ''
+    choices = data.get('choices') or []
+    if not choices or choices[0].get('finish_reason') != 'stop':
+        return ''
+    text = choices[0].get('message', {}).get('content')
+    if not isinstance(text, str):
+        return ''
     return _re.sub(r'<think>.*?</think>', '', text, flags=_re.S).strip()
 """
 

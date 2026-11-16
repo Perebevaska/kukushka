@@ -1,0 +1,8 @@
+import numpy as np
+proba = model.predict_proba(X_test)
+pred = proba.argmax(axis=1)
+errors = pred != y_test.values
+confident = errors & ((proba[:,1] > .8) | (proba[:,1] < .2))
+n_errors = int(errors.sum())
+n_confident = int(confident.sum())
+confident_share = round(n_confident / n_errors, 3)

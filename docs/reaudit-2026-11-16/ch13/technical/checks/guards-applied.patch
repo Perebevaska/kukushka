@@ -1,0 +1,419 @@
+--- a/content/ch13/01-text-prep.md
++++ b/content/ch13/01-text-prep.md
+@@ -260,6 +260,8 @@
+ f = need('tokenize')
+ assert f('Привет, Мир!') == ['привет', 'мир'], f'tokenize("Привет, Мир!") = {f("Привет, Мир!")}.'
+ assert list(need('t')) == ['кофе', 'отличный', 'ёжики'], f't = {need("t")}. Не забудьте букву ё и нижний регистр.'
++assert f('Ёж, ёлка и ABC не-кофе 3!') == ['ёж', 'ёлка', 'и', 'не', 'кофе'], 'tokenize: включите ё, отделяйте нерусские символы и сохраняйте порядок слов.'
++assert f('') == [], 'Для пустой строки tokenize возвращает пустой список.'
+ ```
+ 
+ ### hint
+@@ -615,7 +617,9 @@
+ w = sorted(d, key=lambda k: (-d[k], k))[:5]
+ got = [tuple(x) for x in need('top_bad', list)]
+ assert len(got) == 5, 'top_bad — 5 биграмм.'
+-assert set(got) == set(w) or got[:3] == w[:3], f'top_bad = {got}, а нужно {w}.'
++assert len(set(got)) == 5 and all(k in d for k in got), 'top_bad — пять разных биграмм из отзывов.'
++assert all(d[got[i]] >= d[got[i+1]] - 1e-12 for i in range(4)), 'Расположите биграммы по убыванию разности долей.'
++assert min(d[k] for k in got) >= d[w[-1]] - 1e-12, 'Все пять биграмм должны входить в лидеры по разности долей; при равенстве подойдёт любая.' 
+ assert close(need('diff_top'), round(d[w[0]], 3), 0.0011), f'diff_top = {need("diff_top")}.'
+ ```
+ 
+--- a/content/ch13/01b-lemmas.md
++++ b/content/ch13/01b-lemmas.md
+@@ -182,6 +182,7 @@
+ assert f('кофейня') == 'кофей' and f('кофе') == 'кофе', 'stem: обрезать до 5 букв, короткие слова не трогать.'
+ assert need('n_raw') == len(allw) and need('n_stem') == len({st(w) for w in allw}), f'n_raw, n_stem = {need("n_raw")}, {need("n_stem")}.'
+ assert list(need('merged')) == sorted(w for w in allw if st(w) == st('курьер')), f'merged = {need("merged")}.'
++assert f('капучино', 3) == 'кап' and f('кофе', 7) == 'кофе', 'Параметр n задаёт длину основы; короткое слово сохраняется.'
+ ```
+ 
+ ### hint
+--- a/content/ch13/02-tfidf.md
++++ b/content/ch13/02-tfidf.md
+@@ -522,10 +522,24 @@
+     idx = [j for j in _np.argsort(-row, kind='stable') if row[j] > 0][:k]
+     return [str(nm[j]) for j in idx]
+ f = need('keywords')
+-for i in range(5):
+-    assert set(f(i)) == set(_kw(i)), f'keywords({i}) = {f(i)}, а нужно {_kw(i)}.'
++def _verify_words(words, i, k):
++    got = list(words)
++    row = T0[i].toarray()[0]
++    expected_n = min(k, int((row > 0).sum()))
++    assert len(got) == expected_n and len(set(got)) == len(got), f'keywords({i}, {k}): верните нужное число разных слов отзыва.'
++    indices = {str(word):j for j,word in enumerate(nm)}
++    assert all(word in indices and row[indices[word]] > 0 for word in got), 'Ключевые слова должны встречаться в этом отзыве.'
++    weights = [row[indices[word]] for word in got]
++    assert all(a >= b - 1e-12 for a,b in zip(weights,weights[1:])), 'Ключевые слова расположите по убыванию TF-IDF.'
++    if got:
++        cutoff = sorted(row[row>0], reverse=True)[expected_n-1]
++        assert min(weights) >= cutoff - 1e-12, 'Возьмите слова с наибольшими весами TF-IDF.'
++for _i,_k in [(i,3) for i in range(5)] + [(10,2),(199,4)]:
++    _verify_words(f(_i,_k),_i,_k)
+ g = need('kw', dict)
+-assert sorted(g) == [0, 1, 2, 3, 4], 'kw — словарь для отзывов 0…4.'
++assert set(g) == set(range(5)), 'kw — словарь для отзывов 0…4.'
++for _i in range(5):
++    _verify_words(g[_i],_i,3)
+ w = _np.mean([bool(set(_kw(i)) & M[r0.loc[i, 'topic']]) for i in range(200)])
+ assert close(need('share_topic_word'), round(float(w), 3), 0.006), f'share_topic_word = {need("share_topic_word")}, а нужно {w:.3f}.'
+ ```
+--- a/content/ch13/03-classify.md
++++ b/content/ch13/03-classify.md
+@@ -420,6 +420,8 @@
+ assert list(need('top_bad')) == list(w0.sort_values(ascending=False).index[:5]), f'top_bad = {need("top_bad")}.'
+ assert list(need('top_good')) == list(w0.sort_values().index[:5]), f'top_good = {need("top_good")}.'
+ assert close(need('w_ne'), round(w0['не'], 2), 0.006), f'w_ne = {need("w_ne")}.'
++import numpy as _np
++assert wt.index.is_unique and _np.allclose(wt.reindex(w0.index).to_numpy(),w0.to_numpy(),atol=1e-7,rtol=0), 'Каждому слову в weights должен соответствовать его коэффициент модели.'
+ ```
+ 
+ ### hint
+@@ -572,6 +574,9 @@
+ 
+ Отдел заботы о гостях хочет видеть почти все жалобы: целевая полнота класса «недоволен» на валидации — не ниже 0.95. Для конвейера тональности (обучен в заготовке) на отдельной внутренней валидации найдите наибольший порог `thr` из сетки `np.arange(0.05, 0.96, 0.01)`, при котором полнота ≥ 0.95 (округлите до 2 знаков). Сохраните `precision_at` — точность при этом пороге (3 знака), `n_flagged` — сколько отзывов валидации отправится на разбор и `precision_05`, `recall_05` — точность и полноту при пороге 0.5 (3 знака).
+ 
++
++После выбора порога на валидации зафиксируйте его. Для отдельного финального теста получите новые вероятности `p_test = model.predict_proba(X_test)[:, 1]`. Сохраните `test_recall` — фактическую полноту при `thr` (3 знака) и `test_flagged` — число отзывов теста в очереди. Сравнивайте `p` с `y_validation`, а `p_test` с `y_test`: даже одинаковая длина массивов не означает, что в них одни и те же отзывы.
++
+ ### setup
+ ```python
+ import pandas as pd
+@@ -598,30 +603,38 @@
+ ### check
+ ```python
+ import numpy as _np
++import pandas as _pd
++from sklearn.model_selection import train_test_split as _tts
++from sklearn.pipeline import make_pipeline as _mp
++from sklearn.feature_extraction.text import TfidfVectorizer as _TF
++from sklearn.linear_model import LogisticRegression as _LR
+ from sklearn.metrics import precision_score as _ps, recall_score as _rs
+-m, Xt, yt = need('model'), need('X_validation'), need('y_validation')
+-p = m.predict_proba(Xt)[:, 1]
+-ok = [t for t in _np.arange(0.05, 0.96, 0.01) if _rs(yt, (p >= t).astype(int)) >= 0.95]
+-t = max(ok)
+-assert close(need('thr'), round(t, 2), 0.0051), f'thr = {need("thr")}, а нужно {round(t, 2)}.'
+-assert close(need('precision_at'), round(_ps(yt, (p >= t).astype(int)), 3), 0.0011), f'precision_at = {need("precision_at")}.'
+-assert need('n_flagged') == int((p >= t).sum()), f'n_flagged = {need("n_flagged")}.'
+-assert close(need('precision_05'), round(_ps(yt, (p >= 0.5).astype(int)), 3), 0.0011) and close(need('recall_05'), round(_rs(yt, (p >= 0.5).astype(int)), 3), 0.0011), 'precision_05, recall_05 — при пороге 0.5.'
+-_pt = m.predict_proba(need('X_test'))[:,1]
+-assert close(need('test_recall'),round(_rs(need('y_test'),_pt>=need('thr')),3)), 'test_recall: фактическая полнота на финальном тесте, она может оказаться ниже0.95.'
+-assert need('test_flagged')==int((_pt>=need('thr')).sum()), 'test_flagged: фактическая длина очереди по фиксированному порогу.'
+-
+-```
+-
+-### hint
+-Перебор: для каждого порога `t` из сетки — `recall_score(y_test, (p >= t).astype(int))`. Оставьте пороги с полнотой ≥ 0.95 и возьмите наибольший.
++_source = _pd.read_csv('reviews_text.csv')
++_source_y = (_source.rating<=3).astype(int)
++_dev,_test,_dev_y,_test_y = _tts(_source.text,_source_y,test_size=.25,random_state=42,stratify=_source_y)
++_train,_validation,_train_y,_validation_y = _tts(_dev,_dev_y,test_size=1/3,random_state=42,stratify=_dev_y)
++_ref_model = _mp(_TF(),_LR(max_iter=1000)).fit(_train,_train_y)
++_p = _ref_model.predict_proba(_validation)[:,1]
++_candidates=[t for t in _np.arange(.05,.96,.01) if _rs(_validation_y,_p>=t)>=.95]
++_t = max(_candidates)
++assert close(need('thr'),round(_t,2),.0051), 'Порог выбирается на исходной валидации, а не на финальном тесте.'
++assert close(need('precision_at'),round(_ps(_validation_y,_p>=_t),3),.0011), 'precision_at: точность очереди исходной валидации.'
++assert need('n_flagged')==int((_p>=_t).sum()), 'n_flagged: размер очереди исходной валидации.'
++assert close(need('precision_05'),round(_ps(_validation_y,_p>=.5),3),.0011) and close(need('recall_05'),round(_rs(_validation_y,_p>=.5),3),.0011), 'precision_05/recall_05: исходная валидация при пороге0.5.'
++_test_p = _ref_model.predict_proba(_test)[:,1]
++assert close(need('test_recall'),round(_rs(_test_y,_test_p>=need('thr')),3),.00051), 'test_recall: используйте исходные отзывы и метки финального теста; не подменяйте их валидацией.'
++assert need('test_flagged')==int((_test_p>=need('thr')).sum()), 'test_flagged: очередь исходного финального теста по фиксированному порогу.'
++```
++
++### hint
++Перебор: для каждого порога `t` из сетки — `recall_score(y_validation, (p >= t).astype(int))`. Оставьте пороги с полнотой ≥ 0.95 и возьмите наибольший.
+ 
+ ### hint
+ Чем ниже порог, тем больше отзывов помечено и тем выше полнота. Поэтому «наибольший порог с полнотой ≥ 0.95» даёт максимально короткий список при нужной полноте.
+ 
+ ### hint
+ ```python
+-good = [t for t in np.arange(0.05, 0.96, 0.01) if recall_score(y_test, (p >= t).astype(int)) >= 0.95]
++good = [t for t in np.arange(0.05, 0.96, 0.01) if recall_score(y_validation, (p >= t).astype(int)) >= 0.95]
+ thr = round(max(good), 2)
+ ```
+ 
+@@ -679,6 +692,12 @@
+ rec = _pd.Series({t: (p[d.values == t] == t).mean() for t in d.unique()})
+ assert need('worst_topic') == rec.idxmin(), f'worst_topic = {need("worst_topic")!r}, а нужно {rec.idxmin()!r}.'
+ assert need('cm', _pd.DataFrame).values.sum() == len(d), 'cm — crosstab настоящих тем и прогнозов.'
++import numpy as _np
++_cm = need('cm')
++_expected_cm = _pd.crosstab(d,p)
++assert _cm.index.is_unique and _cm.columns.is_unique, 'Темы в строках и столбцах cm не должны повторяться.'
++assert set(_cm.index)==set(_expected_cm.index) and set(_cm.columns)==set(_expected_cm.columns), 'Строки cm — настоящие темы, столбцы — предсказанные.'
++assert _np.array_equal(_cm.reindex(index=_expected_cm.index,columns=_expected_cm.columns).to_numpy(),_expected_cm.to_numpy()), 'Проверьте число отзывов в каждой ячейке cm по паре настоящая/предсказанная тема.'
+ ```
+ 
+ ### hint
+@@ -744,7 +763,7 @@
+       'chars': _mp(_TF(analyzer='char_wb', ngram_range=(2, 4)), _LR(max_iter=1000)), 'nb': _mp(_CV(), _NB())}
+ w = {k: round(_cvs(m, a, c, cv=5, scoring='f1').mean(), 3) for k, m in ms.items()}
+ got = need('cv_f1', dict)
+-assert all(k in got and close(got[k], v, 0.002) for k, v in w.items()), f'cv_f1 = {got}, а нужно {w}.'
++assert all(k in got and close(got[k], v, 0.00051) for k, v in w.items()), f'cv_f1 = {got}, а нужно {w}.'
+ top = max(w.values()); ok_best = sorted(k for k, v in w.items() if v == top)
+ assert need('best') in ok_best, f'best = {need("best")!r}, а подходит {" или ".join(ok_best)} — у них наибольшее среднее F1 после округления.'
+ ```
+--- a/content/ch13/04-embeddings.md
++++ b/content/ch13/04-embeddings.md
+@@ -587,6 +587,8 @@
+ want = list(r0.loc[order, 'review_id'])
+ assert len(got) == 3 and 'R-40002' not in got, f'neighbours = {got}.'
+ assert set(got) == set(want), f'neighbours = {got}, а нужно {want}.'
++_anchor = _np.linspace(0,len(Z0)-1,64,dtype=int)
++assert _np.allclose(Zs @ Zs[_anchor].T, Z0 @ Z0[_anchor].T, atol=1e-5,rtol=1e-5), 'Строка Zn должна описывать свой отзыв: проверьте порядок текстов и соответствие эмбеддингов. Знаки осей SVD могут различаться.'
+ ```
+ 
+ ### hint
+@@ -657,6 +659,10 @@
+ assert list(need('top_chars')) == wc, f'top_chars не совпадает: {need("top_chars")}.'
+ sw = sum('опоздал' in t.lower() for t in ww) / 5; sc = sum('опоздал' in t.lower() for t in wc) / 5
+ assert close(need('share_late_words'), sw) and close(need('share_late_chars'), sc), f'share_late_words = {need("share_late_words")}, share_late_chars = {need("share_late_chars")}.'
++f = need('search')
++for _vec,_query,_k in [(_TF().fit(r0['text']), 'цены адекватные', 3),(_TF(analyzer='char_wb',ngram_range=(3,4)).fit(r0['text']), 'не советую', 7)]:
++    _matrix = _vec.transform(r0['text'])
++    assert list(f(_vec,_matrix,_query,_k)) == _s(_vec,_query,_k), f'search: пересчитайте запрос {_query!r} и верните {_k} текстов в порядке сходства.'
+ ```
+ 
+ ### hint
+@@ -797,6 +803,8 @@
+ assert list(need('top_courier')) == ctx('курьер', 3), f'top_courier = {need("top_courier")}. Считайте соседей, у которых центральное слово — «курьер».'
+ s = set(ctx('дороговато', 3)) & set(ctx('недорого', 3))
+ assert set(need('shared')) == s, f'shared = {need("shared")}. Пересечение множеств трёх самых частых соседей.'
++for _tokens,_window in [(['кофе','кофе'],1),(['а','б','а','в'],2),([],2),(['кофе'],0)]:
++    assert list(f(_tokens,window=_window)) == _p(_tokens,_window), 'Соседи задаются позициями: два одинаковых слова в разных позициях тоже образуют пары.'
+ ```
+ 
+ ### hint
+--- a/content/ch13/04b-transformers.md
++++ b/content/ch13/04b-transformers.md
+@@ -400,6 +400,8 @@
+ H[attention_mask == 0] = _rng.normal(2.0, 1.0, size=((attention_mask == 0).sum(), 5)).round(2)
+ H_long = np.concatenate([H, _rng.normal(2.0, 1.0, size=(3, 4, 5)).round(2)], axis=1)
+ mask_long = np.concatenate([attention_mask, np.zeros((3, 4), dtype=int)], axis=1)
++_pool_reference_H = H.copy()
++_pool_reference_mask = attention_mask.copy()
+ ```
+ 
+ ### starter
+@@ -419,13 +421,23 @@
+ T = _np.array([[[1.0, 3.0], [3.0, 1.0], [0.5, -2.0], [0.5, -2.0]]]); M = _np.array([[1, 1, 0, 0]])
+ r = _np.asarray(f(T, M))
+ assert r.shape == (1, 2) and _np.allclose(r, [[2.0, 2.0]]), f'mean_pool на примере из урока = {r.tolist()}, а нужно [[2.0, 2.0]]. Форма результата — (тексты, признаки).'
+-ref = (H * attention_mask[:, :, None]).sum(1) / attention_mask.sum(1, keepdims=True)
++_source_H = need("_pool_reference_H").copy()
++_source_mask = need("_pool_reference_mask").copy()
++ref = (_source_H * _source_mask[:, :, None]).sum(1) / _source_mask.sum(1, keepdims=True)
+ assert _np.allclose(need('pooled'), ref), 'pooled не совпадает со средним по настоящим токенам.'
+-assert _np.allclose(need('naive'), H.mean(axis=1)), 'naive — простое среднее по всем 8 позициям: H.mean(axis=1).'
+-nv = H.mean(axis=1)
++assert _np.allclose(need('naive'), _source_H.mean(axis=1)), 'naive — простое среднее по всем 8 позициям: _source_H.mean(axis=1).'
++nv = _source_H.mean(axis=1)
+ c = round(float(ref[2] @ nv[2] / (_np.linalg.norm(ref[2]) * _np.linalg.norm(nv[2]))), 3)
+ assert close(need('cos_short'), c, 0.0015), f'cos_short = {need("cos_short")}, а нужно {c}.'
+ assert need('same') is True or need('same') == True, 'same: mean_pool(H_long, mask_long) должен совпасть с pooled — заполнители не должны влиять.'
++_pool_gold = _np.array([[[2.,4.,6.],[4.,2.,0.],[91.,-53.,22.]],[[3.,6.,9.],[-99.,20.,50.],[40.,80.,70.]]])
++_pool_mask = _np.array([[1,1,0],[1,0,0]])
++_pool_expected = _np.array([[3.,3.,3.],[3.,6.,9.]])
++_pool_result = _np.asarray(f(_pool_gold.copy(),_pool_mask.copy()))
++assert _pool_result.shape==(2,3) and _np.allclose(_pool_result,_pool_expected), 'mean_pool должен учитывать маску и работать с новым числом текстов, токенов и признаков.'
++_pool_extended = _np.concatenate([_pool_gold,_np.full((2,4,3),71.)],axis=1)
++_mask_extended = _np.concatenate([_pool_mask,_np.zeros((2,4),dtype=int)],axis=1)
++assert _np.allclose(f(_pool_extended.copy(),_mask_extended.copy()),_pool_expected), 'Добавление заполнителей не меняет среднее настоящих токенов.'
+ ```
+ 
+ ### hint
+--- a/content/ch13/04c-llm.md
++++ b/content/ch13/04c-llm.md
+@@ -511,10 +511,23 @@
+ 
+ ### check
+ ```python
++import pandas as _pd
+ from sklearn.pipeline import make_pipeline as _mp
+ from sklearn.feature_extraction.text import TfidfVectorizer as _T
+ from sklearn.linear_model import LogisticRegression as _LR
+ r0, c0, ol = need('r'), need('check'), need('ok_llm')
++_original = _pd.read_csv('reviews_text.csv')
++_original_check = _original.sample(200,random_state=5).reset_index(drop=True)
++assert c0.review_id.is_unique and set(c0.review_id)==set(_original_check.review_id), 'Сравнивайте обе модели на тех же 200 review_id.'
++_truth = _original_check.set_index('review_id')
++for _key in ['text','topic']:
++    assert c0[_key].tolist()==_truth.loc[c0.review_id,_key].tolist(), f'{_key}: сохраните принадлежность исходному review_id.'
++_llm_topics = _pd.Series(need('llm_topic'),index=_original_check.review_id)
++_expected_ol = c0.review_id.map(_llm_topics).isin(['кофе','еда','обслуживание','доставка','цена','атмосфера']) & c0.review_id.map(_llm_topics).eq(c0.topic)
++if isinstance(ol,_pd.Series):
++    assert ol.index.is_unique and set(ol.index)==set(c0.index), 'Индикаторы ok_llm должны соответствовать строкам check.'
++    ol=ol.reindex(c0.index)
++assert list(ol)==list(_expected_ol), 'Не переставляйте отдельно ответы LLM: обе системы сравниваются по одним review_id.'
+ rest = r0[~r0['review_id'].isin(c0['review_id'])]
+ okm = _mp(_T(), _LR(max_iter=1000)).fit(rest['text'], rest['topic']).predict(c0['text']) == c0['topic'].values
+ am = round(float(okm.mean()), 3)
+@@ -528,7 +541,6 @@
+ _lower = _diff - 1.96 * _se
+ assert close(need('paired_lower'),round(_lower,3),.00051), 'Числитель парной разницы определяется расхождениями обеих моделей на тех же ID.'
+ assert need('within_margin') == (_lower > -.02), 'Сравните неокруглённую нижнюю границу с −0,02.'
+-
+ ```
+ 
+ ### hint
+--- a/content/ch13/05-project.md
++++ b/content/ch13/05-project.md
+@@ -213,6 +213,9 @@
+ - `rarest` — тему, которой меньше всего в тесте, и `worst` — тему с наименьшим F1;
+ - `count_ratio` — во сколько раз модель недосчитывает редчайшую тему: число отзывов, которые модель **назвала** этой темой, делённое на настоящее число в тесте (3 знака);
+ - `f1_rare_balanced` — F1 редчайшей темы у той же модели с `LogisticRegression(max_iter=1000, class_weight="balanced")` (3 знака).
++
++
++При расчёте F1 передавайте полный список шести тем через `labels=sorted(r["topic"].unique())` и `zero_division=0`. Тема без верных прогнозов получает F1 = 0; в macro-F1 она сохраняет тот же вес, что остальные.
+ 
+ ### starter
+ ```python
+@@ -296,14 +299,14 @@
+ 
+ pred = new_model().fit(X_train, t_train).predict(X_test)
+ labels = sorted(r["topic"].unique())
+-f1_by_topic = {k: round(float(v), 3) for k, v in zip(labels, f1_score(t_test, pred, average=None, labels=labels))}
+-macro_f1 = round(float(f1_score(t_test, pred, average="macro")), 3)
++f1_by_topic = {k: round(float(v), 3) for k, v in zip(labels, f1_score(t_test, pred, average=None, labels=labels, zero_division=0))}
++macro_f1 = round(float(f1_score(t_test, pred, average="macro", labels=labels, zero_division=0)), 3)
+ rarest = t_test.value_counts().idxmin()
+ worst = min(f1_by_topic, key=f1_by_topic.get)
+ count_ratio = round(float((pred == rarest).sum() / (t_test == rarest).sum()), 3)
+ 
+ pred_b = new_model("balanced").fit(X_train, t_train).predict(X_test)
+-f1_rare_balanced = round(float(f1_score(t_test, pred_b, labels=[rarest], average=None)[0]), 3)
++f1_rare_balanced = round(float(f1_score(t_test, pred_b, labels=[rarest], average=None, zero_division=0)[0]), 3)
+ print(f1_by_topic, macro_f1, rarest, worst, count_ratio, f1_rare_balanced)
+ ```
+ 
+@@ -442,6 +445,9 @@
+ 
+ Соберите `weekly`: индекс — понедельник недели, столбцы — точки, значение — доля отзывов с сигналом модели. Выберите точку `focus_shop` и найдите её `jump_week` — неделю наибольшего роста относительно предшествующей. В `sept_max` сохраните максимум недельной доли этой точки до `jump_week` (три знака). Постройте график и посмотрите, сколько отзывов было в неделю скачка и удержался ли уровень позже. Запишите, какую точку и дату возьмёте для разбора тем.
+ 
++
++На графике покажите ту же зависимость: календарные недели и долю сигналов выбранной точки. Можно использовать линию или столбцы. Подписи, если вы их добавляете, должны соответствовать долям и выбранной точке. Порядок строк таблицы произвольный, если значения сохраняют свои даты и точки.
++
+ ### setup
+ ```python
+ import numpy as np
+@@ -471,15 +477,52 @@
+ w = n0.pivot_table(index='week', columns='shop_id', values='neg', aggfunc='mean')
+ got = need('weekly', _pd.DataFrame)
+ assert got.shape == w.shape, f'weekly.shape = {got.shape}, а нужно {w.shape}.'
+-assert ((got[w.columns].values - w.values) ** 2).max() < 1e-12, 'Доли по неделям не совпадают.'
++assert got.index.is_unique and got.columns.is_unique and set(got.index)==set(w.index) and set(got.columns)==set(w.columns), 'weekly: сохраните уникальные даты недель и точки.'
++assert ((got.reindex(index=w.index,columns=w.columns).values-w.values)**2).max()<1e-12, 'Доли должны соответствовать своей неделе и точке.' 
+ _shop=need('focus_shop')
+ assert _shop in w.columns, 'Выберите точку из weekly.'
+ jw = w[_shop].diff().idxmax()
+ assert _pd.Timestamp(need('jump_week')) == jw, f'jump_week = {need("jump_week")}, а нужно {jw.date()}.'
+ sm = round(float(w.loc[w.index < jw, _shop].max()), 3)
+ assert close(need('sept_max'), sm, 0.0015), f'sept_max = {need("sept_max")}, а нужно {sm}.'
+-assert got.index.equals(w.index), 'Недельные даты weekly должны соответствовать реальным датам отзывов, не только числам в ячейках.'
+-
++
++import numpy as _np
++import matplotlib.dates as _md
++from matplotlib.container import BarContainer as _BarContainer
++_expected_dates = list(w.index)
++_expected_values = w[_shop].to_numpy()
++def _calendar_values(x):
++    values=list(x)
++    if not values: return None
++    candidates=[]
++    try: candidates.append([_pd.Timestamp(v.end_time).normalize() if isinstance(v,_pd.Period) else _pd.Timestamp(v).normalize() for v in values])
++    except (ValueError,TypeError,OverflowError): pass
++    try: candidates.append([_pd.Timestamp(_md.num2date(float(v))).tz_localize(None).normalize() for v in values])
++    except (ValueError,TypeError,OverflowError): pass
++    for dates in candidates:
++        if len(dates)==len(_expected_dates) and set(dates)==set(_expected_dates): return dates
++    return None
++def _matches_plot(x,y):
++    dates=_calendar_values(x)
++    if dates is None: return False
++    try:
++        values=_pd.Series(_np.asarray(y,dtype=float),index=dates).reindex(w.index).to_numpy()
++        return _np.allclose(values,_expected_values,atol=1e-6,rtol=0)
++    except (ValueError,TypeError): return False
++_plot_ok=False
++for _fig in figs:
++    for _ax in _fig.axes:
++        _labels=' '.join([_ax.get_title(),*[_t.get_text() for _t in (_ax.get_legend().texts if _ax.get_legend() else [])]])
++        _units=_ax.get_ylabel().lower()
++        _mentioned_shops={str(_key) for _key in w.columns if str(_key) in _labels}
++        if _mentioned_shops and _shop not in _mentioned_shops: continue
++        if _units and not any(_unit in _units for _unit in ['дол','share','fraction']): continue
++        for _line in _ax.lines:
++            if _matches_plot(_line.get_xdata(orig=True),_line.get_ydata()): _plot_ok=True
++        for _container in _ax.containers:
++            if isinstance(_container,_BarContainer):
++                if _matches_plot([b.get_x()+b.get_width()/2 for b in _container.patches],[b.get_height() for b in _container.patches]): _plot_ok=True
++assert _plot_ok, 'Покажите недельные доли выбранной точки по реальным датам; подписи, если они есть, должны сохранять долю и выбранную точку. Подойдёт линия или столбцы.'
+ ```
+ 
+ ### hint
+@@ -502,7 +545,7 @@
+ print(jump_week.date(), sept_max)
+ ax = weekly.plot(figsize=(9, 4), color="lightgray", legend=False)
+ weekly[focus_shop].plot(ax=ax, color="crimson", lw=3, label=focus_shop)
+-ax.set_ylabel("доля недовольных"); ax.legend()
++ax.set_ylabel("доля сигналов модели"); ax.legend()
+ ```
+ 
+ ### explain
+@@ -655,19 +698,47 @@
+ assert close(need('tpr'), t0, 0.002), f'tpr = {need("tpr")}, а нужно {t0:.3f}.'
+ assert close(need('fpr'), f0, 0.002), f'fpr = {need("fpr")}, а нужно {f0:.3f}.'
+ n0 = need('n', _pd.DataFrame)
++_source_n = _pd.read_csv('reviews_new.csv',parse_dates=['date'])
++assert n0.review_id.is_unique and set(n0.review_id)==set(_source_n.review_id), 'n должна содержать все исходные review_id без пропусков и дублей.'
++_aligned_n=n0.set_index('review_id').reindex(_source_n.review_id)
++for _key in ['shop_id','date','text']:
++    assert _aligned_n[_key].tolist()==_source_n[_key].tolist(), f'n/{_key}: сохраните исходное значение по review_id.'
++_expected_period = __import__('numpy').where(_source_n.date>='2026-10-05','после','до')
++assert _aligned_n.period.tolist()==list(_expected_period), 'В готовой n граница — 5 октября включительно.'
+ obs = n0[n0['shop_id'] == 'KZN-2'].groupby('period')['neg'].mean()
+ w = {k: round((obs[k] - f0) / (t0 - f0), 3) for k in ['до', 'после']}
+ got = need('adj', dict)
+ assert all(close(got[k], w[k], 0.003) for k in w), f'adj = {got}, а нужно {w}.'
+-_gold=_pd.read_csv('reviews_new_gold.csv')
++_gold=_pd.read_csv('reviews_new_gold.csv').copy(deep=True)
+ _labeled=n0.merge(_gold[['review_id','complaint']],on='review_id',validate='one_to_one')
+ _audit=need('audit',_pd.DataFrame)
++assert _audit.index.is_unique and set(_audit.index)=={'до','после'}, 'audit: ровно два уникальных периода — до и после.'
++assert _audit.columns.is_unique and {'n','complaints','tpr','fpr','observed','manual','adjusted'} <= set(_audit.columns), 'audit: сохраните семь обязательных показателей из условия без дублей; дополнительные диагностические колонки допустимы.'
++_expected_audit={}
+ for _period,_part in _labeled[_labeled.shop_id=='KZN-2'].groupby('period'):
+     _target=_part.complaint; _tp=float(_part.loc[_target==1,'neg'].mean()); _fp=float(_part.loc[_target==0,'neg'].mean());_obs=float(_part.neg.mean())
+     _want=dict(n=len(_part),complaints=int(_target.sum()),tpr=_tp,fpr=_fp,observed=_obs,manual=float(_target.mean()),adjusted=(_obs-_fp)/(_tp-_fp))
++    _expected_audit[_period] = _want.copy()
+     for _key,_value in _want.items():
+         assert close(_audit.loc[_period,_key],_value), f'audit {_period}/{_key}: разметка нового потока и исходные знаменатели, не частоты старых звёзд.'
+-
++# Source copies prevent aliasing with learner variables while reordering input only in memory.
++_join_input = n0.copy(deep=True)
++_join_gold = _gold.copy(deep=True)
++_read_csv_original = _pd.read_csv
++def _reordered_gold_reader(filename,*args,**kwargs):
++    if str(filename).replace('\\','/').rsplit('/',1)[-1]=='reviews_new_gold.csv':
++        return _join_gold.sample(frac=1,random_state=29).reset_index(drop=True).copy(deep=True)
++    return _read_csv_original(filename,*args,**kwargs)
++try:
++    _pd.read_csv = _reordered_gold_reader
++    _rerun = rerun_with(n=_join_input.copy(deep=True),sent=need('sent'))
++finally:
++    _pd.read_csv = _read_csv_original
++_rerun_audit=_rerun.get('audit')
++assert isinstance(_rerun_audit,_pd.DataFrame) and _rerun_audit.index.is_unique and set(_rerun_audit.index)=={'до','после'}, 'На переставленных строках разметки audit сохраняет оба периода.'
++for _period,_values in _expected_audit.items():
++    for _key,_value in _values.items():
++        assert close(_rerun_audit.loc[_period,_key],_value), 'Соединяйте разметку по review_id: порядок строк gold не должен менять audit.'
+ ```
+ 
+ ### hint

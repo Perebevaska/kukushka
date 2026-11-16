@@ -1,0 +1,99 @@
+--- a/site/assets/harness.py
++++ b/site/assets/harness.py
+@@ -72,7 +72,12 @@
+     messages = ([{'role': 'system', 'content': system}] if system else []) + [{'role': 'user', 'content': prompt}]
+     data = _request('POST', '/chat/completions', {'model': model, 'messages': messages,
+                                                   'temperature': temperature, 'max_tokens': max_tokens})
+-    text = data['choices'][0]['message'].get('content') or ''
++    choices = data.get('choices') or []
++    if not choices or choices[0].get('finish_reason') != 'stop':
++        return ''
++    text = choices[0].get('message', {}).get('content')
++    if not isinstance(text, str):
++        return ''
+     return _re.sub(r'<think>.*?</think>', '', text, flags=_re.S).strip()
+ """
+ 
+--- a/content/ch13/04c-llm.md
++++ b/content/ch13/04c-llm.md
+@@ -36,9 +36,10 @@
+     )
+     if msg.stop_reason != "end_turn":     # обрезан по max_tokens, отказ и т. п. — в кучку «не удалось»
+         return None
+-    return next((b.text for b in msg.content if b.type == "text" and b.text.strip()), None)   # строка — её ещё надо разобрать
+-
+-print(label("Курьер опоздал на сорок минут, кофе остыл."))
++    return next((b.text for b in msg.content if b.type == "text" and isinstance(b.text, str) and b.text.strip()), None)
++
++answer = label("Курьер опоздал на сорок минут, кофе остыл.")
++print(answer if answer is not None else "Нет завершённого текста. Отметьте этот отзыв как неразобранный.")
+ ```
+ 
+ **Что здесь происходит:**
+@@ -158,7 +159,8 @@
+         ans = json.loads(raw[raw.index("{"): raw.rindex("}") + 1])   # вырезаем JSON, даже если модель что-то добавила
+     except ValueError:
+         ans = None
+-    ok = isinstance(ans, dict) and ans.get("topic") in TOPICS and ans.get("sentiment") in ("positive", "negative")
++    ok = (isinstance(ans, dict) and isinstance(ans.get("topic"), str)
++          and ans["topic"] in TOPICS and ans.get("sentiment") in ("positive", "negative"))
+     print("✓" if ok else "✗", text[:45], "→", ans if ok else raw[:60])
+ ```
+ 
+@@ -166,7 +168,7 @@
+ 
+ - `local_llm.ask(PROMPT + text, max_tokens=60)` — запрос к модели в LM Studio; `temperature=0` стоит по умолчанию, рассуждения вида `<think>…</think>` (их пишут некоторые модели) модуль вырезает.
+ - `raw[raw.index("{"): raw.rindex("}") + 1]` — берём кусок от первой `{` до последней `}`: маленькие модели любят добавить «Вот ответ:». Если скобок нет, `index` бросит `ValueError`, и ответ попадёт в «не разобрался».
+-- `ok` — проверка по закрытому списку: тема из шести и тональность из двух. Ответы с `✗` — та самая кучка «не удалось», которую считают отдельно.
++- `ok` — проверка по закрытому списку: тема из шести и тональность из двух. При пустом списке вариантов, усечённой генерации или отсутствии текста `ask` возвращает пустую строку. В этой строке сохраняем `✗` и переходим к следующему отзыву.
+ 
+ В своём Jupyter то же самое делают клиентом `openai`: LM Studio принимает запросы в формате OpenAI, меняется только адрес.
+ 
+@@ -174,7 +176,7 @@
+ # uv add openai
+ from openai import OpenAI
+ 
+-client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")   # ключ не проверяется, но параметр обязателен
++client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")   # для локального сервера без аутентификации; при включённой защите нужен его токен
+ resp = client.chat.completions.create(
+     model="имя-модели-из-LM-Studio",          # как в списке local_llm.models() или на вкладке Developer
+     temperature=0, max_tokens=60,
+@@ -182,7 +184,10 @@
+ )
+ choice = resp.choices[0] if resp.choices else None
+ answer = choice.message.content if choice and choice.finish_reason == "stop" else None
+-print(answer if answer and answer.strip() else "Ответ не получен, требуется повторная проверка.")
++if isinstance(answer, str) and answer.strip():
++    print(answer)                         # дальше проверяем JSON и обе метки
++else:
++    print("Нет завершённого текста. Отметьте этот отзыв как неразобранный.")
+ ```
+ 
+ ::: warn Типичные ошибки
+@@ -235,7 +240,7 @@
+ 
+ ## task: parse-llm | Разбор ответов LLM | plus
+ 
+-В `raw` — восемь ответов языковой модели на промпт из урока. Разберите их в DataFrame `parsed` с колонками `sentiment`, `topic`, `ok` (по строке на ответ, в том же порядке). Правила: из ответа берётся текст от первой `{` до последней `}` и разбирается `json.loads`; ответ годен (`ok=True`), только если JSON разобрался, `sentiment` — из `positive`/`negative`, а `topic` — из шести тем. У негодных ответов `sentiment` и `topic` — `None` (в напечатанной таблице pandas покажет их как `NaN` — это нормально: `isna()` находит оба). Ваша функция `parse(answer)` должна обработать и новый отзыв. Для одного ответа верните три поля `sentiment`, `topic`, `ok` как словарь либо как значения в этом порядке. Пустой ответ считается негодным. Сохраните также `n_bad` — число негодных.
++В `raw` — восемь ответов языковой модели на промпт из урока. Разберите их в DataFrame `parsed` с колонками `sentiment`, `topic`, `ok` (по строке на ответ, в том же порядке). Правила: из ответа берётся текст от первой `{` до последней `}` и разбирается `json.loads`; ответ годен (`ok=True`), только если JSON разобрался, `sentiment` — из `positive`/`negative`, а `topic` — из шести тем. У негодных ответов `sentiment` и `topic` — `None` (в напечатанной таблице pandas покажет их как `NaN` — это нормально: `isna()` находит оба). Ваша функция `parse(answer)` должна обработать и новый отзыв. Для одного ответа верните три поля `sentiment`, `topic`, `ok` как словарь либо как значения в этом порядке. Пустая строка или отсутствие текста (`None` из облачного примера) считаются негодным ответом. Сохраните также `n_bad` — число негодных.
+ 
+ ### setup
+ ```python
+@@ -276,7 +281,7 @@
+ assert p.loc[[3, 4, 5, 7], ['sentiment', 'topic']].isna().all().all(), 'У негодных ответов sentiment и topic должны быть None.'
+ _parse = need('parse')
+ import json as _json
+-_cases = [('', (None, None, False)), ('{"sentiment":"positive","topic":"парковка"}', (None, None, False)), ('{"sentiment":"neutral","topic":"кофе"}', (None, None, False))]
++_cases = [(None, (None, None, False)), ('', (None, None, False)), ('{"topic":["еда"],"sentiment":"positive"}', (None, None, False)), ('{"sentiment":"positive","topic":"парковка"}', (None, None, False)), ('{"sentiment":"neutral","topic":"кофе"}', (None, None, False))]
+ for _topic in ['кофе', 'еда', 'обслуживание', 'доставка', 'цена', 'атмосфера']:
+     for _sentiment in ['positive', 'negative']:
+         _cases.append((_json.dumps(dict(topic=_topic, sentiment=_sentiment), ensure_ascii=False), (_sentiment, _topic, True)))
+@@ -303,6 +308,8 @@
+ 
+ def parse(answer):
+     bad = {"sentiment": None, "topic": None, "ok": False}
++    if not isinstance(answer, str):
++        return bad
+     i, j = answer.find("{"), answer.rfind("}")
+     if i == -1 or j < i:
+         return bad

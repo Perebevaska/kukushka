@@ -1,0 +1,49 @@
+--- a/content/ch13/05-project.md
++++ b/content/ch13/05-project.md
+@@ -491,7 +491,7 @@
+ from matplotlib.container import BarContainer as _BarContainer
+ _expected_dates = list(w.index)
+ _expected_values = w[_shop].to_numpy()
+-def _calendar_values(x):
++def _calendar_values(x, complete=True):
+     values=list(x)
+     if not values: return None
+     candidates=[]
+@@ -500,14 +500,16 @@
+     try: candidates.append([_pd.Timestamp(_md.num2date(float(v))).tz_localize(None).normalize() for v in values])
+     except (ValueError,TypeError,OverflowError): pass
+     for dates in candidates:
+-        if len(dates)==len(_expected_dates) and set(dates)==set(_expected_dates): return dates
++        if complete and len(dates)==len(_expected_dates) and set(dates)==set(_expected_dates): return dates
++        if not complete and all(date in _expected_dates for date in dates): return dates
+     return None
+-def _matches_plot(x,y):
+-    dates=_calendar_values(x)
++def _matches_plot(x,y,shop=_shop,complete=True):
++    dates=_calendar_values(x,complete=complete)
+     if dates is None: return False
+     try:
+-        values=_pd.Series(_np.asarray(y,dtype=float),index=dates).reindex(w.index).to_numpy()
+-        return _np.allclose(values,_expected_values,atol=1e-6,rtol=0)
++        values=_np.asarray(y,dtype=float)
++        expected=w.loc[dates,shop].to_numpy()
++        return values.shape==expected.shape and _np.allclose(values,expected,atol=1e-6,rtol=0)
+     except (ValueError,TypeError): return False
+ _plot_ok=False
+ for _fig in figs:
+@@ -518,9 +520,15 @@
+         if _mentioned_shops and _shop not in _mentioned_shops: continue
+         if _units and not any(_unit in _units for _unit in ['дол','share','fraction']): continue
+         for _line in _ax.lines:
++            _named_shop=_line.get_label()
++            if _named_shop in w.columns:
++                assert _matches_plot(_line.get_xdata(orig=True),_line.get_ydata(),shop=_named_shop,complete=False), 'Каждая серия с названием точки должна показывать её действительные доли по датам, включая выделенную линию.'
+             if _matches_plot(_line.get_xdata(orig=True),_line.get_ydata()): _plot_ok=True
+         for _container in _ax.containers:
+             if isinstance(_container,_BarContainer):
++                _named_shop=_container.get_label()
++                if _named_shop in w.columns:
++                    assert _matches_plot([b.get_x()+b.get_width()/2 for b in _container.patches],[b.get_height() for b in _container.patches],shop=_named_shop,complete=False), 'Каждая серия столбцов с названием точки должна показывать её действительные доли по датам.'
+                 if _matches_plot([b.get_x()+b.get_width()/2 for b in _container.patches],[b.get_height() for b in _container.patches]): _plot_ok=True
+ assert _plot_ok, 'Покажите недельные доли выбранной точки по реальным датам; подписи, если они есть, должны сохранять долю и выбранную точку. Подойдёт линия или столбцы.'
+ ```

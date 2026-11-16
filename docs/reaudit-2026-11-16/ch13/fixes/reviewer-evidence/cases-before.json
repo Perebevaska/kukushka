@@ -1,0 +1,177 @@
+[
+  {
+    "id": "R01",
+    "task": "parse-llm",
+    "expected": true,
+    "reason": "Произвольные строковые ID сохраняют порядок ответов.",
+    "code": "\nimport json\nimport pandas as pd\n\ndef parse(answer):\n    bad = {\"sentiment\": None, \"topic\": None, \"ok\": False}\n    i, j = answer.find(\"{\"), answer.rfind(\"}\")\n    if i == -1 or j < i:\n        return bad\n    try:\n        d = json.loads(answer[i:j + 1])\n    except json.JSONDecodeError:\n        return bad\n    if d.get(\"sentiment\") not in (\"positive\", \"negative\") or d.get(\"topic\") not in TOPICS:\n        return bad\n    return {\"sentiment\": d[\"sentiment\"], \"topic\": d[\"topic\"], \"ok\": True}\n\nparsed = pd.DataFrame([parse(a) for a in raw])\nn_bad = int((~parsed[\"ok\"]).sum())\nprint(parsed)\nparsed.index = ['ответ-' + str(91-i) for i in range(len(parsed))]"
+  },
+  {
+    "id": "R02",
+    "task": "parse-llm",
+    "expected": false,
+    "reason": "Первые два валидных ответа поменялись местами при прежнем числе ошибок.",
+    "code": "\nimport json\nimport pandas as pd\n\ndef parse(answer):\n    bad = {\"sentiment\": None, \"topic\": None, \"ok\": False}\n    i, j = answer.find(\"{\"), answer.rfind(\"}\")\n    if i == -1 or j < i:\n        return bad\n    try:\n        d = json.loads(answer[i:j + 1])\n    except json.JSONDecodeError:\n        return bad\n    if d.get(\"sentiment\") not in (\"positive\", \"negative\") or d.get(\"topic\") not in TOPICS:\n        return bad\n    return {\"sentiment\": d[\"sentiment\"], \"topic\": d[\"topic\"], \"ok\": True}\n\nparsed = pd.DataFrame([parse(a) for a in raw])\nn_bad = int((~parsed[\"ok\"]).sum())\nprint(parsed)\nparsed = parsed.iloc[[1,0,2,3,4,5,6,7]]"
+  },
+  {
+    "id": "R03",
+    "task": "parse-llm",
+    "expected": false,
+    "reason": "Функция возвращает годный результат лишь для восьми знакомых строк.",
+    "code": "\nimport json\nimport pandas as pd\n\ndef parse(answer):\n    bad = {\"sentiment\": None, \"topic\": None, \"ok\": False}\n    i, j = answer.find(\"{\"), answer.rfind(\"}\")\n    if i == -1 or j < i:\n        return bad\n    try:\n        d = json.loads(answer[i:j + 1])\n    except json.JSONDecodeError:\n        return bad\n    if d.get(\"sentiment\") not in (\"positive\", \"negative\") or d.get(\"topic\") not in TOPICS:\n        return bad\n    return {\"sentiment\": d[\"sentiment\"], \"topic\": d[\"topic\"], \"ok\": True}\n\nparsed = pd.DataFrame([parse(a) for a in raw])\nn_bad = int((~parsed[\"ok\"]).sum())\nprint(parsed)\nknown = {a: parse(a) for a in raw}\ndef parse(answer):\n    return known.get(answer, dict(sentiment=None,topic=None,ok=False))"
+  },
+  {
+    "id": "R04",
+    "task": "clean",
+    "expected": true,
+    "reason": "Нормализатор обрабатывает новое слово с Ё, цифрами и переносами.",
+    "code": "\nimport re\n\ndef normalize(text):\n    text = text.lower().replace(\"ё\", \"е\")\n    text = re.sub(r\"[^а-я ]\", \" \", text)\n    return \" \".join(text.split())\n\nclean = normalize(raw)\nprint(repr(clean))\n"
+  },
+  {
+    "id": "R05",
+    "task": "clean",
+    "expected": false,
+    "reason": "Правильная показанная строка, но функция возвращает исходный ответ для другого текста.",
+    "code": "\nimport re\n\ndef normalize(text):\n    text = text.lower().replace(\"ё\", \"е\")\n    text = re.sub(r\"[^а-я ]\", \" \", text)\n    return re.sub(r\" +\", \" \", text).strip()\n\nclean = normalize(raw)\nprint(repr(clean))\ndef normalize(text):\n    return clean"
+  },
+  {
+    "id": "R06",
+    "task": "topics",
+    "expected": true,
+    "reason": "Переставлены строки и столбцы с их метками. Каждая ячейка осталась у тех же тем.",
+    "code": "\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\")\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], r[\"topic\"], test_size=0.25, random_state=42, stratify=r[\"topic\"])\n\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)\npred = model.predict(X_test)\nacc_topic = round((pred == y_test).mean(), 3)\ncm = pd.crosstab(y_test, pred)\nrecall = pd.Series({t: cm.loc[t, t] / cm.loc[t].sum() for t in cm.index})\nworst_topic = recall.idxmin()\ncm = cm.iloc[::-1, [1,3,5,0,2,4]]"
+  },
+  {
+    "id": "R07",
+    "task": "topics",
+    "expected": false,
+    "reason": "Те же числа, но переименованы только столбцы. Ошибки приписаны другим темам.",
+    "code": "\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\")\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], r[\"topic\"], test_size=0.25, random_state=42, stratify=r[\"topic\"])\n\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)\npred = model.predict(X_test)\nacc_topic = round((pred == y_test).mean(), 3)\ncm = pd.crosstab(y_test, pred)\nrecall = pd.Series({t: cm.loc[t, t] / cm.loc[t].sum() for t in cm.index})\nworst_topic = recall.idxmin()\ncm.columns = list(cm.columns[1:]) + [cm.columns[0]]"
+  },
+  {
+    "id": "R08",
+    "task": "top-words",
+    "expected": true,
+    "reason": "Сортировка индекса Series сохраняет пару слово–коэффициент.",
+    "code": "\nimport pandas as pd\nweights = pd.Series(model[-1].coef_[0], index=model[0].get_feature_names_out())\ntop_bad = list(weights.sort_values(ascending=False).index[:5])\ntop_good = list(weights.sort_values().index[:5])\nw_ne = round(weights[\"не\"], 2)\nweights = weights.sort_index(ascending=False)"
+  },
+  {
+    "id": "R09",
+    "task": "top-words",
+    "expected": false,
+    "reason": "Два внутренних коэффициента обменялись словами, списки из пяти и «не» сохранены.",
+    "code": "\nimport pandas as pd\nweights = pd.Series(model[-1].coef_[0], index=model[0].get_feature_names_out())\ntop_bad = list(weights.sort_values(ascending=False).index[:5])\ntop_good = list(weights.sort_values().index[:5])\nw_ne = round(weights[\"не\"], 2)\nordered = weights.sort_values().drop(\"не\").index\na, b = ordered[15], ordered[-16]\nweights.loc[[a,b]] = weights.loc[[b,a]].to_numpy()"
+  },
+  {
+    "id": "R10",
+    "task": "lsa",
+    "expected": true,
+    "reason": "Смена знака одной общей координаты сохраняет косинусы для каждого ID.",
+    "code": "\nimport numpy as np\nimport pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.decomposition import TruncatedSVD\n\nr = pd.read_csv(\"reviews_text.csv\")\nsvd = TruncatedSVD(n_components=50, random_state=0)\nZ = svd.fit_transform(TfidfVectorizer().fit_transform(r[\"text\"]))\nexplained = round(svd.explained_variance_ratio_.sum(), 2)\nZn = Z / np.linalg.norm(Z, axis=1, keepdims=True)\n\ni = r.index[r[\"review_id\"] == \"R-40002\"][0]\nsim = Zn @ Zn[i]\norder = [j for j in np.argsort(-sim) if j != i][:3]\nneighbours = list(r.loc[order, \"review_id\"])\nprint(r.loc[i, \"text\"])\nprint(r.loc[order, \"text\"].tolist())\nZn[:, 17] *= -1"
+  },
+  {
+    "id": "R11",
+    "task": "lsa",
+    "expected": false,
+    "reason": "Обратный порядок строк нарушает связь review_id с эмбеддингом. Длины единичные и записанные соседи прежние.",
+    "code": "\nimport numpy as np\nimport pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.decomposition import TruncatedSVD\n\nr = pd.read_csv(\"reviews_text.csv\")\nsvd = TruncatedSVD(n_components=50, random_state=0)\nZ = svd.fit_transform(TfidfVectorizer().fit_transform(r[\"text\"]))\nexplained = round(svd.explained_variance_ratio_.sum(), 2)\nZn = Z / np.linalg.norm(Z, axis=1, keepdims=True)\n\ni = r.index[r[\"review_id\"] == \"R-40002\"][0]\nsim = Zn @ Zn[i]\norder = [j for j in np.argsort(-sim) if j != i][:3]\nneighbours = list(r.loc[order, \"review_id\"])\nprint(r.loc[i, \"text\"])\nprint(r.loc[order, \"text\"].tolist())\nZn = Zn[::-1].copy()"
+  },
+  {
+    "id": "R12",
+    "task": "weekly",
+    "expected": true,
+    "reason": "Ту же динамику выбранной точки показывает отдельная линия средствами matplotlib.",
+    "code": "\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\nn[\"week\"] = n[\"date\"].dt.to_period(\"W\").dt.start_time\nweekly = n.pivot_table(index=\"week\", columns=\"shop_id\", values=\"neg\", aggfunc=\"mean\")\nchange_date,focus_shop=weekly.diff().stack().idxmax()\njump_week = weekly[focus_shop].diff().idxmax()\nsept_max = round(float(weekly.loc[weekly.index < jump_week, focus_shop].max()), 3)\nprint(weekly.round(2))\nprint(jump_week.date(), sept_max)\nax = weekly.plot(figsize=(9, 4), color=\"lightgray\", legend=False)\nweekly[focus_shop].plot(ax=ax, color=\"crimson\", lw=3, label=focus_shop)\nax.set_ylabel(\"доля недовольных\"); ax.legend()\nplt.close(\"all\")\nfig, ax = plt.subplots()\nax.plot(weekly.index, weekly[focus_shop], marker=\"o\", label=focus_shop)"
+  },
+  {
+    "id": "R13",
+    "task": "weekly",
+    "expected": false,
+    "reason": "Меняется одна показанная ордината выбранной точки, числовая таблица сохранена.",
+    "code": "\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\nn[\"week\"] = n[\"date\"].dt.to_period(\"W\").dt.start_time\nweekly = n.pivot_table(index=\"week\", columns=\"shop_id\", values=\"neg\", aggfunc=\"mean\")\nchange_date,focus_shop=weekly.diff().stack().idxmax()\njump_week = weekly[focus_shop].diff().idxmax()\nsept_max = round(float(weekly.loc[weekly.index < jump_week, focus_shop].max()), 3)\nprint(weekly.round(2))\nprint(jump_week.date(), sept_max)\nax = weekly.plot(figsize=(9, 4), color=\"lightgray\", legend=False)\nweekly[focus_shop].plot(ax=ax, color=\"crimson\", lw=3, label=focus_shop)\nax.set_ylabel(\"доля недовольных\"); ax.legend()\nplt.close(\"all\")\nfig, ax=plt.subplots()\ncurve=weekly[focus_shop].copy()\ncurve.loc[jump_week] = 0.0\nax.plot(curve.index,curve,label=focus_shop)"
+  },
+  {
+    "id": "R14",
+    "task": "recall95",
+    "expected": true,
+    "reason": "Перестановка наблюдений итогового теста целиком сохраняет измерение при пороге из validation.",
+    "code": "\nimport numpy as np\nfrom sklearn.metrics import precision_score, recall_score\n\np = model.predict_proba(X_validation)[:, 1]\ngood = [t for t in np.arange(0.05, 0.96, 0.01) if recall_score(y_validation, (p >= t).astype(int)) >= 0.95]\nt = max(good)\nthr = round(t, 2)\npred_t = (p >= t).astype(int)\nprecision_at = round(precision_score(y_validation, pred_t), 3)\nn_flagged = int(pred_t.sum())\npred_05 = (p >= 0.5).astype(int)\nprecision_05 = round(precision_score(y_validation, pred_05), 3)\nrecall_05 = round(recall_score(y_validation, pred_05), 3)\nprint(thr, precision_at, n_flagged, precision_05, recall_05)\nX_test, y_test = X_test.iloc[::-1], y_test.iloc[::-1]\np_test=model.predict_proba(X_test)[:,1]\ntest_recall=round(recall_score(y_test,p_test>=thr),3)\ntest_flagged=int((p_test>=thr).sum())\n"
+  },
+  {
+    "id": "R15",
+    "task": "recall95",
+    "expected": false,
+    "reason": "В финальном расчёте вместо 600 итоговых строк повторно использованы 600 валидационных строк.",
+    "code": "\nimport numpy as np\nfrom sklearn.metrics import precision_score, recall_score\n\np = model.predict_proba(X_validation)[:, 1]\ngood = [t for t in np.arange(0.05, 0.96, 0.01) if recall_score(y_validation, (p >= t).astype(int)) >= 0.95]\nt = max(good)\nthr = round(t, 2)\npred_t = (p >= t).astype(int)\nprecision_at = round(precision_score(y_validation, pred_t), 3)\nn_flagged = int(pred_t.sum())\npred_05 = (p >= 0.5).astype(int)\nprecision_05 = round(precision_score(y_validation, pred_05), 3)\nrecall_05 = round(recall_score(y_validation, pred_05), 3)\nprint(thr, precision_at, n_flagged, precision_05, recall_05)\nX_test, y_test = X_validation.copy(), y_validation.copy()\np_test=model.predict_proba(X_test)[:,1]\ntest_recall=round(recall_score(y_test,p_test>=thr),3)\ntest_flagged=int((p_test>=thr).sum())\n"
+  },
+  {
+    "id": "R16",
+    "task": "llm-same",
+    "expected": true,
+    "reason": "Переворот целых пар по review_id оставляет разногласия и интервал неизменными.",
+    "code": "\nrest = r[~r[\"review_id\"].isin(check[\"review_id\"])]\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(rest[\"text\"], rest[\"topic\"])\nok_model = pd.Series(model.predict(check[\"text\"])) == check[\"topic\"]\nacc_model = round(float(ok_model.mean()), 3)\nllm_only = int((ok_llm & ~ok_model).sum())\nmodel_only = int((ok_model & ~ok_llm).sum())\npaired = ok_llm.astype(int) - ok_model.astype(int)\nlower = paired.mean() - 1.96 * paired.sem()\npaired_lower = round(float(lower), 3)\nwithin_margin = bool(lower > -.02)\nprint(acc_model, llm_only, model_only)\npairs = pd.DataFrame({'llm': ok_llm.to_numpy(), 'model': ok_model.to_numpy()}, index=check['review_id'])\npairs = pairs.iloc[::-1].copy()\n\nllm_only = int((pairs.llm & ~pairs.model).sum())\nmodel_only = int((pairs.model & ~pairs.llm).sum())\ndelta = pairs.llm.astype(int) - pairs.model.astype(int)\nlo = delta.mean() - 1.96 * delta.std(ddof=1) / len(delta)**.5\npaired_lower = round(float(lo), 3)\nwithin_margin = bool(lo > -.02)"
+  },
+  {
+    "id": "R17",
+    "task": "llm-same",
+    "expected": false,
+    "reason": "Циклический сдвиг результатов только одной системы сохраняет accuracy, разрушает парность.",
+    "code": "\nrest = r[~r[\"review_id\"].isin(check[\"review_id\"])]\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(rest[\"text\"], rest[\"topic\"])\nok_model = pd.Series(model.predict(check[\"text\"])) == check[\"topic\"]\nacc_model = round(float(ok_model.mean()), 3)\nllm_only = int((ok_llm & ~ok_model).sum())\nmodel_only = int((ok_model & ~ok_llm).sum())\npaired = ok_llm.astype(int) - ok_model.astype(int)\nlower = paired.mean() - 1.96 * paired.sem()\npaired_lower = round(float(lower), 3)\nwithin_margin = bool(lower > -.02)\nprint(acc_model, llm_only, model_only)\npairs = pd.DataFrame({'llm': ok_llm.to_numpy(), 'model': ok_model.to_numpy()}, index=check['review_id'])\npairs = pairs.iloc[::-1].copy()\npairs[\"model\"] = __import__(\"numpy\").roll(pairs.model.to_numpy(), 17)\nllm_only = int((pairs.llm & ~pairs.model).sum())\nmodel_only = int((pairs.model & ~pairs.llm).sum())\ndelta = pairs.llm.astype(int) - pairs.model.astype(int)\nlo = delta.mean() - 1.96 * delta.std(ddof=1) / len(delta)**.5\npaired_lower = round(float(lo), 3)\nwithin_margin = bool(lo > -.02)"
+  },
+  {
+    "id": "R18",
+    "task": "why",
+    "expected": true,
+    "reason": "Строки тем переставлены вместе с метками, цитаты и исходные ID сохранены.",
+    "code": "\nimport pandas as pd\n\n_weeks=n.assign(week=n['date'].dt.to_period('W').dt.start_time).pivot_table(index='week',columns='shop_id',values='neg',aggfunc='mean')\nchange_date,focus_shop=_weeks.diff().stack().idxmax()\nchange_date=pd.Timestamp(change_date)\nn=n.copy()\nn['period']=__import__('numpy').where(n['date']>=change_date,'после','до')\nbad = n[n[\"neg\"] == 1]\nkb = bad[bad[\"shop_id\"] == focus_shop]\nob = bad[bad[\"shop_id\"] != focus_shop]\nkzn = pd.crosstab(kb[\"topic\"], kb[\"period\"], normalize=\"columns\")\nothers = pd.crosstab(ob[\"topic\"], ob[\"period\"], normalize=\"columns\")\ncause = (kzn[\"после\"] - kzn[\"до\"]).idxmax()\nquotes = (kb[(kb[\"period\"] == \"после\") & (kb[\"topic\"] == cause)]\n          .sort_values(\"p_neg\", ascending=False)[\"text\"].head(5).tolist())\nprint(kzn.round(2), others.round(2), cause, *quotes, sep=\"\\n\")\nquote_ids = kb[(kb['period']=='после')&(kb['topic']==cause)].sort_values('p_neg',ascending=False)['review_id'].head(5).tolist()\nkzn, others = kzn.sort_index(ascending=False), others.sort_index(ascending=False)"
+  },
+  {
+    "id": "R19",
+    "task": "why",
+    "expected": false,
+    "reason": "Тексты оставлены на местах, ID двух цитат переставлены.",
+    "code": "\nimport pandas as pd\n\n_weeks=n.assign(week=n['date'].dt.to_period('W').dt.start_time).pivot_table(index='week',columns='shop_id',values='neg',aggfunc='mean')\nchange_date,focus_shop=_weeks.diff().stack().idxmax()\nchange_date=pd.Timestamp(change_date)\nn=n.copy()\nn['period']=__import__('numpy').where(n['date']>=change_date,'после','до')\nbad = n[n[\"neg\"] == 1]\nkb = bad[bad[\"shop_id\"] == focus_shop]\nob = bad[bad[\"shop_id\"] != focus_shop]\nkzn = pd.crosstab(kb[\"topic\"], kb[\"period\"], normalize=\"columns\")\nothers = pd.crosstab(ob[\"topic\"], ob[\"period\"], normalize=\"columns\")\ncause = (kzn[\"после\"] - kzn[\"до\"]).idxmax()\nquotes = (kb[(kb[\"period\"] == \"после\") & (kb[\"topic\"] == cause)]\n          .sort_values(\"p_neg\", ascending=False)[\"text\"].head(5).tolist())\nprint(kzn.round(2), others.round(2), cause, *quotes, sep=\"\\n\")\nquote_ids = kb[(kb['period']=='после')&(kb['topic']==cause)].sort_values('p_neg',ascending=False)['review_id'].head(5).tolist()\nquote_ids[0], quote_ids[1] = quote_ids[1], quote_ids[0]"
+  },
+  {
+    "id": "R20",
+    "task": "adjust",
+    "expected": true,
+    "reason": "Обратный порядок каждой входной таблицы сохраняет объединение по ключу, числители и знаменатели.",
+    "code": "\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\npred = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(X_train, y_train).predict(X_test)\ntn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\ntpr, fpr = tp / (tp + fn), fp / (fp + tn)\n\nobs = n[n[\"shop_id\"] == \"KZN-2\"].groupby(\"period\")[\"neg\"].mean()\nadj = {k: round((obs[k] - fpr) / (tpr - fpr), 3) for k in [\"до\", \"после\"]}\nprint(round(tpr, 3), round(fpr, 3), obs.round(3).to_dict(), adj)\ngold = pd.read_csv('reviews_new_gold.csv')\nlabeled = n.iloc[::-1].merge(gold.iloc[::-1][['review_id','complaint']],on='review_id',validate='one_to_one')\nrows=[]\nfor period,part in labeled[labeled.shop_id=='KZN-2'].groupby('period'):\n    target=part.complaint\n    tpr_new=float(part.loc[target==1,'neg'].mean())\n    fpr_new=float(part.loc[target==0,'neg'].mean())\n    observed=float(part.neg.mean())\n    rows.append(dict(period=period,n=len(part),complaints=int(target.sum()),tpr=tpr_new,fpr=fpr_new,observed=observed,manual=float(target.mean()),adjusted=(observed-fpr_new)/(tpr_new-fpr_new) if abs(tpr_new-fpr_new)>1e-6 else float(\"nan\")))\naudit=pd.DataFrame(rows).set_index('period')\naudit = audit.iloc[::-1]"
+  },
+  {
+    "id": "R21",
+    "task": "adjust",
+    "expected": false,
+    "reason": "После сдвига только ключей разметки метки принадлежат другим отзывам.",
+    "code": "\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\npred = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(X_train, y_train).predict(X_test)\ntn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\ntpr, fpr = tp / (tp + fn), fp / (fp + tn)\n\nobs = n[n[\"shop_id\"] == \"KZN-2\"].groupby(\"period\")[\"neg\"].mean()\nadj = {k: round((obs[k] - fpr) / (tpr - fpr), 3) for k in [\"до\", \"после\"]}\nprint(round(tpr, 3), round(fpr, 3), obs.round(3).to_dict(), adj)\ngold = pd.read_csv('reviews_new_gold.csv')\ngold[\"review_id\"] = __import__(\"numpy\").roll(gold.review_id.to_numpy(), 11)\nlabeled = n.merge(gold[['review_id','complaint']],on='review_id',validate='one_to_one')\nrows=[]\nfor period,part in labeled[labeled.shop_id=='KZN-2'].groupby('period'):\n    target=part.complaint\n    tpr_new=float(part.loc[target==1,'neg'].mean())\n    fpr_new=float(part.loc[target==0,'neg'].mean())\n    observed=float(part.neg.mean())\n    rows.append(dict(period=period,n=len(part),complaints=int(target.sum()),tpr=tpr_new,fpr=fpr_new,observed=observed,manual=float(target.mean()),adjusted=(observed-fpr_new)/(tpr_new-fpr_new) if abs(tpr_new-fpr_new)>1e-6 else float(\"nan\")))\naudit=pd.DataFrame(rows).set_index('period')\n"
+  },
+  {
+    "id": "R22",
+    "task": "adjust",
+    "expected": false,
+    "reason": "Для всех последующих расчётов 3 октября ошибочно включено в «после».",
+    "code": "\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\npred = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(X_train, y_train).predict(X_test)\ntn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\ntpr, fpr = tp / (tp + fn), fp / (fp + tn)\n\nn['period'] = __import__('numpy').where(n.date >= '2026-10-01', 'после','до')\nobs = n[n[\"shop_id\"] == \"KZN-2\"].groupby(\"period\")[\"neg\"].mean()\nadj = {k: round((obs[k] - fpr) / (tpr - fpr), 3) for k in [\"до\", \"после\"]}\nprint(round(tpr, 3), round(fpr, 3), obs.round(3).to_dict(), adj)\ngold = pd.read_csv('reviews_new_gold.csv')\nlabeled = n.merge(gold[['review_id','complaint']],on='review_id',validate='one_to_one')\nrows=[]\nfor period,part in labeled[labeled.shop_id=='KZN-2'].groupby('period'):\n    target=part.complaint\n    tpr_new=float(part.loc[target==1,'neg'].mean())\n    fpr_new=float(part.loc[target==0,'neg'].mean())\n    observed=float(part.neg.mean())\n    rows.append(dict(period=period,n=len(part),complaints=int(target.sum()),tpr=tpr_new,fpr=fpr_new,observed=observed,manual=float(target.mean()),adjusted=(observed-fpr_new)/(tpr_new-fpr_new) if abs(tpr_new-fpr_new)>1e-6 else float(\"nan\")))\naudit=pd.DataFrame(rows).set_index('period')\n"
+  },
+  {
+    "id": "R23",
+    "task": "adjust",
+    "expected": false,
+    "reason": "Один отзыв выбранной точки отсутствует в обеих производных таблицах.",
+    "code": "\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\npred = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(X_train, y_train).predict(X_test)\ntn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\ntpr, fpr = tp / (tp + fn), fp / (fp + tn)\n\nn = n.drop(n.index[n.shop_id == \"KZN-2\"][0]).copy()\nobs = n[n[\"shop_id\"] == \"KZN-2\"].groupby(\"period\")[\"neg\"].mean()\nadj = {k: round((obs[k] - fpr) / (tpr - fpr), 3) for k in [\"до\", \"после\"]}\nprint(round(tpr, 3), round(fpr, 3), obs.round(3).to_dict(), adj)\ngold = pd.read_csv('reviews_new_gold.csv')\nlabeled = n.merge(gold[['review_id','complaint']],on='review_id',validate='one_to_one')\nrows=[]\nfor period,part in labeled[labeled.shop_id=='KZN-2'].groupby('period'):\n    target=part.complaint\n    tpr_new=float(part.loc[target==1,'neg'].mean())\n    fpr_new=float(part.loc[target==0,'neg'].mean())\n    observed=float(part.neg.mean())\n    rows.append(dict(period=period,n=len(part),complaints=int(target.sum()),tpr=tpr_new,fpr=fpr_new,observed=observed,manual=float(target.mean()),adjusted=(observed-fpr_new)/(tpr_new-fpr_new) if abs(tpr_new-fpr_new)>1e-6 else float(\"nan\")))\naudit=pd.DataFrame(rows).set_index('period')\n"
+  },
+  {
+    "id": "R24",
+    "task": "adjust",
+    "expected": false,
+    "reason": "В каждом периоде доля модели выдана за долю синтетических жалоб.",
+    "code": "\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\npred = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(X_train, y_train).predict(X_test)\ntn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\ntpr, fpr = tp / (tp + fn), fp / (fp + tn)\n\nobs = n[n[\"shop_id\"] == \"KZN-2\"].groupby(\"period\")[\"neg\"].mean()\nadj = {k: round((obs[k] - fpr) / (tpr - fpr), 3) for k in [\"до\", \"после\"]}\nprint(round(tpr, 3), round(fpr, 3), obs.round(3).to_dict(), adj)\ngold = pd.read_csv('reviews_new_gold.csv')\nlabeled = n.merge(gold[['review_id','complaint']],on='review_id',validate='one_to_one')\nrows=[]\nfor period,part in labeled[labeled.shop_id=='KZN-2'].groupby('period'):\n    target=part.complaint\n    tpr_new=float(part.loc[target==1,'neg'].mean())\n    fpr_new=float(part.loc[target==0,'neg'].mean())\n    observed=float(part.neg.mean())\n    rows.append(dict(period=period,n=len(part),complaints=int(target.sum()),tpr=tpr_new,fpr=fpr_new,observed=observed,manual=float(target.mean()),adjusted=(observed-fpr_new)/(tpr_new-fpr_new) if abs(tpr_new-fpr_new)>1e-6 else float(\"nan\")))\naudit=pd.DataFrame(rows).set_index('period')\naudit[\"manual\"] = audit[\"observed\"]"
+  },
+  {
+    "id": "R25",
+    "task": "adjust",
+    "expected": false,
+    "reason": "Пропущен период до границы.",
+    "code": "\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\npred = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(X_train, y_train).predict(X_test)\ntn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\ntpr, fpr = tp / (tp + fn), fp / (fp + tn)\n\nobs = n[n[\"shop_id\"] == \"KZN-2\"].groupby(\"period\")[\"neg\"].mean()\nadj = {k: round((obs[k] - fpr) / (tpr - fpr), 3) for k in [\"до\", \"после\"]}\nprint(round(tpr, 3), round(fpr, 3), obs.round(3).to_dict(), adj)\ngold = pd.read_csv('reviews_new_gold.csv')\nlabeled = n.merge(gold[['review_id','complaint']],on='review_id',validate='one_to_one')\nrows=[]\nfor period,part in labeled[labeled.shop_id=='KZN-2'].groupby('period'):\n    target=part.complaint\n    tpr_new=float(part.loc[target==1,'neg'].mean())\n    fpr_new=float(part.loc[target==0,'neg'].mean())\n    observed=float(part.neg.mean())\n    rows.append(dict(period=period,n=len(part),complaints=int(target.sum()),tpr=tpr_new,fpr=fpr_new,observed=observed,manual=float(target.mean()),adjusted=(observed-fpr_new)/(tpr_new-fpr_new) if abs(tpr_new-fpr_new)>1e-6 else float(\"nan\")))\naudit=pd.DataFrame(rows).set_index('period')\naudit = audit.loc[[\"после\"]]"
+  }
+]

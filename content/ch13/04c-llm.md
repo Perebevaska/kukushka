@@ -8,6 +8,8 @@ recap:
   - "Доля верных на 200 отзывах имеет погрешность около ±5 п. п. (±2 · √(p(1 − p)/n)); сравнивать LLM с обученной моделью нужно на одних и тех же отзывах, по числу случаев, где права только одна."
 ---
 
+Все карточки, включая сравнение на общих 200 отзывах, выполняются в браузере на подготовленных ответах. Примеры SDK и LM Studio — отдельный эксперимент.
+
 Разметку языковой моделью проверяют так же, как разметку людьми в уроке «Качество разметки: голосование, каппа, золотой набор»: на выборке с известными ответами, с матрицей ошибок.
 
 ## Разметка большой языковой моделью
@@ -36,9 +38,10 @@ def label(text):
     )
     if msg.stop_reason != "end_turn":     # обрезан по max_tokens, отказ и т. п. — в кучку «не удалось»
         return None
-    return next((b.text for b in msg.content if b.type == "text" and b.text.strip()), None)   # строка — её ещё надо разобрать
+    return next((b.text for b in msg.content if b.type == "text" and isinstance(b.text, str) and b.text.strip()), None)
 
-print(label("Курьер опоздал на сорок минут, кофе остыл."))
+answer = label("Курьер опоздал на сорок минут, кофе остыл.")
+print(answer if answer is not None else "Нет завершённого текста. Отметьте этот отзыв как неразобранный.")
 ```
 
 **Что здесь происходит:**
@@ -60,6 +63,8 @@ print(label("Курьер опоздал на сорок минут, кофе о
 3. **Повторяемость не обещана.** Один и тот же отзыв может получить разные ответы — даже там, где `temperature` можно поставить в 0, провайдеры не гарантируют одинаковых ответов, а у новых моделей Claude этот параметр вообще не настраивается. Поэтому качество меряют не совпадением ответов, а долей верных на выборке с известными метками, а в отчёте записывают имя модели и дату прогона.
 4. **Проверка на разметке.** Прежде чем размечать всё, прогоните 100–200 текстов с известными метками и посчитайте точность и матрицу ошибок — ровно как для любой модели в этом курсе.
 5. **Стоимость и данные.** Оплата — за токены (куски слов), отдельно за входные (инструкция + отзыв) и выходные (ответ): прикиньте объём заранее. Точное число токенов знает только токенизатор провайдера; для прикидки по русскому тексту можно брать около одного токена на три символа и потом сверить со счётом за пробный прогон. И не отправляйте внешнему сервису персональные данные клиентов без разрешения.
+
+Если вызов SDK завершился исключением, сохраните ID отзыва и статус «ошибка запроса». Если ответ пришёл, проверьте причину остановки, наличие текста и затем значения полей. Так различаются ошибка вызова, незавершённый ответ и неверная метка. В журнале остаётся каждый исходный ID. Во внешний сервис отправляют только разрешённый к передаче текст, а связь ответа с `review_id` сохраняют у себя.
 
 **Схема ответа вместо просьбы.** Многие API умеют сами ограничивать ответ заданной JSON-схемой — это называют structured outputs. У Claude это параметр `output_config`, у LM Studio и OpenAI-совместимых серверов — `response_format`. Закрытый список меток тогда задаётся в схеме через `enum`:
 
@@ -100,7 +105,7 @@ LLM разметила 2000 отзывов по темам. Что сделат�
   > Тогда отчёт станет смещённым: сложные отзывы пропадут.
 :::
 
-**Как сравнивать LLM с обученной моделью.** Проверка на 200 отзывах даёт долю верных с погрешностью. Для доли $p$ на $n$ отзывах стандартная ошибка — $\sqrt{p(1-p)/n}$: при $p \approx 0.8$ и $n = 200$ это около 2.8 п. п., а правдоподобный диапазон — примерно ±2 стандартные ошибки, то есть ±5–6 п. п. Поэтому «LLM дала 0.82, а TF-IDF — 0.79» ещё не значит «LLM лучше»: такую разницу даёт и случай, тем более что 0.79 посчитано на других 600 отзывах. Честное сравнение — обе модели на **одних и тех же** отзывах, с подсчётом, где верна только одна из них (задача «LLM и TF-IDF на одних отзывах»). Это то же правило, что в уроке «Эмбеддинги: векторы слов и отзывов»: разница меньше разброса — не выигрыш.
+**Как сравнивать LLM с обученной моделью.** Проверка на 200 отзывах даёт долю верных с погрешностью. Для доли $p$ на $n$ отзывах стандартная ошибка — $\sqrt{p(1-p)/n}$: при $p \approx 0.8$ и $n = 200$ это около 2.8 п. п., а правдоподобный диапазон — примерно ±2 стандартные ошибки, то есть ±5–6 п. п. Поэтому «LLM дала 0.82, а TF-IDF — 0.79» ещё не значит «LLM лучше»: такую разницу даёт и случай, тем более что 0.79 посчитано на других 600 отзывах. Честное сравнение — обе модели на **одних и тех же** отзывах, с подсчётом, где верна только одна из них (задача «LLM и TF-IDF на одних отзывах»). Отдельные интервалы для двух долей не дают парный интервал разницы.
 
 {{practice: parse-one, parse-llm, llm-cost, llm-check, llm-same}}
 
@@ -158,7 +163,8 @@ for text in reviews:
         ans = json.loads(raw[raw.index("{"): raw.rindex("}") + 1])   # вырезаем JSON, даже если модель что-то добавила
     except ValueError:
         ans = None
-    ok = isinstance(ans, dict) and ans.get("topic") in TOPICS and ans.get("sentiment") in ("positive", "negative")
+    ok = (isinstance(ans, dict) and isinstance(ans.get("topic"), str)
+          and ans["topic"] in TOPICS and ans.get("sentiment") in ("positive", "negative"))
     print("✓" if ok else "✗", text[:45], "→", ans if ok else raw[:60])
 ```
 
@@ -166,7 +172,7 @@ for text in reviews:
 
 - `local_llm.ask(PROMPT + text, max_tokens=60)` — запрос к модели в LM Studio; `temperature=0` стоит по умолчанию, рассуждения вида `<think>…</think>` (их пишут некоторые модели) модуль вырезает.
 - `raw[raw.index("{"): raw.rindex("}") + 1]` — берём кусок от первой `{` до последней `}`: маленькие модели любят добавить «Вот ответ:». Если скобок нет, `index` бросит `ValueError`, и ответ попадёт в «не разобрался».
-- `ok` — проверка по закрытому списку: тема из шести и тональность из двух. Ответы с `✗` — та самая кучка «не удалось», которую считают отдельно.
+- `ok` — проверка по закрытому списку: тема из шести и тональность из двух. При пустом списке вариантов, усечённой генерации или отсутствии текста `ask` возвращает пустую строку. В этой строке сохраняем `✗` и переходим к следующему отзыву.
 
 В своём Jupyter то же самое делают клиентом `openai`: LM Studio принимает запросы в формате OpenAI, меняется только адрес.
 
@@ -174,7 +180,7 @@ for text in reviews:
 # uv add openai
 from openai import OpenAI
 
-client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")   # ключ не проверяется, но параметр обязателен
+client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")   # для локального сервера без аутентификации; при включённой защите нужен его токен
 resp = client.chat.completions.create(
     model="имя-модели-из-LM-Studio",          # как в списке local_llm.models() или на вкладке Developer
     temperature=0, max_tokens=60,
@@ -182,7 +188,10 @@ resp = client.chat.completions.create(
 )
 choice = resp.choices[0] if resp.choices else None
 answer = choice.message.content if choice and choice.finish_reason == "stop" else None
-print(answer if answer and answer.strip() else "Ответ не получен, требуется повторная проверка.")
+if isinstance(answer, str) and answer.strip():
+    print(answer)                         # дальше проверяем JSON и обе метки
+else:
+    print("Нет завершённого текста. Отметьте этот отзыв как неразобранный.")
 ```
 
 ::: warn Типичные ошибки
@@ -235,7 +244,7 @@ print(d, topic)
 
 ## task: parse-llm | Разбор ответов LLM | plus
 
-В `raw` — восемь ответов языковой модели на промпт из урока. Разберите их в DataFrame `parsed` с колонками `sentiment`, `topic`, `ok` (по строке на ответ, в том же порядке). Правила: из ответа берётся текст от первой `{` до последней `}` и разбирается `json.loads`; ответ годен (`ok=True`), только если JSON разобрался, `sentiment` — из `positive`/`negative`, а `topic` — из шести тем. У негодных ответов `sentiment` и `topic` — `None` (в напечатанной таблице pandas покажет их как `NaN` — это нормально: `isna()` находит оба). Ваша функция `parse(answer)` должна обработать и новый отзыв. Для одного ответа верните три поля `sentiment`, `topic`, `ok` как словарь либо как значения в этом порядке. Пустой ответ считается негодным. Сохраните также `n_bad` — число негодных.
+В `raw` — восемь ответов языковой модели на промпт из урока. Разберите их в DataFrame `parsed` с колонками `sentiment`, `topic`, `ok` (по строке на ответ, в том же порядке). Правила: из ответа берётся текст от первой `{` до последней `}` и разбирается `json.loads`; ответ годен (`ok=True`), только если JSON разобрался, `sentiment` — из `positive`/`negative`, а `topic` — из шести тем. У негодных ответов `sentiment` и `topic` — `None` (в напечатанной таблице pandas покажет их как `NaN` — это нормально: `isna()` находит оба). Ваша функция `parse(answer)` должна обработать и новый отзыв. Для одного ответа верните три поля `sentiment`, `topic`, `ok` как словарь либо как значения в этом порядке. Пустая строка или отсутствие текста (`None` из облачного примера) считаются негодным ответом. Сохраните также `n_bad` — число негодных.
 
 ### setup
 ```python
@@ -276,12 +285,17 @@ assert list(p.loc[[0, 1, 2, 6], 'sentiment']) == ['negative', 'positive', 'posit
 assert p.loc[[3, 4, 5, 7], ['sentiment', 'topic']].isna().all().all(), 'У негодных ответов sentiment и topic должны быть None.'
 _parse = need('parse')
 import json as _json
-_cases = [('', (None, None, False)), ('{"sentiment":"positive","topic":"парковка"}', (None, None, False)), ('{"sentiment":"neutral","topic":"кофе"}', (None, None, False))]
+_cases = [(None, (None, None, False)), ('', (None, None, False)), ('{"topic":["еда"],"sentiment":"positive"}', (None, None, False)), ('{"sentiment":"positive","topic":"парковка"}', (None, None, False)), ('{"sentiment":"neutral","topic":"кофе"}', (None, None, False))]
 for _topic in ['кофе', 'еда', 'обслуживание', 'доставка', 'цена', 'атмосфера']:
     for _sentiment in ['positive', 'negative']:
         _cases.append((_json.dumps(dict(topic=_topic, sentiment=_sentiment), ensure_ascii=False), (_sentiment, _topic, True)))
 for _answer, _expected in _cases:
-    _row = _parse(_answer)
+    try:
+        _row = _parse(_answer)
+    except (AttributeError, TypeError):
+        if _answer is None:
+            raise AssertionError('None здесь означает отсутствие текста от SDK. Верните негодную запись: sentiment=None, topic=None, ok=False; допустима и последовательность этих трёх значений.')
+        raise
     _fields = ['sentiment', 'topic', 'ok']
     if isinstance(_row, (dict, _pd.Series)):
         assert all(_key in _row for _key in _fields), 'Укажите sentiment, topic и ok в возвращаемой записи.'
@@ -294,7 +308,7 @@ assert need('n_bad') == 4, f'n_bad = {need("n_bad")}.'
 Начните с функции `parse(answer)`, возвращающей словарь `{"sentiment": ..., "topic": ..., "ok": ...}`; таблица — `pd.DataFrame([parse(a) for a in raw])`.
 
 ### hint
-`answer.find("{")` и `answer.rfind("}")` дают границы; если одной нет — ответ негоден. `json.loads` оберните в `try/except json.JSONDecodeError`.
+Если `answer` не строка (например, `None`), сразу верните негодную запись. Для строки `answer.find("{")` и `answer.rfind("}")` дают границы; если одной нет — ответ негоден. `json.loads` оберните в `try/except json.JSONDecodeError`.
 
 ### solution
 ```python
@@ -303,6 +317,8 @@ import pandas as pd
 
 def parse(answer):
     bad = {"sentiment": None, "topic": None, "ok": False}
+    if not isinstance(answer, str):
+        return bad
     i, j = answer.find("{"), answer.rfind("}")
     if i == -1 or j < i:
         return bad
@@ -320,7 +336,7 @@ print(parsed)
 ```
 
 ### explain
-Половина ответов негодна, и у каждого своя причина: оборванный JSON, метка «neutral» вне списка, выдуманная тема, отказ. Обёртки вида «```json» и «Конечно! Вот…» разбор переживает. В реальной разметке негодных обычно единицы процентов — но их надо считать, а не терять.
+Половина ответов негодна, и у каждого своя причина: оборванный JSON, метка «neutral» вне списка, выдуманная тема, отказ. Обёртки вида «```json» и «Конечно! Вот…» разбор переживает. Величину доли отказов узнают по собственному прогону. Сохраняйте по строке на каждый отправленный отзыв.
 
 ## task: llm-cost | Сколько стоит разметить новые отзывы | base
 
@@ -378,7 +394,7 @@ print(tokens_in, tokens_out, cost, share_prompt)
 
 ## task: llm-check | Проверка разметки LLM | plus
 
-Прежде чем размечать все отзывы языковой моделью, её проверяют на размеченной выборке. В заготовке — `check` (200 отзывов с настоящей темой `topic`) и `llm_topic` — условные ответы модели на них (уже разобранные строки; `None` — ответ не разобрался). Сохраните `n_invalid` — число ответов `None` или не из шести тем, `acc_llm` — долю верных среди **всех** 200 (негодный ответ — ошибка), 3 знака, `recall_by_topic` — Series полноты по темам (3 знака) и `worst` — тему с наименьшей полнотой. Затем оцените погрешность: `low` и `high` — границы `acc_llm ± 2 · √(acc_llm · (1 − acc_llm) / 200)` (3 знака), и `clearly_better` — `True`, только если даже нижняя граница выше 0.79 (точность модели тем из урока «Классификация текстов»).
+Прежде чем размечать все отзывы языковой моделью, её проверяют на размеченной выборке. В заготовке — `check` (200 отзывов с настоящей темой `topic`) и `llm_topic` — условные ответы модели на них (уже разобранные строки; `None` — ответ не разобрался). Сохраните `n_invalid` — число ответов `None` или не из шести тем, `acc_llm` — долю верных среди **всех** 200 (негодный ответ — ошибка), 3 знака, `recall_by_topic` — Series полноты по темам (3 знака) и `worst` — тему с наименьшей полнотой. Затем оцените погрешность: `low` и `high` — границы `acc_llm ± 2 · √(acc_llm · (1 − acc_llm) / 200)` (3 знака), и `above_reference` — `True`, только если неокруглённая нижняя граница интервала этой одной доли правильных выше фиксированного числа 0.79. Это сравнение с числом, а не доказательство разницы между моделями: парная проверка двух систем на одних отзывах будет в следующей задаче.
 
 ### setup
 ```python
@@ -407,6 +423,7 @@ import pandas as pd
 
 ans = pd.Series(llm_topic)
 true = check["topic"]
+# above_reference: нижняя граница одного интервала выше фиксированного числа 0.79
 
 ```
 
@@ -425,7 +442,7 @@ assert need('worst') == rec.idxmin(), f'worst = {need("worst")!r}.'
 import math as _m
 a = float(ok.mean()); se = _m.sqrt(a * (1 - a) / len(c0))
 assert close(need('low'), round(a - 2 * se, 3), 0.0015) and close(need('high'), round(a + 2 * se, 3), 0.0015), f'low, high = {need("low")}, {need("high")}, а нужно {round(a - 2 * se, 3)}, {round(a + 2 * se, 3)}.'
-assert bool(need('clearly_better')) == bool(a - 2 * se > 0.79), 'clearly_better: сравните с 0.79 нижнюю границу low, а не саму долю.'
+assert bool(need('above_reference')) == bool(a - 2 * se > 0.79), 'above_reference: сравните неокруглённую нижнюю границу с фиксированным числом0.79; это не парная разница моделей.'
 ```
 
 ### hint
@@ -435,7 +452,7 @@ assert bool(need('clearly_better')) == bool(a - 2 * se > 0.79), 'clearly_better:
 Верный ответ — годный и совпадающий с настоящей темой: `ok = ans.isin(TOPICS) & (ans == true)`. Его среднее — доля верных среди всех.
 
 ### hint
-Полнота по темам — среднее `ok` в группах настоящей темы: `ok.groupby(true).mean()`. Погрешность — `se = math.sqrt(acc * (1 - acc) / len(true))` по неокруглённой доле.
+Полнота по темам — среднее `ok` в группах настоящей темы: `ok.groupby(true).mean()`. Погрешность — `se = math.sqrt(acc * (1 - acc) / len(true))` по неокруглённой доле. Для `above_reference` сравните `acc - 2 * se` с 0.79. Такое сравнение не оценивает разницу двух моделей.
 
 ### solution
 ```python
@@ -453,13 +470,13 @@ worst = recall_by_topic.idxmin()
 acc = float(ok.mean())
 se = math.sqrt(acc * (1 - acc) / len(true))
 low, high = round(acc - 2 * se, 3), round(acc + 2 * se, 3)
-clearly_better = low > 0.79
-print(n_invalid, acc_llm, worst, low, high, clearly_better)
+above_reference = bool(acc - 2 * se > 0.79)
+print(n_invalid, acc_llm, worst, low, high, above_reference)
 print(recall_by_topic)
 ```
 
 ### explain
-В этом синтетическом опыте верны 82,5 % ответов. Доля 0,79 попадает в приближённый интервал 0,771–0,879. Для вывода о допустимом проигрыше задайте границу заранее и сравните две системы на одних и тех же отзывах.
+В этом синтетическом опыте верны 82,5 % ответов. Фиксированное число 0,79 попадает в приближённый интервал 0,771–0,879, поэтому `above_reference` равно `False`. Даже значение `True` означало бы только, что нижняя граница интервала одной доли выше этого числа. Разницу качества двух моделей оценивают по парным ответам на одни и те же отзывы; такая проверка будет дальше.
 
 ## task: llm-same | LLM и TF-IDF на одних отзывах | plus
 
@@ -500,10 +517,23 @@ ok_llm = pd.Series(llm_topic).isin(TOPICS) & (pd.Series(llm_topic) == check["top
 
 ### check
 ```python
+import pandas as _pd
 from sklearn.pipeline import make_pipeline as _mp
 from sklearn.feature_extraction.text import TfidfVectorizer as _T
 from sklearn.linear_model import LogisticRegression as _LR
 r0, c0, ol = need('r'), need('check'), need('ok_llm')
+_original = _pd.read_csv('reviews_text.csv')
+_original_check = _original.sample(200,random_state=5).reset_index(drop=True)
+assert c0.review_id.is_unique and set(c0.review_id)==set(_original_check.review_id), 'Сравнивайте обе модели на тех же 200 review_id.'
+_truth = _original_check.set_index('review_id')
+for _key in ['text','topic']:
+    assert c0[_key].tolist()==_truth.loc[c0.review_id,_key].tolist(), f'{_key}: сохраните принадлежность исходному review_id.'
+_llm_topics = _pd.Series(need('llm_topic'),index=_original_check.review_id)
+_expected_ol = c0.review_id.map(_llm_topics).isin(['кофе','еда','обслуживание','доставка','цена','атмосфера']) & c0.review_id.map(_llm_topics).eq(c0.topic)
+if isinstance(ol,_pd.Series):
+    assert ol.index.is_unique and set(ol.index)==set(c0.index), 'Индикаторы ok_llm должны соответствовать строкам check.'
+    ol=ol.reindex(c0.index)
+assert list(ol)==list(_expected_ol), 'Не переставляйте отдельно ответы LLM: обе системы сравниваются по одним review_id.'
 rest = r0[~r0['review_id'].isin(c0['review_id'])]
 okm = _mp(_T(), _LR(max_iter=1000)).fit(rest['text'], rest['topic']).predict(c0['text']) == c0['topic'].values
 am = round(float(okm.mean()), 3)
@@ -517,7 +547,6 @@ _se = ((_only_a + _only_b - _n * _diff ** 2) / (_n * (_n - 1))) ** .5
 _lower = _diff - 1.96 * _se
 assert close(need('paired_lower'),round(_lower,3),.00051), 'Числитель парной разницы определяется расхождениями обеих моделей на тех же ID.'
 assert need('within_margin') == (_lower > -.02), 'Сравните неокруглённую нижнюю границу с −0,02.'
-
 ```
 
 ### hint
@@ -542,4 +571,4 @@ print(acc_model, llm_only, model_only)
 ```
 
 ### explain
-На этих 200 отзывах модель тем верна в 75.5 % случаев — ниже своих 79 % на тесте из урока «Классификация текстов»: на 200 отзывах доля колеблется на несколько пунктов. LLM здесь впереди на 7 п. п., но разницу решают только отзывы, где модели разошлись: 38 в пользу LLM против 24 в пользу TF-IDF, на остальных обе правы или обе ошиблись. 38 против 24 — перевес, но на 62 спорных отзывах он ещё может оказаться случайным; для уверенного вывода нужна выборка побольше. Главный урок: сравнивать модели надо на одних и тех же отзывах и смотреть на расхождения, а не на две доли с разных выборок.
+На общих 200 отзывах верны 165 условных ответов LLM и 151 ответ TF-IDF. Только LLM права 38 раз, только TF-IDF — 24. Разница (38 − 24) / 200 = +7 п. п. Приближённый парный интервал от −0,675 до +14,675 п. п. включает ноль, поэтому превосходство не установлено. Его нижняя граница выше заранее заданных −2 п. п.: в этом учебном сравнении допуск выполнен. В знаменателе остались все отказы.

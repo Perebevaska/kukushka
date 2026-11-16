@@ -182,6 +182,7 @@ f = need('stem')
 assert f('кофейня') == 'кофей' and f('кофе') == 'кофе', 'stem: обрезать до 5 букв, короткие слова не трогать.'
 assert need('n_raw') == len(allw) and need('n_stem') == len({st(w) for w in allw}), f'n_raw, n_stem = {need("n_raw")}, {need("n_stem")}.'
 assert list(need('merged')) == sorted(w for w in allw if st(w) == st('курьер')), f'merged = {need("merged")}.'
+assert f('капучино', 3) == 'кап' and f('кофе', 7) == 'кофе', 'Параметр n задаёт длину основы; короткое слово сохраняется.'
 ```
 
 ### hint

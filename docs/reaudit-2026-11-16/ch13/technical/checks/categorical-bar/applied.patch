@@ -1,0 +1,69 @@
+--- a/content/ch13/05-project.md
++++ b/content/ch13/05-project.md
+@@ -448,6 +448,17 @@
+ 
+ На графике покажите ту же зависимость: календарные недели и долю сигналов выбранной точки. Можно использовать линию или столбцы. Подписи, если вы их добавляете, должны соответствовать долям и выбранной точке. Порядок строк таблицы произвольный, если значения сохраняют свои даты и точки.
+ 
++
++После вычисления `weekly` и самостоятельного выбора `focus_shop` в браузере для столбцов используйте прямой matplotlib:
++
++```python
++fig, ax = plt.subplots()
++ax.bar(weekly.index.to_pydatetime(), weekly[focus_shop].to_numpy(), width=4)
++ax.set(xlabel="Понедельник недели", ylabel="Доля сигналов", title=str(focus_shop))
++```
++
++В текущей браузерной версии pandas `Series.plot(kind="bar")` с `DatetimeIndex` может завершиться `ValueError` ещё до проверки. Пример выше показывает ту же зависимость через matplotlib и не выбирает точку за вас.
++
+ ### setup
+ ```python
+ import numpy as np
+@@ -491,7 +502,7 @@
+ from matplotlib.container import BarContainer as _BarContainer
+ _expected_dates = list(w.index)
+ _expected_values = w[_shop].to_numpy()
+-def _calendar_values(x, complete=True):
++def _calendar_values(x, complete=True, axis=None, categorical=False):
+     values=list(x)
+     if not values: return None
+     candidates=[]
+@@ -499,12 +510,26 @@
+     except (ValueError,TypeError,OverflowError): pass
+     try: candidates.append([_pd.Timestamp(_md.num2date(float(v))).tz_localize(None).normalize() for v in values])
+     except (ValueError,TypeError,OverflowError): pass
++    if categorical and axis is not None:
++        try:
++            locations=_np.asarray(axis.get_xticks(),dtype=float)
++            labels=axis.get_xticklabels()
++            mapped=[]
++            for coordinate in values:
++                matches=_np.flatnonzero(_np.isclose(locations,float(coordinate),rtol=0,atol=1e-8))
++                if len(matches)!=1:
++                    raise ValueError('Категориальный столбец должен иметь одну подпись даты на своей позиции.')
++                text=labels[int(matches[0])].get_text().strip()
++                mapped.append(_pd.Timestamp(text).normalize())
++            candidates.append(mapped)
++        except (ValueError,TypeError,OverflowError,IndexError):
++            pass
+     for dates in candidates:
+         if complete and len(dates)==len(_expected_dates) and set(dates)==set(_expected_dates): return dates
+         if not complete and all(date in _expected_dates for date in dates): return dates
+     return None
+-def _matches_plot(x,y,shop=_shop,complete=True):
+-    dates=_calendar_values(x,complete=complete)
++def _matches_plot(x,y,shop=_shop,complete=True,axis=None,categorical=False):
++    dates=_calendar_values(x,complete=complete,axis=axis,categorical=categorical)
+     if dates is None: return False
+     try:
+         values=_np.asarray(y,dtype=float)
+@@ -528,8 +553,8 @@
+             if isinstance(_container,_BarContainer):
+                 _named_shop=_container.get_label()
+                 if _named_shop in w.columns:
+-                    assert _matches_plot([b.get_x()+b.get_width()/2 for b in _container.patches],[b.get_height() for b in _container.patches],shop=_named_shop,complete=False), 'Каждая серия столбцов с названием точки должна показывать её действительные доли по датам.'
+-                if _matches_plot([b.get_x()+b.get_width()/2 for b in _container.patches],[b.get_height() for b in _container.patches]): _plot_ok=True
++                    assert _matches_plot([b.get_x()+b.get_width()/2 for b in _container.patches],[b.get_height() for b in _container.patches],shop=_named_shop,complete=False,axis=_ax,categorical=True), 'Каждая серия столбцов с названием точки должна показывать её действительные доли по датам.'
++                if _matches_plot([b.get_x()+b.get_width()/2 for b in _container.patches],[b.get_height() for b in _container.patches],axis=_ax,categorical=True): _plot_ok=True
+ assert _plot_ok, 'Покажите недельные доли выбранной точки по реальным датам; подписи, если они есть, должны сохранять долю и выбранную точку. Подойдёт линия или столбцы.'
+ ```
+ 

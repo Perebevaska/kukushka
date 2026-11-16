@@ -1,0 +1,58 @@
+[
+  {
+    "id": "R26",
+    "task": "parse-llm",
+    "expected": true,
+    "reason": "Новая публичная обработка None; сохраняем именованные индексы исходного R01.",
+    "code": "\nimport json\nimport pandas as pd\n\ndef parse(answer):\n    bad = {\"sentiment\": None, \"topic\": None, \"ok\": False}\n    if answer is None:\n        return bad\n    i, j = answer.find(\"{\"), answer.rfind(\"}\")\n    if i == -1 or j < i:\n        return bad\n    try:\n        d = json.loads(answer[i:j + 1])\n    except json.JSONDecodeError:\n        return bad\n    if d.get(\"sentiment\") not in (\"positive\", \"negative\") or d.get(\"topic\") not in TOPICS:\n        return bad\n    return {\"sentiment\": d[\"sentiment\"], \"topic\": d[\"topic\"], \"ok\": True}\n\nparsed = pd.DataFrame([parse(a) for a in raw])\nn_bad = int((~parsed[\"ok\"]).sum())\nprint(parsed)\nparsed.index = ['ответ-' + str(91-i) for i in range(len(parsed))]"
+  },
+  {
+    "id": "R27",
+    "task": "adjust",
+    "expected": true,
+    "reason": "Семь обязательных полей с теми же данными и дополнительный осмысленный счётчик.",
+    "code": "\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\npred = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(X_train, y_train).predict(X_test)\ntn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\ntpr, fpr = tp / (tp + fn), fp / (fp + tn)\n\nobs = n[n[\"shop_id\"] == \"KZN-2\"].groupby(\"period\")[\"neg\"].mean()\nadj = {k: round((obs[k] - fpr) / (tpr - fpr), 3) for k in [\"до\", \"после\"]}\nprint(round(tpr, 3), round(fpr, 3), obs.round(3).to_dict(), adj)\ngold = pd.read_csv('reviews_new_gold.csv')\nlabeled = n.iloc[::-1].merge(gold.iloc[::-1][['review_id','complaint']],on='review_id',validate='one_to_one')\nrows=[]\nfor period,part in labeled[labeled.shop_id=='KZN-2'].groupby('period'):\n    target=part.complaint\n    tpr_new=float(part.loc[target==1,'neg'].mean())\n    fpr_new=float(part.loc[target==0,'neg'].mean())\n    observed=float(part.neg.mean())\n    rows.append(dict(period=period,n=len(part),complaints=int(target.sum()),tpr=tpr_new,fpr=fpr_new,observed=observed,manual=float(target.mean()),adjusted=(observed-fpr_new)/(tpr_new-fpr_new) if abs(tpr_new-fpr_new)>1e-6 else float(\"nan\")))\naudit=pd.DataFrame(rows).set_index('period')\naudit = audit.iloc[::-1]\naudit[\"не_жалобы\"] = audit[\"n\"] - audit[\"complaints\"]"
+  },
+  {
+    "id": "R28",
+    "task": "adjust",
+    "expected": false,
+    "reason": "Два периода остались, но у второго пропал второй обязательный знаменатель из разбивки.",
+    "code": "\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\npred = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(X_train, y_train).predict(X_test)\ntn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\ntpr, fpr = tp / (tp + fn), fp / (fp + tn)\n\nobs = n[n[\"shop_id\"] == \"KZN-2\"].groupby(\"period\")[\"neg\"].mean()\nadj = {k: round((obs[k] - fpr) / (tpr - fpr), 3) for k in [\"до\", \"после\"]}\nprint(round(tpr, 3), round(fpr, 3), obs.round(3).to_dict(), adj)\ngold = pd.read_csv('reviews_new_gold.csv')\nlabeled = n.iloc[::-1].merge(gold.iloc[::-1][['review_id','complaint']],on='review_id',validate='one_to_one')\nrows=[]\nfor period,part in labeled[labeled.shop_id=='KZN-2'].groupby('period'):\n    target=part.complaint\n    tpr_new=float(part.loc[target==1,'neg'].mean())\n    fpr_new=float(part.loc[target==0,'neg'].mean())\n    observed=float(part.neg.mean())\n    rows.append(dict(period=period,n=len(part),complaints=int(target.sum()),tpr=tpr_new,fpr=fpr_new,observed=observed,manual=float(target.mean()),adjusted=(observed-fpr_new)/(tpr_new-fpr_new) if abs(tpr_new-fpr_new)>1e-6 else float(\"nan\")))\naudit=pd.DataFrame(rows).set_index('period')\naudit = audit.iloc[::-1]\naudit.loc[\"после\", \"n\"] = audit.loc[\"после\", \"complaints\"]"
+  },
+  {
+    "id": "R29",
+    "task": "llm-check",
+    "expected": true,
+    "reason": "Именованный above_reference сравнивает нижнюю границу одной доли с числом.",
+    "code": "import math\nfrom collections import Counter\nimport pandas as pd\ntruth = check['topic'].tolist()\nflags = [answer == label for answer,label in zip(llm_topic,truth)]\ncounts = Counter(truth)\nright = Counter(label for label,flag in zip(truth,flags) if flag)\nn_invalid = sum(answer not in TOPICS for answer in llm_topic)\nacc = sum(flags)/len(flags)\nacc_llm = round(acc,3)\nrecall_by_topic = pd.Series({label:round(right[label]/count,3) for label,count in counts.items()})\nworst = recall_by_topic.idxmin()\nradius = 2*math.sqrt(acc*(1-acc)/len(flags))\nlow, high = round(acc-radius,3), round(acc+radius,3)\nabove_reference = acc-radius > .79"
+  },
+  {
+    "id": "R30",
+    "task": "llm-check",
+    "expected": false,
+    "reason": "Те же значения, но оставлено только старое имя clearly_better.",
+    "code": "import math\nfrom collections import Counter\nimport pandas as pd\ntruth = check['topic'].tolist()\nflags = [answer == label for answer,label in zip(llm_topic,truth)]\ncounts = Counter(truth)\nright = Counter(label for label,flag in zip(truth,flags) if flag)\nn_invalid = sum(answer not in TOPICS for answer in llm_topic)\nacc = sum(flags)/len(flags)\nacc_llm = round(acc,3)\nrecall_by_topic = pd.Series({label:round(right[label]/count,3) for label,count in counts.items()})\nworst = recall_by_topic.idxmin()\nradius = 2*math.sqrt(acc*(1-acc)/len(flags))\nlow, high = round(acc-radius,3), round(acc+radius,3)\nclearly_better = acc-radius > .79"
+  },
+  {
+    "id": "R31",
+    "task": "llm-check",
+    "expected": false,
+    "reason": "Сравнивается сама точность вместо нижней границы интервала.",
+    "code": "import math\nfrom collections import Counter\nimport pandas as pd\ntruth = check['topic'].tolist()\nflags = [answer == label for answer,label in zip(llm_topic,truth)]\ncounts = Counter(truth)\nright = Counter(label for label,flag in zip(truth,flags) if flag)\nn_invalid = sum(answer not in TOPICS for answer in llm_topic)\nacc = sum(flags)/len(flags)\nacc_llm = round(acc,3)\nrecall_by_topic = pd.Series({label:round(right[label]/count,3) for label,count in counts.items()})\nworst = recall_by_topic.idxmin()\nradius = 2*math.sqrt(acc*(1-acc)/len(flags))\nlow, high = round(acc-radius,3), round(acc+radius,3)\nabove_reference = acc-radius > .79\nabove_reference = acc > .79"
+  },
+  {
+    "id": "R32",
+    "task": "recall95",
+    "expected": true,
+    "reason": "Контрфактические метки final при прежних текстах и validation меняют только измерение. Оригинальные выходы карточки сохраняют опубликованную фактическую истину.",
+    "code": "\nimport numpy as np\nfrom sklearn.metrics import precision_score, recall_score\n\np = model.predict_proba(X_validation)[:, 1]\ngood = [t for t in np.arange(0.05, 0.96, 0.01) if recall_score(y_validation, (p >= t).astype(int)) >= 0.95]\nt = max(good)\nthr = round(t, 2)\npred_t = (p >= t).astype(int)\nprecision_at = round(precision_score(y_validation, pred_t), 3)\nn_flagged = int(pred_t.sum())\npred_05 = (p >= 0.5).astype(int)\nprecision_05 = round(precision_score(y_validation, pred_05), 3)\nrecall_05 = round(recall_score(y_validation, pred_05), 3)\nprint(thr, precision_at, n_flagged, precision_05, recall_05)\nX_test, y_test = X_test.iloc[::-1], y_test.iloc[::-1]\np_test=model.predict_proba(X_test)[:,1]\ntest_recall=round(recall_score(y_test,p_test>=thr),3)\ntest_flagged=int((p_test>=thr).sum())\n\nnew_truth = 1 - y_test\nnew_recall = recall_score(new_truth, p_test >= thr)\nassert round(new_recall, 3) != test_recall\nassert int((p_test >= thr).sum()) == test_flagged\nassert thr == round(max(good),2)\nprint(\"heldout_counterfactual\",len(new_truth), \"threshold\",thr, \"size\",test_flagged,\"actual\",test_recall, \"changed\",round(new_recall,3))\n"
+  },
+  {
+    "id": "R33",
+    "task": "adjust",
+    "expected": false,
+    "reason": "Третий период дублирует полную строку одного из двух обязательных.",
+    "code": "\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\npred = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(X_train, y_train).predict(X_test)\ntn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\ntpr, fpr = tp / (tp + fn), fp / (fp + tn)\n\nobs = n[n[\"shop_id\"] == \"KZN-2\"].groupby(\"period\")[\"neg\"].mean()\nadj = {k: round((obs[k] - fpr) / (tpr - fpr), 3) for k in [\"до\", \"после\"]}\nprint(round(tpr, 3), round(fpr, 3), obs.round(3).to_dict(), adj)\ngold = pd.read_csv('reviews_new_gold.csv')\nlabeled = n.iloc[::-1].merge(gold.iloc[::-1][['review_id','complaint']],on='review_id',validate='one_to_one')\nrows=[]\nfor period,part in labeled[labeled.shop_id=='KZN-2'].groupby('period'):\n    target=part.complaint\n    tpr_new=float(part.loc[target==1,'neg'].mean())\n    fpr_new=float(part.loc[target==0,'neg'].mean())\n    observed=float(part.neg.mean())\n    rows.append(dict(period=period,n=len(part),complaints=int(target.sum()),tpr=tpr_new,fpr=fpr_new,observed=observed,manual=float(target.mean()),adjusted=(observed-fpr_new)/(tpr_new-fpr_new) if abs(tpr_new-fpr_new)>1e-6 else float(\"nan\")))\naudit=pd.DataFrame(rows).set_index('period')\naudit = audit.iloc[::-1]\naudit = pd.concat([audit, audit.iloc[[0]]])"
+  }
+]

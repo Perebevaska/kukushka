@@ -1,0 +1,16 @@
+[
+  {
+    "id": "R01",
+    "task": "parse-llm",
+    "expected": true,
+    "reason": "Произвольные строковые ID сохраняют порядок ответов.",
+    "code": "\nimport json\nimport pandas as pd\n\ndef parse(answer):\n    bad = {\"sentiment\": None, \"topic\": None, \"ok\": False}\n    i, j = answer.find(\"{\"), answer.rfind(\"}\")\n    if i == -1 or j < i:\n        return bad\n    try:\n        d = json.loads(answer[i:j + 1])\n    except json.JSONDecodeError:\n        return bad\n    if d.get(\"sentiment\") not in (\"positive\", \"negative\") or d.get(\"topic\") not in TOPICS:\n        return bad\n    return {\"sentiment\": d[\"sentiment\"], \"topic\": d[\"topic\"], \"ok\": True}\n\nparsed = pd.DataFrame([parse(a) for a in raw])\nn_bad = int((~parsed[\"ok\"]).sum())\nprint(parsed)\nparsed.index = ['ответ-' + str(91-i) for i in range(len(parsed))]"
+  },
+  {
+    "id": "R26",
+    "task": "parse-llm",
+    "expected": true,
+    "reason": "Новая публичная обработка None; сохраняем именованные индексы исходного R01.",
+    "code": "\nimport json\nimport pandas as pd\n\ndef parse(answer):\n    bad = {\"sentiment\": None, \"topic\": None, \"ok\": False}\n    if answer is None:\n        return bad\n    i, j = answer.find(\"{\"), answer.rfind(\"}\")\n    if i == -1 or j < i:\n        return bad\n    try:\n        d = json.loads(answer[i:j + 1])\n    except json.JSONDecodeError:\n        return bad\n    if d.get(\"sentiment\") not in (\"positive\", \"negative\") or d.get(\"topic\") not in TOPICS:\n        return bad\n    return {\"sentiment\": d[\"sentiment\"], \"topic\": d[\"topic\"], \"ok\": True}\n\nparsed = pd.DataFrame([parse(a) for a in raw])\nn_bad = int((~parsed[\"ok\"]).sum())\nprint(parsed)\nparsed.index = ['ответ-' + str(91-i) for i in range(len(parsed))]"
+  }
+]

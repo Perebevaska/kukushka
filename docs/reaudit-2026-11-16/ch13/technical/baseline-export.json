@@ -1,0 +1,1289 @@
+[
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "import pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nprint(r.shape)\nfor t in r[\"text\"].head(5):\n    print(\"—\", t)\nprint(r[\"rating\"].value_counts().sort_index().to_dict())",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "cell",
+    "id": "cell2",
+    "code": "import re\ntext = \"Хожу сюда давно. Капучино с идеальной пенкой, но бариста грубил! Не советую.\"\ntokens = re.findall(r\"[а-яё]+\", text.lower())\nprint(tokens)",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "cell",
+    "id": "cell3",
+    "code": "import re\nfor text in [\"Не-а, 2 капучино!!! Ёлки, 10/10\", \"кофе— супер\", \"Кофе,кофе и ещё раз КОФЕ\"]:\n    print(f\"{text!r:36} → {re.findall(r'[а-яё]+', text.lower())}\")",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "cell",
+    "id": "cell4",
+    "code": "import re\nfrom collections import Counter\nimport pandas as pd\n\nr = pd.read_csv(\"reviews_text.csv\")\nwords = Counter()\nfor text in r[\"text\"]:\n    words.update(re.findall(r\"[а-яё]+\", text.lower()))\nprint(\"разных слов:\", len(words))\nprint(words.most_common(10))",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "cell",
+    "id": "cell6",
+    "code": "import re\nstop = {\"и\", \"в\", \"с\", \"у\", \"но\", \"не\", \"на\", \"для\", \"а\", \"я\"}\nfor text in [\"Всем советую.\", \"Не советую.\", \"Приду ещё.\", \"Больше не приду.\"]:\n    tokens = [w for w in re.findall(r\"[а-яё]+\", text.lower()) if w not in stop]\n    print(f\"{text:<18} → {tokens}\")",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "cell",
+    "id": "cell7",
+    "code": "import re\nimport pandas as pd\nfrom collections import Counter\n\ndocs = [\"Кофе вкусный, но холодный\", \"Кофе горький, кофе холодный\", \"Холодный, но вкусный кофе\"]\nbags = [Counter(re.findall(r\"[а-яё]+\", d.lower())) for d in docs]\ntable = pd.DataFrame(bags).fillna(0).astype(int)\nprint(table[sorted(table.columns)])",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "cell",
+    "id": "cell8",
+    "code": "import re\nfrom collections import Counter\nimport pandas as pd\n\nr = pd.read_csv(\"reviews_text.csv\")\nwords = Counter()\nfor text in r[\"text\"]:\n    words.update(re.findall(r\"[а-яё]+\", text.lower()))\n\nonce = sorted(w for w, n in words.items() if n == 1)\nprint(\"разных слов:\", len(words), \"| встретились один раз:\", len(once))\nprint(once[:20])",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "predict",
+    "id": "q1",
+    "code": "from collections import Counter\nc = Counter([\"кофе\", \"вкусный\", \"кофе\", \"горький\", \"кофе\"])\nprint(c.most_common(1))",
+    "answer": "`[('кофе', 3)]`",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "task",
+    "id": "tokenize",
+    "starter": "import re",
+    "setup": "",
+    "check": "f = need('tokenize')\nassert f('Привет, Мир!') == ['привет', 'мир'], f'tokenize(\"Привет, Мир!\") = {f(\"Привет, Мир!\")}.'\nassert list(need('t')) == ['кофе', 'отличный', 'ёжики'], f't = {need(\"t\")}. Не забудьте букву ё и нижний регистр.'",
+    "solution": "import re\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\nt = tokenize(\"Кофе — ОТЛИЧНЫЙ, ёжики!!! 10/10\")",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "task",
+    "id": "clean",
+    "starter": "import re\n\ndef normalize(text):\n    ...\n\nclean = normalize(raw)\nprint(repr(clean))",
+    "setup": "raw = \"  Ёлки!!! Кофе —  ОТЛИЧНЫЙ,   ещё приду :) \"",
+    "check": "f = need('normalize')\nassert need('clean') == 'елки кофе отличный еще приду', f'clean = {need(\"clean\")!r}.'\nassert f('Всё ОК, 10 из 10!') == 'все ок из', f'normalize(\"Всё ОК, 10 из 10!\") = {f(\"Всё ОК, 10 из 10!\")!r}.'\nassert f('') == '', 'Пустая строка должна остаться пустой.'",
+    "solution": "import re\n\ndef normalize(text):\n    text = text.lower().replace(\"ё\", \"е\")\n    text = re.sub(r\"[^а-я ]\", \" \", text)\n    return re.sub(r\" +\", \" \", text).strip()\n\nclean = normalize(raw)\nprint(repr(clean))",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "task",
+    "id": "vocab",
+    "starter": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")",
+    "setup": "",
+    "check": "import re as _re, pandas as _pd\nfrom collections import Counter as _C\nc = _C()\nfor t in _pd.read_csv('reviews_text.csv')['text']:\n    c.update(_re.findall(r'[а-яё]+', t.lower()))\nassert need('n_words') == len(c), f'n_words = {need(\"n_words\")}, а нужно {len(c)}.'\nassert need('total') == sum(c.values()), f'total = {need(\"total\")}.'\nassert list(need('top5')) == [w for w, _ in c.most_common(5)], f'top5 = {need(\"top5\")}.'",
+    "solution": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\n\nwords = Counter()\nfor text in r[\"text\"]:\n    words.update(re.findall(r\"[а-яё]+\", text.lower()))\nn_words = len(words)\ntotal = sum(words.values())\ntop5 = [w for w, _ in words.most_common(5)]",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "task",
+    "id": "p-stop",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == [\"['кофе', 'не', 'горячий', 'но', 'горечью']\"], f'Сейчас: {_lines}.'",
+    "solution": "import re\nstop = {\"и\", \"в\", \"с\", \"но\", \"не\", \"на\"}\nkeep = {\"не\", \"но\"}\ntext = \"Кофе не горячий, но с горечью\"\ntokens = [w for w in re.findall(r\"[а-яё]+\", text.lower()) if w not in stop - keep]\nprint(tokens)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "task",
+    "id": "neg-words",
+    "starter": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+    "setup": "",
+    "check": "import re as _re, pandas as _pd\nfrom collections import Counter as _C\nr0 = _pd.read_csv('reviews_text.csv'); tk = lambda t: _re.findall(r'[а-яё]+', t.lower())\nng, ps = r0[r0['rating'] <= 2], r0[r0['rating'] >= 4]\nsh = lambda d: round(float(d['text'].map(lambda t: 'не' in tk(t)).mean()), 3)\nassert close(need('ne_share_neg'), sh(ng)) and close(need('ne_share_pos'), sh(ps)), f'ne_share_neg, ne_share_pos = {need(\"ne_share_neg\")}, {need(\"ne_share_pos\")}.'\ncn, cp = _C(), _C()\nfor t in ng['text']: cn.update(tk(t))\nfor t in ps['text']: cp.update(tk(t))\ntop_p = {w for w, _ in cp.most_common(100)}\nwant = [w for w, _ in cn.most_common() if w not in top_p][:10]\nassert list(need('top_neg')) == want, f'top_neg = {need(\"top_neg\")}, а нужно {want}.'",
+    "solution": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\nneg = r[r[\"rating\"] <= 2]\npos = r[r[\"rating\"] >= 4]\nne_share_neg = round(float(neg[\"text\"].map(lambda t: \"не\" in tokenize(t)).mean()), 3)\nne_share_pos = round(float(pos[\"text\"].map(lambda t: \"не\" in tokenize(t)).mean()), 3)\nc_neg, c_pos = Counter(), Counter()\nfor t in neg[\"text\"]:\n    c_neg.update(tokenize(t))\nfor t in pos[\"text\"]:\n    c_pos.update(tokenize(t))\ntop_pos = {w for w, _ in c_pos.most_common(100)}\ntop_neg = [w for w, _ in c_neg.most_common() if w not in top_pos][:10]",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "task",
+    "id": "bag",
+    "starter": "import re\ndocs = [\"Кофе вкусный, но дорого.\",\n        \"Кофе горький, кофе холодный.\",\n        \"Дорого, но кофе вкусный!\"]\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+    "setup": "",
+    "check": "import numpy as _np\nv = ['вкусный', 'горький', 'дорого', 'кофе', 'но', 'холодный']\nassert list(need('vocab')) == v, f'vocab = {need(\"vocab\")}.'\nb = _np.asarray(need('bow'))\nassert b.tolist() == [[1, 0, 1, 1, 1, 0], [0, 1, 0, 2, 0, 1], [1, 0, 1, 1, 1, 0]], f'bow = {b.tolist()}.'\nassert need('same_bag') == True, 'same_bag должно быть True — порядок слов в мешке теряется.'",
+    "solution": "import re\ndocs = [\"Кофе вкусный, но дорого.\",\n        \"Кофе горький, кофе холодный.\",\n        \"Дорого, но кофе вкусный!\"]\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\nvocab = sorted({w for d in docs for w in tokenize(d)})\nbow = []\nfor d in docs:\n    tokens = tokenize(d)\n    bow.append([tokens.count(w) for w in vocab])\nsame_bag = bow[0] == bow[2]",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "task",
+    "id": "hapax",
+    "starter": "from collections import Counter\n\nwords = Counter()",
+    "setup": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+    "check": "from collections import Counter as _C\nr0, tk = need('r'), need('tokenize')\nw = _C()\nfor t in r0['text']:\n    w.update(tk(t))\no = sorted(k for k, v in w.items() if v == 1)\nassert need('n_words') == len(w), f'n_words = {need(\"n_words\")}.'\nassert need('once', list) == o, f'В once должно быть {len(o)} слов, а сейчас {len(need(\"once\"))}.'\nassert close(need('share_once_vocab'), round(len(o) / len(w), 4), 0.00011), f'share_once_vocab = {need(\"share_once_vocab\")}: доля слов-однодневок среди разных слов.'\nassert close(need('share_once_tokens'), round(len(o) / sum(w.values()), 4), 0.00011), f'share_once_tokens = {need(\"share_once_tokens\")}: доля однодневок среди всех употреблений.'",
+    "solution": "from collections import Counter\n\nwords = Counter()\nfor text in r[\"text\"]:\n    words.update(tokenize(text))\nn_words = len(words)\nonce = sorted(w for w, n in words.items() if n == 1)\nshare_once_vocab = round(len(once) / n_words, 4)\nshare_once_tokens = round(len(once) / sum(words.values()), 4)\nprint(n_words, len(once), share_once_vocab, share_once_tokens)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "task",
+    "id": "bigrams",
+    "starter": "from collections import Counter\n\nbad = r[\"rating\"] <= 3",
+    "setup": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+    "check": "from collections import Counter as _C\nr0, tk = need('r'), need('tokenize')\nb0 = r0['rating'] <= 3\ncb, cg = _C(), _C()\nfor t, isb in zip(r0['text'], b0):\n    tok = tk(t); bg = set(zip(tok, tok[1:]))\n    (cb if isb else cg).update(bg)\nnb, ng = int(b0.sum()), int((~b0).sum())\nd = {k: cb[k] / nb - cg[k] / ng for k in set(cb) | set(cg)}\nw = sorted(d, key=lambda k: (-d[k], k))[:5]\ngot = [tuple(x) for x in need('top_bad', list)]\nassert len(got) == 5, 'top_bad — 5 биграмм.'\nassert set(got) == set(w) or got[:3] == w[:3], f'top_bad = {got}, а нужно {w}.'\nassert close(need('diff_top'), round(d[w[0]], 3), 0.0011), f'diff_top = {need(\"diff_top\")}.'",
+    "solution": "from collections import Counter\n\nbad = r[\"rating\"] <= 3\ncb, cg = Counter(), Counter()\nfor text, is_bad in zip(r[\"text\"], bad):\n    tokens = tokenize(text)\n    bgs = set(zip(tokens, tokens[1:]))\n    (cb if is_bad else cg).update(bgs)\nnb, ng = int(bad.sum()), int((~bad).sum())\ndiff = {bg: cb[bg] / nb - cg[bg] / ng for bg in set(cb) | set(cg)}\ntop_bad = sorted(diff, key=lambda k: (-diff[k], k))[:5]\ndiff_top = round(diff[top_bad[0]], 3)\nprint(top_bad, diff_top)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01-text-prep",
+    "kind": "task",
+    "id": "rule",
+    "starter": "import re\nimport pandas as pd\nfrom sklearn.metrics import accuracy_score, f1_score\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+    "setup": "",
+    "check": "import re as _re, pandas as _pd\nfrom sklearn.metrics import accuracy_score as _acc, f1_score as _f1\nr0 = _pd.read_csv('reviews_text.csv'); y0 = (r0['rating'] <= 3).astype(int)\ntk = r0['text'].map(lambda t: set(_re.findall(r'[а-яё]+', t.lower())))\np1 = tk.map(lambda s: int('не' in s or 'но' in s)); p2 = tk.map(lambda s: int('не' in s))\nfor k, v in [('acc_rule', _acc(y0, p1)), ('f1_rule', _f1(y0, p1)), ('acc_ne', _acc(y0, p2)), ('f1_ne', _f1(y0, p2))]:\n    assert close(need(k), round(v, 3), 0.002), f'{k} = {need(k)}, а нужно {round(v, 3)}.'",
+    "solution": "import re\nimport pandas as pd\nfrom sklearn.metrics import accuracy_score, f1_score\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\ntokens = r[\"text\"].map(lambda t: set(tokenize(t)))\nrule = tokens.map(lambda s: int(\"не\" in s or \"но\" in s))\nonly_ne = tokens.map(lambda s: int(\"не\" in s))\nacc_rule, f1_rule = round(accuracy_score(y, rule), 3), round(f1_score(y, rule), 3)\nacc_ne, f1_ne = round(accuracy_score(y, only_ne), 3), round(f1_score(y, only_ne), 3)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01b-lemmas",
+    "kind": "cell",
+    "id": "cell3",
+    "code": "import re\nimport pandas as pd\n\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\nprint(lem.head(4))\n\nto_lemma = dict(zip(lem[\"word\"], lem[\"lemma\"]))          # словарь «слово → лемма»\ntokens = [w for t in r[\"text\"] for w in re.findall(r\"[а-яё]+\", t.lower())]\nprint(\"слов:\", len(set(tokens)),\n      \"| лемм:\", len({to_lemma[w] for w in tokens}),\n      \"| основ по 5 букв:\", len({w[:5] if len(w) > 5 else w for w in set(tokens)}))\nprint(r.loc[0, \"text\"])\nprint(\" \".join(to_lemma[w] for w in re.findall(r\"[а-яё]+\", r.loc[0, \"text\"].lower())))",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv",
+      "review_lemmas.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01b-lemmas",
+    "kind": "task",
+    "id": "stem-pairs",
+    "starter": "words = [\"сырники\", \"сырников\", \"сырником\", \"приветливые\", \"привезли\", \"привёз\", \"холодный\", \"холодная\"]",
+    "setup": "",
+    "check": "f = need('stem')\nassert f('кофейня', 4) == 'кофе' and f('кофе', 5) == 'кофе', f'stem(\"кофейня\", 4) = {f(\"кофейня\", 4)!r}, stem(\"кофе\", 5) = {f(\"кофе\", 5)!r}: длинное слово обрезается, короткое остаётся как есть.'\nws = [\"сырники\", \"сырников\", \"сырником\", \"приветливые\", \"привезли\", \"привёз\", \"холодный\", \"холодная\"]\nst = lambda w, n: w[:n] if len(w) > n else w\nassert need('n5') == len({st(w, 5) for w in ws}), f'n5 = {need(\"n5\")}: число разных основ — длина множества.'\nassert need('n6') == len({st(w, 6) for w in ws}), f'n6 = {need(\"n6\")}.'\nassert need('glued5') == True, 'glued5: сравните stem(\"приветливые\", 5) и stem(\"привезли\", 5).'",
+    "solution": "words = [\"сырники\", \"сырников\", \"сырником\", \"приветливые\", \"привезли\", \"привёз\", \"холодный\", \"холодная\"]\n\ndef stem(word, n):\n    return word[:n] if len(word) > n else word\n\nn5 = len({stem(w, 5) for w in words})\nn6 = len({stem(w, 6) for w in words})\nglued5 = stem(\"приветливые\", 5) == stem(\"привезли\", 5)\nprint(n5, n6, glued5)",
+    "files": [
+      "reviews_text.csv",
+      "review_lemmas.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01b-lemmas",
+    "kind": "task",
+    "id": "stem",
+    "starter": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+    "setup": "",
+    "check": "import re as _re, pandas as _pd\nr0 = _pd.read_csv('reviews_text.csv'); tk = lambda t: _re.findall(r'[а-яё]+', t.lower())\nst = lambda w, n=5: w[:n] if len(w) > n else w\nallw = {w for t in r0['text'] for w in tk(t)}\nf = need('stem')\nassert f('кофейня') == 'кофей' and f('кофе') == 'кофе', 'stem: обрезать до 5 букв, короткие слова не трогать.'\nassert need('n_raw') == len(allw) and need('n_stem') == len({st(w) for w in allw}), f'n_raw, n_stem = {need(\"n_raw\")}, {need(\"n_stem\")}.'\nassert list(need('merged')) == sorted(w for w in allw if st(w) == st('курьер')), f'merged = {need(\"merged\")}.'",
+    "solution": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\ndef stem(word, n=5):\n    return word[:n] if len(word) > n else word\n\nall_words = {w for t in r[\"text\"] for w in tokenize(t)}\nn_raw = len(all_words)\nn_stem = len({stem(w) for w in all_words})\nmerged = sorted(w for w in all_words if stem(w) == stem(\"курьер\"))",
+    "files": [
+      "reviews_text.csv",
+      "review_lemmas.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01b-lemmas",
+    "kind": "task",
+    "id": "lemma-text",
+    "starter": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+    "setup": "",
+    "check": "f = need('lemmatize')\ngot = f('Бариста были приветливые')\nassert got == 'барист быть приветливый', f'lemmatize(\"Бариста были приветливые\") = {got!r}, а нужно \\'барист быть приветливый\\'.'\nassert need('first') == 'приготовить быстро даже в очередь но дороговатый для такой кофе', f'first = {need(\"first\")!r}.'",
+    "solution": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\nto_lemma = dict(zip(lem[\"word\"], lem[\"lemma\"]))\n\ndef lemmatize(text):\n    return \" \".join(to_lemma[w] for w in tokenize(text))\n\nfirst = lemmatize(r.loc[0, \"text\"])\nprint(first)",
+    "files": [
+      "reviews_text.csv",
+      "review_lemmas.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01b-lemmas",
+    "kind": "task",
+    "id": "lemmas",
+    "starter": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+    "setup": "",
+    "check": "import re as _re, pandas as _pd\nr0 = _pd.read_csv('reviews_text.csv'); l0 = _pd.read_csv('review_lemmas.csv')\ntk = [w for t in r0['text'] for w in _re.findall(r'[а-яё]+', t.lower())]\nm = dict(zip(l0['word'], l0['lemma'])); kn = dict(zip(l0['word'], l0['known']))\ntl = need('to_lemma', dict)\nassert tl.get('привезли') == 'привезти' and len(tl) == len(m), f'to_lemma: в словаре {len(tl)} слов, а в таблице {len(m)}. Соберите его из колонок word и lemma.'\nnc = sum(1 for w in set(tk) if m[w] != w)\nassert need('n_changed') == nc, f'n_changed = {need(\"n_changed\")}, а нужно {nc}. Считайте разные слова (set), а не все токены с повторами.'\nw = round(sum(kn[x] for x in tk) / len(tk), 3)\nassert close(need('share_known'), w, 0.0015), f'share_known = {need(\"share_known\")}. Доля считается по всем токенам с повторами, а не по разным словам.'",
+    "solution": "import re\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\ntokens = [w for t in r[\"text\"] for w in tokenize(t)]\nto_lemma = dict(zip(lem[\"word\"], lem[\"lemma\"]))\nknown = dict(zip(lem[\"word\"], lem[\"known\"]))\n\nn_changed = sum(1 for w in set(tokens) if to_lemma[w] != w)\nshare_known = round(sum(known[w] for w in tokens) / len(tokens), 3)\nprint(n_changed, share_known)",
+    "files": [
+      "reviews_text.csv",
+      "review_lemmas.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01b-lemmas",
+    "kind": "task",
+    "id": "lemma-top",
+    "starter": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\nto_lemma = dict(zip(lem[\"word\"], lem[\"lemma\"]))\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+    "setup": "",
+    "check": "import re as _re, pandas as _pd\nfrom collections import Counter as _C\nr0 = _pd.read_csv('reviews_text.csv'); l0 = _pd.read_csv('review_lemmas.csv')\nm = dict(zip(l0['word'], l0['lemma']))\ntk = [w for t in r0.loc[r0['rating'] <= 3, 'text'] for w in _re.findall(r'[а-яё]+', t.lower())]\nc = _C(m[w] for w in tk)\nassert list(need('top10')) == [k for k, _ in c.most_common(10)], f'top10 = {need(\"top10\")}. Считайте леммы только плохих отзывов (rating <= 3).'\nassert need('n_byt') == c['быть'], f'n_byt = {need(\"n_byt\")}, а нужно {c[\"быть\"]}.'\nfb = sorted({w for w in tk if m[w] == 'быть'})\nassert list(need('forms_byt')) == fb, f'forms_byt = {need(\"forms_byt\")}, а нужно {fb}.'",
+    "solution": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\nto_lemma = dict(zip(lem[\"word\"], lem[\"lemma\"]))\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\ntokens = [w for t in r.loc[r[\"rating\"] <= 3, \"text\"] for w in tokenize(t)]\nc = Counter(to_lemma[w] for w in tokens)\ntop10 = [l for l, _ in c.most_common(10)]\nn_byt = c[\"быть\"]\nforms_byt = sorted({w for w in tokens if to_lemma[w] == \"быть\"})\nprint(top10, n_byt, forms_byt)",
+    "files": [
+      "reviews_text.csv",
+      "review_lemmas.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/01b-lemmas",
+    "kind": "task",
+    "id": "lemma-fix",
+    "starter": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\nfixes = {\"капучиный\": \"капучино\", \"латта\": \"латте\", \"барист\": \"бариста\", \"флэта\": \"флэт\"}\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+    "setup": "",
+    "check": "import re as _re, pandas as _pd\nfrom collections import Counter as _C\nr0 = _pd.read_csv('reviews_text.csv'); l0 = _pd.read_csv('review_lemmas.csv')\nfx = {\"капучиный\": \"капучино\", \"латта\": \"латте\", \"барист\": \"бариста\", \"флэта\": \"флэт\"}\ns = l0[(l0['known'] == 0) & (l0['count'] >= 30)].sort_values('count', ascending=False)['word'].tolist()\nassert list(need('suspects')) == s, f'suspects = {need(\"suspects\")}. Отбор: known == 0 и count >= 30, порядок — по убыванию count.'\nm = dict(zip(l0['word'], l0['lemma']))\nc = _C(fx.get(m[w], m[w]) for t in r0['text'] for w in _re.findall(r'[а-яё]+', t.lower()))\nassert need('n_barista') == c['бариста'], f'n_barista = {need(\"n_barista\")}, а нужно {c[\"бариста\"]}. Поправку применяют к лемме, а не к слову: под «барист» попадают и «бариста», и опечатка «барист».'\nd = max(['кофе', 'капучино', 'латте', 'раф'], key=lambda k: c[k])\nassert need('top_drink') == d, f'top_drink = {need(\"top_drink\")!r}. Посчитайте леммы после поправки и сравните четыре напитка.'",
+    "solution": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlem = pd.read_csv(\"review_lemmas.csv\")\nfixes = {\"капучиный\": \"капучино\", \"латта\": \"латте\", \"барист\": \"бариста\", \"флэта\": \"флэт\"}\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\nsuspects = (lem[(lem[\"known\"] == 0) & (lem[\"count\"] >= 30)]\n            .sort_values(\"count\", ascending=False)[\"word\"].tolist())\n\nto_lemma = dict(zip(lem[\"word\"], lem[\"lemma\"]))\nc = Counter(fixes.get(to_lemma[w], to_lemma[w]) for t in r[\"text\"] for w in tokenize(t))\nn_barista = c[\"бариста\"]\ntop_drink = max([\"кофе\", \"капучино\", \"латте\", \"раф\"], key=lambda d: c[d])\nprint(suspects, n_barista, top_drink, c[\"кофе\"], c[\"капучино\"])",
+    "files": [
+      "reviews_text.csv",
+      "review_lemmas.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "from sklearn.feature_extraction.text import CountVectorizer\n\ndocs = [\"Кофе вкусный, но дорого.\", \"Кофе горький, кофе холодный.\", \"Не советую.\"]\ncv = CountVectorizer()\nX = cv.fit_transform(docs)\nprint(cv.get_feature_names_out())\nprint(X.toarray())",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "cell",
+    "id": "cell2",
+    "code": "import pandas as pd\nfrom sklearn.feature_extraction.text import CountVectorizer\n\nr = pd.read_csv(\"reviews_text.csv\")\nX = CountVectorizer().fit_transform(r[\"text\"])\nprint(\"форма:\", X.shape)\nprint(\"ненулевых клеток:\", X.nnz, f\"({X.nnz / (X.shape[0] * X.shape[1]):.1%})\")\nprint(type(X).__name__)",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "cell",
+    "id": "cell3",
+    "code": "from sklearn.feature_extraction.text import CountVectorizer\ncv = CountVectorizer(ngram_range=(1, 2))\ncv.fit([\"Больше не приду\", \"Обязательно приду ещё\"])\nprint(cv.get_feature_names_out())",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "cell",
+    "id": "cell5",
+    "code": "import pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\n\ndocs = [\"кофе вкусный\", \"кофе горький\", \"кофе вкусный вкусный\"]\ntf = TfidfVectorizer()\nT = tf.fit_transform(docs)\nprint(pd.Series(tf.idf_, index=tf.get_feature_names_out()).round(2).to_dict())\nprint(pd.DataFrame(T.toarray(), columns=tf.get_feature_names_out()).round(2))",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "cell",
+    "id": "cell6",
+    "code": "import pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\n\nr = pd.read_csv(\"reviews_text.csv\")\ntf = TfidfVectorizer()\nT = tf.fit_transform(r[\"text\"])\nidf = pd.Series(tf.idf_, index=tf.get_feature_names_out()).sort_values()\nprint(\"самые частые (маленький idf):\", idf.head(5).round(2).to_dict())\n\nprint(r[\"text\"][0])\nrow = pd.Series(T[0].toarray()[0], index=tf.get_feature_names_out())\nprint(row[row > 0].sort_values(ascending=False).round(3))",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "predict",
+    "id": "q1",
+    "code": "from sklearn.feature_extraction.text import CountVectorizer\ncv = CountVectorizer(ngram_range=(1, 2)).fit([\"кофе очень вкусный\"])\nprint(len(cv.get_feature_names_out()))",
+    "answer": "`5`",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "task",
+    "id": "count",
+    "starter": "import pandas as pd\nfrom sklearn.feature_extraction.text import CountVectorizer\nr = pd.read_csv(\"reviews_text.csv\")",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.feature_extraction.text import CountVectorizer as _CV\nr0 = _pd.read_csv('reviews_text.csv'); cv = _CV(); X = cv.fit_transform(r0['text'])\nassert tuple(need('shape')) == X.shape, f'shape = {need(\"shape\")}.'\nassert close(need('density'), round(X.nnz / (X.shape[0] * X.shape[1]), 4), 2e-4), f'density = {need(\"density\")}.'\nassert need('n_kofe') == int(X[:, cv.vocabulary_['кофе']].sum()), f'n_kofe = {need(\"n_kofe\")}.'",
+    "solution": "import pandas as pd\nfrom sklearn.feature_extraction.text import CountVectorizer\nr = pd.read_csv(\"reviews_text.csv\")\n\ncv = CountVectorizer()\nX = cv.fit_transform(r[\"text\"])\nshape = X.shape\ndensity = round(X.nnz / (X.shape[0] * X.shape[1]), 4)\nn_kofe = int(X[:, cv.vocabulary_[\"кофе\"]].sum())",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "task",
+    "id": "p-tfidf",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == ['True'], f'Сейчас: {_lines}.'",
+    "solution": "import numpy as np\nfrom sklearn.feature_extraction.text import TfidfVectorizer\ndocs = [\"кофе вкусный\", \"кофе горький и холодный\"]\nT = TfidfVectorizer().fit_transform(docs).toarray()\nnorms = (T ** 2).sum(axis=1)\nprint(np.allclose(norms, 1))",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "task",
+    "id": "idf",
+    "starter": "import pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nr = pd.read_csv(\"reviews_text.csv\")",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nr0 = _pd.read_csv('reviews_text.csv'); tf = _TF().fit(r0['text'])\ns = _pd.Series(tf.idf_, index=tf.get_feature_names_out())\nassert _pd.Series(need('idf')).sort_index().round(6).equals(s.sort_index().round(6)), 'idf — Series(tf.idf_, index=tf.get_feature_names_out()).'\nassert list(need('common3')) == list(s.sort_values().index[:3]), f'common3 = {need(\"common3\")}.'\nassert close(need('idf_ne'), round(s['не'], 3), 0.002), f'idf_ne = {need(\"idf_ne\")}.'",
+    "solution": "import pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nr = pd.read_csv(\"reviews_text.csv\")\n\ntf = TfidfVectorizer().fit(r[\"text\"])\nidf = pd.Series(tf.idf_, index=tf.get_feature_names_out())\ncommon3 = list(idf.sort_values().index[:3])\nidf_ne = round(idf[\"не\"], 3)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "task",
+    "id": "idf-by-hand",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer\nr = pd.read_csv(\"reviews_text.csv\")",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.feature_extraction.text import CountVectorizer as _CV, TfidfVectorizer as _TF\nr0 = _pd.read_csv('reviews_text.csv'); cv = _CV(binary=True); B = cv.fit_transform(r0['text'])\ndfw = int(B[:, cv.vocabulary_['доставка']].sum()); n = len(r0)\nassert need('df_word') == dfw, f'df_word = {need(\"df_word\")}, а нужно {dfw}.'\nassert close(need('idf_manual'), round(_np.log((1 + n) / (1 + dfw)) + 1, 4), 2e-4), f'idf_manual = {need(\"idf_manual\")}.'\ntf = _TF().fit(r0['text'])\nassert close(need('idf_sklearn'), round(tf.idf_[tf.vocabulary_['доставка']], 4), 2e-4), f'idf_sklearn = {need(\"idf_sklearn\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer\nr = pd.read_csv(\"reviews_text.csv\")\n\ncv = CountVectorizer(binary=True)\nB = cv.fit_transform(r[\"text\"])\ndf_word = int(B[:, cv.vocabulary_[\"доставка\"]].sum())\nn = len(r)\nidf_manual = round(np.log((1 + n) / (1 + df_word)) + 1, 4)\ntf = TfidfVectorizer().fit(r[\"text\"])\nidf_sklearn = round(tf.idf_[tf.vocabulary_[\"доставка\"]], 4)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "task",
+    "id": "ngrams",
+    "starter": "import pandas as pd\nfrom sklearn.feature_extraction.text import CountVectorizer\nr = pd.read_csv(\"reviews_text.csv\")",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.feature_extraction.text import CountVectorizer as _CV\nr0 = _pd.read_csv('reviews_text.csv')\nw = {'1': len(_CV().fit(r0['text']).vocabulary_), '1-2': len(_CV(ngram_range=(1, 2)).fit(r0['text']).vocabulary_)}\nc3 = _CV(ngram_range=(1, 2), min_df=5).fit(r0['text']); w['1-2 min5'] = len(c3.vocabulary_)\nassert dict(need('sizes')) == w, f'sizes = {need(\"sizes\")}, а нужно {w}.'\nassert need('has_ne_pridu') == ('не приду' in c3.vocabulary_), f'has_ne_pridu = {need(\"has_ne_pridu\")}.'",
+    "solution": "import pandas as pd\nfrom sklearn.feature_extraction.text import CountVectorizer\nr = pd.read_csv(\"reviews_text.csv\")\n\nsizes = {}\nsizes[\"1\"] = len(CountVectorizer().fit(r[\"text\"]).vocabulary_)\nsizes[\"1-2\"] = len(CountVectorizer(ngram_range=(1, 2)).fit(r[\"text\"]).vocabulary_)\ncv3 = CountVectorizer(ngram_range=(1, 2), min_df=5).fit(r[\"text\"])\nsizes[\"1-2 min5\"] = len(cv3.vocabulary_)\nhas_ne_pridu = \"не приду\" in cv3.vocabulary_",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "task",
+    "id": "min-df",
+    "starter": "import pandas as pd\nfrom sklearn.feature_extraction.text import CountVectorizer\nr = pd.read_csv(\"reviews_text.csv\")",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.feature_extraction.text import CountVectorizer as _CV\nr0 = _pd.read_csv('reviews_text.csv')\nw = {m: len(_CV(min_df=m).fit(r0['text']).vocabulary_) for m in [1, 2, 5, 20]}\ng = {int(k): v for k, v in need('vocab_by_min_df', dict).items()}\nassert g == w, f'vocab_by_min_df = {g}, а нужно {w}.'\nfull = _CV().fit(r0['text']); cut = _CV(min_df=5).fit(r0['text'])\nks = round(cut.transform(r0['text']).sum() / full.transform(r0['text']).sum(), 4)\nassert close(need('kept_share'), ks, 2e-4), f'kept_share = {need(\"kept_share\")}, а нужно {ks}.'\nde = sorted(set(full.vocabulary_) - set(cut.vocabulary_))[:5]\nassert list(need('dropped_examples')) == de, f'dropped_examples = {need(\"dropped_examples\")}, а нужно {de}.'",
+    "solution": "import pandas as pd\nfrom sklearn.feature_extraction.text import CountVectorizer\nr = pd.read_csv(\"reviews_text.csv\")\n\nvocab_by_min_df = {m: len(CountVectorizer(min_df=m).fit(r[\"text\"]).vocabulary_) for m in [1, 2, 5, 20]}\nfull = CountVectorizer().fit(r[\"text\"])\ncut = CountVectorizer(min_df=5).fit(r[\"text\"])\nkept_share = round(cut.transform(r[\"text\"]).sum() / full.transform(r[\"text\"]).sum(), 4)\ndropped_examples = sorted(set(full.vocabulary_) - set(cut.vocabulary_))[:5]\nprint(vocab_by_min_df, kept_share, dropped_examples)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "task",
+    "id": "keywords",
+    "starter": "import numpy as np\nfrom sklearn.feature_extraction.text import TfidfVectorizer\n\ntf = TfidfVectorizer()\nT = tf.fit_transform(r[\"text\"])\nnames = tf.get_feature_names_out()\n\ndef keywords(i, k=3):\n    ...",
+    "setup": "import pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nMARKERS = {\n    \"кофе\": {\"кофе\", \"капучино\", \"латте\", \"раф\", \"флэт\", \"уайт\", \"зерно\", \"молоко\"},\n    \"еда\": {\"круассаны\", \"круассан\", \"сырники\", \"десерты\", \"десерт\", \"сэндвич\", \"выпечка\", \"чизкейк\", \"завтраки\", \"салате\"},\n    \"обслуживание\": {\"бариста\", \"персонал\", \"кассе\", \"сотрудники\", \"обслужили\", \"поздоровался\", \"заказ\", \"оплату\"},\n    \"доставка\": {\"курьер\", \"доставка\", \"доставили\", \"привезли\", \"адрес\", \"пакете\", \"крышки\"},\n    \"цена\": {\"дорого\", \"цены\", \"дороговато\", \"недорого\", \"бонусы\", \"скидки\", \"акция\", \"деньги\", \"цена\"},\n    \"атмосфера\": {\"уютно\", \"музыка\", \"столы\", \"шумно\", \"душно\", \"интерьер\", \"туалете\", \"светло\", \"тихо\"},\n}",
+    "check": "import numpy as _np\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nr0, M = need('r'), need('MARKERS')\ntf0 = _TF(); T0 = tf0.fit_transform(r0['text']); nm = tf0.get_feature_names_out()\ndef _kw(i, k=3):\n    row = T0[i].toarray()[0]\n    idx = [j for j in _np.argsort(-row, kind='stable') if row[j] > 0][:k]\n    return [str(nm[j]) for j in idx]\nf = need('keywords')\nfor i in range(5):\n    assert set(f(i)) == set(_kw(i)), f'keywords({i}) = {f(i)}, а нужно {_kw(i)}.'\ng = need('kw', dict)\nassert sorted(g) == [0, 1, 2, 3, 4], 'kw — словарь для отзывов 0…4.'\nw = _np.mean([bool(set(_kw(i)) & M[r0.loc[i, 'topic']]) for i in range(200)])\nassert close(need('share_topic_word'), round(float(w), 3), 0.006), f'share_topic_word = {need(\"share_topic_word\")}, а нужно {w:.3f}.'",
+    "solution": "import numpy as np\nfrom sklearn.feature_extraction.text import TfidfVectorizer\n\ntf = TfidfVectorizer()\nT = tf.fit_transform(r[\"text\"])\nnames = tf.get_feature_names_out()\n\ndef keywords(i, k=3):\n    row = T[i].toarray()[0]\n    idx = [j for j in np.argsort(-row, kind=\"stable\") if row[j] > 0][:k]\n    return [str(names[j]) for j in idx]\n\nkw = {i: keywords(i) for i in range(5)}\nshare_topic_word = round(float(np.mean([bool(set(keywords(i)) & MARKERS[r.loc[i, \"topic\"]]) for i in range(200)])), 3)\nprint(kw, share_topic_word)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "task",
+    "id": "train-only",
+    "starter": "import re\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nr = pd.read_csv(\"reviews_text.csv\")\ntext_train, text_test = train_test_split(r[\"text\"], test_size=0.25, random_state=42)",
+    "setup": "",
+    "check": "import re as _re, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nr0 = _pd.read_csv('reviews_text.csv'); a, b = _tts(r0['text'], test_size=0.25, random_state=42)\ntf = _TF().fit(a); Xb = tf.transform(b)\nassert need('X_train').shape == (len(a), len(tf.vocabulary_)) and need('X_test').shape == Xb.shape, 'Векторайзер обучается на text_train, к text_test — только transform.'\nfrom scipy.sparse import csr_matrix as _csr\nfor _name, _matrix in [('X_train', tf.transform(a)), ('X_test', Xb)]:\n    _difference = _csr(need(_name)) - _matrix\n    assert not _difference.nnz or abs(_difference.data).max() < 1e-7, f'{_name}: признаки должны соответствовать словам своей строки.'\nwords = {w for t in b for w in _re.findall(r'(?u)\\b\\w\\w+\\b', t.lower())}\nun = len([w for w in words if w not in tf.vocabulary_])\nassert need('n_unseen') == un, f'n_unseen = {need(\"n_unseen\")}, а нужно {un}.'\nassert need('empty_test') == int((Xb.getnnz(axis=1) == 0).sum()), f'empty_test = {need(\"empty_test\")}.'",
+    "solution": "import re\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nr = pd.read_csv(\"reviews_text.csv\")\ntext_train, text_test = train_test_split(r[\"text\"], test_size=0.25, random_state=42)\n\ntf = TfidfVectorizer()\nX_train = tf.fit_transform(text_train)\nX_test = tf.transform(text_test)\ntest_words = {w for t in text_test for w in re.findall(r\"(?u)\\b\\w\\w+\\b\", t.lower())}\nn_unseen = len([w for w in test_words if w not in tf.vocabulary_])\nempty_test = int((X_test.getnnz(axis=1) == 0).sum())",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/02-tfidf",
+    "kind": "task",
+    "id": "char-ngrams",
+    "starter": "import pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.metrics.pairwise import cosine_similarity\nr = pd.read_csv(\"reviews_text.csv\")",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nfrom sklearn.metrics.pairwise import cosine_similarity as _cs\nr0 = _pd.read_csv('reviews_text.csv')\nw = _TF().fit(r0['text']); c = _TF(analyzer='char_wb', ngram_range=(3, 4)).fit(r0['text'])\nsw = round(float(_cs(w.transform(['выпечка']), w.transform(['ыпечка']))[0, 0]), 3)\nsc = round(float(_cs(c.transform(['выпечка']), c.transform(['ыпечка']))[0, 0]), 3)\nassert close(need('sim_words'), sw, 0.002) and close(need('sim_chars'), sc, 0.002), f'sim_words, sim_chars = {need(\"sim_words\")}, {need(\"sim_chars\")}, а нужно {sw}, {sc}.'\nassert need('vocab_chars') == len(c.vocabulary_), f'vocab_chars = {need(\"vocab_chars\")}.'",
+    "solution": "import pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.metrics.pairwise import cosine_similarity\nr = pd.read_csv(\"reviews_text.csv\")\n\nwords = TfidfVectorizer().fit(r[\"text\"])\nchars = TfidfVectorizer(analyzer=\"char_wb\", ngram_range=(3, 4)).fit(r[\"text\"])\nsim_words = round(float(cosine_similarity(words.transform([\"выпечка\"]), words.transform([\"ыпечка\"]))[0, 0]), 3)\nsim_chars = round(float(cosine_similarity(chars.transform([\"выпечка\"]), chars.transform([\"ыпечка\"]))[0, 0]), 3)\nvocab_chars = len(chars.vocabulary_)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score, f1_score\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)           # 1 — гость недоволен\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\n\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000))\nmodel.fit(X_train, y_train)\npred = model.predict(X_test)\nprint(\"доля правильных:\", round(accuracy_score(y_test, pred), 3), \"| F1:\", round(f1_score(y_test, pred), 3))\nprint(model.predict([\"Курьер опоздал, кофе остыл\", \"Очень уютно, вернусь\"]))",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "cell",
+    "id": "cell2",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)\n\nvec, lr = model[0], model[-1]\nw = pd.Series(lr.coef_[0], index=vec.get_feature_names_out()).sort_values()\nprint(\"за довольного:\", w.head(6).round(2).to_dict())\nprint(\"за недовольного:\", w.tail(6).round(2).to_dict())",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "cell",
+    "id": "cell3",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)\npred = model.predict(X_test)\n\nerrors = pd.DataFrame({\"текст\": X_test, \"оценка\": r.loc[X_test.index, \"rating\"], \"модель\": pred})[pred != y_test]\nprint(\"ошибок:\", len(errors))\nprint(errors.head(6).to_string())",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "cell",
+    "id": "cell5",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\n\nr = pd.read_csv(\"reviews_text.csv\")\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], r[\"topic\"], test_size=0.25, random_state=42, stratify=r[\"topic\"])\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)\npred = model.predict(X_test)\nprint(\"доля правильных:\", round((pred == y_test).mean(), 3))\npd.crosstab(y_test, pred, rownames=[\"тема\"], colnames=[\"модель\"])",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "predict",
+    "id": "q1",
+    "code": "from sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import CountVectorizer\nfrom sklearn.naive_bayes import MultinomialNB\nm = make_pipeline(CountVectorizer(), MultinomialNB())\nm.fit([\"вкусно спасибо\", \"грубо долго\", \"вкусно уютно\", \"долго холодно\"], [0, 1, 0, 1])\nprint(m.predict([\"долго и холодно\"]).tolist())",
+    "answer": "`[1]`",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "task",
+    "id": "pipe",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score, f1_score\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\nnew = [\"Бариста грубил, кофе холодный\", \"Всё понравилось, спасибо\", \"Вкусно, но очень долго ждали\"]",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nfrom sklearn.linear_model import LogisticRegression as _LR\nfrom sklearn.metrics import accuracy_score as _acc, f1_score as _f1\nr0 = _pd.read_csv('reviews_text.csv'); y0 = (r0['rating'] <= 3).astype(int)\na, b, c, d = _tts(r0['text'], y0, test_size=0.25, random_state=42, stratify=y0)\nm = _mp(_TF(), _LR(max_iter=1000)).fit(a, c); p = m.predict(b)\nassert close(need('acc'), round(_acc(d, p), 3), 0.002) and close(need('f1'), round(_f1(d, p), 3), 0.002), f'acc, f1 = {need(\"acc\")}, {need(\"f1\")}.'\nw = [int(v) for v in m.predict(['Бариста грубил, кофе холодный', 'Всё понравилось, спасибо', 'Вкусно, но очень долго ждали'])]\nassert [int(v) for v in need('preds')] == w, f'preds = {need(\"preds\")}, а нужно {w}.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score, f1_score\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\nnew = [\"Бариста грубил, кофе холодный\", \"Всё понравилось, спасибо\", \"Вкусно, но очень долго ждали\"]\n\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)\npred = model.predict(X_test)\nacc = round(accuracy_score(y_test, pred), 3)\nf1 = round(f1_score(y_test, pred), 3)\npreds = [int(v) for v in model.predict(new)]",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "task",
+    "id": "p-nb",
+    "starter": "",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import CountVectorizer as _CV\nfrom sklearn.naive_bayes import MultinomialNB as _NB\nr0 = _pd.read_csv('reviews_text.csv'); y0 = (r0['rating'] <= 3).astype(int)\na, b, c, d = _tts(r0['text'], y0, test_size=0.25, random_state=42, stratify=y0)\nw = round(float((_mp(_CV(), _NB()).fit(a, c).predict(b) == d).mean()), 3)\nassert _lines == [str(w)], f'Сейчас: {_lines}.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import CountVectorizer\nfrom sklearn.naive_bayes import MultinomialNB\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\nmodel = make_pipeline(CountVectorizer(), MultinomialNB()).fit(X_train, y_train)\nprint(round(float((model.predict(X_test) == y_test).mean()), 3))",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "task",
+    "id": "baseline",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.dummy import DummyClassifier\nfrom sklearn.metrics import accuracy_score, f1_score\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TV\nfrom sklearn.linear_model import LogisticRegression as _LR\nfrom sklearn.dummy import DummyClassifier as _D\nfrom sklearn.metrics import accuracy_score as _acc, f1_score as _f1\nr0 = _pd.read_csv('reviews_text.csv'); y0 = (r0['rating'] <= 3).astype(int)\na, b, c, d = _tts(r0['text'], y0, test_size=0.25, random_state=42, stratify=y0)\npd_ = _D(strategy='most_frequent').fit(a, c).predict(b); pm = _mp(_TV(), _LR(max_iter=1000)).fit(a, c).predict(b)\nfor k, v in {'acc_dummy': _acc(d, pd_), 'f1_dummy': _f1(d, pd_, zero_division=0), 'acc_model': _acc(d, pm), 'f1_model': _f1(d, pm), 'share_bad': y0.mean()}.items():\n    assert close(need(k), round(v, 3), 0.0011), f'{k} = {need(k)}, а нужно {round(v, 3)}.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.dummy import DummyClassifier\nfrom sklearn.metrics import accuracy_score, f1_score\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\n\ndummy = DummyClassifier(strategy=\"most_frequent\").fit(X_train, y_train)\npd_ = dummy.predict(X_test)\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)\npm = model.predict(X_test)\nacc_dummy = round(accuracy_score(y_test, pd_), 3)\nf1_dummy = round(f1_score(y_test, pd_, zero_division=0), 3)\nacc_model = round(accuracy_score(y_test, pm), 3)\nf1_model = round(f1_score(y_test, pm), 3)\nshare_bad = round(y.mean(), 3)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "task",
+    "id": "top-words",
+    "starter": "# уже есть: model — конвейер TF-IDF + логистическая регрессия, обученный на тональности\nimport pandas as pd",
+    "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)",
+    "check": "import pandas as _pd\nw0 = _pd.Series(model[-1].coef_[0], index=model[0].get_feature_names_out())\nwt = need('weights', _pd.Series)\nassert set(wt.index) == set(w0.index), 'Индекс weights — слова get_feature_names_out().'\nassert list(need('top_bad')) == list(w0.sort_values(ascending=False).index[:5]), f'top_bad = {need(\"top_bad\")}.'\nassert list(need('top_good')) == list(w0.sort_values().index[:5]), f'top_good = {need(\"top_good\")}.'\nassert close(need('w_ne'), round(w0['не'], 2), 0.006), f'w_ne = {need(\"w_ne\")}.'",
+    "solution": "import pandas as pd\nweights = pd.Series(model[-1].coef_[0], index=model[0].get_feature_names_out())\ntop_bad = list(weights.sort_values(ascending=False).index[:5])\ntop_good = list(weights.sort_values().index[:5])\nw_ne = round(weights[\"не\"], 2)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "task",
+    "id": "errors",
+    "starter": "# уже есть: model, X_test, y_test\nimport numpy as np",
+    "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)",
+    "check": "import numpy as _np\npr = model.predict_proba(X_test); p = pr.argmax(1); err = p != y_test.values\nconf = err & (pr.max(1) > 0.8)\nassert need('n_errors') == int(err.sum()) and need('n_confident') == int(conf.sum()), f'n_errors, n_confident = {need(\"n_errors\")}, {need(\"n_confident\")}.'\nassert close(need('confident_share'), round(conf.sum() / err.sum(), 3), 0.002), f'confident_share = {need(\"confident_share\")}.'",
+    "solution": "import numpy as np\nproba = model.predict_proba(X_test)\npred = proba.argmax(axis=1)\nerrors = pred != y_test.values\nconfident = errors & (proba.max(axis=1) > 0.8)\nn_errors = int(errors.sum())\nn_confident = int(confident.sum())\nconfident_share = round(n_confident / n_errors, 3)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "task",
+    "id": "unsure",
+    "starter": "import numpy as np\nimport pandas as pd\n\np = model.predict_proba(X_test)[:, 1]",
+    "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)",
+    "check": "import numpy as _np\nm, Xt, yt = need('model'), need('X_test'), need('y_test')\np = m.predict_proba(Xt)[:, 1]\nuns = (p >= 0.2) & (p <= 0.8)\nok = (p >= 0.5).astype(int) == yt.values\nassert close(need('share_unsure'), round(float(uns.mean()), 3), 0.0011), f'share_unsure = {need(\"share_unsure\")}.'\nassert close(need('acc_sure'), round(float(ok[~uns].mean()), 3), 0.0011), f'acc_sure = {need(\"acc_sure\")}.'\nassert close(need('acc_unsure'), round(float(ok[uns].mean()), 3), 0.0011), f'acc_unsure = {need(\"acc_unsure\")}.'\nidx = _np.argsort(_np.abs(p - 0.5), kind='stable')[:3]\nassert list(need('unsure_examples')) == list(Xt.values[idx]), 'unsure_examples — три текста с вероятностью ближе всего к 0.5.'",
+    "solution": "import numpy as np\nimport pandas as pd\n\np = model.predict_proba(X_test)[:, 1]\nunsure = (p >= 0.2) & (p <= 0.8)\nok = (p >= 0.5).astype(int) == y_test.values\nshare_unsure = round(float(unsure.mean()), 3)\nacc_sure = round(float(ok[~unsure].mean()), 3)\nacc_unsure = round(float(ok[unsure].mean()), 3)\nidx = np.argsort(np.abs(p - 0.5), kind=\"stable\")[:3]\nunsure_examples = list(X_test.values[idx])\nprint(share_unsure, acc_sure, acc_unsure, *unsure_examples, sep=\"\\n\")",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "task",
+    "id": "recall95",
+    "starter": "import numpy as np\nfrom sklearn.metrics import precision_score, recall_score\n\np = model.predict_proba(X_validation)[:, 1]",
+    "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_dev,X_test,y_dev,y_test = train_test_split(r[\"text\"],y,test_size=.25,random_state=42,stratify=y)\nX_train,X_validation,y_train,y_validation = train_test_split(X_dev,y_dev,test_size=1/3,random_state=42,stratify=y_dev)\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)",
+    "check": "import numpy as _np\nfrom sklearn.metrics import precision_score as _ps, recall_score as _rs\nm, Xt, yt = need('model'), need('X_validation'), need('y_validation')\np = m.predict_proba(Xt)[:, 1]\nok = [t for t in _np.arange(0.05, 0.96, 0.01) if _rs(yt, (p >= t).astype(int)) >= 0.95]\nt = max(ok)\nassert close(need('thr'), round(t, 2), 0.0051), f'thr = {need(\"thr\")}, а нужно {round(t, 2)}.'\nassert close(need('precision_at'), round(_ps(yt, (p >= t).astype(int)), 3), 0.0011), f'precision_at = {need(\"precision_at\")}.'\nassert need('n_flagged') == int((p >= t).sum()), f'n_flagged = {need(\"n_flagged\")}.'\nassert close(need('precision_05'), round(_ps(yt, (p >= 0.5).astype(int)), 3), 0.0011) and close(need('recall_05'), round(_rs(yt, (p >= 0.5).astype(int)), 3), 0.0011), 'precision_05, recall_05 — при пороге 0.5.'\n_pt = m.predict_proba(need('X_test'))[:,1]\nassert close(need('test_recall'),round(_rs(need('y_test'),_pt>=need('thr')),3)), 'test_recall: фактическая полнота на финальном тесте, она может оказаться ниже0.95.'\nassert need('test_flagged')==int((_pt>=need('thr')).sum()), 'test_flagged: фактическая длина очереди по фиксированному порогу.'",
+    "solution": "import numpy as np\nfrom sklearn.metrics import precision_score, recall_score\n\np = model.predict_proba(X_validation)[:, 1]\ngood = [t for t in np.arange(0.05, 0.96, 0.01) if recall_score(y_validation, (p >= t).astype(int)) >= 0.95]\nt = max(good)\nthr = round(t, 2)\npred_t = (p >= t).astype(int)\nprecision_at = round(precision_score(y_validation, pred_t), 3)\nn_flagged = int(pred_t.sum())\npred_05 = (p >= 0.5).astype(int)\nprecision_05 = round(precision_score(y_validation, pred_05), 3)\nrecall_05 = round(recall_score(y_validation, pred_05), 3)\nprint(thr, precision_at, n_flagged, precision_05, recall_05)\np_test=model.predict_proba(X_test)[:,1]\ntest_recall=round(recall_score(y_test,p_test>=thr),3)\ntest_flagged=int((p_test>=thr).sum())",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "task",
+    "id": "topics",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\")\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], r[\"topic\"], test_size=0.25, random_state=42, stratify=r[\"topic\"])",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nfrom sklearn.linear_model import LogisticRegression as _LR\nr0 = _pd.read_csv('reviews_text.csv'); a, b, c, d = _tts(r0['text'], r0['topic'], test_size=0.25, random_state=42, stratify=r0['topic'])\np = _mp(_TF(), _LR(max_iter=1000)).fit(a, c).predict(b)\nassert close(need('acc_topic'), round((p == d).mean(), 3), 0.002), f'acc_topic = {need(\"acc_topic\")}.'\nrec = _pd.Series({t: (p[d.values == t] == t).mean() for t in d.unique()})\nassert need('worst_topic') == rec.idxmin(), f'worst_topic = {need(\"worst_topic\")!r}, а нужно {rec.idxmin()!r}.'\nassert need('cm', _pd.DataFrame).values.sum() == len(d), 'cm — crosstab настоящих тем и прогнозов.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\")\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], r[\"topic\"], test_size=0.25, random_state=42, stratify=r[\"topic\"])\n\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)\npred = model.predict(X_test)\nacc_topic = round((pred == y_test).mean(), 3)\ncm = pd.crosstab(y_test, pred)\nrecall = pd.Series({t: cm.loc[t, t] / cm.loc[t].sum() for t in cm.index})\nworst_topic = recall.idxmin()",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03-classify",
+    "kind": "task",
+    "id": "compare",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, cross_val_score\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.naive_bayes import MultinomialNB\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts, cross_val_score as _cvs\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF, CountVectorizer as _CV\nfrom sklearn.linear_model import LogisticRegression as _LR\nfrom sklearn.naive_bayes import MultinomialNB as _NB\nr0 = _pd.read_csv('reviews_text.csv'); y0 = (r0['rating'] <= 3).astype(int)\na, b, c, d = _tts(r0['text'], y0, test_size=0.25, random_state=42, stratify=y0)\nms = {'words': _mp(_TF(), _LR(max_iter=1000)), 'bigrams': _mp(_TF(ngram_range=(1, 2)), _LR(max_iter=1000)),\n      'chars': _mp(_TF(analyzer='char_wb', ngram_range=(2, 4)), _LR(max_iter=1000)), 'nb': _mp(_CV(), _NB())}\nw = {k: round(_cvs(m, a, c, cv=5, scoring='f1').mean(), 3) for k, m in ms.items()}\ngot = need('cv_f1', dict)\nassert all(k in got and close(got[k], v, 0.002) for k, v in w.items()), f'cv_f1 = {got}, а нужно {w}.'\ntop = max(w.values()); ok_best = sorted(k for k, v in w.items() if v == top)\nassert need('best') in ok_best, f'best = {need(\"best\")!r}, а подходит {\" или \".join(ok_best)} — у них наибольшее среднее F1 после округления.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, cross_val_score\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.naive_bayes import MultinomialNB\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\n\nmodels = {\n    \"words\": make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)),\n    \"bigrams\": make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)),\n    \"chars\": make_pipeline(TfidfVectorizer(analyzer=\"char_wb\", ngram_range=(2, 4)), LogisticRegression(max_iter=1000)),\n    \"nb\": make_pipeline(CountVectorizer(), MultinomialNB()),\n}\ncv_f1 = {k: round(cross_val_score(m, X_train, y_train, cv=5, scoring=\"f1\").mean(), 3) for k, m in models.items()}\nbest = max(cv_f1, key=cv_f1.get)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03b-labels",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "from sklearn.metrics import cohen_kappa_score\n\na = [\"ж\", \"н\", \"н\", \"н\", \"н\", \"н\", \"н\", \"ж\", \"н\", \"н\"]\nb = [\"ж\", \"н\", \"н\", \"н\", \"н\", \"н\", \"н\", \"н\", \"ж\", \"н\"]\n\np_o = sum(x == y for x, y in zip(a, b)) / len(a)\np_e = sum((a.count(c) / len(a)) * (b.count(c) / len(b)) for c in set(a) | set(b))\nprint(p_o, round(p_e, 2), round((p_o - p_e) / (1 - p_e), 3), round(cohen_kappa_score(a, b), 3))",
+    "expect_error": false,
+    "files": [
+      "review_labels.csv",
+      "review_gold.csv",
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03b-labels",
+    "kind": "cell",
+    "id": "cell2",
+    "code": "import pandas as pd\nfrom sklearn.metrics import cohen_kappa_score\n\nlabels = pd.read_csv(\"review_labels.csv\")\nwide = labels.pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")   # 450 × 3\n\ndef majority(row):\n    counts = row.value_counts()\n    return counts.index[0] if counts.iloc[0] >= 2 else None\n\nwide[\"vote\"] = wide[[\"аня\", \"борис\", \"вика\"]].apply(majority, axis=1)\nprint(wide.head(4))\nprint(\"единогласно:\", round((wide[[\"аня\", \"борис\", \"вика\"]].nunique(axis=1) == 1).mean(), 3),\n      \"| без большинства:\", wide[\"vote\"].isna().sum())\nfor x, y in [(\"аня\", \"борис\"), (\"аня\", \"вика\"), (\"борис\", \"вика\")]:\n    print(f\"{x}–{y}: совпадений {(wide[x] == wide[y]).mean():.3f}, каппа {cohen_kappa_score(wide[x], wide[y]):.3f}\")",
+    "expect_error": false,
+    "files": [
+      "review_labels.csv",
+      "review_gold.csv",
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03b-labels",
+    "kind": "cell",
+    "id": "cell3",
+    "code": "import pandas as pd\n\nlabels = pd.read_csv(\"review_labels.csv\")\ngold = pd.read_csv(\"review_gold.csv\").set_index(\"review_id\")[\"label\"]\nwide = labels.pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")\n\ncheck = wide.loc[gold.index]                        # только отзывы золотого набора\nprint((check.eq(gold, axis=0)).mean().round(2))     # доля верных у каждого\nprint(wide[\"вика\"].value_counts().head(3))",
+    "expect_error": false,
+    "files": [
+      "review_labels.csv",
+      "review_gold.csv",
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03b-labels",
+    "kind": "cell",
+    "id": "cell4",
+    "code": "import pandas as pd\n\nr = pd.read_csv(\"reviews_text.csv\").set_index(\"review_id\")\nwide = pd.read_csv(\"review_labels.csv\").pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")\ngold = pd.read_csv(\"review_gold.csv\").set_index(\"review_id\")[\"label\"]\n\ntopic = r.loc[wide.index, \"topic\"]                      # итоговая тема тех же 450 отзывов\nprint(\"с золотом:\", (r.loc[gold.index, \"topic\"] == gold).mean())\nprint(wide.eq(topic, axis=0).mean().round(3).to_dict())",
+    "expect_error": false,
+    "files": [
+      "review_labels.csv",
+      "review_gold.csv",
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03b-labels",
+    "kind": "task",
+    "id": "p-vote",
+    "starter": "",
+    "setup": "",
+    "check": "import pandas as _pd\n_w = _pd.read_csv('review_labels.csv').pivot(index='review_id', columns='annotator', values='label')\n_n = int((_w.nunique(axis=1) == 1).sum())\nassert _lines == [str(_n)], f'Сейчас вывод: {_lines}. Сначала таблица, потом сравнение по строке, потом печать.'",
+    "solution": "import pandas as pd\nlabels = pd.read_csv(\"review_labels.csv\")\nwide = labels.pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")\nsame = wide.nunique(axis=1) == 1\nprint(int(same.sum()))",
+    "files": [
+      "review_labels.csv",
+      "review_gold.csv",
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03b-labels",
+    "kind": "task",
+    "id": "vote",
+    "starter": "import pandas as pd\nlabels = pd.read_csv(\"review_labels.csv\")",
+    "setup": "",
+    "check": "import pandas as _pd\nw = _pd.read_csv('review_labels.csv').pivot(index='review_id', columns='annotator', values='label')\ndef _m(row):\n    c = row.value_counts()\n    return c.index[0] if c.iloc[0] >= 2 else None\nv0 = w.apply(_m, axis=1)\nv = need('vote', _pd.Series)\nassert len(v) == len(w), f'В vote {len(v)} значений, а отзывов {len(w)}.'\nv = v.reindex(w.index)\nassert v.fillna('—').eq(v0.fillna('—')).all(), 'vote не совпадает с голосованием: тема с 2–3 голосами, иначе None. Индекс — review_id.'\nassert need('n_no_majority') == int(v0.isna().sum()), f'n_no_majority = {need(\"n_no_majority\")}.'\ns = round(float((w.nunique(axis=1) == 2).mean()), 3)\nassert close(need('share_2of3'), s, 0.0015), f'share_2of3 = {need(\"share_2of3\")}. Ровно двое согласны — в строке ровно две разные темы.'",
+    "solution": "import pandas as pd\nlabels = pd.read_csv(\"review_labels.csv\")\nwide = labels.pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")\n\ndef majority(row):\n    counts = row.value_counts()\n    return counts.index[0] if counts.iloc[0] >= 2 else None\n\nvote = wide.apply(majority, axis=1)\nn_no_majority = int(vote.isna().sum())\nshare_2of3 = round(float((wide.nunique(axis=1) == 2).mean()), 3)\nprint(vote.value_counts(), n_no_majority, share_2of3)",
+    "files": [
+      "review_labels.csv",
+      "review_gold.csv",
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03b-labels",
+    "kind": "task",
+    "id": "kappa",
+    "starter": "import pandas as pd\nfrom sklearn.metrics import cohen_kappa_score\nwide = pd.read_csv(\"review_labels.csv\").pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")\n\ndef kappa(x, y):\n    x, y = list(x), list(y)\n    ...",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.metrics import cohen_kappa_score as _k\nf = need('kappa')\nt1 = ['ж', 'н', 'н', 'н', 'н', 'н', 'н', 'ж', 'н', 'н']; t2 = ['ж', 'н', 'н', 'н', 'н', 'н', 'н', 'н', 'ж', 'н']\nr1 = f(t1, t2)\nassert r1 is not None and close(r1, 0.375, 1e-6), f'kappa на примере из урока = {r1}, а нужно 0.375. Проверьте p_e: доли считаются отдельно для x и для y.'\nassert close(f(['а', 'б', 'в'], ['а', 'б', 'в']), 1.0, 1e-9), 'При полном совпадении каппа равна 1.'\nw = _pd.read_csv('review_labels.csv').pivot(index='review_id', columns='annotator', values='label')\nassert close(f(w['аня'], w['вика']), _k(w['аня'], w['вика']), 1e-9), 'kappa(аня, вика) не совпадает с cohen_kappa_score. В p_e доли каждой темы берутся отдельно у x и у y и перемножаются.'\nassert close(need('kappa_ab'), round(_k(w['аня'], w['борис']), 3), 0.0015), f'kappa_ab = {need(\"kappa_ab\")}.'\nassert close(need('kappa_av'), round(_k(w['аня'], w['вика']), 3), 0.0015), f'kappa_av = {need(\"kappa_av\")}.'",
+    "solution": "import pandas as pd\nfrom sklearn.metrics import cohen_kappa_score\nwide = pd.read_csv(\"review_labels.csv\").pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")\n\ndef kappa(x, y):\n    x, y = list(x), list(y)\n    n = len(x)\n    p_o = sum(a == b for a, b in zip(x, y)) / n\n    p_e = sum((x.count(c) / n) * (y.count(c) / n) for c in set(x) | set(y))\n    return (p_o - p_e) / (1 - p_e)\n\nkappa_ab = round(kappa(wide[\"аня\"], wide[\"борис\"]), 3)\nkappa_av = round(kappa(wide[\"аня\"], wide[\"вика\"]), 3)\nprint(kappa_ab, kappa_av, round(cohen_kappa_score(wide[\"аня\"], wide[\"вика\"]), 3))",
+    "files": [
+      "review_labels.csv",
+      "review_gold.csv",
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03b-labels",
+    "kind": "task",
+    "id": "golden",
+    "starter": "import pandas as pd\nlabels = pd.read_csv(\"review_labels.csv\")\ngold = pd.read_csv(\"review_gold.csv\").set_index(\"review_id\")[\"label\"]\nwide = labels.pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")\n\ndef majority(row):\n    counts = row.value_counts()\n    return counts.index[0] if counts.iloc[0] >= 2 else None",
+    "setup": "",
+    "check": "import pandas as _pd\nw = _pd.read_csv('review_labels.csv').pivot(index='review_id', columns='annotator', values='label')\ng = _pd.read_csv('review_gold.csv').set_index('review_id')['label']\nacc = {a: round(float((w.loc[g.index, a] == g).mean()), 3) for a in ['аня', 'борис', 'вика']}\ngot = need('gold_acc', dict)\nassert all(k in got and close(got[k], v, 0.0015) for k, v in acc.items()), f'gold_acc = {got}, а нужно {acc}. Сравнивайте только 50 отзывов золотого набора: wide.loc[gold.index].'\nwst = min(acc, key=acc.get)\nassert need('worst') == wst, f'worst = {need(\"worst\")!r}.'\ndef _m(row):\n    c = row.value_counts()\n    return c.index[0] if c.iloc[0] >= 2 else None\nvg = w.loc[g.index, ['аня', 'борис', 'вика']].apply(_m, axis=1)\nvv = round(float((vg == g).mean()), 3)\nassert close(need('vote_gold'), vv, 0.0015), f'vote_gold = {need(\"vote_gold\")}, а нужно {vv}. Отзыв без большинства (None) считается ошибкой.'\nrest = [a for a in ['аня', 'борис', 'вика'] if a != wst]\nassert need('n_recheck') == int((w[rest[0]] != w[rest[1]]).sum()), f'n_recheck = {need(\"n_recheck\")}: отзывы из всех 450, где два оставшихся разметчика выбрали разные темы.'",
+    "solution": "import pandas as pd\nlabels = pd.read_csv(\"review_labels.csv\")\ngold = pd.read_csv(\"review_gold.csv\").set_index(\"review_id\")[\"label\"]\nwide = labels.pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")\n\ndef majority(row):\n    counts = row.value_counts()\n    return counts.index[0] if counts.iloc[0] >= 2 else None\n\ngold_acc = {a: round(float((wide.loc[gold.index, a] == gold).mean()), 3) for a in wide.columns}\nworst = min(gold_acc, key=gold_acc.get)\nvote_gold = round(float((wide.loc[gold.index].apply(majority, axis=1) == gold).mean()), 3)\nrest = [a for a in wide.columns if a != worst]\nn_recheck = int((wide[rest[0]] != wide[rest[1]]).sum())\nprint(gold_acc, worst, vote_gold, n_recheck)",
+    "files": [
+      "review_labels.csv",
+      "review_gold.csv",
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03b-labels",
+    "kind": "task",
+    "id": "topic-check",
+    "starter": "topic = r.loc[wide.index, \"topic\"]",
+    "setup": "import pandas as pd\nr = pd.read_csv(\"reviews_text.csv\").set_index(\"review_id\")\nwide = pd.read_csv(\"review_labels.csv\").pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")\n\ndef majority(row):\n    counts = row.value_counts()\n    return counts.index[0] if counts.iloc[0] >= 2 else None",
+    "check": "import pandas as _pd\nw = _pd.read_csv('review_labels.csv').pivot(index='review_id', columns='annotator', values='label')\nt = _pd.read_csv('reviews_text.csv').set_index('review_id').loc[w.index, 'topic']\nag = w['аня'] == w['борис']\nassert need('n_ab_agree') == int(ag.sum()), f'n_ab_agree = {need(\"n_ab_agree\")}, а нужно {int(ag.sum())}.'\nm = round(float((w.loc[ag, 'аня'] == t[ag]).mean()), 3)\nassert close(need('match_ab'), m, 0.0015), f'match_ab = {need(\"match_ab\")}, а нужно {m}. Сравнивайте только отзывы, где Аня и Борис согласны.'\ndef _m(row):\n    c = row.value_counts()\n    return c.index[0] if c.iloc[0] >= 2 else None\nv = round(float((w.apply(_m, axis=1) == t).mean()), 3)\nassert close(need('match_vote'), v, 0.0015), f'match_vote = {need(\"match_vote\")}, а нужно {v}.'",
+    "solution": "topic = r.loc[wide.index, \"topic\"]\nagree = wide[\"аня\"] == wide[\"борис\"]\nn_ab_agree = int(agree.sum())\nmatch_ab = round(float((wide.loc[agree, \"аня\"] == topic[agree]).mean()), 3)\nmatch_vote = round(float((wide.apply(majority, axis=1) == topic).mean()), 3)\nprint(n_ab_agree, match_ab, match_vote)",
+    "files": [
+      "review_labels.csv",
+      "review_gold.csv",
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/03b-labels",
+    "kind": "task",
+    "id": "train-labels",
+    "starter": "train_text = r.loc[wide.index, \"text\"]\nrest = r.drop(wide.index)                 # 1950 отзывов для проверки",
+    "setup": "import pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\").set_index(\"review_id\")\nwide = pd.read_csv(\"review_labels.csv\").pivot(index=\"review_id\", columns=\"annotator\", values=\"label\")",
+    "check": "import pandas as _pd\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _T\nfrom sklearn.linear_model import LogisticRegression as _LR\nr0 = _pd.read_csv('reviews_text.csv').set_index('review_id')\nw = _pd.read_csv('review_labels.csv').pivot(index='review_id', columns='annotator', values='label')\nrs = r0.drop(w.index)\nlabs = {'topic': r0.loc[w.index, 'topic'], 'аня': w['аня'], 'вика': w['вика']}\nwant = {k: round(float((_mp(_T(), _LR(max_iter=1000)).fit(r0.loc[w.index, 'text'], v).predict(rs['text']) == rs['topic']).mean()), 3) for k, v in labs.items()}\ngot = need('acc', dict)\nassert set(got) == set(want), f'Ключи acc: {sorted(got)}, а нужны {sorted(want)}.'\nfor k in want:\n    assert close(got[k], want[k], 0.004), f'acc[{k!r}] = {got[k]}, а нужно около {want[k]}. Обучение — на 450 размеченных, проверка — на остальных 1950 по topic.'",
+    "solution": "train_text = r.loc[wide.index, \"text\"]\nrest = r.drop(wide.index)\n\nlabels = {\"topic\": r.loc[wide.index, \"topic\"], \"аня\": wide[\"аня\"], \"вика\": wide[\"вика\"]}\nacc = {}\nfor name, y in labels.items():\n    model = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(train_text, y)\n    acc[name] = round(float((model.predict(rest[\"text\"]) == rest[\"topic\"]).mean()), 3)\nprint(acc)",
+    "files": [
+      "review_labels.csv",
+      "review_gold.csv",
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "import numpy as np\n\nvec = {\n    \"кофе\":     np.array([0.9, 0.0, 0.1, 0.3]),\n    \"латте\":    np.array([0.8, 0.0, 0.1, 0.5]),\n    \"капучино\": np.array([0.8, 0.1, 0.0, 0.4]),\n    \"курьер\":   np.array([0.0, 0.9, 0.1, 0.0]),\n    \"опоздал\":  np.array([0.0, 0.7, 0.0, -0.6]),\n    \"дорого\":   np.array([0.1, 0.0, 0.9, -0.4]),\n    \"вкусно\":   np.array([0.4, 0.0, 0.0, 0.9]),\n}\n\ndef cosine(a, b):\n    return a @ b / (np.linalg.norm(a) * np.linalg.norm(b))\n\nfor w in [\"латте\", \"капучино\", \"курьер\", \"дорого\"]:\n    print(f\"кофе ~ {w}: {cosine(vec['кофе'], vec[w]):.2f}\")",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "cell",
+    "id": "cell3",
+    "code": "import numpy as np\n\nvec = {\n    \"кофе\": np.array([0.9, 0.0, 0.1, 0.3]), \"латте\": np.array([0.8, 0.0, 0.1, 0.5]),\n    \"капучино\": np.array([0.8, 0.1, 0.0, 0.4]), \"курьер\": np.array([0.0, 0.9, 0.1, 0.0]),\n    \"опоздал\": np.array([0.0, 0.7, 0.0, -0.6]), \"дорого\": np.array([0.1, 0.0, 0.9, -0.4]),\n    \"вкусно\": np.array([0.4, 0.0, 0.0, 0.9]),\n}\n\ndef embed(text):\n    words = [w for w in text.lower().split() if w in vec]\n    v = np.mean([vec[w] for w in words], axis=0)\n    return v / np.linalg.norm(v)\n\ndocs = [\"латте вкусно\", \"курьер опоздал\", \"кофе дорого\"]\nE = np.array([embed(d) for d in docs])     # матрица 3 × 4\nq = embed(\"капучино вкусно\")\nprint((E @ q).round(2))                     # сходство запроса с каждым текстом",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "cell",
+    "id": "cell4",
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.decomposition import TruncatedSVD\n\nr = pd.read_csv(\"reviews_text.csv\")\ntfidf = TfidfVectorizer()\nX = tfidf.fit_transform(r[\"text\"])                 # 2400 × 485, почти все нули\nsvd = TruncatedSVD(n_components=50, random_state=0)\nZ = svd.fit_transform(X)                            # 2400 × 50, плотная\nprint(X.shape, \"→\", Z.shape, \"| сохранено дисперсии:\", round(svd.explained_variance_ratio_.sum(), 2))\n\nZn = Z / np.linalg.norm(Z, axis=1, keepdims=True)  # нормируем — косинус = скалярное произведение\nsim = Zn @ Zn[0]\ntop = np.argsort(-sim)[1:4]                         # [0] — сам отзыв\nprint(\"запрос:\", r.loc[0, \"text\"])\nfor i in top:\n    print(f\"{sim[i]:.2f}\", r.loc[i, \"text\"])",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "cell",
+    "id": "cell5",
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.decomposition import TruncatedSVD\n\nr = pd.read_csv(\"reviews_text.csv\")\ntfidf = TfidfVectorizer()\nsvd = TruncatedSVD(n_components=50, random_state=0).fit(tfidf.fit_transform(r[\"text\"]))\nW = svd.components_.T * svd.singular_values_        # вектор каждого слова\nW = W / np.linalg.norm(W, axis=1, keepdims=True)\nwords = tfidf.get_feature_names_out()\npos = {w: i for i, w in enumerate(words)}\n\nfor w in [\"дороговато\", \"курьер\"]:\n    s = W @ W[pos[w]]\n    near = np.argsort(-s)[1:5]\n    print(w, \"→\", [words[i] for i in near])",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "cell",
+    "id": "cell6",
+    "code": "import re\nfrom collections import Counter\nimport pandas as pd\n\ndef skipgram_pairs(tokens, window=2):\n    pairs = []\n    for i, center in enumerate(tokens):\n        for j in range(max(0, i - window), min(len(tokens), i + window + 1)):\n            if j != i:\n                pairs.append((center, tokens[j]))\n    return pairs\n\nprint(skipgram_pairs(\"курьер привёз холодный кофе\".split(), window=1))\n\nr = pd.read_csv(\"reviews_text.csv\")\npairs = [p for t in r[\"text\"] for p in skipgram_pairs(re.findall(r\"[а-яё]+\", t.lower()))]\nprint(\"пар:\", len(pairs))\nfor w in [\"курьер\", \"дороговато\", \"недорого\"]:\n    print(w, Counter(c for x, c in pairs if x == w).most_common(4))",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "cell",
+    "id": "cell9",
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.decomposition import TruncatedSVD\n\nr = pd.read_csv(\"reviews_text.csv\")\ntfidf = TfidfVectorizer()\nsvd = TruncatedSVD(n_components=100, random_state=0)\nZ = svd.fit_transform(tfidf.fit_transform(r[\"text\"]))\nZn = Z / np.linalg.norm(Z, axis=1, keepdims=True)\n\ndef search(query, k=5):\n    q = svd.transform(tfidf.transform([query]))[0]\n    q = q / np.linalg.norm(q)\n    sim = Zn @ q\n    top = np.argsort(-sim)[:k]\n    return pd.DataFrame({\"сходство\": sim[top].round(2), \"отзыв\": r.loc[top, \"text\"].values})\n\nprint(search(\"курьер опоздал\"))\nprint(search(\"кофе остыл пока везли\"))",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "predict",
+    "id": "q1",
+    "code": "import numpy as np\nkur = np.array([0.0, 0.9, 0.1, 0.0])\nlate = np.array([0.0, 0.7, 0.0, -0.6])\ntasty = np.array([0.4, 0.0, 0.0, 0.9])\ncos = lambda a, b: a @ b / (np.linalg.norm(a) * np.linalg.norm(b))\nprint(round(cos(kur, late), 2) > 0, round(cos(tasty, late), 2) > 0)",
+    "answer": "`True False`",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "task",
+    "id": "cos",
+    "starter": "import numpy as np\n\ndef cosine(a, b):\n    ...\n\ns_latte = ...\ns_late = ...",
+    "setup": "import numpy as np\nvec = {\n    \"кофе\": np.array([0.9, 0.0, 0.1, 0.3]), \"латте\": np.array([0.8, 0.0, 0.1, 0.5]),\n    \"капучино\": np.array([0.8, 0.1, 0.0, 0.4]), \"курьер\": np.array([0.0, 0.9, 0.1, 0.0]),\n    \"опоздал\": np.array([0.0, 0.7, 0.0, -0.6]), \"дорого\": np.array([0.1, 0.0, 0.9, -0.4]),\n    \"вкусно\": np.array([0.4, 0.0, 0.0, 0.9]),\n}",
+    "check": "import numpy as _np\n_c = lambda a, b: float(a @ b / (_np.linalg.norm(a) * _np.linalg.norm(b)))\nf = need('cosine')\nassert close(float(f(_np.array([1.0, 0]), _np.array([0, 2.0]))), 0, 1e-9), 'Перпендикулярные векторы должны давать 0.'\nassert close(float(f(_np.array([1.0, 1]), _np.array([3.0, 3]))), 1, 1e-9), 'Векторы одного направления (разной длины) должны давать 1.'\nv = need('vec', dict)\nassert close(need('s_latte'), _c(v['кофе'], v['латте']), 1e-6), f's_latte = {need(\"s_latte\")}.'\nassert close(need('s_late'), _c(v['курьер'], v['опоздал']), 1e-6), f's_late = {need(\"s_late\")}.'",
+    "solution": "import numpy as np\n\ndef cosine(a, b):\n    return a @ b / (np.linalg.norm(a) * np.linalg.norm(b))\n\ns_latte = cosine(vec[\"кофе\"], vec[\"латте\"])\ns_late = cosine(vec[\"курьер\"], vec[\"опоздал\"])",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "task",
+    "id": "p-pool",
+    "starter": "",
+    "setup": "",
+    "check": "import numpy as _np\na = _np.mean([_np.array([0.8, 0.1, 0.0, 0.4]), _np.array([0.4, 0.0, 0.0, 0.9])], axis=0)\nb = _np.array([0.8, 0.0, 0.1, 0.5])\nw = round(float(a @ b / _np.linalg.norm(a) / _np.linalg.norm(b)), 2)\nassert _lines == [str(w)], f'Сейчас: {_lines}.'",
+    "solution": "import numpy as np\nvec = {\"латте\": np.array([0.8, 0.0, 0.1, 0.5]), \"капучино\": np.array([0.8, 0.1, 0.0, 0.4]), \"вкусно\": np.array([0.4, 0.0, 0.0, 0.9])}\nwords = \"капучино вкусно\".split()\nv = np.mean([vec[w] for w in words], axis=0)\nv = v / np.linalg.norm(v)\nlatte = vec[\"латте\"] / np.linalg.norm(vec[\"латте\"])\nprint(round(float(v @ latte), 2))",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "task",
+    "id": "nearest",
+    "starter": "import numpy as np\nimport pandas as pd",
+    "setup": "import numpy as np\nvec = {\n    \"кофе\": np.array([0.9, 0.0, 0.1, 0.3]), \"латте\": np.array([0.8, 0.0, 0.1, 0.5]),\n    \"капучино\": np.array([0.8, 0.1, 0.0, 0.4]), \"курьер\": np.array([0.0, 0.9, 0.1, 0.0]),\n    \"опоздал\": np.array([0.0, 0.7, 0.0, -0.6]), \"дорого\": np.array([0.1, 0.0, 0.9, -0.4]),\n    \"вкусно\": np.array([0.4, 0.0, 0.0, 0.9]),\n}",
+    "check": "import numpy as _np\nimport pandas as _pd\nv = need('vec', dict)\n_c = lambda a, b: float(a @ b / (_np.linalg.norm(a) * _np.linalg.norm(b)))\nw = _pd.Series({k: _c(v['кофе'], x) for k, x in v.items() if k != 'кофе'}).sort_values(ascending=False)\ns = need('sims', _pd.Series)\nassert 'кофе' not in s.index, 'Само слово «кофе» в sims не нужно.'\nassert list(s.index) == list(w.index), f'Порядок: {list(s.index)}, а нужно {list(w.index)}.'\nassert _np.allclose(s.values, w.values, atol=1e-6), 'Значения сходства не совпадают.'\nassert need('top3', list) == list(w.index[:3]), f'top3 = {need(\"top3\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\n\ndef cosine(a, b):\n    return a @ b / (np.linalg.norm(a) * np.linalg.norm(b))\n\nsims = pd.Series({w: cosine(vec[\"кофе\"], v) for w, v in vec.items() if w != \"кофе\"}).sort_values(ascending=False)\ntop3 = list(sims.index[:3])",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "task",
+    "id": "lsa",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.decomposition import TruncatedSVD\n\nr = pd.read_csv(\"reviews_text.csv\")",
+    "setup": "",
+    "check": "import numpy as _np\nimport pandas as _pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nfrom sklearn.decomposition import TruncatedSVD as _SVD\nr0 = _pd.read_csv('reviews_text.csv')\ns0 = _SVD(n_components=50, random_state=0)\nZ0 = s0.fit_transform(_TF().fit_transform(r0['text']))\nZ0 = Z0 / _np.linalg.norm(Z0, axis=1, keepdims=True)\ni0 = int(_np.flatnonzero(r0['review_id'] == 'R-40002')[0])\nsim = Z0 @ Z0[i0]\norder = [i for i in _np.argsort(-sim) if i != i0][:3]\nassert close(need('explained'), round(float(s0.explained_variance_ratio_.sum()), 2), 0.011), f'explained = {need(\"explained\")}.'\nZs = need('Zn')\nassert Zs.shape == (2400, 50), f'Zn.shape = {Zs.shape}.'\nassert _np.allclose(_np.linalg.norm(Zs, axis=1), 1, atol=1e-6), 'Строки Zn должны иметь длину 1.'\ngot = need('neighbours', list)\nwant = list(r0.loc[order, 'review_id'])\nassert len(got) == 3 and 'R-40002' not in got, f'neighbours = {got}.'\nassert set(got) == set(want), f'neighbours = {got}, а нужно {want}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.decomposition import TruncatedSVD\n\nr = pd.read_csv(\"reviews_text.csv\")\nsvd = TruncatedSVD(n_components=50, random_state=0)\nZ = svd.fit_transform(TfidfVectorizer().fit_transform(r[\"text\"]))\nexplained = round(svd.explained_variance_ratio_.sum(), 2)\nZn = Z / np.linalg.norm(Z, axis=1, keepdims=True)\n\ni = r.index[r[\"review_id\"] == \"R-40002\"][0]\nsim = Zn @ Zn[i]\norder = [j for j in np.argsort(-sim) if j != i][:3]\nneighbours = list(r.loc[order, \"review_id\"])\nprint(r.loc[i, \"text\"])\nprint(r.loc[order, \"text\"].tolist())",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "task",
+    "id": "char-search",
+    "starter": "import numpy as np\nfrom sklearn.feature_extraction.text import TfidfVectorizer\n\nw_vec = TfidfVectorizer()\nW = w_vec.fit_transform(r[\"text\"])\nc_vec = TfidfVectorizer(analyzer=\"char_wb\", ngram_range=(3, 4))\nC = c_vec.fit_transform(r[\"text\"])\n\ndef search(vec, T, q, k=5):\n    ...",
+    "setup": "import pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")",
+    "check": "import numpy as _np\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nr0 = need('r')\ndef _s(vec, q, k=5):\n    T = vec.transform(r0['text']); sim = (T @ vec.transform([q]).T).toarray().ravel()\n    return list(r0['text'].values[_np.argsort(-sim, kind='stable')[:k]])\nww = _s(_TF().fit(r0['text']), 'курьер опоздал'); wc = _s(_TF(analyzer='char_wb', ngram_range=(3, 4)).fit(r0['text']), 'курьер опоздал')\nassert list(need('top_words')) == ww, f'top_words не совпадает: {need(\"top_words\")}.'\nassert list(need('top_chars')) == wc, f'top_chars не совпадает: {need(\"top_chars\")}.'\nsw = sum('опоздал' in t.lower() for t in ww) / 5; sc = sum('опоздал' in t.lower() for t in wc) / 5\nassert close(need('share_late_words'), sw) and close(need('share_late_chars'), sc), f'share_late_words = {need(\"share_late_words\")}, share_late_chars = {need(\"share_late_chars\")}.'",
+    "solution": "import numpy as np\nfrom sklearn.feature_extraction.text import TfidfVectorizer\n\nw_vec = TfidfVectorizer()\nW = w_vec.fit_transform(r[\"text\"])\nc_vec = TfidfVectorizer(analyzer=\"char_wb\", ngram_range=(3, 4))\nC = c_vec.fit_transform(r[\"text\"])\n\ndef search(vec, T, q, k=5):\n    sim = (T @ vec.transform([q]).T).toarray().ravel()\n    idx = np.argsort(-sim, kind=\"stable\")[:k]\n    return list(r[\"text\"].values[idx])\n\ntop_words = search(w_vec, W, \"курьер опоздал\")\ntop_chars = search(c_vec, C, \"курьер опоздал\")\nshare_late_words = sum(\"опоздал\" in t.lower() for t in top_words) / 5\nshare_late_chars = sum(\"опоздал\" in t.lower() for t in top_chars) / 5\nprint(top_words, top_chars, share_late_words, share_late_chars, sep=\"\\n\")",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "task",
+    "id": "lsa-clf",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.decomposition import TruncatedSVD\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nfrom sklearn.decomposition import TruncatedSVD as _SVD\nfrom sklearn.linear_model import LogisticRegression as _LR\nr0 = _pd.read_csv('reviews_text.csv'); y0 = (r0['rating'] <= 3).astype(int)\na, b, c, d = _tts(r0['text'], y0, test_size=0.25, random_state=42, stratify=y0)\nw = {k: round(float((_mp(_TF(), _SVD(k, random_state=0), _LR(max_iter=1000)).fit(a, c).predict(b) == d).mean()), 3) for k in [10, 20, 50, 100]}\nfull = round(float((_mp(_TF(), _LR(max_iter=1000)).fit(a, c).predict(b) == d).mean()), 3)\ngot = need('acc_by_k', dict)\nassert sorted(got) == [10, 20, 50, 100], f'Ключи: {sorted(got)}.'\nassert all(close(got[k], w[k], 0.002) for k in w), f'acc_by_k = {got}, а нужно {w}.'\nassert close(need('acc_full'), full, 0.002), f'acc_full = {need(\"acc_full\")}.'\nbk = max(sorted(w), key=lambda k: w[k])\nassert need('best_k') == bk, f'best_k = {need(\"best_k\")}, а нужно {bk}.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.decomposition import TruncatedSVD\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\n\nacc_by_k = {}\nfor k in [10, 20, 50, 100]:\n    m = make_pipeline(TfidfVectorizer(), TruncatedSVD(k, random_state=0), LogisticRegression(max_iter=1000))\n    acc_by_k[k] = round(accuracy_score(y_test, m.fit(X_train, y_train).predict(X_test)), 3)\nfull = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)\nacc_full = round(accuracy_score(y_test, full.predict(X_test)), 3)\nbest_k = max(sorted(acc_by_k), key=acc_by_k.get)\nprint(acc_by_k, acc_full, best_k)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "task",
+    "id": "skipgram",
+    "starter": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())",
+    "setup": "",
+    "check": "import re as _re, pandas as _pd\nfrom collections import Counter as _C\nf = need('skipgram_pairs')\nassert list(f(['а', 'б', 'в'], window=1)) == [('а', 'б'), ('б', 'а'), ('б', 'в'), ('в', 'б')], f'skipgram_pairs([\"а\", \"б\", \"в\"], window=1) = {f([\"а\", \"б\", \"в\"], window=1)}. Нужны пары (центральное, сосед) по порядку слов.'\nassert len(f(['а', 'б', 'в', 'г'], window=2)) == 10, 'Окно ±2 у краёв обрезается: для 4 слов должно быть 10 пар.'\ndef _p(t, w=2):\n    return [(c, t[j]) for i, c in enumerate(t) for j in range(max(0, i - w), min(len(t), i + w + 1)) if j != i]\nP = [p for t in _pd.read_csv('reviews_text.csv')['text'] for p in _p(_re.findall(r'[а-яё]+', t.lower()))]\nassert need('n_pairs') == len(P), f'n_pairs = {need(\"n_pairs\")}, а нужно {len(P)}.'\nctx = lambda w, k: [c for c, _ in _C(o for x, o in P if x == w).most_common(k)]\nassert list(need('top_courier')) == ctx('курьер', 3), f'top_courier = {need(\"top_courier\")}. Считайте соседей, у которых центральное слово — «курьер».'\ns = set(ctx('дороговато', 3)) & set(ctx('недорого', 3))\nassert set(need('shared')) == s, f'shared = {need(\"shared\")}. Пересечение множеств трёх самых частых соседей.'",
+    "solution": "import re\nfrom collections import Counter\nimport pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\n\ndef tokenize(text):\n    return re.findall(r\"[а-яё]+\", text.lower())\n\ndef skipgram_pairs(tokens, window=2):\n    pairs = []\n    for i, center in enumerate(tokens):\n        for j in range(max(0, i - window), min(len(tokens), i + window + 1)):\n            if j != i:\n                pairs.append((center, tokens[j]))\n    return pairs\n\npairs = [p for t in r[\"text\"] for p in skipgram_pairs(tokenize(t))]\nn_pairs = len(pairs)\n\ndef top(w, k):\n    return [c for c, _ in Counter(c for x, c in pairs if x == w).most_common(k)]\n\ntop_courier = top(\"курьер\", 3)\nshared = set(top(\"дороговато\", 3)) & set(top(\"недорого\", 3))\nprint(n_pairs, top_courier, shared)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04-embeddings",
+    "kind": "task",
+    "id": "zero-shot",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.decomposition import TruncatedSVD\n\nr = pd.read_csv(\"reviews_text.csv\")",
+    "setup": "desc = {\n    \"доставка\": \"доставка курьер привезли заказ опоздал\",\n    \"еда\": \"еда вкусно выпечка блюда порции\",\n    \"кофе\": \"кофе капучино латте зерно\",\n    \"обслуживание\": \"персонал сотрудники бариста вежливо обслуживание\",\n    \"цена\": \"цена дорого цены стоимость\",\n    \"атмосфера\": \"атмосфера уютно музыка интерьер шумно\",\n}",
+    "check": "import numpy as _np\nimport pandas as _pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nfrom sklearn.decomposition import TruncatedSVD as _SVD\nr0 = _pd.read_csv('reviews_text.csv'); d0 = need('desc', dict)\ntf0 = _TF(); s0 = _SVD(n_components=50, random_state=0)\nZ0 = s0.fit_transform(tf0.fit_transform(r0['text'])); Z0 = Z0 / _np.linalg.norm(Z0, axis=1, keepdims=True)\nD0 = s0.transform(tf0.transform(list(d0.values()))); D0 = D0 / _np.linalg.norm(D0, axis=1, keepdims=True)\np0 = _np.array(list(d0))[_np.argmax(Z0 @ D0.T, axis=1)]\nacc = round(float((p0 == r0['topic']).mean()), 3)\ngot = _np.asarray(need('zs_pred'))\nassert len(got) == 2400, f'В zs_pred {len(got)} значений.'\nassert (got == p0).mean() > 0.98, f'Предсказания совпадают с эталоном лишь на {(got == p0).mean():.0%}.'\nassert close(need('zs_acc'), acc, 0.006), f'zs_acc = {need(\"zs_acc\")}, а нужно {acc}.'\nassert close(need('base_acc'), round(float(r0['topic'].value_counts(normalize=True).iloc[0]), 3), 0.001), f'base_acc = {need(\"base_acc\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.decomposition import TruncatedSVD\n\nr = pd.read_csv(\"reviews_text.csv\")\ntfidf = TfidfVectorizer()\nsvd = TruncatedSVD(n_components=50, random_state=0)\nZ = svd.fit_transform(tfidf.fit_transform(r[\"text\"]))\nZn = Z / np.linalg.norm(Z, axis=1, keepdims=True)\nD = svd.transform(tfidf.transform(list(desc.values())))\nDn = D / np.linalg.norm(D, axis=1, keepdims=True)\n\nzs_pred = np.array(list(desc))[np.argmax(Zn @ Dn.T, axis=1)]\nzs_acc = round(float((zs_pred == r[\"topic\"]).mean()), 3)\nbase_acc = round(float(r[\"topic\"].value_counts(normalize=True).iloc[0]), 3)\nprint(zs_acc, base_acc)\nprint(pd.crosstab(r[\"topic\"], zs_pred))",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04b-transformers",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "VOCAB = [\"[PAD]\", \"[UNK]\", \"[CLS]\", \"[SEP]\", \"кофе\", \"курьер\", \"##ом\", \"##а\", \"при\", \"##вез\", \"##ли\",\n         \"холод\", \"##ный\", \"##ным\", \"кап\", \"##учино\", \"бар\", \"##иста\", \"не\", \"##вкус\", \"вкус\", \"##но\", \"раф\"]\nID = {t: i for i, t in enumerate(VOCAB)}         # кусочек → номер (id)\n\ndef wordpiece(word):\n    pieces, start = [], 0\n    while start < len(word):\n        end = len(word)\n        while end > start:                         # ищем самый длинный кусок с позиции start\n            piece = word[start:end] if start == 0 else \"##\" + word[start:end]\n            if piece in ID:\n                break\n            end -= 1\n        if end == start:                           # ни один кусок не подошёл\n            return [\"[UNK]\"]\n        pieces.append(piece)\n        start = end\n    return pieces\n\ndef encode(text):\n    tokens = [\"[CLS]\"] + [p for w in text.lower().split() for p in wordpiece(w)] + [\"[SEP]\"]\n    return tokens, [ID[t] for t in tokens]\n\nfor text in [\"курьер привезли холодный капучино\", \"раф невкусно\", \"латте\"]:\n    print(encode(text))",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04b-transformers",
+    "kind": "cell",
+    "id": "cell2",
+    "code": "import numpy as np\n\nbatch = [[2, 5, 8, 9, 10, 11, 12, 14, 15, 3],     # «курьер привезли холодный капучино»\n         [2, 22, 18, 19, 21, 3]]                   # «раф невкусно»\nL = max(len(ids) for ids in batch)\ninput_ids = np.array([ids + [0] * (L - len(ids)) for ids in batch])\nattention_mask = (input_ids != 0).astype(int)\nprint(input_ids)\nprint(attention_mask)",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04b-transformers",
+    "kind": "cell",
+    "id": "cell4",
+    "code": "import numpy as np\n\nX = np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [5.0, 5.0]])   # 3 токена + заполнитель\nmask = np.array([1, 1, 1, 0])\n\nscores = X @ X.T                          # сходство каждого токена с каждым\nscores[:, mask == 0] = -np.inf            # на заполнители не смотрим\nW = np.exp(scores) / np.exp(scores).sum(axis=1, keepdims=True)\nprint(W.round(2))                         # веса: строка — токен, который «смотрит»\nprint((W @ X).round(2))                   # новые векторы — взвешенные средние",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04b-transformers",
+    "kind": "cell",
+    "id": "cell5",
+    "code": "import numpy as np\n\nH = np.array([[[1.0, 3.0], [3.0, 1.0], [0.5, -2.0], [0.5, -2.0]]])   # 1 текст × 4 позиции × 2 признака\nmask = np.array([[1, 1, 0, 0]])\n\npooled = (H * mask[:, :, None]).sum(axis=1) / mask.sum(axis=1, keepdims=True)\nnaive = H.mean(axis=1)\nprint(\"с маской:\", pooled, \"| в лоб:\", naive)",
+    "expect_error": false,
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04b-transformers",
+    "kind": "predict",
+    "id": "q1",
+    "code": "import numpy as np\nmask = np.array([[1, 1, 1, 1], [1, 1, 0, 0], [1, 0, 0, 0]])\nprint(mask.sum(axis=1))",
+    "answer": "`[4 2 1]`",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04b-transformers",
+    "kind": "task",
+    "id": "pad-mask",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == ['[4 3 5]'], f'Сейчас вывод: {_lines}. Сначала длина L, потом дополнение, потом маска.'",
+    "solution": "import numpy as np\nbatch = [[2, 5, 8, 3], [2, 22, 3], [2, 4, 14, 15, 3]]\nL = max(len(ids) for ids in batch)\ninput_ids = np.array([ids + [0] * (L - len(ids)) for ids in batch])\nattention_mask = (input_ids != 0).astype(int)\nprint(attention_mask.sum(axis=1))",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04b-transformers",
+    "kind": "task",
+    "id": "wordpiece",
+    "starter": "VOCAB = [\"[PAD]\", \"[UNK]\", \"[CLS]\", \"[SEP]\", \"кофе\", \"курьер\", \"##ом\", \"##а\", \"при\", \"##вез\", \"##ли\",\n         \"холод\", \"##ный\", \"##ным\", \"кап\", \"##учино\", \"бар\", \"##иста\", \"не\", \"##вкус\", \"вкус\", \"##но\", \"раф\"]\nID = {t: i for i, t in enumerate(VOCAB)}\nwords = [\"курьером\", \"привезли\", \"холодным\", \"невкусно\", \"бариста\", \"латте\", \"кофейня\"]\n\ndef wordpiece(word):\n    pieces, start = [], 0\n    ...",
+    "setup": "",
+    "check": "f = need('wordpiece')\nV = [\"[PAD]\", \"[UNK]\", \"[CLS]\", \"[SEP]\", \"кофе\", \"курьер\", \"##ом\", \"##а\", \"при\", \"##вез\", \"##ли\",\n     \"холод\", \"##ный\", \"##ным\", \"кап\", \"##учино\", \"бар\", \"##иста\", \"не\", \"##вкус\", \"вкус\", \"##но\", \"раф\"]\nI = {t: i for i, t in enumerate(V)}\ndef _wp(w):\n    out, s = [], 0\n    while s < len(w):\n        e = len(w)\n        while e > s:\n            p = w[s:e] if s == 0 else '##' + w[s:e]\n            if p in I:\n                break\n            e -= 1\n        if e == s:\n            return ['[UNK]']\n        out.append(p); s = e\n    return out\nfor w in ['курьера', 'вкусно', 'кап', 'раф', 'небариста', 'холодныйкофе', 'л']:\n    assert list(f(w)) == _wp(w), f'wordpiece({w!r}) = {f(w)}, а нужно {_wp(w)}.'\nws = [\"курьером\", \"привезли\", \"холодным\", \"невкусно\", \"бариста\", \"латте\", \"кофейня\"]\ngot = need('pieces', dict)\nassert all(list(got.get(w, [])) == _wp(w) for w in ws), f'pieces = {got}.'\nwant = [I['[CLS]']] + [I[p] for w in 'курьер привезли холодный кофе'.split() for p in _wp(w)] + [I['[SEP]']]\nassert list(need('ids')) == want, f'ids = {need(\"ids\")}, а нужно {want}. Не забудьте [CLS] и [SEP].'",
+    "solution": "VOCAB = [\"[PAD]\", \"[UNK]\", \"[CLS]\", \"[SEP]\", \"кофе\", \"курьер\", \"##ом\", \"##а\", \"при\", \"##вез\", \"##ли\",\n         \"холод\", \"##ный\", \"##ным\", \"кап\", \"##учино\", \"бар\", \"##иста\", \"не\", \"##вкус\", \"вкус\", \"##но\", \"раф\"]\nID = {t: i for i, t in enumerate(VOCAB)}\nwords = [\"курьером\", \"привезли\", \"холодным\", \"невкусно\", \"бариста\", \"латте\", \"кофейня\"]\n\ndef wordpiece(word):\n    pieces, start = [], 0\n    while start < len(word):\n        end = len(word)\n        while end > start:\n            piece = word[start:end] if start == 0 else \"##\" + word[start:end]\n            if piece in ID:\n                break\n            end -= 1\n        if end == start:\n            return [\"[UNK]\"]\n        pieces.append(piece)\n        start = end\n    return pieces\n\npieces = {w: wordpiece(w) for w in words}\ntokens = [\"[CLS]\"] + [p for w in \"курьер привезли холодный кофе\".split() for p in wordpiece(w)] + [\"[SEP]\"]\nids = [ID[t] for t in tokens]\nprint(pieces)\nprint(tokens, ids)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04b-transformers",
+    "kind": "task",
+    "id": "attention",
+    "starter": "import numpy as np\nX = np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]])\nmask = np.array([1, 1, 1, 0, 0])",
+    "setup": "",
+    "check": "import numpy as _np\nX0 = _np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]])\nm0 = _np.array([1, 1, 1, 0, 0])\ns0 = X0 @ X0.T; sm = s0.copy(); sm[:, m0 == 0] = -_np.inf\nW0 = _np.exp(sm) / _np.exp(sm).sum(axis=1, keepdims=True)\nWg = _np.asarray(need('W'), dtype=float)\nassert Wg.shape == (5, 5), f'W — матрица 5 × 5, а сейчас форма {Wg.shape}.'\nassert _np.allclose(Wg.sum(axis=1), 1), 'Веса в каждой строке W должны давать в сумме 1: делите экспоненты на их сумму по строке (axis=1).'\nassert _np.allclose(Wg[:, 3:], 0), 'Вес заполнителей (столбцы 3 и 4) должен быть 0: поставьте им оценку -np.inf до softmax.'\nassert _np.allclose(Wg, W0, atol=1e-6), f'W не совпадает с ожидаемой. Первая строка сейчас {[round(float(v), 3) for v in Wg[0]]}, а нужно {[round(float(v), 3) for v in W0[0]]}.'\nassert _np.allclose(need('out'), W0 @ X0, atol=1e-6), 'out = W @ X.'\nW1 = _np.exp(s0) / _np.exp(s0).sum(axis=1, keepdims=True)\npw = round(float(W1[0, 3:].sum()), 3)\nassert close(need('pad_weight'), pw, 0.0015), f'pad_weight = {need(\"pad_weight\")}, а нужно {pw}: softmax без маски, первая строка, сумма весов двух последних столбцов.'",
+    "solution": "import numpy as np\nX = np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]])\nmask = np.array([1, 1, 1, 0, 0])\n\nscores = X @ X.T\nmasked = scores.copy()\nmasked[:, mask == 0] = -np.inf\nW = np.exp(masked) / np.exp(masked).sum(axis=1, keepdims=True)\nout = W @ X\nW_raw = np.exp(scores) / np.exp(scores).sum(axis=1, keepdims=True)\npad_weight = round(float(W_raw[0, 3:].sum()), 3)\nprint(W.round(3), out.round(3), pad_weight, sep=\"\\n\")",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04b-transformers",
+    "kind": "task",
+    "id": "masked-pool",
+    "starter": "# уже есть: H (3 × 8 × 5), attention_mask (3 × 8), H_long, mask_long\nimport numpy as np\n\ndef mean_pool(H, mask):\n    ...",
+    "setup": "import numpy as np\n_rng = np.random.default_rng(13)\n_lens = [8, 5, 3]\nH = _rng.normal(size=(3, 8, 5)).round(2)\nattention_mask = np.array([[1] * n + [0] * (8 - n) for n in _lens])\nH[attention_mask == 0] = _rng.normal(2.0, 1.0, size=((attention_mask == 0).sum(), 5)).round(2)\nH_long = np.concatenate([H, _rng.normal(2.0, 1.0, size=(3, 4, 5)).round(2)], axis=1)\nmask_long = np.concatenate([attention_mask, np.zeros((3, 4), dtype=int)], axis=1)",
+    "check": "import numpy as _np\nf = need('mean_pool')\nT = _np.array([[[1.0, 3.0], [3.0, 1.0], [0.5, -2.0], [0.5, -2.0]]]); M = _np.array([[1, 1, 0, 0]])\nr = _np.asarray(f(T, M))\nassert r.shape == (1, 2) and _np.allclose(r, [[2.0, 2.0]]), f'mean_pool на примере из урока = {r.tolist()}, а нужно [[2.0, 2.0]]. Форма результата — (тексты, признаки).'\nref = (H * attention_mask[:, :, None]).sum(1) / attention_mask.sum(1, keepdims=True)\nassert _np.allclose(need('pooled'), ref), 'pooled не совпадает со средним по настоящим токенам.'\nassert _np.allclose(need('naive'), H.mean(axis=1)), 'naive — простое среднее по всем 8 позициям: H.mean(axis=1).'\nnv = H.mean(axis=1)\nc = round(float(ref[2] @ nv[2] / (_np.linalg.norm(ref[2]) * _np.linalg.norm(nv[2]))), 3)\nassert close(need('cos_short'), c, 0.0015), f'cos_short = {need(\"cos_short\")}, а нужно {c}.'\nassert need('same') is True or need('same') == True, 'same: mean_pool(H_long, mask_long) должен совпасть с pooled — заполнители не должны влиять.'",
+    "solution": "import numpy as np\n\ndef mean_pool(H, mask):\n    return (H * mask[:, :, None]).sum(axis=1) / mask.sum(axis=1, keepdims=True)\n\npooled = mean_pool(H, attention_mask)\nnaive = H.mean(axis=1)\na, b = pooled[2], naive[2]\ncos_short = round(float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b))), 3)\nsame = bool(np.allclose(mean_pool(H_long, mask_long), pooled))\nprint(pooled.shape, cos_short, same)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04b-transformers",
+    "kind": "task",
+    "id": "truncate",
+    "starter": "SEP = 3\nbatch = [[2, 5, 8, 9, 10, 11, 12, 14, 15, 3],    # «курьер привезли холодный капучино»\n         [2, 22, 18, 19, 21, 3],                  # «раф невкусно»\n         [2, 4, 3]]                               # «кофе»",
+    "setup": "",
+    "check": "f = need('truncate')\nassert list(f([2, 4, 5, 6, 7, 3], 4)) == [2, 4, 5, 3], f'truncate([2, 4, 5, 6, 7, 3], 4) = {f([2, 4, 5, 6, 7, 3], 4)}, а нужно [2, 4, 5, 3]: [SEP] остаётся в конце, длина — ровно max_len.'\nassert list(f([2, 4, 3], 4)) == [2, 4, 3], 'Короткий список возвращается без изменений.'\nwant = [[2, 5, 8, 9, 10, 3], [2, 22, 18, 19, 21, 3], [2, 4, 3]]\nassert [list(x) for x in need('cut')] == want, f'cut = {need(\"cut\")}, а нужно {want}.'\nassert need('lost') == 4, f'lost = {need(\"lost\")}: сравните длины до и после обрезки.'",
+    "solution": "SEP = 3\nbatch = [[2, 5, 8, 9, 10, 11, 12, 14, 15, 3],\n         [2, 22, 18, 19, 21, 3],\n         [2, 4, 3]]\n\ndef truncate(ids, max_len):\n    return ids if len(ids) <= max_len else ids[:max_len - 1] + [SEP]\n\ncut = [truncate(ids, 6) for ids in batch]\nlost = sum(len(a) - len(b) for a, b in zip(batch, cut))\nprint(cut, lost)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04b-transformers",
+    "kind": "task",
+    "id": "pad-waste",
+    "starter": "# уже есть: lens — длины 2400 отзывов в токенах",
+    "setup": "import pandas as pd\nr = pd.read_csv(\"reviews_text.csv\")\nlens = (r[\"text\"].str.split().str.len() + 2).tolist()",
+    "check": "import pandas as _pd\nL = (_pd.read_csv('reviews_text.csv')['text'].str.split().str.len() + 2).tolist()\ndef _pc(l, b=8):\n    return sum(max(l[i:i + b]) * len(l[i:i + b]) - sum(l[i:i + b]) for i in range(0, len(l), b))\nf = need('pad_count')\nassert f([3, 5, 4], 2) == 2 + 0, f'pad_count([3, 5, 4], 2) = {f([3, 5, 4], 2)}, а нужно 2: пакет [3, 5] даёт 2 заполнителя, пакет [4] — ни одного.'\nassert need('pad_plain') == _pc(L), f'pad_plain = {need(\"pad_plain\")}, а нужно {_pc(L)}.'\nassert need('pad_sorted') == _pc(sorted(L)), f'pad_sorted = {need(\"pad_sorted\")}, а нужно {_pc(sorted(L))}.'\nassert close(need('saved'), round(1 - _pc(sorted(L)) / _pc(L), 3), 0.0015), f'saved = {need(\"saved\")}.'",
+    "solution": "def pad_count(lens, size=8):\n    total = 0\n    for i in range(0, len(lens), size):\n        chunk = lens[i:i + size]\n        total += max(chunk) * len(chunk) - sum(chunk)\n    return total\n\npad_plain = pad_count(lens)\npad_sorted = pad_count(sorted(lens))\nsaved = round(1 - pad_sorted / pad_plain, 3)\nprint(pad_plain, pad_sorted, saved)",
+    "files": [
+      "reviews_text.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04c-llm",
+    "kind": "task",
+    "id": "parse-one",
+    "starter": "import json\nanswer = 'Конечно! Вот разметка: {\"sentiment\": \"negative\", \"topic\": \"доставка\"} Надеюсь, помог.'",
+    "setup": "",
+    "check": "d = need('d', dict)\nassert d == {'sentiment': 'negative', 'topic': 'доставка'}, f'd = {d}.'\nassert need('topic') == 'доставка', f'topic = {need(\"topic\")!r}.'",
+    "solution": "import json\nanswer = 'Конечно! Вот разметка: {\"sentiment\": \"negative\", \"topic\": \"доставка\"} Надеюсь, помог.'\n\nd = json.loads(answer[answer.index(\"{\"): answer.rindex(\"}\") + 1])\ntopic = d[\"topic\"]\nprint(d, topic)",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04c-llm",
+    "kind": "task",
+    "id": "parse-llm",
+    "starter": "import json\nimport pandas as pd\n\ndef parse(answer):\n    ...",
+    "setup": "TOPICS = [\"кофе\", \"еда\", \"обслуживание\", \"доставка\", \"цена\", \"атмосфера\"]\nraw = [\n    '{\"sentiment\": \"negative\", \"topic\": \"доставка\"}',\n    '```json\\n{\"sentiment\": \"positive\", \"topic\": \"кофе\"}\\n```',\n    'Конечно! Вот разметка: {\"sentiment\": \"positive\", \"topic\": \"атмосфера\"}',\n    '{\"sentiment\": \"negative\", \"topic\": \"цена\"',\n    '{\"sentiment\": \"neutral\", \"topic\": \"еда\"}',\n    '{\"sentiment\": \"negative\", \"topic\": \"парковка\"}',\n    '{\"sentiment\": \"positive\", \"topic\": \"обслуживание\"}',\n    'Не могу определить тему этого отзыва.',\n]",
+    "check": "import pandas as _pd\np = need('parsed', _pd.DataFrame)\np = p.reset_index(drop=True)\nassert len(p) == 8, f'Строк {len(p)}, а нужно 8.'\nassert {'sentiment', 'topic', 'ok'} <= set(p.columns), f'Колонки: {list(p.columns)}.'\nokw = [True, True, True, False, False, False, True, False]\nassert [bool(x) for x in p['ok']] == okw, f'ok = {list(p[\"ok\"])}, а нужно {okw}.'\nassert list(p.loc[[0, 1, 2, 6], 'topic']) == ['доставка', 'кофе', 'атмосфера', 'обслуживание'], 'Темы годных ответов разобраны неверно.'\nassert list(p.loc[[0, 1, 2, 6], 'sentiment']) == ['negative', 'positive', 'positive', 'positive'], 'Тональности годных ответов разобраны неверно.'\nassert p.loc[[3, 4, 5, 7], ['sentiment', 'topic']].isna().all().all(), 'У негодных ответов sentiment и topic должны быть None.'\n_parse = need('parse')\nimport json as _json\n_cases = [('', (None, None, False)), ('{\"sentiment\":\"positive\",\"topic\":\"парковка\"}', (None, None, False)), ('{\"sentiment\":\"neutral\",\"topic\":\"кофе\"}', (None, None, False))]\nfor _topic in ['кофе', 'еда', 'обслуживание', 'доставка', 'цена', 'атмосфера']:\n    for _sentiment in ['positive', 'negative']:\n        _cases.append((_json.dumps(dict(topic=_topic, sentiment=_sentiment), ensure_ascii=False), (_sentiment, _topic, True)))\nfor _answer, _expected in _cases:\n    _row = _parse(_answer)\n    _fields = ['sentiment', 'topic', 'ok']\n    if isinstance(_row, (dict, _pd.Series)):\n        assert all(_key in _row for _key in _fields), 'Укажите sentiment, topic и ok в возвращаемой записи.'\n        _row = tuple(_row[_key] for _key in _fields)\n    assert isinstance(_row, (tuple, list)) and tuple(_row) == _expected, f'parse({_answer!r}): ожидалось {_expected}. Проверьте разрешённые темы, тональности и негодный ответ.'\nassert need('n_bad') == 4, f'n_bad = {need(\"n_bad\")}.'",
+    "solution": "import json\nimport pandas as pd\n\ndef parse(answer):\n    bad = {\"sentiment\": None, \"topic\": None, \"ok\": False}\n    i, j = answer.find(\"{\"), answer.rfind(\"}\")\n    if i == -1 or j < i:\n        return bad\n    try:\n        d = json.loads(answer[i:j + 1])\n    except json.JSONDecodeError:\n        return bad\n    if d.get(\"sentiment\") not in (\"positive\", \"negative\") or d.get(\"topic\") not in TOPICS:\n        return bad\n    return {\"sentiment\": d[\"sentiment\"], \"topic\": d[\"topic\"], \"ok\": True}\n\nparsed = pd.DataFrame([parse(a) for a in raw])\nn_bad = int((~parsed[\"ok\"]).sum())\nprint(parsed)",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04c-llm",
+    "kind": "task",
+    "id": "llm-cost",
+    "starter": "# уже есть: new (4800 отзывов), PROMPT",
+    "setup": "import pandas as pd\nnew = pd.read_csv(\"reviews_new.csv\")\nPROMPT = \"\"\"Ты размечаешь отзывы о кофейнях.\nВерни ТОЛЬКО JSON вида {\"sentiment\": ..., \"topic\": ...}, без пояснений.\nsentiment: \"positive\" или \"negative\".\ntopic: одно из \"кофе\", \"еда\", \"обслуживание\", \"доставка\", \"цена\", \"атмосфера\".\n\nОтзыв: \"\"\"",
+    "check": "import pandas as _pd\nn0 = _pd.read_csv('reviews_new.csv'); P = need('PROMPT')\nti = sum((len(P) + len(t)) / 3 for t in n0['text'])\nassert need('tokens_in') == round(ti), f'tokens_in = {need(\"tokens_in\")}, а нужно {round(ti)}: сумма (len(PROMPT) + len(text)) / 3 по всем отзывам.'\nassert need('tokens_out') == 20 * len(n0), f'tokens_out = {need(\"tokens_out\")}.'\nc = round(ti / 1000 * 0.3 + 20 * len(n0) / 1000 * 1.5, 1)\nassert close(need('cost'), c, 0.11), f'cost = {need(\"cost\")}, а нужно {c}. Цены — за 1000 токенов.'\nsp = round(len(P) * len(n0) / 3 / ti, 3)\nassert close(need('share_prompt'), sp, 0.0015), f'share_prompt = {need(\"share_prompt\")}, а нужно {sp}.'",
+    "solution": "total_in = sum((len(PROMPT) + len(t)) / 3 for t in new[\"text\"])\ntokens_in = round(total_in)\ntokens_out = 20 * len(new)\ncost = round(tokens_in / 1000 * 0.3 + tokens_out / 1000 * 1.5, 1)\nshare_prompt = round(len(PROMPT) * len(new) / 3 / total_in, 3)\nprint(tokens_in, tokens_out, cost, share_prompt)",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04c-llm",
+    "kind": "task",
+    "id": "llm-check",
+    "starter": "import pandas as pd\n\nans = pd.Series(llm_topic)\ntrue = check[\"topic\"]",
+    "setup": "import random\nimport pandas as pd\n_r = pd.read_csv(\"reviews_text.csv\")\ncheck = _r.sample(200, random_state=5).reset_index(drop=True)\nTOPICS = [\"кофе\", \"еда\", \"обслуживание\", \"доставка\", \"цена\", \"атмосфера\"]\n_rnd = random.Random(15)\nllm_topic = []\nfor _t in check[\"topic\"]:\n    _u = _rnd.random()\n    if _u < 0.04:\n        llm_topic.append(None)\n    elif _u < 0.06:\n        llm_topic.append(\"сервис\")\n    elif _u < (0.30 if _t == \"атмосфера\" else 0.16):\n        llm_topic.append(_rnd.choice([x for x in TOPICS if x != _t]))\n    else:\n        llm_topic.append(_t)",
+    "check": "import pandas as _pd\nc0, L, T = need('check'), _pd.Series(need('llm_topic')), need('TOPICS')\nvalid = L.isin(T)\nassert need('n_invalid') == int((~valid).sum()), f'n_invalid = {need(\"n_invalid\")}.'\nok = (L == c0['topic']) & valid\nassert close(need('acc_llm'), round(float(ok.mean()), 3), 0.0011), f'acc_llm = {need(\"acc_llm\")}.'\nrec = ok.groupby(c0['topic']).mean().round(3)\ng = need('recall_by_topic', _pd.Series)\nassert all(close(g[k], rec[k], 0.0011) for k in rec.index), f'recall_by_topic:\\n{g}\\nа нужно\\n{rec}'\nassert need('worst') == rec.idxmin(), f'worst = {need(\"worst\")!r}.'\nimport math as _m\na = float(ok.mean()); se = _m.sqrt(a * (1 - a) / len(c0))\nassert close(need('low'), round(a - 2 * se, 3), 0.0015) and close(need('high'), round(a + 2 * se, 3), 0.0015), f'low, high = {need(\"low\")}, {need(\"high\")}, а нужно {round(a - 2 * se, 3)}, {round(a + 2 * se, 3)}.'\nassert bool(need('clearly_better')) == bool(a - 2 * se > 0.79), 'clearly_better: сравните с 0.79 нижнюю границу low, а не саму долю.'",
+    "solution": "import math\nimport pandas as pd\n\nans = pd.Series(llm_topic)\ntrue = check[\"topic\"]\nvalid = ans.isin(TOPICS)\nn_invalid = int((~valid).sum())\nok = valid & (ans == true)\nacc_llm = round(float(ok.mean()), 3)\nrecall_by_topic = ok.groupby(true).mean().round(3)\nworst = recall_by_topic.idxmin()\nacc = float(ok.mean())\nse = math.sqrt(acc * (1 - acc) / len(true))\nlow, high = round(acc - 2 * se, 3), round(acc + 2 * se, 3)\nclearly_better = low > 0.79\nprint(n_invalid, acc_llm, worst, low, high, clearly_better)\nprint(recall_by_topic)",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/04c-llm",
+    "kind": "task",
+    "id": "llm-same",
+    "starter": "# уже есть: r, check, ok_llm — верна ли LLM на каждом из 200 отзывов",
+    "setup": "import random\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nr = pd.read_csv(\"reviews_text.csv\")\ncheck = r.sample(200, random_state=5).reset_index(drop=True)\nTOPICS = [\"кофе\", \"еда\", \"обслуживание\", \"доставка\", \"цена\", \"атмосфера\"]\n_rnd = random.Random(15)\nllm_topic = []\nfor _t in check[\"topic\"]:\n    _u = _rnd.random()\n    if _u < 0.04:\n        llm_topic.append(None)\n    elif _u < 0.06:\n        llm_topic.append(\"сервис\")\n    elif _u < (0.30 if _t == \"атмосфера\" else 0.16):\n        llm_topic.append(_rnd.choice([x for x in TOPICS if x != _t]))\n    else:\n        llm_topic.append(_t)\nok_llm = pd.Series(llm_topic).isin(TOPICS) & (pd.Series(llm_topic) == check[\"topic\"])",
+    "check": "from sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _T\nfrom sklearn.linear_model import LogisticRegression as _LR\nr0, c0, ol = need('r'), need('check'), need('ok_llm')\nrest = r0[~r0['review_id'].isin(c0['review_id'])]\nokm = _mp(_T(), _LR(max_iter=1000)).fit(rest['text'], rest['topic']).predict(c0['text']) == c0['topic'].values\nam = round(float(okm.mean()), 3)\nassert close(need('acc_model'), am, 0.004), f'acc_model = {need(\"acc_model\")}, а нужно около {am}. Обучайте на 2200 отзывах без проверочных (по review_id).'\nlo, mo = int((ol.values & ~okm).sum()), int((okm & ~ol.values).sum())\nassert need('llm_only') == lo and need('model_only') == mo, f'llm_only, model_only = {need(\"llm_only\")}, {need(\"model_only\")}, а нужно около {lo}, {mo}.'\n_only_a, _only_b = need('llm_only'), need('model_only')\n_n = len(check)\n_diff = (_only_a - _only_b) / _n\n_se = ((_only_a + _only_b - _n * _diff ** 2) / (_n * (_n - 1))) ** .5\n_lower = _diff - 1.96 * _se\nassert close(need('paired_lower'),round(_lower,3),.00051), 'Числитель парной разницы определяется расхождениями обеих моделей на тех же ID.'\nassert need('within_margin') == (_lower > -.02), 'Сравните неокруглённую нижнюю границу с −0,02.'",
+    "solution": "rest = r[~r[\"review_id\"].isin(check[\"review_id\"])]\nmodel = make_pipeline(TfidfVectorizer(), LogisticRegression(max_iter=1000)).fit(rest[\"text\"], rest[\"topic\"])\nok_model = pd.Series(model.predict(check[\"text\"])) == check[\"topic\"]\nacc_model = round(float(ok_model.mean()), 3)\nllm_only = int((ok_llm & ~ok_model).sum())\nmodel_only = int((ok_model & ~ok_llm).sum())\npaired = ok_llm.astype(int) - ok_model.astype(int)\nlower = paired.mean() - 1.96 * paired.sem()\npaired_lower = round(float(lower), 3)\nwithin_margin = bool(lower > -.02)\nprint(acc_model, llm_only, model_only)",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/05-project",
+    "kind": "task",
+    "id": "models",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\n\ndef new_model():\n    return make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000))",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nfrom sklearn.linear_model import LogisticRegression as _LR\n_m = lambda: _mp(_TF(ngram_range=(1, 2)), _LR(max_iter=1000))\nr0 = _pd.read_csv('reviews_text.csv'); y0 = (r0['rating'] <= 3).astype(int)\na, b, c, d = _tts(r0['text'], y0, test_size=0.25, random_state=42, stratify=y0)\nw1 = round(float((_m().fit(a, c).predict(b) == d).mean()), 3)\na, b, c, d = _tts(r0['text'], r0['topic'], test_size=0.25, random_state=42, stratify=r0['topic'])\nw2 = round(float((_m().fit(a, c).predict(b) == d).mean()), 3)\nassert close(need('acc_sent'), w1, 0.002), f'acc_sent = {need(\"acc_sent\")}, а нужно {w1}.'\nassert close(need('acc_topic'), w2, 0.002), f'acc_topic = {need(\"acc_topic\")}, а нужно {w2}.'\ns, t = need('sent'), need('topic_model')\nn0 = _pd.read_csv('reviews_new.csv')['text']\nref_s = _m().fit(r0['text'], y0).predict(n0)\nref_t = _m().fit(r0['text'], r0['topic']).predict(n0)\nassert (s.predict(n0) == ref_s).mean() > 0.99, 'sent должна быть обучена на всех 2400 отзывах.'\nassert (t.predict(n0) == ref_t).mean() > 0.99, 'topic_model должна быть обучена на всех 2400 отзывах.'\n\nfrom sklearn.model_selection import GroupShuffleSplit as _GSS\nfrom sklearn.metrics import f1_score as _f1\n_gtrain, _gtest = next(_GSS(n_splits=1, test_size=.25, random_state=42).split(r0, groups=r0.text))\n_ids = list(need('group_test_ids'))\nassert len(_ids) == len(_gtest) and set(_ids) == set(r0.iloc[_gtest].review_id), 'Сверьте ID из test общего разбиения по текстам.'\n_q = need('text_quality')\nassert isinstance(_q, _pd.DataFrame) and _q.index.is_unique and _q.columns.is_unique, 'text_quality — таблица с уникальными группами и показателями.'\nfor _label, _target in [('sent', y0), ('topic', r0.topic)]:\n    _tr, _te = _tts(r0.index, test_size=.25, random_state=42, stratify=_target)\n    _seen = set(r0.loc[_tr, 'text'])\n    for _group, _fit, _test in [('повторы', _tr, [i for i in _te if r0.text[i] in _seen]),\n                                ('новые', _tr, [i for i in _te if r0.text[i] not in _seen]),\n                                ('без пересечения', _gtrain, _gtest)]:\n        _pred = _m().fit(r0.text.iloc[_fit], _target.iloc[_fit]).predict(r0.text.iloc[_test])\n        _true = _target.iloc[_test]\n        assert _group in _q.index and {'n_'+_label, 'acc_'+_label, 'macro_f1_topic'} <= set(_q.columns), 'Проверьте подписи групп и метрик text_quality.'\n        assert _q.loc[_group, 'n_'+_label] == len(_test), f'{_group}: проверьте число текстов для {_label}.'\n        assert close(_q.loc[_group, 'acc_'+_label], (_pred == _true).mean(), .0015), f'{_group}: пересчитайте accuracy для {_label}.'\n        if _label == 'topic':\n            assert close(_q.loc[_group, 'macro_f1_topic'], _f1(_true, _pred, labels=sorted(_target.unique()), average='macro', zero_division=0), .0015), f'{_group}: пересчитайте macro-F1 тем на этой же выборке.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\n\ndef new_model():\n    return make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000))\n\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\nacc_sent = round(accuracy_score(y_test, new_model().fit(X_train, y_train).predict(X_test)), 3)\n\nX_train, X_test, t_train, t_test = train_test_split(r[\"text\"], r[\"topic\"], test_size=0.25, random_state=42, stratify=r[\"topic\"])\nacc_topic = round(accuracy_score(t_test, new_model().fit(X_train, t_train).predict(X_test)), 3)\n\nsent = new_model().fit(r[\"text\"], y)\ntopic_model = new_model().fit(r[\"text\"], r[\"topic\"])\nprint(acc_sent, acc_topic)\n\nfrom sklearn.model_selection import GroupShuffleSplit\nfrom sklearn.metrics import f1_score\n\ntext_quality = pd.DataFrame(index=[\"повторы\", \"новые\", \"без пересечения\"])\ngroup_train, group_test = next(GroupShuffleSplit(n_splits=1, test_size=.25, random_state=42)\n                               .split(r, groups=r[\"text\"]))\ngroup_test_ids = r.iloc[group_test][\"review_id\"].tolist()\nassert set(r.iloc[group_train][\"text\"]).isdisjoint(r.iloc[group_test][\"text\"])\nfor label, target in [(\"sent\", y), (\"topic\", r[\"topic\"])]:\n    train, test = train_test_split(r.index, test_size=.25, random_state=42, stratify=target)\n    repeated = r.loc[test, \"text\"].isin(r.loc[train, \"text\"])\n    for subset, fit_ids, test_ids in [(\"повторы\", train, test[repeated]),\n                                     (\"новые\", train, test[~repeated]),\n                                     (\"без пересечения\", group_train, group_test)]:\n        predicted = new_model().fit(r.loc[fit_ids, \"text\"], target.loc[fit_ids]).predict(r.loc[test_ids, \"text\"])\n        truth = target.loc[test_ids]\n        text_quality.loc[subset, \"n_\" + label] = len(truth)\n        text_quality.loc[subset, \"acc_\" + label] = round(accuracy_score(truth, predicted), 3)\n        if label == \"topic\":\n            text_quality.loc[subset, \"macro_f1_topic\"] = round(f1_score(\n                truth, predicted, average=\"macro\", labels=sorted(target.unique()), zero_division=0), 3)\nprint(text_quality)",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv",
+      "reviews_new_gold.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/05-project",
+    "kind": "task",
+    "id": "rare",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import f1_score\n\nr = pd.read_csv(\"reviews_text.csv\")\n\ndef new_model(class_weight=None):\n    return make_pipeline(TfidfVectorizer(ngram_range=(1, 2)),\n                         LogisticRegression(max_iter=1000, class_weight=class_weight))\n\nX_train, X_test, t_train, t_test = train_test_split(\n    r[\"text\"], r[\"topic\"], test_size=0.25, random_state=42, stratify=r[\"topic\"])",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nfrom sklearn.linear_model import LogisticRegression as _LR\nfrom sklearn.metrics import f1_score as _f1\nr0 = _pd.read_csv('reviews_text.csv')\na, b, c, d = _tts(r0['text'], r0['topic'], test_size=0.25, random_state=42, stratify=r0['topic'])\np = _mp(_TF(ngram_range=(1, 2)), _LR(max_iter=1000)).fit(a, c).predict(b)\nlabs = sorted(r0['topic'].unique())\nf = dict(zip(labs, [round(float(v), 3) for v in _f1(d, p, average=None, labels=labs)]))\ngot = need('f1_by_topic', dict)\nassert all(k in got and close(got[k], v, 0.0015) for k, v in f.items()), f'f1_by_topic = {got}, а нужно {f}. f1_score(..., average=None, labels=...) возвращает F1 по каждому классу в порядке labels.'\nassert close(need('macro_f1'), round(float(_f1(d, p, average=\"macro\")), 3), 0.0015), f'macro_f1 = {need(\"macro_f1\")}.'\nrare = d.value_counts().idxmin()\nassert need('rarest') == rare, f'rarest = {need(\"rarest\")!r}. Считайте по тесту: t_test.value_counts().'\nassert need('worst') == min(f, key=f.get), f'worst = {need(\"worst\")!r}.'\ncr = round(float((p == rare).sum() / (d == rare).sum()), 3)\nassert close(need('count_ratio'), cr, 0.0015), f'count_ratio = {need(\"count_ratio\")}, а нужно {cr}: (pred == тема).sum() / (t_test == тема).sum().'\npb = _mp(_TF(ngram_range=(1, 2)), _LR(max_iter=1000, class_weight='balanced')).fit(a, c).predict(b)\nfb = round(float(_f1(d, pb, labels=[rare], average=None)[0]), 3)\nassert close(need('f1_rare_balanced'), fb, 0.0015), f'f1_rare_balanced = {need(\"f1_rare_balanced\")}, а нужно {fb}.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import f1_score\n\nr = pd.read_csv(\"reviews_text.csv\")\n\ndef new_model(class_weight=None):\n    return make_pipeline(TfidfVectorizer(ngram_range=(1, 2)),\n                         LogisticRegression(max_iter=1000, class_weight=class_weight))\n\nX_train, X_test, t_train, t_test = train_test_split(\n    r[\"text\"], r[\"topic\"], test_size=0.25, random_state=42, stratify=r[\"topic\"])\n\npred = new_model().fit(X_train, t_train).predict(X_test)\nlabels = sorted(r[\"topic\"].unique())\nf1_by_topic = {k: round(float(v), 3) for k, v in zip(labels, f1_score(t_test, pred, average=None, labels=labels))}\nmacro_f1 = round(float(f1_score(t_test, pred, average=\"macro\")), 3)\nrarest = t_test.value_counts().idxmin()\nworst = min(f1_by_topic, key=f1_by_topic.get)\ncount_ratio = round(float((pred == rarest).sum() / (t_test == rarest).sum()), 3)\n\npred_b = new_model(\"balanced\").fit(X_train, t_train).predict(X_test)\nf1_rare_balanced = round(float(f1_score(t_test, pred_b, labels=[rarest], average=None)[0]), 3)\nprint(f1_by_topic, macro_f1, rarest, worst, count_ratio, f1_rare_balanced)",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv",
+      "reviews_new_gold.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/05-project",
+    "kind": "task",
+    "id": "score",
+    "starter": "import numpy as np\nimport pandas as pd\n\nn = pd.read_csv(\"reviews_new.csv\", parse_dates=[\"date\"])",
+    "setup": "import pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\n_r = pd.read_csv(\"reviews_text.csv\")\nsent = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r[\"text\"], (_r[\"rating\"] <= 3).astype(int))\ntopic_model = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r[\"text\"], _r[\"topic\"])",
+    "check": "import numpy as _np\nimport pandas as _pd\nn = need('n', _pd.DataFrame)\nn0 = _pd.read_csv('reviews_new.csv', parse_dates=['date'])\nassert n['review_id'].is_unique and set(n['review_id'])==set(n0['review_id']), 'review_id должен совпадать с источником без дублей.'\nn = n.set_index('review_id').reindex(n0['review_id']).reset_index()\nfor _key in ('date','shop_id','text'):\n    assert n[_key].tolist()==n0[_key].tolist(), f'{_key}: исходное значение не соответствует review_id.'\nassert len(n) == len(n0), f'Строк {len(n)}, а в файле {len(n0)}.'\nassert _pd.api.types.is_datetime64_any_dtype(n['date']), 'Колонка date должна быть датой: parse_dates=[\"date\"].'\np = need('sent').predict_proba(n0['text'])[:, 1]\nassert _np.allclose(n['p_neg'].values, p, atol=1e-6), 'p_neg — вторая колонка predict_proba.'\nassert (n['neg'].astype(int).values == (p >= 0.5).astype(int)).all(), 'neg = (p_neg >= 0.5).'\nassert (n['topic'].values == need('topic_model').predict(n0['text'])).all(), 'topic — предсказание topic_model.'\nwant = _np.where(n0['date'] >= '2026-10-01', 'после', 'до')\nassert (n['period'].values == want).all(), 'period: «после» — с 2026-10-01 включительно.'\nassert need('n_after') == int((want == 'после').sum()), f'n_after = {need(\"n_after\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\n\nn = pd.read_csv(\"reviews_new.csv\", parse_dates=[\"date\"])\nn[\"p_neg\"] = sent.predict_proba(n[\"text\"])[:, 1]\nn[\"neg\"] = (n[\"p_neg\"] >= 0.5).astype(int)\nn[\"topic\"] = topic_model.predict(n[\"text\"])\nn[\"period\"] = np.where(n[\"date\"] >= \"2026-10-01\", \"после\", \"до\")\nn_after = int((n[\"period\"] == \"после\").sum())\nprint(n.sample(5, random_state=1)[[\"text\", \"p_neg\", \"topic\"]])",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv",
+      "reviews_new_gold.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/05-project",
+    "kind": "task",
+    "id": "shops",
+    "starter": "by_shop = ...",
+    "setup": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\n_r = pd.read_csv(\"reviews_text.csv\")\nsent = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r[\"text\"], (_r[\"rating\"] <= 3).astype(int))\ntopic_model = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r[\"text\"], _r[\"topic\"])\nn = pd.read_csv(\"reviews_new.csv\", parse_dates=[\"date\"])\nn[\"p_neg\"] = sent.predict_proba(n[\"text\"])[:, 1]\nn[\"neg\"] = (n[\"p_neg\"] >= 0.5).astype(int)\nn[\"topic\"] = topic_model.predict(n[\"text\"])\nn[\"period\"] = np.where(n[\"date\"] >= \"2026-10-01\", \"после\", \"до\")",
+    "check": "import pandas as _pd\nn0 = need('n', _pd.DataFrame)\nw = n0.groupby(['shop_id', 'period'])['neg'].mean().unstack()[['до', 'после']]\nw['рост'] = w['после'] - w['до']\nw = w.round(3).sort_values('рост', ascending=False)\nb = need('by_shop', _pd.DataFrame)\nassert list(b.columns) == ['до', 'после', 'рост'], f'Колонки: {list(b.columns)}.'\nassert list(b.index) == list(w.index), f'Порядок точек: {list(b.index)}, а нужно {list(w.index)}.'\nassert ((b - w).abs() < 0.0015).all().all(), 'Значения долей не совпадают.'\nassert need('worst_level') == w['после'].idxmax(), f'worst_level = {need(\"worst_level\")!r}.'\nassert need('worst_growth') == w['рост'].idxmax(), f'worst_growth = {need(\"worst_growth\")!r}.'",
+    "solution": "by_shop = n.groupby([\"shop_id\", \"period\"])[\"neg\"].mean().unstack()[[\"до\", \"после\"]]\nby_shop[\"рост\"] = by_shop[\"после\"] - by_shop[\"до\"]\nby_shop = by_shop.round(3).sort_values(\"рост\", ascending=False)\nworst_level = by_shop[\"после\"].idxmax()\nworst_growth = by_shop[\"рост\"].idxmax()\nprint(by_shop, worst_level, worst_growth)",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv",
+      "reviews_new_gold.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/05-project",
+    "kind": "task",
+    "id": "weekly",
+    "starter": "import pandas as pd\nimport matplotlib.pyplot as plt",
+    "setup": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\n_r = pd.read_csv(\"reviews_text.csv\")\nsent = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r[\"text\"], (_r[\"rating\"] <= 3).astype(int))\nn = pd.read_csv(\"reviews_new.csv\", parse_dates=[\"date\"])\nn[\"p_neg\"] = sent.predict_proba(n[\"text\"])[:, 1]\nn[\"neg\"] = (n[\"p_neg\"] >= 0.5).astype(int)",
+    "check": "import pandas as _pd\nn0 = need('n', _pd.DataFrame).copy()\nn0['week'] = n0['date'].dt.to_period('W').dt.start_time\nw = n0.pivot_table(index='week', columns='shop_id', values='neg', aggfunc='mean')\ngot = need('weekly', _pd.DataFrame)\nassert got.shape == w.shape, f'weekly.shape = {got.shape}, а нужно {w.shape}.'\nassert ((got[w.columns].values - w.values) ** 2).max() < 1e-12, 'Доли по неделям не совпадают.'\n_shop=need('focus_shop')\nassert _shop in w.columns, 'Выберите точку из weekly.'\njw = w[_shop].diff().idxmax()\nassert _pd.Timestamp(need('jump_week')) == jw, f'jump_week = {need(\"jump_week\")}, а нужно {jw.date()}.'\nsm = round(float(w.loc[w.index < jw, _shop].max()), 3)\nassert close(need('sept_max'), sm, 0.0015), f'sept_max = {need(\"sept_max\")}, а нужно {sm}.'\nassert got.index.equals(w.index), 'Недельные даты weekly должны соответствовать реальным датам отзывов, не только числам в ячейках.'",
+    "solution": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nn[\"week\"] = n[\"date\"].dt.to_period(\"W\").dt.start_time\nweekly = n.pivot_table(index=\"week\", columns=\"shop_id\", values=\"neg\", aggfunc=\"mean\")\nchange_date,focus_shop=weekly.diff().stack().idxmax()\njump_week = weekly[focus_shop].diff().idxmax()\nsept_max = round(float(weekly.loc[weekly.index < jump_week, focus_shop].max()), 3)\nprint(weekly.round(2))\nprint(jump_week.date(), sept_max)\nax = weekly.plot(figsize=(9, 4), color=\"lightgray\", legend=False)\nweekly[focus_shop].plot(ax=ax, color=\"crimson\", lw=3, label=focus_shop)\nax.set_ylabel(\"доля недовольных\"); ax.legend()",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv",
+      "reviews_new_gold.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/05-project",
+    "kind": "task",
+    "id": "why",
+    "starter": "bad = n[n[\"neg\"] == 1]",
+    "setup": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\n_r = pd.read_csv(\"reviews_text.csv\")\nsent = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r[\"text\"], (_r[\"rating\"] <= 3).astype(int))\ntopic_model = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r[\"text\"], _r[\"topic\"])\nn = pd.read_csv(\"reviews_new.csv\", parse_dates=[\"date\"])\nn[\"p_neg\"] = sent.predict_proba(n[\"text\"])[:, 1]\nn[\"neg\"] = (n[\"p_neg\"] >= 0.5).astype(int)\nn[\"topic\"] = topic_model.predict(n[\"text\"])\nn[\"period\"] = np.where(n[\"date\"] >= \"2026-10-05\", \"после\", \"до\")",
+    "check": "import pandas as _pd\nn0 = need('n', _pd.DataFrame).copy()\n_shop=need('focus_shop');_date=_pd.Timestamp(need('change_date'))\nassert _shop in set(n0.shop_id), 'Выберите существующую точку.'\nassert n0.date.min() < _date < n0.date.max(), 'Дата разделяет наблюдавшиеся периоды.'\nn0['period']=__import__('numpy').where(n0.date>=_date,'после','до')\n_counts=n0[n0.shop_id==_shop].groupby('period').size()\nassert set(_counts.index)=={'до','после'} and (_counts>=30).all(), 'Для сравнения нужно не меньше30 отзывов точки в каждом периоде.'\nbad=n0[n0['neg']==1]\nk0 = bad[bad['shop_id'] == _shop]; o0 = bad[bad['shop_id'] != _shop]\nkw = _pd.crosstab(k0['topic'], k0['period'], normalize='columns')\now = _pd.crosstab(o0['topic'], o0['period'], normalize='columns')\nk, o = need('kzn', _pd.DataFrame), need('others', _pd.DataFrame)\nassert ((k[['до', 'после']] - kw[['до', 'после']]).abs() < 1e-6).all().all(), 'kzn не совпадает: только недовольные отзывы KZN-2, normalize=\"columns\".'\nassert ((o[['до', 'после']] - ow[['до', 'после']]).abs() < 1e-6).all().all(), 'others не совпадает: недовольные отзывы остальных точек.'\nc = (kw['после'] - kw['до']).idxmax()\nassert need('cause') == c, f'cause = {need(\"cause\")!r}.'\nqw = k0[(k0['period'] == 'после') & (k0['topic'] == c)].sort_values('p_neg', ascending=False)['text'].head(5).tolist()\nassert need('quotes', list) == qw, 'quotes: пять текстов с наибольшей p_neg, по убыванию.'\n_expected_ids=k0[(k0['period']=='после')&(k0['topic']==c)].sort_values('p_neg',ascending=False)['review_id'].head(5).tolist()\nassert list(need('quote_ids'))==_expected_ids, 'Цитаты должны сопровождаться исходными review_id этой точки, периода и темы.'",
+    "solution": "import pandas as pd\n\n_weeks=n.assign(week=n['date'].dt.to_period('W').dt.start_time).pivot_table(index='week',columns='shop_id',values='neg',aggfunc='mean')\nchange_date,focus_shop=_weeks.diff().stack().idxmax()\nchange_date=pd.Timestamp(change_date)\nn=n.copy()\nn['period']=__import__('numpy').where(n['date']>=change_date,'после','до')\nbad = n[n[\"neg\"] == 1]\nkb = bad[bad[\"shop_id\"] == focus_shop]\nob = bad[bad[\"shop_id\"] != focus_shop]\nkzn = pd.crosstab(kb[\"topic\"], kb[\"period\"], normalize=\"columns\")\nothers = pd.crosstab(ob[\"topic\"], ob[\"period\"], normalize=\"columns\")\ncause = (kzn[\"после\"] - kzn[\"до\"]).idxmax()\nquotes = (kb[(kb[\"period\"] == \"после\") & (kb[\"topic\"] == cause)]\n          .sort_values(\"p_neg\", ascending=False)[\"text\"].head(5).tolist())\nprint(kzn.round(2), others.round(2), cause, *quotes, sep=\"\\n\")\nquote_ids = kb[(kb['period']=='после')&(kb['topic']==cause)].sort_values('p_neg',ascending=False)['review_id'].head(5).tolist()",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv",
+      "reviews_new_gold.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch13/05-project",
+    "kind": "task",
+    "id": "adjust",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)",
+    "setup": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\n_r = pd.read_csv(\"reviews_text.csv\")\nsent = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(_r[\"text\"], (_r[\"rating\"] <= 3).astype(int))\nn = pd.read_csv(\"reviews_new.csv\", parse_dates=[\"date\"])\nn[\"p_neg\"] = sent.predict_proba(n[\"text\"])[:, 1]\nn[\"neg\"] = (n[\"p_neg\"] >= 0.5).astype(int)\nn[\"period\"] = np.where(n[\"date\"] >= \"2026-10-05\", \"после\", \"до\")",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.feature_extraction.text import TfidfVectorizer as _TF\nfrom sklearn.linear_model import LogisticRegression as _LR\nr0 = _pd.read_csv('reviews_text.csv'); y0 = (r0['rating'] <= 3).astype(int)\na, b, c, d = _tts(r0['text'], y0, test_size=0.25, random_state=42, stratify=y0)\np = _mp(_TF(ngram_range=(1, 2)), _LR(max_iter=1000)).fit(a, c).predict(b)\nt0 = float(((p == 1) & (d == 1)).sum() / (d == 1).sum()); f0 = float(((p == 1) & (d == 0)).sum() / (d == 0).sum())\nassert close(need('tpr'), t0, 0.002), f'tpr = {need(\"tpr\")}, а нужно {t0:.3f}.'\nassert close(need('fpr'), f0, 0.002), f'fpr = {need(\"fpr\")}, а нужно {f0:.3f}.'\nn0 = need('n', _pd.DataFrame)\nobs = n0[n0['shop_id'] == 'KZN-2'].groupby('period')['neg'].mean()\nw = {k: round((obs[k] - f0) / (t0 - f0), 3) for k in ['до', 'после']}\ngot = need('adj', dict)\nassert all(close(got[k], w[k], 0.003) for k in w), f'adj = {got}, а нужно {w}.'\n_gold=_pd.read_csv('reviews_new_gold.csv')\n_labeled=n0.merge(_gold[['review_id','complaint']],on='review_id',validate='one_to_one')\n_audit=need('audit',_pd.DataFrame)\nfor _period,_part in _labeled[_labeled.shop_id=='KZN-2'].groupby('period'):\n    _target=_part.complaint; _tp=float(_part.loc[_target==1,'neg'].mean()); _fp=float(_part.loc[_target==0,'neg'].mean());_obs=float(_part.neg.mean())\n    _want=dict(n=len(_part),complaints=int(_target.sum()),tpr=_tp,fpr=_fp,observed=_obs,manual=float(_target.mean()),adjusted=(_obs-_fp)/(_tp-_fp))\n    for _key,_value in _want.items():\n        assert close(_audit.loc[_period,_key],_value), f'audit {_period}/{_key}: разметка нового потока и исходные знаменатели, не частоты старых звёзд.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix\n\nr = pd.read_csv(\"reviews_text.csv\")\ny = (r[\"rating\"] <= 3).astype(int)\nX_train, X_test, y_train, y_test = train_test_split(r[\"text\"], y, test_size=0.25, random_state=42, stratify=y)\npred = make_pipeline(TfidfVectorizer(ngram_range=(1, 2)), LogisticRegression(max_iter=1000)).fit(X_train, y_train).predict(X_test)\ntn, fp, fn, tp = confusion_matrix(y_test, pred).ravel()\ntpr, fpr = tp / (tp + fn), fp / (fp + tn)\n\nobs = n[n[\"shop_id\"] == \"KZN-2\"].groupby(\"period\")[\"neg\"].mean()\nadj = {k: round((obs[k] - fpr) / (tpr - fpr), 3) for k in [\"до\", \"после\"]}\nprint(round(tpr, 3), round(fpr, 3), obs.round(3).to_dict(), adj)\ngold = pd.read_csv('reviews_new_gold.csv')\nlabeled = n.merge(gold[['review_id','complaint']],on='review_id',validate='one_to_one')\nrows=[]\nfor period,part in labeled[labeled.shop_id=='KZN-2'].groupby('period'):\n    target=part.complaint\n    tpr_new=float(part.loc[target==1,'neg'].mean())\n    fpr_new=float(part.loc[target==0,'neg'].mean())\n    observed=float(part.neg.mean())\n    rows.append(dict(period=period,n=len(part),complaints=int(target.sum()),tpr=tpr_new,fpr=fpr_new,observed=observed,manual=float(target.mean()),adjusted=(observed-fpr_new)/(tpr_new-fpr_new) if abs(tpr_new-fpr_new)>1e-6 else float(\"nan\")))\naudit=pd.DataFrame(rows).set_index('period')",
+    "files": [
+      "reviews_text.csv",
+      "reviews_new.csv",
+      "reviews_new_gold.csv"
+    ],
+    "display": true
+  }
+]
