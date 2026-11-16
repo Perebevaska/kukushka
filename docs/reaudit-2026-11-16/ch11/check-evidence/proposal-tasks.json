@@ -1,0 +1,710 @@
+[
+  {
+    "lesson": "ch11/01-neuron",
+    "kind": "task",
+    "id": "neuron",
+    "starter": "import numpy as np\nx = np.array([30.0, 0.0, 1.0])\nw = np.array([0.05, 1.5, -0.8])\nb = -1.0",
+    "setup": "",
+    "check": "import numpy as _np\nf = need('neuron')\nassert close(f(_np.array([0.0]), _np.array([1.0]), 0.0), 0.5), 'При нулевой оценке сигмоида равна 0.5.'\nw = 1 / (1 + _np.exp(-(_np.array([30.0, 0.0, 1.0]) @ _np.array([0.05, 1.5, -0.8]) - 1.0)))\nassert close(need('p'), round(float(w), 3)), f'p = {need(\"p\")}, а нужно {round(float(w), 3)}.'",
+    "solution": "import numpy as np\nx = np.array([30.0, 0.0, 1.0])\nw = np.array([0.05, 1.5, -0.8])\nb = -1.0\n\ndef neuron(x, w, b):\n    return 1 / (1 + np.exp(-(x @ w + b)))\n\np = round(float(neuron(x, w, b)), 3)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/01-neuron",
+    "kind": "task",
+    "id": "relu",
+    "starter": "import numpy as np\nz = np.array([-1.5, 0.0, 0.3, 2.0, -0.2])",
+    "setup": "",
+    "check": "import numpy as _np\nz0 = _np.array([-1.5, 0.0, 0.3, 2.0, -0.2])\nassert _np.allclose(need('r'), _np.maximum(0, z0)), f'r = {need(\"r\")}.'\nassert list(_np.asarray(need('dr')).astype(int)) == [0, 0, 1, 1, 0], f'dr = {need(\"dr\")}.'",
+    "solution": "import numpy as np\nz = np.array([-1.5, 0.0, 0.3, 2.0, -0.2])\n\ndef relu(z):\n    return np.maximum(0, z)\n\nr = relu(z)\ndr = (z > 0).astype(int)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/01-neuron",
+    "kind": "task",
+    "id": "p-layer",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == ['(2, 3)'], f'Сейчас: {_lines}.'",
+    "solution": "import numpy as np\nX = np.array([[1.0, 2.0], [3.0, -1.0]])\nW = np.array([[0.5, -1.0, 0.2], [0.1, 0.3, -0.4]])\nb = np.array([0.0, 0.5, 0.1])\nA = np.maximum(0, X @ W + b)\nprint(A.shape)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/01-neuron",
+    "kind": "task",
+    "id": "n-params",
+    "starter": "def n_params(sizes):\n    ...",
+    "setup": "",
+    "check": "f = need('n_params')\nassert f([2, 1]) == 3 and f([3, 4, 2]) == 26, 'Проверьте формулу: у слоя n_in → n_out ровно n_in·n_out весов и n_out сдвигов.'\nassert need('p_small') == 321 and need('p_logit') == 11, f'p_small = {need(\"p_small\")}, p_logit = {need(\"p_logit\")}.'\nassert need('p_big') == 68865, f'p_big = {need(\"p_big\")}.'",
+    "solution": "def n_params(sizes):\n    return sum(n_in * n_out + n_out for n_in, n_out in zip(sizes[:-1], sizes[1:]))\n\np_small = n_params([10, 16, 8, 1])\np_logit = n_params([10, 1])\np_big = n_params([10, 256, 256, 1])\nprint(p_small, p_logit, p_big)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/01-neuron",
+    "kind": "task",
+    "id": "collapse",
+    "starter": "import numpy as np\nrng = np.random.default_rng(1)\nX = rng.normal(size=(5, 3))\nW1 = rng.normal(size=(3, 4))\nW2 = rng.normal(size=(4, 2))",
+    "setup": "",
+    "check": "import numpy as _np\nr = _np.random.default_rng(1); X0 = r.normal(size=(5, 3)); A = r.normal(size=(3, 4)); B = r.normal(size=(4, 2))\nassert _np.allclose(need('W'), A @ B), 'W = W1 @ W2.'\nassert need('same') == True, 'same должно быть True.'\nassert need('with_relu_same') == bool(_np.allclose(_np.maximum(0, X0 @ A) @ B, X0 @ A @ B)), f'with_relu_same = {need(\"with_relu_same\")}.'\nassert _np.asarray(need('two_layers')).shape == (5, 2) and _np.allclose(need('two_layers'), (X0 @ A) @ B), 'two_layers — результат двух линейных слоёв для X из заготовки.'",
+    "solution": "import numpy as np\nrng = np.random.default_rng(1)\nX = rng.normal(size=(5, 3))\nW1 = rng.normal(size=(3, 4))\nW2 = rng.normal(size=(4, 2))\n\ntwo_layers = (X @ W1) @ W2\nW = W1 @ W2\nsame = bool(np.allclose(X @ W, two_layers))\nwith_relu_same = bool(np.allclose(np.maximum(0, X @ W1) @ W2, X @ W))",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/01-neuron",
+    "kind": "task",
+    "id": "forward",
+    "starter": "import numpy as np\nX = np.array([[0.2, 1.0], [1.5, -0.3], [-1.0, 0.4]])\nW1 = np.array([[1.0, -2.0, 0.5], [0.3, 1.0, -1.0]])\nb1 = np.array([0.0, 0.1, 0.2])\nw2 = np.array([1.5, -1.0, 2.0])\nb2 = -0.5",
+    "setup": "",
+    "check": "import numpy as _np\nX0 = _np.array([[0.2, 1.0], [1.5, -0.3], [-1.0, 0.4]]); A = _np.array([[1.0, -2.0, 0.5], [0.3, 1.0, -1.0]])\nh = _np.maximum(0, X0 @ A + _np.array([0.0, 0.1, 0.2])); pp = 1 / (1 + _np.exp(-(h @ _np.array([1.5, -1.0, 2.0]) - 0.5)))\nassert _np.allclose(need('p'), pp.round(3), atol=1e-3), f'p = {need(\"p\")}, а нужно {pp.round(3)}.'\nassert list(_np.asarray(need('pred')).astype(int)) == list((pp > 0.5).astype(int)), f'pred = {need(\"pred\")}.'",
+    "solution": "import numpy as np\nX = np.array([[0.2, 1.0], [1.5, -0.3], [-1.0, 0.4]])\nW1 = np.array([[1.0, -2.0, 0.5], [0.3, 1.0, -1.0]])\nb1 = np.array([0.0, 0.1, 0.2])\nw2 = np.array([1.5, -1.0, 2.0])\nb2 = -0.5\n\ndef forward(X, W1, b1, w2, b2):\n    H = np.maximum(0, X @ W1 + b1)\n    return 1 / (1 + np.exp(-(H @ w2 + b2)))\n\np = forward(X, W1, b1, w2, b2).round(3)\npred = (p > 0.5).astype(int)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/01-neuron",
+    "kind": "task",
+    "id": "saturation",
+    "starter": "import numpy as np\n\nz = np.linspace(-6, 6, 121)",
+    "setup": "",
+    "check": "import numpy as _np\nz = _np.linspace(-6, 6, 121); sg = 1 / (1 + _np.exp(-z))\nds, dt = sg * (1 - sg), 1 - _np.tanh(z) ** 2\ng = need('max_deriv', dict)\nassert close(g['sigmoid'], round(float(ds.max()), 3), 0.0011) and close(g['tanh'], round(float(dt.max()), 3), 0.0011), f'max_deriv = {g}.'\ns5 = 1 / (1 + _np.exp(-5.0))\nw5 = {'sigmoid': round(float(s5 * (1 - s5)), 4), 'tanh': round(float(1 - _np.tanh(5.0) ** 2), 4), 'relu': 1}\ng5 = need('deriv_at_5', dict)\nassert all(close(g5[k], w5[k], 2e-4) for k in w5), f'deriv_at_5 = {g5}, а нужно {w5}.'\nassert close(need('share_small'), round(float((ds < 0.01).mean()), 3), 0.0011), f'share_small = {need(\"share_small\")}.'",
+    "solution": "import numpy as np\n\nz = np.linspace(-6, 6, 121)\nsg = 1 / (1 + np.exp(-z))\nd_sig = sg * (1 - sg)\nd_tanh = 1 - np.tanh(z) ** 2\nmax_deriv = {\"sigmoid\": round(float(d_sig.max()), 3), \"tanh\": round(float(d_tanh.max()), 3)}\ns5 = 1 / (1 + np.exp(-5.0))\nderiv_at_5 = {\"sigmoid\": round(float(s5 * (1 - s5)), 4), \"tanh\": round(float(1 - np.tanh(5.0) ** 2), 4), \"relu\": 1}\nshare_small = round(float((d_sig < 0.01).mean()), 3)\nprint(max_deriv, deriv_at_5, share_small)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/01-neuron",
+    "kind": "task",
+    "id": "shapes",
+    "starter": "import numpy as np\n\n# X (100 × 10), Ws и bs (списки весов и сдвигов по слоям) уже созданы\ndef forward(X, Ws, bs):\n    shapes = []\n    A = X\n    ...\n    return A, shapes",
+    "setup": "import numpy as np\nrng = np.random.default_rng(1)\nX = rng.normal(size=(100, 10))\nsizes = [10, 16, 8, 1]\nWs = [rng.normal(0, 0.3, size=(a, b)) for a, b in zip(sizes[:-1], sizes[1:])]\nbs = [np.zeros(b) for b in sizes[1:]]",
+    "check": "import numpy as _np\nX0, W0, b0 = need('X'), need('Ws'), need('bs')\nA = X0\nfor i, (W, b) in enumerate(zip(W0, b0)):\n    Z = A @ W + b\n    A = _np.maximum(0, Z) if i < len(W0) - 1 else 1 / (1 + _np.exp(-Z))\nassert tuple(need('out_shape')) == (100, 1), f'out_shape = {need(\"out_shape\")}.'\nassert [tuple(x) for x in need('shapes', list)] == [(100, 16), (100, 8), (100, 1)], f'shapes = {need(\"shapes\")}.'\nassert close(need('p_mean'), round(float(A.mean()), 3), 0.0011), f'p_mean = {need(\"p_mean\")}: ReLU в скрытых слоях, сигмоида только на выходе.'\nassert need('err_type') == 'ValueError', f'err_type = {need(\"err_type\")!r}.'",
+    "solution": "import numpy as np\n\ndef forward(X, Ws, bs):\n    shapes = []\n    A = X\n    for i, (W, b) in enumerate(zip(Ws, bs)):\n        Z = A @ W + b\n        A = np.maximum(0, Z) if i < len(Ws) - 1 else 1 / (1 + np.exp(-Z))\n        shapes.append(A.shape)\n    return A, shapes\n\nout, shapes = forward(X, Ws, bs)\nout_shape = out.shape\np_mean = round(float(out.mean()), 3)\ntry:\n    forward(X, Ws[::-1], bs[::-1])\n    err_type = None\nexcept Exception as e:\n    err_type = type(e).__name__\nprint(out_shape, shapes, p_mean, err_type)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/01-neuron",
+    "kind": "task",
+    "id": "xor-linear",
+    "starter": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nX = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])\ny = np.array([0, 1, 1, 0])\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nW1 = np.array([[20.0, 20.0], [20.0, 20.0]])\nb1 = np.array([-10.0, -30.0])\nw2 = np.array([20.0, -40.0])\nb2 = -10.0",
+    "setup": "",
+    "check": "import numpy as _np\nfrom sklearn.linear_model import LogisticRegression as _LR\nX0 = _np.array([[0, 0], [0, 1], [1, 0], [1, 1]]); y0 = _np.array([0, 1, 1, 0])\na = (_LR().fit(X0, y0).predict(X0) == y0).mean()\nassert close(need('acc_logit'), a), f'acc_logit = {need(\"acc_logit\")}, а нужно {a}.'\nassert close(need('acc_net'), 1.0), f'acc_net = {need(\"acc_net\")} — сеть из теории отвечает верно на всех четырёх.'",
+    "solution": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nX = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])\ny = np.array([0, 1, 1, 0])\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nW1 = np.array([[20.0, 20.0], [20.0, 20.0]])\nb1 = np.array([-10.0, -30.0])\nw2 = np.array([20.0, -40.0])\nb2 = -10.0\n\nacc_logit = (LogisticRegression().fit(X, y).predict(X) == y).mean()\nout = sigmoid(sigmoid(X @ W1 + b1) @ w2 + b2)\nacc_net = ((out > 0.5) == y).mean()",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/01-neuron",
+    "kind": "task",
+    "id": "feature-net",
+    "starter": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nX = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])\ny = np.array([0, 1, 1, 0])\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nW1 = np.array([[20.0, 20.0], [20.0, 20.0]])\nb1 = np.array([-10.0, -30.0])",
+    "setup": "",
+    "check": "import numpy as _np\nfrom sklearn.linear_model import LogisticRegression as _LR\nX0 = _np.array([[0, 0], [0, 1], [1, 0], [1, 1]]); y0 = _np.array([0, 1, 1, 0])\nh = 1 / (1 + _np.exp(-(X0 @ _np.array([[20.0, 20.0], [20.0, 20.0]]) + _np.array([-10.0, -30.0]))))\nassert _np.allclose(need('H'), h.round(2)), f'H = {need(\"H\")}.'\nassert close(need('acc_on_h'), (_LR().fit(h, y0).predict(h) == y0).mean()), f'acc_on_h = {need(\"acc_on_h\")}.'",
+    "solution": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nX = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])\ny = np.array([0, 1, 1, 0])\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\nW1 = np.array([[20.0, 20.0], [20.0, 20.0]])\nb1 = np.array([-10.0, -30.0])\n\nH_raw = sigmoid(X @ W1 + b1)\nacc_on_h = (LogisticRegression().fit(H_raw, y).predict(H_raw) == y).mean()\nH = H_raw.round(2)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02-backprop",
+    "kind": "task",
+    "id": "logloss",
+    "starter": "import numpy as np\ny = np.array([1, 0, 1, 1])\np_good = np.array([0.9, 0.1, 0.8, 0.95])\np_bad = np.array([0.1, 0.9, 0.2, 0.05])",
+    "setup": "",
+    "check": "import numpy as _np\ny0 = _np.array([1, 0, 1, 1])\nL = lambda p: -_np.mean(y0 * _np.log(p) + (1 - y0) * _np.log(1 - p))\nassert close(need('logloss')(_np.array([1, 0]), _np.array([0.5, 0.5])), _np.log(2)), 'logloss при p = 0.5 должна быть ln 2 ≈ 0.693.'\nassert close(need('l_good'), round(L(_np.array([0.9, 0.1, 0.8, 0.95])), 3)), f'l_good = {need(\"l_good\")}.'\nassert close(need('l_bad'), round(L(_np.array([0.1, 0.9, 0.2, 0.05])), 3)), f'l_bad = {need(\"l_bad\")}.'",
+    "solution": "import numpy as np\ny = np.array([1, 0, 1, 1])\np_good = np.array([0.9, 0.1, 0.8, 0.95])\np_bad = np.array([0.1, 0.9, 0.2, 0.05])\n\ndef logloss(y, p):\n    return -np.mean(y * np.log(p) + (1 - y) * np.log(1 - p))\n\nl_good = round(logloss(y, p_good), 3)\nl_bad = round(logloss(y, p_bad), 3)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02-backprop",
+    "kind": "task",
+    "id": "grad-check",
+    "starter": "import numpy as np\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\ny, z, eps = 1, 0.4, 1e-5",
+    "setup": "",
+    "check": "import numpy as _np\ns = lambda z: 1 / (1 + _np.exp(-z))\na = round(s(0.4) - 1, 5); n = round((-_np.log(s(0.4 + 1e-5)) + _np.log(s(0.4 - 1e-5))) / 2e-5, 5)\nassert close(need('analytic'), a, 1e-5), f'analytic = {need(\"analytic\")}, а нужно {a}.'\nassert close(need('numeric'), n, 1e-5), f'numeric = {need(\"numeric\")}, а нужно {n}.'",
+    "solution": "import numpy as np\n\ndef sigmoid(z):\n    return 1 / (1 + np.exp(-z))\n\ny, z, eps = 1, 0.4, 1e-5\nL = lambda z: -np.log(sigmoid(z))\nanalytic = round(sigmoid(z) - y, 5)\nnumeric = round((L(z + eps) - L(z - eps)) / (2 * eps), 5)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02-backprop",
+    "kind": "task",
+    "id": "p-step",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == ['(2, 3) (3,)'], f'Сейчас: {_lines}.'\nassert _code.index('dH =') < _code.index('w2 = w2'), 'dH считается до обновления w2 — иначе ошибка пройдёт через уже изменённые веса.'",
+    "solution": "import numpy as np\nX = np.array([[0.5, -1.0], [1.0, 2.0]]); y = np.array([0, 1])\nW1 = np.full((2, 3), 0.1); b1 = np.zeros(3); w2 = np.full(3, 0.1); b2 = 0.0; lr = 0.5\nZ1 = X @ W1 + b1\nH = np.maximum(0, Z1)\np = 1 / (1 + np.exp(-(H @ w2 + b2)))\nd2 = (p - y) / len(y)\ndH = np.outer(d2, w2) * (Z1 > 0)\nw2 = w2 - lr * H.T @ d2\nW1 = W1 - lr * X.T @ dH\nprint(W1.shape, w2.shape)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02-backprop",
+    "kind": "task",
+    "id": "chain",
+    "starter": "import numpy as np\n\nx, w1, w2, y = 2.0, 0.3, -1.0, 0",
+    "setup": "",
+    "check": "import numpy as _np\nx, w1, w2, y = 2.0, 0.3, -1.0, 0\nh = max(0.0, x * w1); p = 1 / (1 + _np.exp(-h * w2)); d2 = p - y\ngw2 = d2 * h; gw1 = d2 * w2 * (1.0 if x * w1 > 0 else 0.0) * x\nfor k, v in {'p': p, 'd2': d2, 'g_w2': gw2, 'g_w1': gw1, 'w1_new': w1 - 0.5 * gw1, 'w2_new': w2 - 0.5 * gw2}.items():\n    assert close(need(k), round(float(v), 4), 2e-4), f'{k} = {need(k)}, а нужно {round(float(v), 4)}.'",
+    "solution": "import numpy as np\n\nx, w1, w2, y = 2.0, 0.3, -1.0, 0\nh = max(0.0, x * w1)\np = round(float(1 / (1 + np.exp(-h * w2))), 4)\np_exact = 1 / (1 + np.exp(-h * w2))\nd2 = round(float(p_exact - y), 4)\ng_w2 = round(float((p_exact - y) * h), 4)\ng_w1 = round(float((p_exact - y) * w2 * x), 4)\nw1_new = round(w1 - 0.5 * float((p_exact - y) * w2 * x), 4)\nw2_new = round(w2 - 0.5 * float((p_exact - y) * h), 4)\nprint(p, d2, g_w2, g_w1, w1_new, w2_new)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02-backprop",
+    "kind": "task",
+    "id": "train-net",
+    "starter": "import numpy as np\nfrom sklearn.datasets import make_moons\nX, y = make_moons(400, noise=0.2, random_state=0)",
+    "setup": "",
+    "check": "import numpy as _np\nfrom sklearn.datasets import make_moons as _mm\nX0, y0 = _mm(400, noise=0.2, random_state=0)\nr = _np.random.default_rng(0); A = r.normal(size=(2, 8)) * 0.5; a = _np.zeros(8); B = r.normal(size=8) * 0.5; b = 0.0\nfor _ in range(1500):\n    Z = X0 @ A + a; H = _np.maximum(0, Z); p = 1 / (1 + _np.exp(-(H @ B + b)))\n    d = (p - y0) / 400; dH = _np.outer(d, B) * (Z > 0)\n    B -= 0.5 * H.T @ d; b -= 0.5 * d.sum(); A -= 0.5 * X0.T @ dH; a -= 0.5 * dH.sum(0)\np = 1 / (1 + _np.exp(-(_np.maximum(0, X0 @ A + a) @ B + b)))\nw = round(((p > 0.5) == y0).mean(), 3)\nassert close(need('acc'), w), f'acc = {need(\"acc\")}, а нужно {w}. Порядок инициализации важен: сначала W1, потом w2.'\nres = need('train')(X0, y0, 8, 0.5, 10, 0)\nassert len(res) == 4, 'train должна возвращать (W1, b1, w2, b2).'",
+    "solution": "import numpy as np\nfrom sklearn.datasets import make_moons\nX, y = make_moons(400, noise=0.2, random_state=0)\n\ndef train(X, y, hidden, lr, steps, seed):\n    rng = np.random.default_rng(seed)\n    W1 = rng.normal(size=(2, hidden)) * 0.5\n    b1 = np.zeros(hidden)\n    w2 = rng.normal(size=hidden) * 0.5\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 > 0)\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2\n\nW1, b1, w2, b2 = train(X, y, 8, 0.5, 1500, 0)\np = 1 / (1 + np.exp(-(np.maximum(0, X @ W1 + b1) @ w2 + b2)))\nacc = round(((p > 0.5) == y).mean(), 3)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02-backprop",
+    "kind": "task",
+    "id": "lr",
+    "starter": "res = {}",
+    "setup": "import numpy as np\nfrom sklearn.datasets import make_moons\nX, y = make_moons(400, noise=0.2, random_state=0)\ndef train(lr, steps=2000, hidden=16, seed=0):\n    rng = np.random.default_rng(seed)\n    W1 = rng.normal(size=(2, hidden)) * 0.5; b1 = np.zeros(hidden)\n    w2 = rng.normal(size=hidden) * 0.5; b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1; H = np.maximum(0, Z1)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        g_w2, g_b2 = H.T @ d2, d2.sum()\n        dH = np.outer(d2, w2) * (Z1 > 0)\n        W1 -= lr * (X.T @ dH); b1 -= lr * dH.sum(axis=0); w2 -= lr * g_w2; b2 -= lr * g_b2\n    p = np.clip(p, 1e-12, 1 - 1e-12)\n    return float(-np.mean(y * np.log(p) + (1 - y) * np.log(1 - p))), float(((p > 0.5) == y).mean())",
+    "check": "f = need('train')\nw = {lr: tuple(round(v, 3) for v in f(lr, 2000)) for lr in [0.05, 0.5, 5, 20]}\ng = {float(k): tuple(v) for k, v in need('res', dict).items()}\nassert all(close(g[k][0], w[k][0], 0.0011) and close(g[k][1], w[k][1], 0.0011) for k in w), f'res = {g}, а нужно {w}.'\nassert need('best_lr') == min(w, key=lambda k: w[k][0]), f'best_lr = {need(\"best_lr\")}.'\nassert sorted(need('broken', list)) == sorted(k for k in w if w[k][1] < 0.85), f'broken = {need(\"broken\")}.'",
+    "solution": "res = {}\nfor lr in [0.05, 0.5, 5, 20]:\n    loss, acc = train(lr, 2000)\n    res[lr] = (round(loss, 3), round(acc, 3))\nbest_lr = min(res, key=lambda k: res[k][0])\nbroken = [k for k in res if res[k][1] < 0.85]\nprint(res, best_lr, broken)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02-backprop",
+    "kind": "task",
+    "id": "zero-init",
+    "starter": "import numpy as np\nfrom sklearn.datasets import make_moons\nX, y = make_moons(400, noise=0.2, random_state=0)\n\ndef train_const(X, y, hidden, lr, steps):\n    W1 = np.zeros((2, hidden))\n    b1 = np.zeros(hidden)\n    w2 = np.full(hidden, 0.1)\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 >= 0)          # >= 0, иначе при нулях сигнал вообще не пройдёт\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2",
+    "setup": "",
+    "check": "import numpy as _np\nf = need('train_const')\nfrom sklearn.datasets import make_moons as _mm\nX0, y0 = _mm(400, noise=0.2, random_state=0)\nA, a, B, b = f(X0, y0, 8, 0.5, 1500)\np = 1 / (1 + _np.exp(-(_np.maximum(0, X0 @ A + a) @ B + b)))\nw = ((p > 0.5) == y0).mean()\nassert close(need('acc_const'), w, 0.0011), f'acc_const = {need(\"acc_const\")}, а нужно {w:.3f}.'\nassert need('same_neurons') == bool(all(_np.allclose(A[:, j], A[:, 0]) for j in range(8))), f'same_neurons = {need(\"same_neurons\")}.'",
+    "solution": "import numpy as np\nfrom sklearn.datasets import make_moons\nX, y = make_moons(400, noise=0.2, random_state=0)\n\ndef train_const(X, y, hidden, lr, steps):\n    W1 = np.zeros((2, hidden))\n    b1 = np.zeros(hidden)\n    w2 = np.full(hidden, 0.1)\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 >= 0)\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2\n\nW1, b1, w2, b2 = train_const(X, y, 8, 0.5, 1500)\np = 1 / (1 + np.exp(-(np.maximum(0, X @ W1 + b1) @ w2 + b2)))\nacc_const = round(((p > 0.5) == y).mean(), 3)\nsame_neurons = bool(all(np.allclose(W1[:, j], W1[:, 0]) for j in range(8)))",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02-backprop",
+    "kind": "task",
+    "id": "hidden-size",
+    "starter": "import numpy as np\nfrom sklearn.datasets import make_moons\nfrom sklearn.model_selection import train_test_split\n\ndef train(X, y, hidden, lr, steps, seed):\n    rng = np.random.default_rng(seed)\n    W1 = rng.normal(size=(X.shape[1], hidden)) * 0.5\n    b1 = np.zeros(hidden)\n    w2 = rng.normal(size=hidden) * 0.5\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 > 0)\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2\n\ndef predict(params, X):\n    W1, b1, w2, b2 = params\n    return 1 / (1 + np.exp(-(np.maximum(0, X @ W1 + b1) @ w2 + b2)))\n\nX, y = make_moons(600, noise=0.3, random_state=1)\nX, X_final, y, y_final = train_test_split(X,y,test_size=.25,random_state=42)\nX_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.5, random_state=0)",
+    "setup": "",
+    "check": "import numpy as _np\nfrom sklearn.datasets import make_moons as _mm\nfrom sklearn.model_selection import train_test_split as _tts\nX0,y0=_mm(600,noise=.3,random_state=1)\nX0,_final,y0,_finaly=_tts(X0,y0,test_size=.25,random_state=42)\na,b,c,d=_tts(X0,y0,test_size=.5,random_state=0)\nwant = {}\nfor h in (1, 2, 4, 16, 64):\n    pr = train(a, c, h, 0.5, 2000, 0)\n    want[h] = round(((predict(pr, b) > 0.5) == d).mean(), 3)\ngot = need('acc_val', dict)\nfor h, v in want.items():\n    assert h in got and close(got[h], v), f'acc_val[{h}] = {got.get(h)}, а нужно {v}.'\nbest = min(want, key=lambda h: (-want[h], h))\nassert need('best_hidden') == best, f'best_hidden = {need(\"best_hidden\")}, а нужно {best}.'\na2, b2, c2, d2 = _tts(X0, y0, train_size=30, random_state=0)\nsm = need('small', dict)\nfor h in (4, 64):\n    pr = train(a2, c2, h, 0.5, 2000, 0)\n    w = (round(((predict(pr, a2) > 0.5) == c2).mean(), 3), round(((predict(pr, b2) > 0.5) == d2).mean(), 3))\n    assert h in sm and len(sm[h]) == 2 and close(sm[h][0], w[0]) and close(sm[h][1], w[1]), f'small[{h}] = {sm.get(h)}, а нужно {w}: обучение на 30 точках (train_size=30), первое число — доля верных на X_train этой выборки, второе — на остальных 420.'",
+    "solution": "import numpy as np\nfrom sklearn.datasets import make_moons\nfrom sklearn.model_selection import train_test_split\n\ndef train(X, y, hidden, lr, steps, seed):\n    rng = np.random.default_rng(seed)\n    W1 = rng.normal(size=(X.shape[1], hidden)) * 0.5\n    b1 = np.zeros(hidden)\n    w2 = rng.normal(size=hidden) * 0.5\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 > 0)\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2\n\ndef predict(params, X):\n    W1, b1, w2, b2 = params\n    return 1 / (1 + np.exp(-(np.maximum(0, X @ W1 + b1) @ w2 + b2)))\n\nX, y = make_moons(600, noise=0.3, random_state=1)\nX, X_final, y, y_final = train_test_split(X,y,test_size=.25,random_state=42)\nX_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.5, random_state=0)\n\nacc_val = {}\nfor h in (1, 2, 4, 16, 64):\n    params = train(X_train, y_train, h, 0.5, 2000, 0)\n    acc_val[h] = round(((predict(params, X_val) > 0.5) == y_val).mean(), 3)\nbest_hidden = min(acc_val, key=lambda h: (-acc_val[h], h))\n\nXs_tr, Xs_te, ys_tr, ys_te = train_test_split(X, y, train_size=30, random_state=0)\nsmall = {}\nfor h in (4, 64):\n    params = train(Xs_tr, ys_tr, h, 0.5, 2000, 0)\n    small[h] = (round(((predict(params, Xs_tr) > 0.5) == ys_tr).mean(), 3),\n                round(((predict(params, Xs_te) > 0.5) == ys_te).mean(), 3))\nprint(acc_val, best_hidden, small)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02-backprop",
+    "kind": "task",
+    "id": "backprop-check",
+    "starter": "import numpy as np\nrng = np.random.default_rng(3)\nX = rng.normal(size=(20, 2))\ny = (X[:, 0] * X[:, 1] > 0).astype(float)\nW1 = rng.normal(size=(2, 4)) * 0.5\nb1 = np.zeros(4)\nw2 = rng.normal(size=4) * 0.5\nb2 = 0.0\n\ndef loss(W1):\n    p = 1 / (1 + np.exp(-(np.maximum(0, X @ W1 + b1) @ w2 + b2)))\n    return -np.mean(y * np.log(p) + (1 - y) * np.log(1 - p))",
+    "setup": "",
+    "check": "import numpy as _np\nr = _np.random.default_rng(3); X0 = r.normal(size=(20, 2)); y0 = (X0[:, 0] * X0[:, 1] > 0).astype(float)\nA = r.normal(size=(2, 4)) * 0.5; a = _np.zeros(4); B = r.normal(size=4) * 0.5\nZ = X0 @ A + a; H = _np.maximum(0, Z); p = 1 / (1 + _np.exp(-(H @ B)))\nd = (p - y0) / 20; g = (X0.T @ (_np.outer(d, B) * (Z > 0)))[0, 1]\ndef L(M):\n    q = 1 / (1 + _np.exp(-(_np.maximum(0, X0 @ M + a) @ B))); return -_np.mean(y0 * _np.log(q) + (1 - y0) * _np.log(1 - q))\nAp = A.copy(); Ap[0, 1] += 1e-5; Am = A.copy(); Am[0, 1] -= 1e-5\nn = (L(Ap) - L(Am)) / 2e-5\nassert close(need('g_analytic'), round(g, 6), 2e-6), f'g_analytic = {need(\"g_analytic\")}, а нужно {round(g, 6)}.'\nassert close(need('g_numeric'), round(n, 6), 2e-6), f'g_numeric = {need(\"g_numeric\")}, а нужно {round(n, 6)}.'\nassert need('rel_err') < 1e-6, f'rel_err = {need(\"rel_err\")} — должно быть очень маленьким.'",
+    "solution": "import numpy as np\nrng = np.random.default_rng(3)\nX = rng.normal(size=(20, 2))\ny = (X[:, 0] * X[:, 1] > 0).astype(float)\nW1 = rng.normal(size=(2, 4)) * 0.5\nb1 = np.zeros(4)\nw2 = rng.normal(size=4) * 0.5\nb2 = 0.0\n\ndef loss(W1):\n    p = 1 / (1 + np.exp(-(np.maximum(0, X @ W1 + b1) @ w2 + b2)))\n    return -np.mean(y * np.log(p) + (1 - y) * np.log(1 - p))\n\nZ1 = X @ W1 + b1\nH = np.maximum(0, Z1)\np = 1 / (1 + np.exp(-(H @ w2 + b2)))\nd2 = (p - y) / len(y)\ndH = np.outer(d2, w2) * (Z1 > 0)\ng_W1 = X.T @ dH\na = g_W1[0, 1]\nplus, minus = W1.copy(), W1.copy()\nplus[0, 1] += 1e-5\nminus[0, 1] -= 1e-5\nn = (loss(plus) - loss(minus)) / 2e-5\ng_analytic, g_numeric = round(a, 6), round(n, 6)\nrel_err = abs(a - n) / (abs(a) + abs(n))",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02b-graph",
+    "kind": "task",
+    "id": "graph",
+    "starter": "class Value:\n    def __init__(self, data, parents=(), local_grads=()):\n        self.data = data\n        self.grad = 0.0\n        self.parents = parents\n        self.local_grads = local_grads\n\n    def __add__(self, other):\n        return Value(self.data + other.data, (self, other), (1.0, 1.0))\n\n    def __sub__(self, other):\n        return Value(self.data - other.data, (self, other), (1.0, -1.0))\n\n    def __mul__(self, other):\n        return Value(self.data * other.data, (self, other), (other.data, self.data))\n\n    def backward(self):\n        order, seen = [], set()\n        def visit(v):\n            if id(v) not in seen:\n                seen.add(id(v))\n                for p in v.parents:\n                    visit(p)\n                order.append(v)\n        visit(self)\n        self.grad = 1.0\n        for v in reversed(order):\n            for p, g in zip(v.parents, v.local_grads):\n                p.grad += v.grad * g",
+    "setup": "",
+    "check": "assert calls('backward') >= 2, 'Вызовите backward() дважды: для потери L и для функции f — каждой на своём графе.'\nassert close(need('loss'), 4.0), f'loss = {need(\"loss\")}: прямой проход даёт e = -2·1.5 + 4 - 3 = -2, L = e² = 4.'\ng = need('grads', dict)\nassert set(g) == {'w', 'b', 'x'}, f'Ключи grads: {sorted(g)}, нужны w, b, x.'\nassert close(g['w'], -6.0) and close(g['b'], -4.0) and close(g['x'], 8.0), f'grads = {g}. Проверьте, что граф построен как w * x + b - y, а потом e * e.'\nassert close(need('manual_w'), -6.0), f'manual_w = {need(\"manual_w\")}: 2 · e · x, где e = w·x + b − y.'\nassert need('same') == True, 'same должно быть True — граф и формула дают одно и то же.'\nassert close(need('g_twice'), -2.5), f'g_twice = {need(\"g_twice\")}. Если вышло -8.5, вы взяли w с уже накопленным grad из первого графа — заведите новые Value.'",
+    "solution": "class Value:\n    def __init__(self, data, parents=(), local_grads=()):\n        self.data = data\n        self.grad = 0.0\n        self.parents = parents\n        self.local_grads = local_grads\n\n    def __add__(self, other):\n        return Value(self.data + other.data, (self, other), (1.0, 1.0))\n\n    def __sub__(self, other):\n        return Value(self.data - other.data, (self, other), (1.0, -1.0))\n\n    def __mul__(self, other):\n        return Value(self.data * other.data, (self, other), (other.data, self.data))\n\n    def backward(self):\n        order, seen = [], set()\n        def visit(v):\n            if id(v) not in seen:\n                seen.add(id(v))\n                for p in v.parents:\n                    visit(p)\n                order.append(v)\n        visit(self)\n        self.grad = 1.0\n        for v in reversed(order):\n            for p, g in zip(v.parents, v.local_grads):\n                p.grad += v.grad * g\n\nw, x, b, y = Value(-2.0), Value(1.5), Value(4.0), Value(3.0)\ne = w * x + b - y\nL = e * e\nL.backward()\nloss = L.data\ngrads = {\"w\": w.grad, \"b\": b.grad, \"x\": x.grad}\n\ne_num = -2.0 * 1.5 + 4.0 - 3.0\nmanual_w = 2 * e_num * 1.5\nsame = abs(manual_w - grads[\"w\"]) < 1e-12\n\nw2, x2 = Value(-2.0), Value(1.5)\nf = w2 * x2 + w2 * w2\nf.backward()\ng_twice = w2.grad\nprint(loss, grads, manual_w, same, g_twice)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02b-graph",
+    "kind": "task",
+    "id": "he-layers",
+    "starter": "import numpy as np\nsizes = [784, 128, 64, 10]",
+    "setup": "",
+    "check": "import numpy as _np\nn_in = [784, 128, 64]\nh = [round(float(_np.sqrt(2 / n)), 3) for n in n_in]\ngot = [float(v) for v in need('he')]\nassert len(got) == 3, f'В he должно быть 3 числа — по одному на слой с весами (входы 784, 128, 64), сейчас {len(got)}.'\nassert all(close(a, b, 0.0011) for a, b in zip(got, h)), f'he = {got}, а нужно {h}: n_in — число входов слоя, то есть sizes[:-1].'\nmh = [float(v) for v in need('mult_he')]\nassert len(mh) == 3 and all(close(v, 1.414, 0.0011) for v in mh), f'mult_he = {mh}: у каждого слоя √n_in · √(2 / n_in) = √2 ≈ 1.414.'\ns0 = _np.sqrt(2 / 784)\nmo = [round(float(_np.sqrt(n) * s0), 3) for n in n_in]\ng1 = [float(v) for v in need('mult_one')]\nassert len(g1) == 3 and all(close(a, b, 0.0011) for a, b in zip(g1, mo)), f'mult_one = {g1}, а нужно {mo}: масштаб один и тот же, np.sqrt(2 / 784), а n_in у слоёв разный.'\nsh = round(float(_np.prod([_np.sqrt(n) * s0 for n in n_in]) / _np.sqrt(2) ** 3), 3)\nassert close(need('shrink'), sh, 0.0011), f'shrink = {need(\"shrink\")}, а нужно {sh}: np.prod(mult_one) / np.prod(mult_he) по неокруглённым числам.'",
+    "solution": "import numpy as np\nsizes = [784, 128, 64, 10]\n\nn_in = sizes[:-1]\ns_he = [np.sqrt(2 / n) for n in n_in]\nm_he = [np.sqrt(n) * s for n, s in zip(n_in, s_he)]\nm_one = [np.sqrt(n) * s_he[0] for n in n_in]\n\nhe = [round(float(s), 3) for s in s_he]\nmult_he = [round(float(m), 3) for m in m_he]\nmult_one = [round(float(m), 3) for m in m_one]\nshrink = round(float(np.prod(m_one) / np.prod(m_he)), 3)\nprint(he, mult_he, mult_one, shrink)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02b-graph",
+    "kind": "task",
+    "id": "init-scale",
+    "starter": "import numpy as np\nX = np.random.default_rng(0).normal(size=(256, 64))\n\ndef last_layer_std(scale, layers=8, width=64):\n    r = np.random.default_rng(1)\n    A = X\n    ...",
+    "setup": "",
+    "check": "import numpy as _np\nX0 = _np.random.default_rng(0).normal(size=(256, 64))\ndef _ls(scale):\n    r = _np.random.default_rng(1); A = X0\n    for _ in range(8):\n        A = _np.maximum(0, A @ (r.normal(size=(64, 64)) * scale))\n    return A.std()\nf = need('last_layer_std')\nassert abs(f(_np.sqrt(2 / 64)) / _ls(_np.sqrt(2 / 64)) - 1) < 1e-6, 'last_layer_std(scale) возвращает не то: генератор default_rng(1) заводится внутри функции, слоёв 8, после каждого — ReLU.'\nwant = {k: float(f\"{_ls(s):.3g}\") for k, s in {\"1.0\": 1.0, \"0.01\": 0.01, \"xavier\": _np.sqrt(1 / 64), \"he\": _np.sqrt(2 / 64)}.items()}\ngot = need('last_std', dict)\nassert set(got) == set(want), f'Ключи last_std: {sorted(got)}, а нужны {sorted(want)}.'\nfor k in want:\n    assert abs(float(got[k]) / want[k] - 1) < 0.002, f'last_std[\"{k}\"] = {got[k]}, а нужно {want[k]}. Масштаб Xavier — np.sqrt(1 / 64), He — np.sqrt(2 / 64).'\nassert need('best') == min(want, key=lambda k: abs(_np.log10(want[k]))), f'best = {need(\"best\")!r}: ищите ключ с наименьшим abs(np.log10(std)).'",
+    "solution": "import numpy as np\nX = np.random.default_rng(0).normal(size=(256, 64))\n\ndef last_layer_std(scale, layers=8, width=64):\n    r = np.random.default_rng(1)\n    A = X\n    for _ in range(layers):\n        A = np.maximum(0, A @ (r.normal(size=(width, width)) * scale))\n    return A.std()\n\nscales = {\"1.0\": 1.0, \"0.01\": 0.01, \"xavier\": np.sqrt(1 / 64), \"he\": np.sqrt(2 / 64)}\nlast_std = {k: float(f\"{last_layer_std(s):.3g}\") for k, s in scales.items()}\nbest = min(last_std, key=lambda k: abs(np.log10(last_std[k])))\nprint(last_std, best)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02b-graph",
+    "kind": "task",
+    "id": "clip-norm",
+    "starter": "import numpy as np\n\ndef clip_by_norm(g, max_norm):\n    ...",
+    "setup": "",
+    "check": "import numpy as _np\nf = need('clip_by_norm')\nassert _np.allclose(f(_np.array([6.0, 8.0]), 5.0), [3.0, 4.0]), 'Для [6, 8] с порогом 5 должно выйти [3, 4]: норма 10, вектор уменьшается вдвое целиком.'\nassert _np.allclose(f(_np.array([1.0, 1.0]), 5.0), [1.0, 1.0]), 'Если норма меньше порога, вектор возвращается без изменений.'\nassert _np.allclose(need('a'), [3.0, 4.0]), f'a = {need(\"a\")}.'\nassert _np.allclose(need('b'), [0.3, 0.4]), f'b = {need(\"b\")}: его норма 0.5 меньше порога.'\nassert _np.allclose(need('c'), [1.5, -6.0, 2.0]), f'c = {need(\"c\")}. Норма [3, -12, 4] — 13; не обрезайте каждое число отдельно.'\nassert close(need('norm_c'), 6.5, 0.006), f'norm_c = {need(\"norm_c\")}.'",
+    "solution": "import numpy as np\n\ndef clip_by_norm(g, max_norm):\n    n = np.linalg.norm(g)\n    if n > max_norm:\n        return g * (max_norm / n)\n    return g\n\na = clip_by_norm(np.array([30.0, 40.0]), 5.0)\nb = clip_by_norm(np.array([0.3, 0.4]), 5.0)\nc = clip_by_norm(np.array([3.0, -12.0, 4.0]), 6.5)\nnorm_c = round(float(np.linalg.norm(c)), 2)\nprint(a, b, c, norm_c)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02b-graph",
+    "kind": "task",
+    "id": "p-clip-order",
+    "starter": "",
+    "setup": "",
+    "check": "assert len(_lines) == 1, f'Должна напечататься одна строка, сейчас: {_lines}.'\ni_g, i_n, i_c, i_s = (_code.find(s) for s in ('g = 2 * X.T', 'n = np.linalg.norm', 'g = g * (max_norm', 'w = w - lr'))\nassert min(i_g, i_n, i_c, i_s) >= 0, 'Используйте все строки.'\nassert i_g < i_n < i_c < i_s, 'Порядок внутри цикла: градиент → его норма → обрезка → шаг. Обрезать можно только посчитанный градиент, и до того, как он сдвинул веса.'\nassert _lines == ['[1.815, 1.408] 8'], f'Сейчас: {_lines}. Проверьте отступы: обрезка и clipped += 1 — внутри if, шаг w = w - lr * g — внутри цикла, но не внутри if.'",
+    "solution": "import numpy as np\nX = np.array([[1.0, 0.5], [2.0, 1.0], [3.0, -1.0], [4.0, 2.0]])\ny = np.array([3.0, 5.0, 4.0, 10.0])\nw, lr, max_norm, clipped = np.zeros(2), 0.05, 5.0, 0\nfor step in range(40):\n    g = 2 * X.T @ (X @ w - y) / len(y)\n    n = np.linalg.norm(g)\n    if n > max_norm:\n        g = g * (max_norm / n)\n        clipped += 1\n    w = w - lr * g\nprint(w.round(3).tolist(), clipped)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/02b-graph",
+    "kind": "task",
+    "id": "explode",
+    "starter": "import numpy as np\n\ndef sgd(lr, max_norm=None, epochs=5, batch=32):\n    rng = np.random.default_rng(0)\n    w, b = np.zeros(2), 0.0\n    mae, norms, clipped = [], [], 0\n    for _ in range(epochs):\n        order = rng.permutation(len(y))\n        for start in range(0, len(y), batch):\n            i = order[start:start + batch]\n            err = X[i] @ w + b - y[i]\n            g = np.append(2 * X[i].T @ err / len(i), 2 * err.mean())\n            norms.append(np.linalg.norm(g))\n            # здесь — обрезка по норме и подсчёт clipped\n            w, b = w - lr * g[:2], b - lr * g[2]\n            mae.append(np.abs(X[normal] @ w + b - y[normal]).mean())\n    return np.array(mae), np.array(norms), clipped\n\nres = {}",
+    "setup": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nd = d[d[\"actual_min\"] > 0]\nX = d[[\"distance_km\", \"items\"]].to_numpy(float)\nX = (X - X.mean(axis=0)) / X.std(axis=0)\ny = d[\"actual_min\"].to_numpy(float)\nnormal = y < 300",
+    "check": "import numpy as _np\nX0, y0, nm = need('X'), need('y'), need('normal')\ndef _sgd(lr, mx):\n    r = _np.random.default_rng(0); w, b = _np.zeros(2), 0.0; mae, norms, cl = [], [], 0\n    for _ in range(5):\n        o = r.permutation(len(y0))\n        for s in range(0, len(y0), 32):\n            i = o[s:s + 32]; err = X0[i] @ w + b - y0[i]\n            g = _np.append(2 * X0[i].T @ err / len(i), 2 * err.mean()); n = _np.linalg.norm(g); norms.append(n)\n            if mx is not None and n > mx:\n                g = g * (mx / n); cl += 1\n            w, b = w - lr * g[:2], b - lr * g[2]\n            mae.append(_np.abs(X0[nm] @ w + b - y0[nm]).mean())\n    mae = _np.array(mae)\n    return (round(float(mae[len(mae) // 2:].max()), 2), round(float(mae[-1]), 2), round(cl / len(mae), 3)), _np.array(norms)\nwant = {k: _sgd(0.1, k)[0] for k in [None, 50, 20, 5]}\nf = need('sgd')\nout = f(0.1, 20)\nassert len(out) == 3, 'sgd должна возвращать три значения: (mae, norms, clipped).'\nassert out[2] == round(want[20][2] * len(out[0])), f'При max_norm=20 clipped = {out[2]}, а обрезка должна сработать {round(want[20][2] * len(out[0]))} раз. Сравнивайте норму с порогом до шага и считайте только срабатывания.'\ngot = need('res', dict)\nassert set(got) == set(want), f'Ключи res: {list(got)}, нужны None, 50, 20, 5.'\nfor k in want:\n    gk = tuple(got[k])\n    assert all(close(a, b_, 0.011) for a, b_ in zip(gk[:2], want[k][:2])) and close(gk[2], want[k][2], 0.0011), f'res[{k}] = {gk}, а нужно {want[k]}.'\nassert need('safest') == min(want, key=lambda k: want[k][0]), f'safest = {need(\"safest\")}.'\nassert close(need('median_norm'), round(float(_np.median(_sgd(0.1, None)[1])), 1), 0.051), f'median_norm = {need(\"median_norm\")}.'",
+    "solution": "import numpy as np\n\ndef sgd(lr, max_norm=None, epochs=5, batch=32):\n    rng = np.random.default_rng(0)\n    w, b = np.zeros(2), 0.0\n    mae, norms, clipped = [], [], 0\n    for _ in range(epochs):\n        order = rng.permutation(len(y))\n        for start in range(0, len(y), batch):\n            i = order[start:start + batch]\n            err = X[i] @ w + b - y[i]\n            g = np.append(2 * X[i].T @ err / len(i), 2 * err.mean())\n            norms.append(np.linalg.norm(g))\n            if max_norm is not None and norms[-1] > max_norm:\n                g = g * (max_norm / norms[-1])\n                clipped += 1\n            w, b = w - lr * g[:2], b - lr * g[2]\n            mae.append(np.abs(X[normal] @ w + b - y[normal]).mean())\n    return np.array(mae), np.array(norms), clipped\n\nres = {}\nfor mn in [None, 50, 20, 5]:\n    mae, norms, clipped = sgd(0.1, mn)\n    res[mn] = (round(float(mae[len(mae) // 2:].max()), 2), round(float(mae[-1]), 2), round(clipped / len(mae), 3))\n    if mn is None:\n        median_norm = round(float(np.median(norms)), 1)\nsafest = min(res, key=lambda k: res[k][0])\nprint(res, safest, median_norm)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/03-mlp",
+    "kind": "task",
+    "id": "first-mlp",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.neural_network import MLPClassifier as _MLP\nfrom sklearn.metrics import roc_auc_score as _auc\ng = _pd.read_csv('guests_churn.csv'); y = g['churned']\nX0 = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\na, b, c, d = _tts(X0, y, test_size=0.25, random_state=42, stratify=y)\nm = _mp(_SS(), _MLP(hidden_layer_sizes=(16,), max_iter=300, random_state=0)).fit(a, c)\nassert close(need('auc'), round(_auc(d, m.predict_proba(b)[:, 1]), 3), 0.002), f'auc = {need(\"auc\")}.'\nassert need('n_weights') == X0.shape[1] * 16, f'n_weights = {need(\"n_weights\")}, а нужно {X0.shape[1] * 16}: признаков × нейронов.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nmodel = make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=(16,), max_iter=300, random_state=0))\nmodel.fit(X_train, y_train)\nauc = round(roc_auc_score(y_test, model.predict_proba(X_test)[:, 1]), 3)\nn_weights = model[-1].coefs_[0].size",
+    "files": [
+      "guests_churn.csv",
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/03-mlp",
+    "kind": "task",
+    "id": "count-params",
+    "starter": "",
+    "setup": "",
+    "check": "f = need('n_params')\nassert f(2, (3,), 1) == 2 * 3 + 3 + 3 * 1 + 1, 'Для сети 2 → 3 → 1 параметров должно быть 13.'\nassert need('p1') == 15 * 32 + 32 + 32 + 1, f'p1 = {need(\"p1\")}.'\nassert need('p2') == 64 * 128 + 128 + 128 * 64 + 64 + 64 * 10 + 10, f'p2 = {need(\"p2\")}.'",
+    "solution": "def n_params(n_in, layers, n_out):\n    sizes = [n_in, *layers, n_out]\n    return sum(a * b + b for a, b in zip(sizes[:-1], sizes[1:]))\n\np1 = n_params(15, (32,), 1)\np2 = n_params(64, (128, 64), 10)",
+    "files": [
+      "guests_churn.csv",
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/03-mlp",
+    "kind": "task",
+    "id": "p-mlp",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines and _lines[-1] == 'True', f'Сейчас: {_lines}.'",
+    "solution": "import numpy as np\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPRegressor\nrng = np.random.default_rng(0)\nX = rng.uniform(0, 10, size=(300, 1))\ny = np.sin(X[:, 0]) * 10\nmodel = make_pipeline(StandardScaler(), MLPRegressor(hidden_layer_sizes=(32,), max_iter=3000, random_state=0))\nmodel.fit(X, y)\nprint(model.score(X, y) > 0.9)",
+    "files": [
+      "guests_churn.csv",
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/03-mlp",
+    "kind": "task",
+    "id": "alpha-sweep",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_development, X_final, y_development, y_final = train_test_split(X,y,test_size=.25,random_state=42,stratify=y)\nX_train, X_test, y_train, y_test = train_test_split(X_development,y_development,test_size=.25,random_state=43,stratify=y_development)",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.neural_network import MLPClassifier as _MLP\nfrom sklearn.metrics import roc_auc_score as _auc\ng = _pd.read_csv('guests_churn.csv'); y = g['churned']\nX0 = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\n_dev,_final,_devy,_finaly = _tts(X0,y,test_size=.25,random_state=42,stratify=y)\na,b,c,d = _tts(_dev,_devy,test_size=.25,random_state=43,stratify=_devy)\nw = {}\nfor al in [0.0001, 0.1, 1.0, 10.0]:\n    m = _mp(_SS(), _MLP(hidden_layer_sizes=(32,), alpha=al, max_iter=500, random_state=0)).fit(a, c)\n    w[al] = (round(_auc(c, m.predict_proba(a)[:, 1]), 3), round(_auc(d, m.predict_proba(b)[:, 1]), 3))\nr = need('res', _pd.DataFrame)\nassert {'alpha', 'train', 'validation'} <= set(r.columns), 'В res нужны столбцы alpha, train и validation. Для выбора регуляризации берите валидацию.'\nfor al, (t1, t2) in w.items():\n    row = r[r['alpha'] == al]\n    assert len(row) == 1, f'Нет строки для alpha = {al}.'\n    assert close(row['train'].iloc[0], t1, 0.002) and close(row['validation'].iloc[0], t2, 0.002), f'alpha = {al}: train, validation = {row[\"train\"].iloc[0]}, {row[\"validation\"].iloc[0]}, а нужно {t1}, {t2}.'\nbest = min(w, key=lambda k: (-w[k][1], k))\nassert need('best_alpha') == best, f'best_alpha = {need(\"best_alpha\")}, а нужно {best}.'\nassert close(need('gap_small'), round(w[0.0001][0] - w[0.0001][1], 3), 0.003) and close(need('gap_big'), round(w[10.0][0] - w[10.0][1], 3), 0.003), f'gap_small, gap_big = {need(\"gap_small\")}, {need(\"gap_big\")}.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_development, X_final, y_development, y_final = train_test_split(X,y,test_size=.25,random_state=42,stratify=y)\nX_train, X_test, y_train, y_test = train_test_split(X_development,y_development,test_size=.25,random_state=43,stratify=y_development)\n\nrows = []\nfor alpha in [0.0001, 0.1, 1.0, 10.0]:\n    m = make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=(32,), alpha=alpha, max_iter=500, random_state=0))\n    m.fit(X_train, y_train)\n    rows.append({\"alpha\": alpha,\n                 \"train\": round(roc_auc_score(y_train, m.predict_proba(X_train)[:, 1]), 3),\n                 \"validation\": round(roc_auc_score(y_test, m.predict_proba(X_test)[:, 1]), 3)})\nres = pd.DataFrame(rows)\nbest = res.sort_values([\"validation\", \"alpha\"], ascending=[False, True]).iloc[0]\nbest_alpha = best[\"alpha\"]\ngap_small = round(res.loc[0, \"train\"] - res.loc[0, \"validation\"], 3)\ngap_big = round(res.loc[3, \"train\"] - res.loc[3, \"validation\"], 3)",
+    "files": [
+      "guests_churn.csv",
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/03-mlp",
+    "kind": "task",
+    "id": "loss-curve",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)",
+    "setup": "",
+    "check": "import numpy as _np\nimport pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.neural_network import MLPClassifier as _MLP\ng = _pd.read_csv('guests_churn.csv'); y = g['churned']\nX0 = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\na, b, c, d = _tts(X0, y, test_size=0.25, random_state=42, stratify=y)\nlc = _mp(_SS(), _MLP(hidden_layer_sizes=(32,), max_iter=200, random_state=0)).fit(a, c)[-1].loss_curve_\ncv = need('curve')\nassert len(cv) == len(lc), f'В curve {len(cv)} значений, а эпох {len(lc)}.'\nassert close(need('first'), round(lc[0], 3), 0.002) and close(need('last'), round(lc[-1], 3), 0.002), f'first, last = {need(\"first\")}, {need(\"last\")}.'\nh = next(i + 1 for i, v in enumerate(lc) if v < lc[0] / 2)\nassert need('halved_at') == h, f'halved_at = {need(\"halved_at\")}, а нужно {h}.'\nassert _np.asarray(cv).shape == (len(lc),) and _np.allclose(cv, lc, rtol=1e-7, atol=1e-9), 'В curve нужны реальные потери каждой эпохи из loss_curve_, в исходном порядке.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nmodel = make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=(32,), max_iter=200, random_state=0))\nmodel.fit(X_train, y_train)\ncurve = model[-1].loss_curve_\nfirst, last = round(curve[0], 3), round(curve[-1], 3)\nhalved_at = next(i + 1 for i, v in enumerate(curve) if v < curve[0] / 2)",
+    "files": [
+      "guests_churn.csv",
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/03-mlp",
+    "kind": "task",
+    "id": "epoch-gap",
+    "starter": "import numpy as np\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\nnet = MLPClassifier(hidden_layer_sizes=(128,), alpha=0.0001, random_state=0)\nauc_train, auc_validation = [], []",
+    "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_development, X_test, y_development, y_test = train_test_split(X,y,test_size=.25,random_state=42,stratify=y)\nX_train, X_validation, y_train, y_validation = train_test_split(X_development,y_development,test_size=.25,random_state=43,stratify=y_development)\nsc = StandardScaler().fit(X_train)\nA, B = sc.transform(X_train), sc.transform(X_validation)",
+    "check": "import numpy as _np\nimport warnings as _w\nfrom sklearn.neural_network import MLPClassifier as _M\nfrom sklearn.metrics import roc_auc_score as _auc\nA0, B0, ya, yb = need('A'), need('B'), need('y_train'), need('y_validation')\nn = _M(hidden_layer_sizes=(128,), alpha=0.0001, random_state=0); tr, te = [], []\nwith _w.catch_warnings():\n    _w.simplefilter('ignore')\n    for _ in range(150):\n        n.partial_fit(A0, ya, classes=[0, 1]); tr.append(_auc(ya, n.predict_proba(A0)[:, 1])); te.append(_auc(yb, n.predict_proba(B0)[:, 1]))\nassert len(need('auc_train')) == 150 and _np.allclose(need('auc_validation'), te, atol=1e-9), 'auc_validation — AUC на валидации после каждой из 150 эпох.'\nbe = int(_np.argmax(te)) + 1\nassert need('best_epoch') == be, f'best_epoch = {need(\"best_epoch\")}, а нужно {be}.'\nassert close(need('best_validation'), round(max(te), 3), 0.0011), f'best_validation = {need(\"best_validation\")}.'\nassert close(need('gap_end'), round(tr[-1] - te[-1], 3), 0.0011), f'gap_end = {need(\"gap_end\")}.'\nassert _np.asarray(need('auc_train')).shape == (150,) and _np.allclose(need('auc_train'), tr, atol=1e-9, rtol=1e-7), 'auc_train — AUC на обучении после каждой из 150 эпох, без округления.'",
+    "solution": "import numpy as np\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\nnet = MLPClassifier(hidden_layer_sizes=(128,), alpha=0.0001, random_state=0)\nauc_train, auc_validation = [], []\nfor epoch in range(150):\n    net.partial_fit(A, y_train, classes=[0, 1])\n    auc_train.append(roc_auc_score(y_train, net.predict_proba(A)[:, 1]))\n    auc_validation.append(roc_auc_score(y_validation, net.predict_proba(B)[:, 1]))\nbest_epoch = int(np.argmax(auc_validation)) + 1\nbest_validation = round(max(auc_validation), 3)\ngap_end = round(auc_train[-1] - auc_validation[-1], 3)\nprint(best_epoch, best_validation, gap_end)",
+    "files": [
+      "guests_churn.csv",
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/03-mlp",
+    "kind": "task",
+    "id": "depth",
+    "starter": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\narchs = {\"8\": (8,), \"32\": (32,), \"64-32\": (64, 32)}\nres, params = {}, {}",
+    "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_development, X_final, y_development, y_final = train_test_split(X,y,test_size=.25,random_state=42,stratify=y)\nX_train, X_test, y_train, y_test = train_test_split(X_development,y_development,test_size=.25,random_state=43,stratify=y_development)",
+    "check": "import warnings as _w\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.neural_network import MLPClassifier as _M\nfrom sklearn.metrics import roc_auc_score as _auc\nXa, Xb, ya, yb = need('X_train'), need('X_test'), need('y_train'), need('y_test')\nw, pw = {}, {}\nwith _w.catch_warnings():\n    _w.simplefilter('ignore')\n    for k, a in {'8': (8,), '32': (32,), '64-32': (64, 32)}.items():\n        m = _mp(_SS(), _M(hidden_layer_sizes=a, alpha=1.0, max_iter=500, random_state=0)).fit(Xa, ya)\n        w[k] = round(_auc(yb, m.predict_proba(Xb)[:, 1]), 3)\n        pw[k] = sum(c.size for c in m[-1].coefs_) + sum(c.size for c in m[-1].intercepts_)\ng_ = need('res', dict)\nassert all(close(g_[k], w[k], 0.0011) for k in w), f'res = {g_}, а нужно {w}.'\nassert {k: int(v) for k, v in need('params', dict).items()} == pw, f'params = {need(\"params\")}, а нужно {pw}.'\nassert need('best') == max(w, key=w.get), f'best = {need(\"best\")!r}.'",
+    "solution": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\narchs = {\"8\": (8,), \"32\": (32,), \"64-32\": (64, 32)}\nres, params = {}, {}\nfor key, arch in archs.items():\n    m = make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=arch, alpha=1.0, max_iter=500, random_state=0))\n    m.fit(X_train, y_train)\n    res[key] = round(roc_auc_score(y_test, m.predict_proba(X_test)[:, 1]), 3)\n    params[key] = int(sum(c.size for c in m[-1].coefs_) + sum(c.size for c in m[-1].intercepts_))\nbest = max(res, key=res.get)\nprint(res, params, best)",
+    "files": [
+      "guests_churn.csv",
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/03-mlp",
+    "kind": "task",
+    "id": "regression-net",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPRegressor\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.neural_network import MLPRegressor as _MR\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, e = _tts(X0, y0, test_size=0.25, random_state=42)\nm1 = round(_mae(e, _mp(_SS(), _MR(hidden_layer_sizes=(32,), max_iter=2000, random_state=0)).fit(a, c).predict(b)), 2)\nm2 = round(_mae(e, _H(random_state=0).fit(a, c).predict(b)), 2)\nassert close(need('mae_mlp'), m1, 0.02), f'mae_mlp = {need(\"mae_mlp\")}, а нужно {m1}.'\nassert close(need('mae_hgb'), m2, 0.011), f'mae_hgb = {need(\"mae_hgb\")}, а нужно {m2}.'\nassert need('winner') == ('сеть' if m1 < m2 else 'бустинг'), f'winner = {need(\"winner\")!r}.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPRegressor\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmlp = make_pipeline(StandardScaler(), MLPRegressor(hidden_layer_sizes=(32,), max_iter=2000, random_state=0)).fit(X_train, y_train)\nhgb = HistGradientBoostingRegressor(random_state=0).fit(X_train, y_train)\nmae_mlp = round(mean_absolute_error(y_test, mlp.predict(X_test)), 2)\nmae_hgb = round(mean_absolute_error(y_test, hgb.predict(X_test)), 2)\nwinner = \"сеть\" if mae_mlp < mae_hgb else \"бустинг\"",
+    "files": [
+      "guests_churn.csv",
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/03-mlp",
+    "kind": "task",
+    "id": "arch-grid",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, GridSearchCV\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts, GridSearchCV as _GS\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.neural_network import MLPClassifier as _MLP\nfrom sklearn.metrics import roc_auc_score as _auc\ng = _pd.read_csv('guests_churn.csv'); y = g['churned']\nX0 = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})\na, b, c, d = _tts(X0, y, test_size=0.25, random_state=42, stratify=y)\ngs = _GS(_mp(_SS(), _MLP(max_iter=300, random_state=0)), {'mlpclassifier__hidden_layer_sizes': [(16,), (32, 16)], 'mlpclassifier__alpha': [0.1, 1.0]}, cv=3, scoring='roc_auc').fit(a, c)\nassert dict(need('best_params')) == gs.best_params_, f'best_params = {need(\"best_params\")}, а нужно {gs.best_params_}.'\nassert close(need('cv_auc'), round(gs.best_score_, 3), 0.002), f'cv_auc = {need(\"cv_auc\")}.'\nassert close(need('test_auc'), round(_auc(d, gs.predict_proba(b)[:, 1]), 3), 0.002), f'test_auc = {need(\"test_auc\")}.'\nfrom sklearn.ensemble import HistGradientBoostingClassifier as _HGB\nhw = round(_auc(d, _HGB(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0).fit(a, c).predict_proba(b)[:, 1]), 3)\nassert close(need('hgb_auc'), hw, 0.002), f'hgb_auc = {need(\"hgb_auc\")}, а нужно {hw}: бустинг с параметрами из условия на X_train, AUC на X_test.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, GridSearchCV\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\npipe = make_pipeline(StandardScaler(), MLPClassifier(max_iter=300, random_state=0))\ngrid = GridSearchCV(pipe, {\"mlpclassifier__hidden_layer_sizes\": [(16,), (32, 16)],\n                           \"mlpclassifier__alpha\": [0.1, 1.0]}, cv=3, scoring=\"roc_auc\")\ngrid.fit(X_train, y_train)\nbest_params = grid.best_params_\ncv_auc = round(grid.best_score_, 3)\ntest_auc = round(roc_auc_score(y_test, grid.predict_proba(X_test)[:, 1]), 3)\n\nfrom sklearn.ensemble import HistGradientBoostingClassifier\nhgb = HistGradientBoostingClassifier(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0)\nhgb.fit(X_train, y_train)\nhgb_auc = round(roc_auc_score(y_test, hgb.predict_proba(X_test)[:, 1]), 3)\nprint(best_params, cv_auc, test_auc, hgb_auc)",
+    "files": [
+      "guests_churn.csv",
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04-pytorch",
+    "kind": "task",
+    "id": "p-torch-order",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == ['2.0'], f'Сейчас: {_lines}.'\nassert _code.index('grad = 0.0\\n    pred') >= 0 if 'grad = 0.0\\n    pred' in _code else False, 'Обнуление градиента (zero_grad) — первым шагом в цикле.'",
+    "solution": "import numpy as np\nx = np.array([1.0, 2.0, 3.0]); y = np.array([2.0, 4.0, 6.0])\nw, grad, lr = 0.0, 0.0, 0.05\nfor step in range(100):\n    grad = 0.0\n    pred = w * x\n    loss = np.mean((pred - y) ** 2)\n    grad = np.mean(2 * (pred - y) * x)\n    w = w - lr * grad\nprint(round(w, 2))",
+    "files": [
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04-pytorch",
+    "kind": "task",
+    "id": "zero-grad",
+    "starter": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef run(zero_grad, lr=0.01, steps=30):\n    w, grad = 5.0, 0.0\n    losses = []\n    for step in range(steps):\n        # здесь — обнуление grad, если zero_grad\n        pred = w * km\n        losses.append(float(np.mean((pred - minutes) ** 2)))\n        grad += np.mean(2 * (pred - minutes) * km)    # как loss.backward(): градиент копится\n        w = w - lr * grad                             # как optimizer.step()\n    return w, losses",
+    "setup": "",
+    "check": "import numpy as _np\nk0 = _np.array([1.0, 2.0, 3.0, 4.5, 6.0]); m0 = _np.array([18.0, 25.0, 34.0, 44.0, 55.0])\ndef _run(z):\n    w, g = 5.0, 0.0; L = []\n    for _ in range(30):\n        if z:\n            g = 0.0\n        p = w * k0; L.append(float(_np.mean((p - m0) ** 2)))\n        g += _np.mean(2 * (p - m0) * k0); w = w - 0.01 * g\n    return w, L\nf = need('run')\nwo, lo = f(True)\nassert close(wo, _run(True)[0], 0.001), f'run(True) даёт w = {wo:.3f}, а нужно {_run(True)[0]:.3f}: при zero_grad=True в начале каждого шага grad = 0.0.'\nwb, lb = f(False)\nassert close(wb, _run(False)[0], 0.001), f'run(False) даёт w = {wb:.3f}, а нужно {_run(False)[0]:.3f}: без обнуления код не должен меняться.'\nassert close(need('w_ok'), round(_run(True)[0], 3), 0.0011) and close(need('w_bug'), round(_run(False)[0], 3), 0.0011), f'w_ok, w_bug = {need(\"w_ok\")}, {need(\"w_bug\")}.'\nassert close(need('final_ok'), round(_run(True)[1][-1], 1), 0.051) and close(need('final_bug'), round(_run(False)[1][-1], 1), 0.051), f'final_ok, final_bug = {need(\"final_ok\")}, {need(\"final_bug\")}: последние элементы списков потерь, 1 знак.'\nL = _run(False)[1]\nfu = [k for k in range(1, len(L)) if L[k] > L[k - 1]][0]\nassert need('first_up') == fu, f'first_up = {need(\"first_up\")}, а нужно {fu}: первый k, для которого losses[k] > losses[k - 1], в запуске без обнуления.'\nfor _zero in (True, False):\n    _want_w, _want_grad, _want_losses = 5.0, 0.0, []\n    for _step in range(4):\n        if _zero:\n            _want_grad = 0.0\n        _prediction = _want_w * k0\n        _want_losses.append(float(_np.mean((_prediction - m0) ** 2)))\n        _want_grad += _np.mean(2 * (_prediction - m0) * k0)\n        _want_w -= 0.02 * _want_grad\n    _got_w, _got_losses = f(_zero, lr=0.02, steps=4)\n    assert _np.asarray(_got_losses).shape == (4,) and _np.allclose(_got_losses, _want_losses) and close(_got_w, _want_w, 1e-8), 'run должна учитывать переданные lr и steps; длина истории равна steps, в ней потери до каждого шага.'",
+    "solution": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef run(zero_grad, lr=0.01, steps=30):\n    w, grad = 5.0, 0.0\n    losses = []\n    for step in range(steps):\n        if zero_grad:\n            grad = 0.0\n        pred = w * km\n        losses.append(float(np.mean((pred - minutes) ** 2)))\n        grad += np.mean(2 * (pred - minutes) * km)\n        w = w - lr * grad\n    return w, losses\n\nw_ok, losses_ok = run(True)\nw_bug, losses_bug = run(False)\nw_ok, w_bug = round(w_ok, 3), round(w_bug, 3)\nfinal_ok, final_bug = round(losses_ok[-1], 1), round(losses_bug[-1], 1)\nfirst_up = [k for k in range(1, len(losses_bug)) if losses_bug[k] > losses_bug[k - 1]][0]\nprint(w_ok, w_bug, final_ok, final_bug, first_up)",
+    "files": [
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04-pytorch",
+    "kind": "task",
+    "id": "float32",
+    "starter": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nX64 = g[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"delivery_share\"]].to_numpy(float)",
+    "setup": "",
+    "check": "import numpy as _np\nimport pandas as _pd\n_X = _pd.read_csv(\"guests_churn.csv\")[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"delivery_share\"]].to_numpy(float)\nx32 = need('X32')\nassert getattr(x32, 'dtype', None) == _np.float32, f'X32 должна быть во float32, сейчас dtype = {getattr(x32, \"dtype\", type(x32))}.'\nassert x32.shape == _X.shape, f'Форма X32 {x32.shape}, а нужна {_X.shape}.'\nassert close(need('ratio'), 2.0), f'ratio = {need(\"ratio\")}: float64 — 8 байт на число, float32 — 4.'\nme = float(f\"{_np.abs(_X - _X.astype(_np.float32)).max():.2g}\")\nassert abs(need('max_err') / me - 1) < 0.01, f'max_err = {need(\"max_err\")}, а нужно {me}. Разность считайте между X64 и X32 по модулю.'\nr = float(_np.float32(123456789.12))\nassert close(need('revenue32'), r), f'revenue32 = {need(\"revenue32\")}, а нужно {r}: np.float32(...) и затем float(...).'\nassert close(need('lost_rub'), round(r - 123456789.12, 2), 0.006), f'lost_rub = {need(\"lost_rub\")}.'\nassert _np.array_equal(x32, _X.astype(_np.float32)), 'X32 должна сохранять значения всех клеток X64 после преобразования во float32.'",
+    "solution": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nX64 = g[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"delivery_share\"]].to_numpy(float)\n\nX32 = X64.astype(np.float32)\nratio = X64.nbytes / X32.nbytes\nmax_err = float(f\"{np.abs(X64 - X32).max():.2g}\")\nrevenue32 = float(np.float32(123456789.12))\nlost_rub = round(revenue32 - 123456789.12, 2)\nprint(ratio, max_err, revenue32, lost_rub)",
+    "files": [
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04-pytorch",
+    "kind": "task",
+    "id": "module-class",
+    "starter": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nX = g[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"complaints\"]].to_numpy(float)\nX = (X - X.mean(axis=0)) / X.std(axis=0)\n\nclass TinyNet:\n    def __init__(self, sizes, seed=0):\n        rng = np.random.default_rng(seed)\n        self.Ws, self.bs = [], []\n        ...\n\n    def forward(self, X):\n        ...\n\n    def n_params(self):\n        ...",
+    "setup": "",
+    "check": "import numpy as _np\nimport pandas as _pd\n_X = _pd.read_csv(\"guests_churn.csv\")[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"complaints\"]].to_numpy(float)\n_X = (_X - _X.mean(axis=0)) / _X.std(axis=0)\ndef _ref(sizes, X, seed=0):\n    r = _np.random.default_rng(seed); Ws, bs = [], []\n    for a, b in zip(sizes[:-1], sizes[1:]):\n        Ws.append(r.normal(size=(a, b)) * _np.sqrt(2 / a)); bs.append(_np.zeros(b))\n    A = X\n    for i, (W, b) in enumerate(zip(Ws, bs)):\n        Z = A @ W + b; A = _np.maximum(0, Z) if i < len(Ws) - 1 else Z\n    return A[:, 0], sum(W.size + b.size for W, b in zip(Ws, bs))\nT = need('TinyNet')\nsmall = T([4, 3, 1], seed=5)\nzs, ns = _ref([4, 3, 1], _X[:7], 5)\nassert small.n_params() == ns, f'Для sizes=[4, 3, 1] n_params() = {small.n_params()}, а нужно {ns}: веса a·b плюс b сдвигов на каждый слой.'\nout = _np.asarray(small.forward(_X[:7]))\nassert out.shape == (7,), f'forward должен возвращать логиты формы (число объектов,), сейчас {out.shape}. Последний столбец можно взять как A[:, 0].'\nassert _np.allclose(out, zs), 'forward для sizes=[4, 3, 1] не совпал с эталоном. Проверьте порядок создания весов (W, затем следующий W — генератор один на все слои), He-масштаб np.sqrt(2 / a) и отсутствие ReLU на последнем слое.'\nz5, n5 = _ref([4, 16, 8, 1], _X[:5])\nassert need('n_par') == n5, f'n_par = {need(\"n_par\")}, а нужно {n5}.'\nassert tuple(need('out_shape')) == (5,), f'out_shape = {need(\"out_shape\")}.'\nassert _np.allclose(need('p'), (1 / (1 + _np.exp(-z5))).round(3), atol=1e-3), f'p = {need(\"p\")}, а нужно {(1 / (1 + _np.exp(-z5))).round(3)}.'",
+    "solution": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nX = g[[\"tenure_months\", \"visits_90d\", \"days_since_last\", \"complaints\"]].to_numpy(float)\nX = (X - X.mean(axis=0)) / X.std(axis=0)\n\nclass TinyNet:\n    def __init__(self, sizes, seed=0):\n        rng = np.random.default_rng(seed)\n        self.Ws, self.bs = [], []\n        for a, b in zip(sizes[:-1], sizes[1:]):\n            self.Ws.append(rng.normal(size=(a, b)) * np.sqrt(2 / a))\n            self.bs.append(np.zeros(b))\n\n    def forward(self, X):\n        A = X\n        for i, (W, b) in enumerate(zip(self.Ws, self.bs)):\n            Z = A @ W + b\n            A = np.maximum(0, Z) if i < len(self.Ws) - 1 else Z\n        return A[:, 0]\n\n    def n_params(self):\n        return sum(W.size + b.size for W, b in zip(self.Ws, self.bs))\n\nnet = TinyNet([4, 16, 8, 1])\nz = net.forward(X[:5])\nn_par = net.n_params()\nout_shape = z.shape\np = (1 / (1 + np.exp(-z))).round(3)\nprint(n_par, out_shape, p)",
+    "files": [
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04-pytorch",
+    "kind": "task",
+    "id": "state-shapes",
+    "starter": "import numpy as np\n\ndef state_shapes(sizes):\n    out = {}\n    ...\n    return out",
+    "setup": "",
+    "check": "f = need('state_shapes')\nassert f([2, 16, 1]) == {\"0.weight\": (16, 2), \"0.bias\": (16,), \"2.weight\": (1, 16), \"2.bias\": (1,)}, f'state_shapes([2, 16, 1]) = {f([2, 16, 1])}. Ключи — позиции 0 и 2 (на позиции 1 — ReLU), формы — кортежи, веса выходы × входы.'\nwant = {\"0.weight\": (32, 8), \"0.bias\": (32,), \"2.weight\": (16, 32), \"2.bias\": (16,), \"4.weight\": (1, 16), \"4.bias\": (1,)}\ngot = need('shapes', dict)\nassert got == want, f'shapes = {got}, а нужно {want}.'\nassert need('n_total') == 833, f'n_total = {need(\"n_total\")}: перемножьте числа в каждой форме и сложите.'",
+    "solution": "import numpy as np\n\ndef state_shapes(sizes):\n    out = {}\n    for i, (a, b) in enumerate(zip(sizes[:-1], sizes[1:])):\n        out[f\"{2 * i}.weight\"] = (b, a)\n        out[f\"{2 * i}.bias\"] = (b,)\n    return out\n\nshapes = state_shapes([8, 32, 16, 1])\nn_total = sum(int(np.prod(s)) for s in shapes.values())\nprint(shapes, n_total)",
+    "files": [
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04b-softmax",
+    "kind": "task",
+    "id": "softmax",
+    "starter": "import numpy as np\nZ = np.array([[1.0, 3.0, 0.5],\n              [2.0, 2.0, 4.0],\n              [1000.0, 999.0, 998.0]])",
+    "setup": "",
+    "check": "import numpy as _np\nZ0 = _np.array([[1.0, 3.0, 0.5], [2.0, 2.0, 4.0], [1000.0, 999.0, 998.0]])\nE = _np.exp(Z0 - Z0.max(axis=1, keepdims=True)); w = E / E.sum(axis=1, keepdims=True)\nP = _np.asarray(need('P'))\nassert not _np.isnan(P).any(), 'В P есть nan — без сдвига на максимум e^1000 переполняется.'\nassert _np.allclose(P, w), f'P = {P.round(3)}.'\nassert list(_np.asarray(need('pred'))) == [1, 2, 0], f'pred = {need(\"pred\")}.'",
+    "solution": "import numpy as np\nZ = np.array([[1.0, 3.0, 0.5],\n              [2.0, 2.0, 4.0],\n              [1000.0, 999.0, 998.0]])\n\ndef softmax(Z):\n    Z = Z - Z.max(axis=1, keepdims=True)\n    E = np.exp(Z)\n    return E / E.sum(axis=1, keepdims=True)\n\nP = softmax(Z)\npred = P.argmax(axis=1)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04b-softmax",
+    "kind": "task",
+    "id": "cross-entropy",
+    "starter": "import numpy as np\nP = np.array([[0.7, 0.2, 0.1],\n              [0.1, 0.1, 0.8],\n              [0.3, 0.6, 0.1],\n              [0.05, 0.9, 0.05]])\ny = np.array([0, 2, 0, 1])",
+    "setup": "",
+    "check": "import numpy as _np\nP0 = _np.array([[0.7, 0.2, 0.1], [0.1, 0.1, 0.8], [0.3, 0.6, 0.1], [0.05, 0.9, 0.05]]); y0 = _np.array([0, 2, 0, 1])\npen = -_np.log(P0[_np.arange(4), y0])\nassert close(need('ce'), round(pen.mean(), 4), 1e-4), f'ce = {need(\"ce\")}, а нужно {round(pen.mean(), 4)}.'\nassert need('worst') == int(pen.argmax()), f'worst = {need(\"worst\")}.'",
+    "solution": "import numpy as np\nP = np.array([[0.7, 0.2, 0.1],\n              [0.1, 0.1, 0.8],\n              [0.3, 0.6, 0.1],\n              [0.05, 0.9, 0.05]])\ny = np.array([0, 2, 0, 1])\n\ndef cross_entropy(P, y):\n    return -np.log(P[np.arange(len(y)), y]).mean()\n\nce = round(cross_entropy(P, y), 4)\nworst = int((-np.log(P[np.arange(len(y)), y])).argmax())",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04b-softmax",
+    "kind": "task",
+    "id": "one-hot",
+    "starter": "import numpy as np\ny = np.array([2, 0, 3, 1, 2])\nP = np.array([[0.1, 0.1, 0.7, 0.1],\n              [0.6, 0.2, 0.1, 0.1],\n              [0.2, 0.2, 0.2, 0.4],\n              [0.3, 0.4, 0.2, 0.1],\n              [0.25, 0.25, 0.25, 0.25]])",
+    "setup": "",
+    "check": "import numpy as _np\ny0 = _np.array([2, 0, 3, 1, 2])\nP0 = _np.array([[0.1, 0.1, 0.7, 0.1], [0.6, 0.2, 0.1, 0.1], [0.2, 0.2, 0.2, 0.4], [0.3, 0.4, 0.2, 0.1], [0.25, 0.25, 0.25, 0.25]])\nY0 = _np.eye(4)[y0]\nassert _np.array_equal(_np.asarray(need('Y')), Y0), f'Y = {need(\"Y\")}.'\nc = round(-(Y0 * _np.log(P0)).sum(axis=1).mean(), 4)\nassert close(need('ce_onehot'), c, 1e-4), f'ce_onehot = {need(\"ce_onehot\")}, а нужно {c}.'\nassert need('same') == True, 'same должно быть True.'",
+    "solution": "import numpy as np\ny = np.array([2, 0, 3, 1, 2])\nP = np.array([[0.1, 0.1, 0.7, 0.1],\n              [0.6, 0.2, 0.1, 0.1],\n              [0.2, 0.2, 0.2, 0.4],\n              [0.3, 0.4, 0.2, 0.1],\n              [0.25, 0.25, 0.25, 0.25]])\n\ndef one_hot(y, k):\n    return np.eye(k)[y]\n\nY = one_hot(y, 4)\nce = -(Y * np.log(P)).sum(axis=1).mean()\nce_onehot = round(ce, 4)\nsame = bool(np.isclose(ce, -np.log(P[np.arange(len(y)), y]).mean()))",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04b-softmax",
+    "kind": "task",
+    "id": "temperature",
+    "starter": "import numpy as np\n\ndef softmax(z):\n    z = z - z.max()\n    e = np.exp(z)\n    return e / e.sum()\n\nlogits = np.array([2.0, 1.0, 0.1])",
+    "setup": "",
+    "check": "import numpy as _np\nl = _np.array([2.0, 1.0, 0.1])\ndef _sm(z):\n    z = z - z.max(); e = _np.exp(z); return e / e.sum()\ntp, en = {}, {}\nfor T in [0.5, 1, 2, 5]:\n    p = _sm(l / T); tp[T] = round(float(p[0]), 3); en[T] = round(float(-(p * _np.log(p)).sum()), 3)\ng1 = {float(k): v for k, v in need('top_prob', dict).items()}; g2 = {float(k): v for k, v in need('entropy', dict).items()}\nassert all(close(g1[k], tp[k], 0.0011) for k in tp), f'top_prob = {g1}, а нужно {tp}.'\nassert all(close(g2[k], en[k], 0.0011) for k in en), f'entropy = {g2}, а нужно {en}.'\nassert close(need('max_entropy'), round(float(_np.log(3)), 3), 0.0011), f'max_entropy = {need(\"max_entropy\")}.'",
+    "solution": "import numpy as np\n\ndef softmax(z):\n    z = z - z.max()\n    e = np.exp(z)\n    return e / e.sum()\n\nlogits = np.array([2.0, 1.0, 0.1])\ntop_prob, entropy = {}, {}\nfor T in [0.5, 1, 2, 5]:\n    p = softmax(logits / T)\n    top_prob[T] = round(float(p[0]), 3)\n    entropy[T] = round(float(-(p * np.log(p)).sum()), 3)\nmax_entropy = round(float(np.log(3)), 3)\nprint(top_prob, entropy, max_entropy)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04b-softmax",
+    "kind": "task",
+    "id": "head-loss",
+    "starter": "import numpy as np\nz_reg = np.array([31.5, 44.0, 27.0, 52.0]); y_reg = np.array([30.0, 47.0, 27.0, 40.0])\nz_bin = np.array([1.2, -0.4, 3.0, -2.5]);  y_bin = np.array([1, 1, 1, 0])\nZ_ml = np.array([[2.0, -0.5, -3.0],\n                 [0.3, 1.5, -1.0],\n                 [-2.0, -1.5, 0.8],\n                 [1.0, 0.2, 0.4]])\nY_ml = np.array([[1, 0, 0],\n                 [1, 1, 0],\n                 [0, 0, 1],\n                 [1, 1, 0]])",
+    "setup": "",
+    "check": "import numpy as _np\nzr = _np.array([31.5, 44.0, 27.0, 52.0]); yr = _np.array([30.0, 47.0, 27.0, 40.0])\nzb = _np.array([1.2, -0.4, 3.0, -2.5]); yb = _np.array([1, 1, 1, 0])\nZm = _np.array([[2.0, -0.5, -3.0], [0.3, 1.5, -1.0], [-2.0, -1.5, 0.8], [1.0, 0.2, 0.4]])\nYm = _np.array([[1, 0, 0], [1, 1, 0], [0, 0, 1], [1, 1, 0]])\nwant = {'regression': round(float(_np.mean((zr - yr) ** 2)), 3),\n        'binary': round(float(_np.mean(_np.logaddexp(0, zb) - yb * zb)), 3),\n        'multilabel': round(float(_np.mean(_np.logaddexp(0, Zm) - Ym * Zm)), 3)}\ngot = need('losses', dict)\nassert set(got) == set(want), f'Ключи losses: {sorted(got)}, а нужны {sorted(want)}.'\nassert close(got['regression'], want['regression'], 0.0011), f'losses[\"regression\"] = {got[\"regression\"]}: MSE — средний квадрат разности, без активации.'\nassert close(got['binary'], want['binary'], 0.0011), f'losses[\"binary\"] = {got[\"binary\"]}, а нужно {want[\"binary\"]}. Формула: mean(logaddexp(0, z) - y * z).'\nassert close(got['multilabel'], want['multilabel'], 0.0011), f'losses[\"multilabel\"] = {got[\"multilabel\"]}, а нужно {want[\"multilabel\"]}. Усредняйте по всем клеткам, не по строкам и не через softmax.'\nnc = [int(v) for v in need('n_cats')]\nassert nc == (1 / (1 + _np.exp(-Zm)) > 0.5).sum(axis=1).tolist(), f'n_cats = {nc}. Вероятность каждой категории — своя сигмоида.'",
+    "solution": "import numpy as np\nz_reg = np.array([31.5, 44.0, 27.0, 52.0]); y_reg = np.array([30.0, 47.0, 27.0, 40.0])\nz_bin = np.array([1.2, -0.4, 3.0, -2.5]);  y_bin = np.array([1, 1, 1, 0])\nZ_ml = np.array([[2.0, -0.5, -3.0],\n                 [0.3, 1.5, -1.0],\n                 [-2.0, -1.5, 0.8],\n                 [1.0, 0.2, 0.4]])\nY_ml = np.array([[1, 0, 0],\n                 [1, 1, 0],\n                 [0, 0, 1],\n                 [1, 1, 0]])\n\ndef bce_logits(z, y):\n    return np.mean(np.logaddexp(0, z) - y * z)\n\nlosses = {\n    \"regression\": round(float(np.mean((z_reg - y_reg) ** 2)), 3),\n    \"binary\": round(float(bce_logits(z_bin, y_bin)), 3),\n    \"multilabel\": round(float(bce_logits(Z_ml, Y_ml)), 3),\n}\nP = 1 / (1 + np.exp(-Z_ml))\nn_cats = (P > 0.5).sum(axis=1).tolist()\nprint(losses, n_cats)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04b-softmax",
+    "kind": "task",
+    "id": "batches",
+    "starter": "import numpy as np\nX = np.arange(20).reshape(10, 2)\ny = np.arange(10)",
+    "setup": "",
+    "check": "import numpy as _np\nf = need('batches')\nX0 = _np.arange(30).reshape(10, 3); y0 = _np.arange(10) * 7 + 3\nfor _size in (4, 3):\n    for _seed in (0, 17):\n        _rng = _np.random.default_rng(_seed)\n        _reference_rng = _np.random.default_rng(_seed)\n        # Два последовательных вызова — две эпохи с состоянием переданного RNG.\n        for _epoch in range(2):\n            got = list(f(X0, y0, _size, _rng))\n            _order = _reference_rng.permutation(len(y0))\n            _indices = [_order[i:i + _size] for i in range(0, len(y0), _size)]\n            assert [len(b[1]) for b in got] == [len(idx) for idx in _indices], f'При size={_size} сохраняйте заданный размер батча и последний остаток.'\n            for (_xb, _yb), _idx in zip(got, _indices):\n                assert _np.array_equal(_xb, X0[_idx]), f'При size={_size}, seed={_seed}, эпоха {_epoch + 1}: X_batch должен сохранять все столбцы и строки перестановки переданного rng.'\n                assert _np.array_equal(_yb, y0[_idx]), f'При size={_size}, seed={_seed}, эпоха {_epoch + 1}: y_batch должен содержать метки тех же строк перестановки переданного rng.'\nassert list(need('sizes')) == [4, 4, 2] and need('covered') == True, f'sizes = {need(\"sizes\")}, covered = {need(\"covered\")}.'",
+    "solution": "import numpy as np\nX = np.arange(20).reshape(10, 2)\ny = np.arange(10)\n\ndef batches(X, y, size, rng):\n    order = rng.permutation(len(y))\n    for start in range(0, len(y), size):\n        idx = order[start:start + size]\n        yield X[idx], y[idx]\n\nparts = list(batches(X, y, 4, np.random.default_rng(0)))\nsizes = [len(b) for _, b in parts]\ncovered = sorted(np.concatenate([b for _, b in parts]).tolist()) == list(range(10))",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04b-softmax",
+    "kind": "task",
+    "id": "minibatch",
+    "starter": "import numpy as np\n\ndef train_batches(size, epochs=100, lr=0.5):\n    W1, b1, w2, b2 = init()\n    rng = np.random.default_rng(1)\n    steps = 0\n    ...\n    return W1, b1, w2, b2, steps\n\nres = {}",
+    "setup": "import numpy as np\nfrom sklearn.datasets import make_moons\nX, y = make_moons(400, noise=0.2, random_state=0)\ndef batches(X, y, size, rng):\n    order = rng.permutation(len(y))\n    for start in range(0, len(y), size):\n        idx = order[start:start + size]\n        yield X[idx], y[idx]\ndef init():\n    rng = np.random.default_rng(0)\n    return rng.normal(size=(2, 16)) * 0.5, np.zeros(16), rng.normal(size=16) * 0.5, 0.0",
+    "check": "import numpy as _np\nX0, y0, bt, ini = need('X'), need('y'), need('batches'), need('init')\nw = {}\nfor size in [400, 64, 16]:\n    W1, b1, w2, b2 = ini(); r = _np.random.default_rng(1); st = 0\n    for _ in range(100):\n        for Xb, yb in bt(X0, y0, size, r):\n            Z1 = Xb @ W1 + b1; H = _np.maximum(0, Z1); p = 1 / (1 + _np.exp(-(H @ w2 + b2)))\n            d2 = (p - yb) / len(yb); g_w2, g_b2 = H.T @ d2, d2.sum(); dH = _np.outer(d2, w2) * (Z1 > 0)\n            W1 = W1 - 0.5 * (Xb.T @ dH); b1 = b1 - 0.5 * dH.sum(axis=0); w2 = w2 - 0.5 * g_w2; b2 = b2 - 0.5 * g_b2; st += 1\n    H = _np.maximum(0, X0 @ W1 + b1); p = 1 / (1 + _np.exp(-(H @ w2 + b2)))\n    w[size] = (round(float(-_np.mean(y0 * _np.log(p) + (1 - y0) * _np.log(1 - p))), 3), round(float(((p > 0.5) == y0).mean()), 3), st)\ng = {int(k): tuple(v) for k, v in need('res', dict).items()}\nassert all(close(g[k][0], w[k][0], 0.002) and close(g[k][1], w[k][1], 0.002) and g[k][2] == w[k][2] for k in w), f'res = {g}, а нужно {w}.'\nassert need('best_size') == min(w, key=lambda k: w[k][0]), f'best_size = {need(\"best_size\")}.'",
+    "solution": "import numpy as np\n\ndef train_batches(size, epochs=100, lr=0.5):\n    W1, b1, w2, b2 = init()\n    rng = np.random.default_rng(1)\n    steps = 0\n    for _ in range(epochs):\n        for Xb, yb in batches(X, y, size, rng):\n            Z1 = Xb @ W1 + b1\n            H = np.maximum(0, Z1)\n            p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n            d2 = (p - yb) / len(yb)\n            g_w2, g_b2 = H.T @ d2, d2.sum()\n            dH = np.outer(d2, w2) * (Z1 > 0)\n            W1 = W1 - lr * (Xb.T @ dH); b1 = b1 - lr * dH.sum(axis=0)\n            w2 = w2 - lr * g_w2; b2 = b2 - lr * g_b2\n            steps += 1\n    return W1, b1, w2, b2, steps\n\nres = {}\nfor size in [400, 64, 16]:\n    W1, b1, w2, b2, steps = train_batches(size)\n    H = np.maximum(0, X @ W1 + b1)\n    p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n    loss = -np.mean(y * np.log(p) + (1 - y) * np.log(1 - p))\n    res[size] = (round(float(loss), 3), round(float(((p > 0.5) == y).mean()), 3), steps)\nbest_size = min(res, key=lambda k: res[k][0])\nprint(res, best_size)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04b-softmax",
+    "kind": "task",
+    "id": "softmax-net",
+    "starter": "import numpy as np\nfrom sklearn.datasets import make_blobs\nX, y = make_blobs(300, centers=3, cluster_std=1.5, random_state=0)\nX = (X - X.mean(axis=0)) / X.std(axis=0)\nY = np.eye(3)[y]\n\ndef softmax(Z):\n    Z = Z - Z.max(axis=1, keepdims=True)\n    E = np.exp(Z)\n    return E / E.sum(axis=1, keepdims=True)",
+    "setup": "",
+    "check": "import numpy as _np\nfrom sklearn.datasets import make_blobs as _mb\nX0, y0 = _mb(300, centers=3, cluster_std=1.5, random_state=0); X0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); Y0 = _np.eye(3)[y0]\nr = _np.random.default_rng(0); A = r.normal(size=(2, 16)) * 0.5; a = _np.zeros(16); B = r.normal(size=(16, 3)) * 0.5; b = _np.zeros(3)\ndef sm(Z):\n    Z = Z - Z.max(axis=1, keepdims=True); E = _np.exp(Z); return E / E.sum(axis=1, keepdims=True)\nfor _ in range(500):\n    Z1 = X0 @ A + a; H = _np.maximum(0, Z1); P = sm(H @ B + b)\n    D = (P - Y0) / 300; dH = D @ B.T * (Z1 > 0)\n    B -= 0.5 * H.T @ D; b -= 0.5 * D.sum(0); A -= 0.5 * X0.T @ dH; a -= 0.5 * dH.sum(0)\nP = sm(_np.maximum(0, X0 @ A + a) @ B + b)\nw = round((P.argmax(1) == y0).mean(), 3)\nassert close(need('acc'), w), f'acc = {need(\"acc\")}, а нужно {w}.'",
+    "solution": "import numpy as np\nfrom sklearn.datasets import make_blobs\nX, y = make_blobs(300, centers=3, cluster_std=1.5, random_state=0)\nX = (X - X.mean(axis=0)) / X.std(axis=0)\nY = np.eye(3)[y]\n\ndef softmax(Z):\n    Z = Z - Z.max(axis=1, keepdims=True)\n    E = np.exp(Z)\n    return E / E.sum(axis=1, keepdims=True)\n\nrng = np.random.default_rng(0)\nW1 = rng.normal(size=(2, 16)) * 0.5\nb1 = np.zeros(16)\nW2 = rng.normal(size=(16, 3)) * 0.5\nb2 = np.zeros(3)\nfor _ in range(500):\n    Z1 = X @ W1 + b1\n    H = np.maximum(0, Z1)\n    P = softmax(H @ W2 + b2)\n    D = (P - Y) / len(y)\n    dH = D @ W2.T * (Z1 > 0)\n    W2 = W2 - 0.5 * H.T @ D\n    b2 = b2 - 0.5 * D.sum(axis=0)\n    W1 = W1 - 0.5 * X.T @ dH\n    b1 = b1 - 0.5 * dH.sum(axis=0)\nP = softmax(np.maximum(0, X @ W1 + b1) @ W2 + b2)\nacc = round((P.argmax(axis=1) == y).mean(), 3)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04c-debug",
+    "kind": "task",
+    "id": "dropout",
+    "starter": "import numpy as np\nH = np.ones((1000, 50))",
+    "setup": "",
+    "check": "import numpy as _np\nm = _np.random.default_rng(0).random((1000, 50)) >= 0.3\nout = _np.ones((1000, 50)) * m / 0.7\nassert close(need('kept_share'), round((out != 0).mean(), 3), 0.0011), f'kept_share = {need(\"kept_share\")}.'\nassert close(need('mean_after'), round(out.mean(), 3), 0.0011), f'mean_after = {need(\"mean_after\")}.'",
+    "solution": "import numpy as np\nH = np.ones((1000, 50))\n\ndef dropout(H, rate, rng):\n    mask = rng.random(H.shape) >= rate\n    return H * mask / (1 - rate)\n\nout = dropout(H, 0.3, np.random.default_rng(0))\nkept_share = round((out != 0).mean(), 3)\nmean_after = round(out.mean(), 3)",
+    "files": [
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04c-debug",
+    "kind": "task",
+    "id": "dropout-net",
+    "starter": "import numpy as np\n\ndef train_drop(X, y, hidden, lr, steps, seed, rate=0.0):\n    rng = np.random.default_rng(seed)\n    W1 = rng.normal(size=(X.shape[1], hidden)) * 0.5\n    b1 = np.zeros(hidden)\n    w2 = rng.normal(size=hidden) * 0.5\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        # здесь — маска dropout M (или M = 1.0 при rate = 0)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 > 0)\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2\n\nres = {}",
+    "setup": "import numpy as np\nfrom sklearn.datasets import make_moons\nfrom sklearn.model_selection import train_test_split\nX, y = make_moons(600, noise=0.3, random_state=1)\nX, X_final, y, y_final = train_test_split(X,y,test_size=.25,random_state=42)\nX_train, X_test, y_train, y_test = train_test_split(X, y, train_size=60, random_state=0)\n\ndef accuracy(params, X, y):\n    W1, b1, w2, b2 = params\n    return round(float(((np.maximum(0, X @ W1 + b1) @ w2 + b2 > 0) == y).mean()), 3)",
+    "check": "import numpy as _np\nXa, Xb, ya, yb = need('X_train'), need('X_test'), need('y_train'), need('y_test')\ndef _tr(rate):\n    r = _np.random.default_rng(0)\n    W1 = r.normal(size=(2, 64)) * 0.5; b1 = _np.zeros(64); w2 = r.normal(size=64) * 0.5; b2 = 0.0\n    for _ in range(2000):\n        Z1 = Xa @ W1 + b1; H = _np.maximum(0, Z1)\n        if rate > 0:\n            M = (r.random(H.shape) >= rate) / (1 - rate); H = H * M\n        else:\n            M = 1.0\n        p = 1 / (1 + _np.exp(-(H @ w2 + b2))); d2 = (p - ya) / len(ya)\n        dH = _np.outer(d2, w2) * (Z1 > 0) * M\n        w2 = w2 - 0.5 * H.T @ d2; b2 = b2 - 0.5 * d2.sum(); W1 = W1 - 0.5 * Xa.T @ dH; b1 = b1 - 0.5 * dH.sum(axis=0)\n    P = (W1, b1, w2, b2)\n    return accuracy(P, Xa, ya), accuracy(P, Xb, yb)\nwant = {r: _tr(r) for r in (0, 0.3, 0.5)}\ngot = need('res', dict)\nfor r, v in want.items():\n    g = got.get(r)\n    assert g is not None and len(g) == 2, f'В res нет пары для rate = {r}.'\n    assert close(g[0], v[0], 0.0011) and close(g[1], v[1], 0.0011), f'res[{r}] = {tuple(g)}, а нужно {v}. Маску берите из того же генератора rng, что и веса, сразу после ReLU; в dH умножьте на M.'\nassert need('best_rate') == max(want, key=lambda r: want[r][1]), f'best_rate = {need(\"best_rate\")}.'",
+    "solution": "import numpy as np\n\ndef train_drop(X, y, hidden, lr, steps, seed, rate=0.0):\n    rng = np.random.default_rng(seed)\n    W1 = rng.normal(size=(X.shape[1], hidden)) * 0.5\n    b1 = np.zeros(hidden)\n    w2 = rng.normal(size=hidden) * 0.5\n    b2 = 0.0\n    for _ in range(steps):\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        if rate > 0:\n            M = (rng.random(H.shape) >= rate) / (1 - rate)\n            H = H * M\n        else:\n            M = 1.0\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * (Z1 > 0) * M\n        w2 = w2 - lr * H.T @ d2\n        b2 = b2 - lr * d2.sum()\n        W1 = W1 - lr * X.T @ dH\n        b1 = b1 - lr * dH.sum(axis=0)\n    return W1, b1, w2, b2\n\nres = {}\nfor rate in (0, 0.3, 0.5):\n    params = train_drop(X_train, y_train, 64, 0.5, 2000, 0, rate)\n    res[rate] = (accuracy(params, X_train, y_train), accuracy(params, X_test, y_test))\nbest_rate = max(res, key=lambda r: res[r][1])\nprint(res, best_rate)",
+    "files": [
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04c-debug",
+    "kind": "task",
+    "id": "batchnorm",
+    "starter": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nB = g[[\"visits_90d\", \"days_since_last\", \"complaints\"]].head(6).to_numpy(float)\ngamma = np.array([1.0, 2.0, 0.5])\nbeta = np.array([0.0, 1.0, -1.0])\nrun_mean, run_var = np.zeros(3), np.ones(3)",
+    "setup": "",
+    "check": "import numpy as _np\nimport pandas as _pd\nB0 = _pd.read_csv(\"guests_churn.csv\")[[\"visits_90d\", \"days_since_last\", \"complaints\"]].head(6).to_numpy(float)\nga, be = _np.array([1.0, 2.0, 0.5]), _np.array([0.0, 1.0, -1.0])\ndef _bt(Xb, rm, rv):\n    mu, var = Xb.mean(0), Xb.var(0)\n    return ga * (Xb - mu) / _np.sqrt(var + 1e-5) + be, 0.9 * rm + 0.1 * mu, 0.9 * rv + 0.1 * var\no1, rm, rv = _bt(B0[:3], _np.zeros(3), _np.ones(3)); _, rm, rv = _bt(B0[3:], rm, rv)\npr = ga * (B0[:1] - rm) / _np.sqrt(rv + 1e-5) + be\nf = need('batchnorm_train')\nt_out, t_rm, t_rv = f(B0[:3], ga, be, _np.zeros(3), _np.ones(3))\nassert _np.allclose(t_out, o1, atol=1e-6), 'batchnorm_train нормирует не так: среднее и дисперсия — по объектам батча (axis=0), затем gamma * x̂ + beta.'\nassert _np.allclose(t_rm, 0.1 * B0[:3].mean(0)), 'Скользящее среднее: (1 - momentum) * run_mean + momentum * среднее батча.'\nassert _np.allclose(need('out1'), o1.round(3), atol=1e-3), f'out1 = {need(\"out1\")}.'\nassert _np.allclose(need('run_mean'), rm.round(4), atol=1e-4) and _np.allclose(need('run_var'), rv.round(4), atol=1e-4), f'run_mean = {need(\"run_mean\")}, run_var = {need(\"run_var\")}. Проверьте, что второй батч продолжил обновлять скользящие средние после первого.'\nassert _np.allclose(need('pred'), pr.round(3), atol=1e-3), f'pred = {need(\"pred\")}, а нужно {pr.round(3)}. На прогнозе батч не нужен — только run_mean и run_var.'",
+    "solution": "import numpy as np\nimport pandas as pd\ng = pd.read_csv(\"guests_churn.csv\")\nB = g[[\"visits_90d\", \"days_since_last\", \"complaints\"]].head(6).to_numpy(float)\ngamma = np.array([1.0, 2.0, 0.5])\nbeta = np.array([0.0, 1.0, -1.0])\nrun_mean, run_var = np.zeros(3), np.ones(3)\n\ndef batchnorm_train(Xb, gamma, beta, run_mean, run_var, momentum=0.1, eps=1e-5):\n    mu, var = Xb.mean(axis=0), Xb.var(axis=0)\n    out = gamma * (Xb - mu) / np.sqrt(var + eps) + beta\n    run_mean = (1 - momentum) * run_mean + momentum * mu\n    run_var = (1 - momentum) * run_var + momentum * var\n    return out, run_mean, run_var\n\ndef batchnorm_eval(X, gamma, beta, run_mean, run_var, eps=1e-5):\n    return gamma * (X - run_mean) / np.sqrt(run_var + eps) + beta\n\nout1, run_mean, run_var = batchnorm_train(B[:3], gamma, beta, run_mean, run_var)\n_, run_mean, run_var = batchnorm_train(B[3:], gamma, beta, run_mean, run_var)\npred = batchnorm_eval(B[:1], gamma, beta, run_mean, run_var).round(3)\nout1, run_mean, run_var = out1.round(3), run_mean.round(4), run_var.round(4)\nprint(out1, run_mean, run_var, pred)",
+    "files": [
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04c-debug",
+    "kind": "task",
+    "id": "start-loss",
+    "starter": "import numpy as np\nruns = {\n    \"отток\": (2, 0.702),\n    \"цифры в анкетах\": (10, 2.297),\n    \"категории напитков\": (4, 9.81),\n    \"тональность отзывов\": (3, 0.012),\n}",
+    "setup": "",
+    "check": "import numpy as _np\nR = {\"отток\": (2, 0.702), \"цифры в анкетах\": (10, 2.297), \"категории напитков\": (4, 9.81), \"тональность отзывов\": (3, 0.012)}\nref = need('ref', dict)\nfor k, (K, s) in R.items():\n    assert k in ref and close(ref[k], round(float(_np.log(K)), 3), 0.0011), f'ref[{k!r}] = {ref.get(k)}, а нужно {round(float(_np.log(K)), 3)}: натуральный логарифм числа классов, np.log(K).'\nwant = [k for k, (K, s) in R.items() if abs(s - _np.log(K)) > 0.25 * _np.log(K)]\nassert list(need('suspicious')) == want, f'suspicious = {need(\"suspicious\")}, а нужно {want}.'",
+    "solution": "import numpy as np\nruns = {\n    \"отток\": (2, 0.702),\n    \"цифры в анкетах\": (10, 2.297),\n    \"категории напитков\": (4, 9.81),\n    \"тональность отзывов\": (3, 0.012),\n}\n\nref = {k: round(float(np.log(K)), 3) for k, (K, s) in runs.items()}\nsuspicious = [k for k, (K, s) in runs.items() if abs(s - np.log(K)) > 0.25 * np.log(K)]\nprint(ref, suspicious)",
+    "files": [
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/04c-debug",
+    "kind": "task",
+    "id": "smoke-test",
+    "starter": "import numpy as np\n\ndef smoke(step, n=16, steps=300, lr=0.5):\n    params = init()\n    ...",
+    "setup": "import numpy as np\nfrom sklearn.datasets import make_moons\nX, y = make_moons(400, noise=0.2, random_state=0)\ndef init(hidden=16, seed=0):\n    rng = np.random.default_rng(seed)\n    return [rng.normal(size=(2, hidden)) * np.sqrt(2 / 2), np.zeros(hidden),\n            rng.normal(size=hidden) * np.sqrt(1 / hidden), 0.0]\ndef loss_of(params, X, y):\n    W1, b1, w2, b2 = params\n    z = np.maximum(0, X @ W1 + b1) @ w2 + b2\n    return float(np.mean(np.logaddexp(0, z) - y * z))\ndef _make_step(mask_sign):\n    def step(params, X, y, lr):\n        W1, b1, w2, b2 = params\n        Z1 = X @ W1 + b1\n        H = np.maximum(0, Z1)\n        p = 1 / (1 + np.exp(-(H @ w2 + b2)))\n        d2 = (p - y) / len(y)\n        dH = np.outer(d2, w2) * ((Z1 > 0) if mask_sign > 0 else (Z1 < 0))\n        return [W1 - lr * X.T @ dH, b1 - lr * dH.sum(axis=0), w2 - lr * H.T @ d2, b2 - lr * d2.sum()]\n    return step\nstep_a = _make_step(1)\nstep_b = _make_step(-1)",
+    "check": "import numpy as _np\nX0, y0 = need('X'), need('y'); ini, lo = need('init'), need('loss_of')\ndef _sm(step):\n    P = ini(); s = lo(P, X0, y0)\n    for _ in range(300):\n        P = step(P, X0[:16], y0[:16], 0.5)\n    return round(s, 3), round(lo(P, X0[:16], y0[:16]), 3)\nwant = {'a': _sm(need('step_a')), 'b': _sm(need('step_b'))}\nf = need('smoke')\ngot_a = tuple(f(need('step_a')))\nassert len(got_a) == 2 and close(got_a[0], want['a'][0], 0.0011) and close(got_a[1], want['a'][1], 0.0011), f'smoke(step_a) = {got_a}, а нужно {want[\"a\"]}. Стартовая потеря — на всех X, итоговая — на первых n.'\nr = need('res', dict)\nfor k in want:\n    assert k in r and all(close(u, v, 0.0011) for u, v in zip(r[k], want[k])), f'res[{k!r}] = {r.get(k)}, а нужно {want[k]}.'\nassert need('start_ok') == (abs(want['a'][0] - _np.log(2)) < 0.1), f'start_ok = {need(\"start_ok\")}.'\nassert need('buggy') == [k for k in want if want[k][1] >= 0.1][0], f'buggy = {need(\"buggy\")!r}.'\nassert need('both_learn') == all(want[k][1] < want[k][0] for k in want), f'both_learn = {need(\"both_learn\")}.'",
+    "solution": "import numpy as np\n\ndef smoke(step, n=16, steps=300, lr=0.5):\n    params = init()\n    start = loss_of(params, X, y)\n    for _ in range(steps):\n        params = step(params, X[:n], y[:n], lr)\n    return start, loss_of(params, X[:n], y[:n])\n\nres = {k: tuple(round(v, 3) for v in smoke(s)) for k, s in {\"a\": step_a, \"b\": step_b}.items()}\nstart_ok = abs(res[\"a\"][0] - np.log(2)) < 0.1\nbuggy = [k for k in res if res[k][1] >= 0.1][0]\nboth_learn = all(res[k][1] < res[k][0] for k in res)\nprint(res, start_ok, buggy, both_learn)",
+    "files": [
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch11/05-project",
+    "kind": "task",
+    "id": "look",
+    "starter": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom sklearn.datasets import load_digits\ndigits = load_digits()\ny = digits.target",
+    "setup": "",
+    "check": "import numpy as _np\nimport re as _re\nfrom sklearn.datasets import load_digits as _ld\ndg = _ld()\nc = _np.bincount(dg.target)\nassert _np.array_equal(_np.asarray(need('counts')),c), f'counts = {need(\"counts\")}.'\nassert need('balanced') == bool(c.min() >= 0.9 * c.max()), f'balanced = {need(\"balanced\")}.'\nexpected = _np.array([dg.images[dg.target==k].mean(axis=0) for k in range(10)])\nmi = _np.asarray(need('mean_imgs'))\nassert mi.shape==(10,8,8) and _np.isfinite(mi).all() and _np.allclose(mi,expected), 'mean_imgs[k] — средняя картинка именно цифры k, для всех десяти цифр, в шкале 0–16.'\nassert figs and len(figs[-1].axes)>=10, 'Нужны 10 панелей в один ряд. Пока рисунка с десятью панелями нет.'\npanels = [a for a in figs[-1].axes if a.get_visible() and a.images]\nassert len(panels)==10, f'Пустые панели: изображения найдены только в {len(panels)} из 10 панелей. Выведите среднюю картинку в каждой.'\npanels.sort(key=lambda a:a.get_position().x0)\ncenters = [a.get_position().y0+a.get_position().height/2 for a in panels]\nassert max(centers)-min(centers)<.1*min(a.get_position().height for a in panels), 'Расположите десять панелей в один ряд, от 0 до 9 слева направо.'\nfor k,ax in enumerate(panels):\n    visible = [im for im in ax.images if im.get_visible() and (im.get_alpha() is None or _np.any(_np.asarray(im.get_alpha())>0))]\n    assert len(visible)==1, f'Панель {k} слева: нужна одна видимая средняя картинка.'\n    image = _np.asarray(visible[0].get_array())\n    assert image.shape==(8,8) and _np.isfinite(image).all() and (_np.allclose(image,expected[k]) or _np.allclose(image,expected[k]/16)), f'Панель {k} слева: картинка перепутана или не является средним изображением цифры {k}. Сверьте класс и порядок панелей.'\n    assert _re.findall(r'(?<!\\d)\\d(?!\\d)',ax.get_title())==[str(k)], f'Панель {k} слева: подпишите изображённую цифру {k} в заголовке, сейчас {ax.get_title()!r}.'",
+    "solution": "import numpy as np\nimport matplotlib.pyplot as plt\nfrom sklearn.datasets import load_digits\ndigits = load_digits()\ny = digits.target\n\ncounts = np.bincount(y)\nbalanced = bool(counts.min() >= 0.9 * counts.max())\nmean_imgs = np.array([digits.images[y == k].mean(axis=0) for k in range(10)])\nfig, axes = plt.subplots(1, 10, figsize=(10, 1.4))\nfor k, ax in enumerate(axes):\n    ax.imshow(mean_imgs[k], cmap=\"gray_r\")\n    ax.set_title(str(k))\n    ax.axis(\"off\")\nplt.show()",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/05-project",
+    "kind": "task",
+    "id": "simple",
+    "starter": "import numpy as np\nfrom sklearn.datasets import load_digits\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.neighbors import KNeighborsClassifier\n\ndigits = load_digits()\nX, y = digits.data / 16, digits.target\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)",
+    "setup": "",
+    "check": "from sklearn.datasets import load_digits as _ld\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.linear_model import LogisticRegression as _LR\nfrom sklearn.neighbors import KNeighborsClassifier as _KN\ndg = _ld(); a, b, c, d = _tts(dg.data / 16, dg.target, test_size=0.25, random_state=42, stratify=dg.target)\nl = round((_LR(max_iter=2000).fit(a, c).predict(b) == d).mean(), 3); k = round((_KN(n_neighbors=3).fit(a, c).predict(b) == d).mean(), 3)\nassert close(need('acc_lr'), l, 0.002), f'acc_lr = {need(\"acc_lr\")}, а нужно {l}: логистическая регрессия на X = digits.data / 16 без масштабирования.'\nassert close(need('acc_knn'), k, 0.002), f'acc_knn = {need(\"acc_knn\")}, а нужно {k}: kNN на X = digits.data / 16 без масштабирования.'",
+    "solution": "import numpy as np\nfrom sklearn.datasets import load_digits\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.neighbors import KNeighborsClassifier\n\ndigits = load_digits()\nX, y = digits.data / 16, digits.target\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nacc_lr = round((LogisticRegression(max_iter=2000).fit(X_train, y_train).predict(X_test) == y_test).mean(), 3)\nacc_knn = round((KNeighborsClassifier(n_neighbors=3).fit(X_train, y_train).predict(X_test) == y_test).mean(), 3)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/05-project",
+    "kind": "task",
+    "id": "own-net",
+    "starter": "import numpy as np\nfrom sklearn.datasets import load_digits\nfrom sklearn.model_selection import train_test_split\n\ndigits = load_digits()\nX, y = digits.data / 16, digits.target\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nY_train = np.eye(10)[y_train]\n\ndef softmax(Z):\n    Z = Z - Z.max(axis=1, keepdims=True)\n    E = np.exp(Z)\n    return E / E.sum(axis=1, keepdims=True)",
+    "setup": "",
+    "check": "import numpy as _np\nfrom sklearn.datasets import load_digits as _ld\nfrom sklearn.model_selection import train_test_split as _tts\ndg = _ld(); a, b, c, d = _tts(dg.data / 16, dg.target, test_size=0.25, random_state=42, stratify=dg.target); Y0 = _np.eye(10)[c]\ndef sm(Z):\n    Z = Z - Z.max(axis=1, keepdims=True); E = _np.exp(Z); return E / E.sum(axis=1, keepdims=True)\nr = _np.random.default_rng(0); A = r.normal(size=(64, 32)) * 0.1; a1 = _np.zeros(32); B = r.normal(size=(32, 10)) * 0.1; b1 = _np.zeros(10)\nfor _ in range(300):\n    Z = a @ A + a1; H = _np.maximum(0, Z); P = sm(H @ B + b1); D = (P - Y0) / len(c); dH = D @ B.T * (Z > 0)\n    B -= 0.5 * H.T @ D; b1 -= 0.5 * D.sum(0); A -= 0.5 * a.T @ dH; a1 -= 0.5 * dH.sum(0)\nw = round((sm(_np.maximum(0, b @ A + a1) @ B + b1).argmax(1) == d).mean(), 3)\nassert close(need('acc_own'), w, 0.002), f'acc_own = {need(\"acc_own\")}, а нужно {w}.'\n_weights = [need(v) for v in ('W1','b1','W2','b2')]\n_W1,_b1,_W2,_b2 = _weights\n_manual = sm(_np.maximum(0,b@_W1+_b1)@_W2+_b2)\n_got = _np.asarray(need('own_proba'))\nassert _got.shape==(len(d),10) and _np.isfinite(_got).all() and (_got>=0).all() and _np.allclose(_got.sum(1),1), 'own_proba: допустимые вероятности десяти классов.'\nassert _np.allclose(_got,_manual), 'own_proba должна получаться из переданных весов сети.'\nassert close(need('acc_own'),round((_got.argmax(1)==d).mean(),3)), 'acc_own пересчитывается по собственным прогнозам.'",
+    "solution": "import numpy as np\nfrom sklearn.datasets import load_digits\nfrom sklearn.model_selection import train_test_split\n\ndigits = load_digits()\nX, y = digits.data / 16, digits.target\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nY_train = np.eye(10)[y_train]\n\ndef softmax(Z):\n    Z = Z - Z.max(axis=1, keepdims=True)\n    E = np.exp(Z)\n    return E / E.sum(axis=1, keepdims=True)\n\nrng = np.random.default_rng(0)\nW1 = rng.normal(size=(64, 32)) * 0.1\nb1 = np.zeros(32)\nW2 = rng.normal(size=(32, 10)) * 0.1\nb2 = np.zeros(10)\nfor _ in range(300):\n    Z1 = X_train @ W1 + b1\n    H = np.maximum(0, Z1)\n    P = softmax(H @ W2 + b2)\n    D = (P - Y_train) / len(y_train)\n    dH = D @ W2.T * (Z1 > 0)\n    W2 = W2 - 0.5 * H.T @ D\n    b2 = b2 - 0.5 * D.sum(axis=0)\n    W1 = W1 - 0.5 * X_train.T @ dH\n    b1 = b1 - 0.5 * dH.sum(axis=0)\npred = softmax(np.maximum(0, X_test @ W1 + b1) @ W2 + b2).argmax(axis=1)\nacc_own = round((pred == y_test).mean(), 3)\nown_proba = softmax(np.maximum(0, X_test @ W1 + b1) @ W2 + b2)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/05-project",
+    "kind": "task",
+    "id": "mlp",
+    "starter": "import numpy as np\nfrom sklearn.datasets import load_digits\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.neural_network import MLPClassifier\n\ndigits = load_digits()\nX, y = digits.data / 16, digits.target\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)",
+    "setup": "",
+    "check": "import numpy as _np\nfrom sklearn.datasets import load_digits as _ld\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.neural_network import MLPClassifier as _MLP\ndg = _ld(); a, b, c, d = _tts(dg.data / 16, dg.target, test_size=0.25, random_state=42, stratify=dg.target)\nm = _MLP(hidden_layer_sizes=(64,), alpha=1e-3, max_iter=500, random_state=0).fit(a, c)\nw = round((m.predict(b) == d).mean(), 3)\nassert close(need('acc_mlp'), w, 0.003), f'acc_mlp = {need(\"acc_mlp\")}, а нужно {w}: MLPClassifier без масштабирования, как в условии (признаки уже 0–1).'\npr = _np.asarray(need('proba'))\nassert pr.shape == (len(d), 10) and _np.allclose(pr.sum(axis=1), 1), 'proba — вероятности формы (число тестовых картинок, 10), сумма по строке 1.'\n_submitted = need('model')\nassert _np.isfinite(pr).all() and (pr >= 0).all() and (pr <= 1).all(), 'Вероятности должны быть конечными числами от0 до1.'\nassert _np.allclose(pr,_submitted.predict_proba(b)), 'proba не соответствует переданной model и порядку тестовых картинок.'\nassert close(need('acc_mlp'),round((pr.argmax(1)==d).mean(),3)), 'accuracy не соответствует argmax ваших вероятностей.'",
+    "solution": "import numpy as np\nfrom sklearn.datasets import load_digits\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.neural_network import MLPClassifier\n\ndigits = load_digits()\nX, y = digits.data / 16, digits.target\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nmodel = MLPClassifier(hidden_layer_sizes=(64,), alpha=1e-3, max_iter=500, random_state=0).fit(X_train, y_train)\nacc_mlp = round((model.predict(X_test) == y_test).mean(), 3)\nproba = model.predict_proba(X_test)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/05-project",
+    "kind": "task",
+    "id": "errors",
+    "starter": "import numpy as np\nfrom sklearn.datasets import load_digits\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import confusion_matrix\n\ndigits = load_digits()\nX, y = digits.data / 16, digits.target\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nmodel = MLPClassifier(hidden_layer_sizes=(64,), alpha=1e-3, max_iter=500, random_state=0).fit(X_train, y_train)\nproba = model.predict_proba(X_test)\npred = proba.argmax(axis=1)",
+    "setup": "",
+    "check": "import numpy as _np\nfrom sklearn.metrics import confusion_matrix as _cm\nfrom sklearn.datasets import load_digits as _ld\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.neural_network import MLPClassifier as _MLP\ndg = _ld(); a, b, c, d = _tts(dg.data / 16, dg.target, test_size=0.25, random_state=42, stratify=dg.target)\npr = _MLP(hidden_layer_sizes=(64,), alpha=1e-3, max_iter=500, random_state=0).fit(a, c).predict_proba(b); pd_ = pr.argmax(1)\ncm = _cm(d, pd_); off = cm.copy(); _np.fill_diagonal(off, 0)\ni, j = _np.unravel_index(off.argmax(), off.shape)\nassert tuple(int(v) for v in need('top_pair')) == (int(i), int(j)), f'top_pair = {need(\"top_pair\")}, а нужно {(int(i), int(j))}.'\nassert need('n_errors') == int((pd_ != d).sum()), f'n_errors = {need(\"n_errors\")}.'\nrev = pr.max(1) < 0.9; err = pd_ != d\nassert close(need('review_share'), round(rev.mean(), 3), 0.002), f'review_share = {need(\"review_share\")}.'\nassert close(need('errors_caught'), round((rev & err).sum() / err.sum(), 3), 0.002), f'errors_caught = {need(\"errors_caught\")}.'\n_submitted_cm = _np.asarray(need('cm'))\nassert _submitted_cm.shape==(10,10) and _np.array_equal(_submitted_cm,cm), 'cm должна содержать реальные числа ошибок и правильных ответов, а не нулевую матрицу.'\nfrom sklearn.neighbors import KNeighborsClassifier as _KNN\n_knn = _KNN(n_neighbors=3).fit(a,c).predict_proba(b)\n_qm = _np.argsort(pr.max(1),kind='stable')[:37]\n_qk = _np.argsort(_knn.max(1),kind='stable')[:37]\nassert list(need('queue_mlp'))==_qm.tolist() and list(need('queue_knn'))==_qk.tolist(), 'Обе очереди: ровно37 цифр, сначала меньшая уверенность, при ничьей меньшая позиция в тесте.'\nassert need('missed_mlp')==int(_np.delete(pr.argmax(1)!=d,_qm).sum()), 'missed_mlp — ошибки среди автоматически принятых.'\nassert need('missed_knn')==int(_np.delete(_knn.argmax(1)!=d,_qk).sum()), 'missed_knn — ошибки среди автоматически принятых.'\n_cardfn = need('operator_queue')\nassert list(_cardfn(['A','A','B'],[True,True,False]))==['A'], 'Две сомнительные цифры одного телефона дают одну карточку.'\nassert list(_cardfn(['A','A','B'],[True,False,True]))==['A','B'], 'Сомнительные цифры двух телефонов дают две карточки.'",
+    "solution": "import numpy as np\nfrom sklearn.datasets import load_digits\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.neural_network import MLPClassifier\nfrom sklearn.metrics import confusion_matrix\n\ndigits = load_digits()\nX, y = digits.data / 16, digits.target\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nmodel = MLPClassifier(hidden_layer_sizes=(64,), alpha=1e-3, max_iter=500, random_state=0).fit(X_train, y_train)\nproba = model.predict_proba(X_test)\npred = proba.argmax(axis=1)\n\ncm = confusion_matrix(y_test, pred)\noff = cm.copy()\nnp.fill_diagonal(off, 0)\ni, j = np.unravel_index(off.argmax(), off.shape)\ntop_pair = (int(i), int(j))\nn_errors = int((pred != y_test).sum())\nreview = proba.max(axis=1) < 0.9\nerrors = pred != y_test\nreview_share = round(review.mean(), 3)\nerrors_caught = round((review & errors).sum() / errors.sum(), 3)\nfrom sklearn.neighbors import KNeighborsClassifier\nknn_proba = KNeighborsClassifier(n_neighbors=3).fit(X_train,y_train).predict_proba(X_test)\nqueue_mlp = np.argsort(proba.max(1),kind='stable')[:37].tolist()\nqueue_knn = np.argsort(knn_proba.max(1),kind='stable')[:37].tolist()\nmissed_mlp = int(np.delete(pred!=y_test,queue_mlp).sum())\nmissed_knn = int(np.delete(knn_proba.argmax(1)!=y_test,queue_knn).sum())\ndef operator_queue(phone_ids, digit_review):\n    return list(dict.fromkeys(phone for phone, review in zip(phone_ids,digit_review) if review))",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/05-project",
+    "kind": "task",
+    "id": "shift",
+    "starter": "import numpy as np\nfrom sklearn.datasets import load_digits\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.neural_network import MLPClassifier\n\ndigits = load_digits()\nX, y = digits.data / 16, digits.target\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nmodel = MLPClassifier(hidden_layer_sizes=(64,), alpha=1e-3, max_iter=500, random_state=0).fit(X_train, y_train)\n\ndef shift_right(X):\n    imgs = np.roll(X.reshape(-1, 8, 8), 1, axis=2)\n    imgs[:, :, 0] = 0\n    return imgs.reshape(-1, 64)\n\nX_fit, X_val, y_fit, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=7, stratify=y_train)",
+    "setup": "",
+    "check": "import numpy as _np\nfrom sklearn.datasets import load_digits as _ld\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.neural_network import MLPClassifier as _MLP\ndg = _ld(); a, b, c, d = _tts(dg.data / 16, dg.target, test_size=0.25, random_state=42, stratify=dg.target)\ndef _sh(X):\n    im = _np.roll(X.reshape(-1, 8, 8), 1, axis=2); im[:, :, 0] = 0; return im.reshape(-1, 64)\nfit, val, yf, yv = _tts(a, c, test_size=.25, random_state=7, stratify=c)\ndef _fit(x, labels, aug=False):\n    if aug:\n        x, labels = _np.vstack([x, _sh(x)]), _np.tile(labels, 2)\n    return _MLP(hidden_layer_sizes=(64,), alpha=1e-3, max_iter=500, random_state=0).fit(x, labels)\np = _fit(fit, yf).predict_proba(_sh(val))\nq = _fit(fit, yf, True).predict(_sh(val))\ns1, s2 = (p.argmax(1)==yv).mean(), (q==yv).mean()\nassert close(need('acc_shift'), round(s1,3), .00051) and close(need('acc_aug'),round(s2,3),.00051), 'Сравните обе версии на одной валидации со сдвигом вправо.'\nmode = 'augment' if s2 > s1 else 'plain'\nassert need('defense') == mode, 'Защита выбирается до просмотра отдельного искажения.'\nidx = need('example_idx')\nassert 0 <= idx < len(val) and p[idx].argmax() != yv[idx] and p[idx].max() >= .9, 'Покажите уверенную ошибку на валидации.'\nax = ax_of()\nassert len(ax.images) and _np.allclose(_np.asarray(ax.images[-1].get_array()), _sh(val)[idx].reshape(8,8)), 'Покажите сдвинутую картинку выбранной ошибки.'\nleft = _np.zeros_like(b.reshape(-1,8,8))\nleft[:, :, :-1] = b.reshape(-1,8,8)[:, :, 1:]\nexpected = (_fit(a, c, mode == 'augment').predict(left.reshape(-1,64)) == d).mean()\nassert close(need('holdout_accuracy'), round(expected,3), .00051), 'Проверьте выбранную процедуру на новых финальных картинках со сдвигом влево.'",
+    "solution": "import numpy as np\nfrom sklearn.datasets import load_digits\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.neural_network import MLPClassifier\n\ndigits = load_digits()\nX, y = digits.data / 16, digits.target\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nmodel = MLPClassifier(hidden_layer_sizes=(64,), alpha=1e-3, max_iter=500, random_state=0).fit(X_train, y_train)\n\ndef shift_right(X):\n    imgs = np.roll(X.reshape(-1, 8, 8), 1, axis=2)\n    imgs[:, :, 0] = 0\n    return imgs.reshape(-1, 64)\n\n\nX_fit, X_val, y_fit, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=7, stratify=y_train)\ndef fit_model(rows, labels, augment=False):\n    if augment:\n        rows, labels = np.vstack([rows, shift_right(rows)]), np.tile(labels, 2)\n    return MLPClassifier(hidden_layer_sizes=(64,), alpha=1e-3, max_iter=500, random_state=0).fit(rows, labels)\n\nright = shift_right(X_val)\nplain = fit_model(X_fit, y_fit).predict_proba(right)\naugmented = fit_model(X_fit, y_fit, True).predict(right)\nacc_shift = round((plain.argmax(1) == y_val).mean(), 3)\nacc_aug = round((augmented == y_val).mean(), 3)\ndefense = \"augment\" if acc_aug > acc_shift else \"plain\"\nexample_idx = int(np.flatnonzero((plain.argmax(1) != y_val) & (plain.max(1) >= .9))[0])\nimport matplotlib.pyplot as plt\nfig, ax = plt.subplots()\nax.imshow(right[example_idx].reshape(8,8), cmap=\"gray\")\nax.set_title(f\"Цифра {y_val[example_idx]}, прогноз {plain[example_idx].argmax()}, p={plain[example_idx].max():.2f}\")\nfinal = fit_model(X_train, y_train, defense == \"augment\")\nleft = np.zeros_like(X_test.reshape(-1,8,8))\nleft[:, :, :-1] = X_test.reshape(-1,8,8)[:, :, 1:]\nholdout_accuracy = round((final.predict(left.reshape(-1,64)) == y_test).mean(), 3)\nprint(acc_shift, acc_aug, defense, holdout_accuracy)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch11/05-project",
+    "kind": "task",
+    "id": "blur-transfer",
+    "starter": "# Готово: validation (с target), blind (без target), np, plt, open_blur_labels.\n# Первый запуск: осмотрите валидацию, сохраните example, правило и очередь.\nval_pred = validation[\"proba\"].argmax(axis=1)\nval_confidence = validation[\"proba\"].max(axis=1)\nprint(\"Размер валидации:\", len(val_pred), \"вторая партия:\", len(blind[\"proba\"]))\n# После своей записи правила:\n# final_labels = open_blur_labels(example, rule_name, queue, rule_reason)\n# Затем оцените пропуски и запишите ограничение для целых номеров.",
+    "setup": "import numpy as np\nimport matplotlib.pyplot as plt\nimport re as _blur_re\nfrom scipy.ndimage import gaussian_filter\nfrom sklearn.datasets import load_digits\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.neural_network import MLPClassifier\n\ndef _prepare_blur_transfer():\n    digits = load_digits()\n    ids = np.arange(len(digits.target))\n    development, holdout = train_test_split(ids, test_size=.25, random_state=42, stratify=digits.target)\n    fit, val = train_test_split(development, test_size=.25, random_state=7, stratify=digits.target[development])\n    def batch(train, other):\n        model = MLPClassifier(hidden_layer_sizes=(64,), alpha=1e-3, max_iter=500, random_state=0).fit(digits.data[train]/16, digits.target[train])\n        images = gaussian_filter(digits.images[other]/16, sigma=(0,.65,.65), mode=\"constant\", cval=0)\n        return images, model.predict_proba(images.reshape(-1,64))\n    val_images, val_proba = batch(fit,val)\n    blind_images, blind_proba = batch(development,holdout)\n    val_target, holdout_target = digits.target[val].copy(), digits.target[holdout].copy()\n    state = {}\n    def ordered_queue(rule, proba):\n        top = np.sort(proba,axis=1)\n        score = top[:,-1] if rule==\"confidence\" else top[:,-1]-top[:,-2]\n        return np.lexsort((np.arange(len(proba)),score))[:37]\n    def open_labels(example, rule_name, queue, reason):\n        assert isinstance(example,dict), 'До меток сохраните example — словарь с разбором уверенной ошибки валидации.'\n        for name in ('position','truth','prediction','confidence','observation'):\n            assert name in example, f'В example нет поля {name}.'\n        i=example['position']\n        assert isinstance(i,(int,np.integer)) and 0<=i<len(val_target), 'position — целая позиция внутри validation.'\n        pred=int(val_proba[i].argmax()); confidence=float(val_proba[i].max())\n        assert pred!=val_target[i] and confidence>=.9, 'Выберите уверенную ошибку на валидации, а не правильный или неуверенный ответ.'\n        assert example['truth']==val_target[i] and example['prediction']==pred and np.isclose(example['confidence'],confidence,rtol=0,atol=.0051), 'В example сверьте истинную цифру, прогноз и уверенность выбранной позиции.'\n        assert isinstance(example['observation'],str) and len(example['observation'].strip())>=15, 'Добавьте своё наблюдение о видимом затруднении чтения; не ограничивайтесь номером класса.'\n        image_axes=[ax for number in plt.get_fignums() for ax in plt.figure(number).axes if any(im.get_visible() and np.shape(im.get_array())==(8,8) and np.allclose(im.get_array(),val_images[i]) for im in ax.images)]\n        assert image_axes, 'До открытия меток покажите размытое изображение выбранной ошибки валидации.'\n        def caption_error(title):\n            # Match named values, rather than one literal Russian sentence.\n            text=title.casefold().replace(\"ё\",\"е\")\n            fields=[('position/позиция',r'position|позиция|id',i,0),\n                    ('truth/истина',r'truth|true|истина|(?:истинная|верная)\\s+цифра',int(val_target[i]),0),\n                    ('prediction/прогноз',r'prediction|pred|прогноз',pred,0),\n                    ('confidence/уверенность',r'confidence|уверенность|вероятность|p',confidence,.0051)]\n            number=r'([+-]?(?:\\d+(?:[.,]\\d*)?|[.,]\\d+)(?:e[+-]?\\d+)?)(\\s*%)?'\n            for name,aliases,expected,tolerance in fields:\n                matches=_blur_re.findall(r'(?<!\\w)(?:'+aliases+r')(?!\\w)\\s*[:=]?\\s*'+number,text)\n                if len(matches)!=1:\n                    return f'поле {name} отсутствует или указано неоднозначно'\n                value=float(matches[0][0].replace(\",\",\".\"))\n                if matches[0][1]:\n                    if name!='confidence/уверенность':return f'поле {name} не выражается в процентах'\n                    value/=100\n                if not np.isfinite(value) or not np.isclose(value,expected,rtol=0,atol=tolerance):\n                    return f'{name}={value:g}, а у выбранного примера {expected:g}'\n            return None\n        caption_errors=[caption_error(ax.get_title()) for ax in image_axes]\n        assert any(error is None for error in caption_errors), 'Подпись выбранного примера: '+caption_errors[0]+'. Используйте русские или английские названия четырёх полей: позиция, истина, прогноз, уверенность.'\n        assert rule_name in ('confidence','margin'), 'rule_name — confidence или margin; правило фиксируется до меток.'\n        assert isinstance(reason,str) and len(reason.strip())>=15, 'Запишите rule_reason: почему выбрали это правило очереди.'\n        q=np.asarray(queue)\n        assert q.shape==(37,) and np.issubdtype(q.dtype,np.integer) and len(np.unique(q))==37 and (q>=0).all() and (q<len(holdout)).all(), 'queue — ровно 37 разных целых позиций второй партии.'\n        expected=ordered_queue(rule_name,blind_proba)\n        assert np.array_equal(q,expected), 'Очередь не соответствует записанному правилу. Сначала меньший score, при равенстве меньшая позиция; используйте blind.proba, без меток.'\n        if state:\n            assert state['rule']==rule_name and state['queue']==tuple(int(v) for v in q), 'Метки уже открыты: правило и очередь этой попытки зафиксированы.'\n        else:\n            state.update(rule=rule_name, queue=tuple(int(v) for v in q), reason=reason, example=dict(example))\n        return holdout_target.copy()\n    def assessment_after_open():\n        assert state, \"Сначала зафиксируйте пример, правило и очередь через open_blur_labels.\"\n        return holdout_target.copy(), blind_proba.copy()\n    # Labels stay in the closure until the queue has been saved.\n    return dict(images=val_images.copy(),proba=val_proba.copy(),target=val_target.copy()), dict(images=blind_images.copy(),proba=blind_proba.copy()), open_labels, state, assessment_after_open\nvalidation, blind, open_blur_labels, _blur_state, _blur_assessment = _prepare_blur_transfer()\ndel _prepare_blur_transfer",
+    "check": "import numpy as _np\nassert _blur_state, 'Итоговые метки ещё не открыты. Сначала разберите уверенную ошибку, сохраните правило/очередь, затем вызовите open_blur_labels.'\nassert need('rule_name')==_blur_state['rule'] and list(need('queue'))==list(_blur_state['queue']), 'После открытия меток используйте сохранённые правило и очередь; не подбирайте их по итоговым ошибкам.'\n_blur_labels,_blur_proba=_blur_assessment()\nassert _np.array_equal(need('final_labels'),_blur_labels), 'final_labels — метки, возвращённые open_blur_labels после фиксации очереди.'\nerrors=_blur_proba.argmax(1)!=_blur_labels\ncaught=int(errors[list(_blur_state['queue'])].sum())\nfor name,expected in [('total_errors',int(errors.sum())),('caught_errors',caught),('missed_errors',int(errors.sum())-caught)]:\n    assert need(name)==expected, f'{name}: сверьте ошибки по предсказаниям второй партии и сохранённым 37 позициям. Ошибки вне очереди — все ошибки минус пойманные.'\nassert need('evaluation_unit')=='digit' and need('phone_accuracy') is None, 'Единица этой оценки — digit. Доля верных целых номеров здесь не измерена: phone_accuracy=None.'\nassert isinstance(need('phone_note'),str) and len(need('phone_note').strip())>=30, 'Запишите ограничение для целых номеров и нужные связанные данные. Содержательность этого объяснения обсуждают вручную.'\n_outside = _np.flatnonzero(errors & ~_np.isin(_np.arange(len(errors)), list(_blur_state['queue'])))\n_position = need('missed_example_position')\nif len(_outside):\n    assert isinstance(_position, (int, _np.integer)) and int(_position) in _outside, 'missed_example_position — целая позиция ошибочной цифры вне сохранённой очереди.'\nelse:\n    assert _position is None, 'Если ошибок вне очереди нет, missed_example_position=None.'",
+    "solution": "p=validation[\"proba\"]\npred=p.argmax(1); confidence=p.max(1)\ni=int(np.flatnonzero((pred!=validation[\"target\"]) & (confidence>=.9))[0])\nexample=dict(position=i,truth=int(validation[\"target\"][i]),prediction=int(pred[i]),confidence=float(confidence[i]),observation=\"Размытие сгладило различия штрихов; сравню замкнутые области и края с прогнозом.\")\nfig,ax=plt.subplots()\nax.imshow(validation[\"images\"][i],cmap=\"gray\")\nax.set_title(f\"Позиция {i}; истина {example['truth']}; прогноз {example['prediction']}; p={example['confidence']:.2f}\")\nrule_name=\"margin\"\nrule_reason=\"Отправлю оператору случаи, где две наиболее вероятные цифры близки; при равенстве сохраню порядок позиций.\"\ntop=np.sort(blind[\"proba\"],axis=1)\nscore=top[:,-1]-top[:,-2]\nqueue=np.argsort(score,kind=\"stable\")[:37].tolist()\nfinal_labels=open_blur_labels(example,rule_name,queue,rule_reason)\nerrors=blind[\"proba\"].argmax(1)!=final_labels\ntotal_errors=int(errors.sum())\ncaught_errors=int(errors[queue].sum())\nmissed_errors=total_errors-caught_errors\nevaluation_unit=\"digit\"\nphone_accuracy=None\nphone_note=\"Здесь оценены отдельные цифры. Нужны ID анкеты, порядок цифр внутри телефона, эталон и распознанный целый номер, а также фактические исправления оператора; по ним оценим номера и нагрузку.\"\nprint(\"Ошибки вне сохранённой очереди:\",missed_errors)\n_outside = np.flatnonzero(errors & ~np.isin(np.arange(len(errors)), queue))\nmissed_example_position = int(_outside[0]) if len(_outside) else None\nprint(\"Пример ошибки вне очереди:\", missed_example_position)",
+    "files": [],
+    "display": true
+  }
+]

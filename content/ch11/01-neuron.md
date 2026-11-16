@@ -445,6 +445,7 @@ r = _np.random.default_rng(1); X0 = r.normal(size=(5, 3)); A = r.normal(size=(3,
 assert _np.allclose(need('W'), A @ B), 'W = W1 @ W2.'
 assert need('same') == True, 'same должно быть True.'
 assert need('with_relu_same') == bool(_np.allclose(_np.maximum(0, X0 @ A) @ B, X0 @ A @ B)), f'with_relu_same = {need("with_relu_same")}.'
+assert _np.asarray(need('two_layers')).shape == (5, 2) and _np.allclose(need('two_layers'), (X0 @ A) @ B), 'two_layers — результат двух линейных слоёв для X из заготовки.'
 ```
 
 ### hint

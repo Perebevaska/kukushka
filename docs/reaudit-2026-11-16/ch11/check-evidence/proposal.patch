@@ -1,0 +1,113 @@
+--- a/content/ch11/01-neuron.md
++++ b/content/ch11/01-neuron.md
+@@ -445,6 +445,7 @@
+ assert _np.allclose(need('W'), A @ B), 'W = W1 @ W2.'
+ assert need('same') == True, 'same должно быть True.'
+ assert need('with_relu_same') == bool(_np.allclose(_np.maximum(0, X0 @ A) @ B, X0 @ A @ B)), f'with_relu_same = {need("with_relu_same")}.'
++assert _np.asarray(need('two_layers')).shape == (5, 2) and _np.allclose(need('two_layers'), (X0 @ A) @ B), 'two_layers — результат двух линейных слоёв для X из заготовки.'
+ ```
+ 
+ ### hint
+--- a/content/ch11/03-mlp.md
++++ b/content/ch11/03-mlp.md
+@@ -478,6 +478,7 @@
+ 
+ ### check
+ ```python
++import numpy as _np
+ import pandas as _pd
+ from sklearn.model_selection import train_test_split as _tts
+ from sklearn.pipeline import make_pipeline as _mp
+@@ -492,6 +493,7 @@
+ assert close(need('first'), round(lc[0], 3), 0.002) and close(need('last'), round(lc[-1], 3), 0.002), f'first, last = {need("first")}, {need("last")}.'
+ h = next(i + 1 for i, v in enumerate(lc) if v < lc[0] / 2)
+ assert need('halved_at') == h, f'halved_at = {need("halved_at")}, а нужно {h}.'
++assert _np.asarray(cv).shape == (len(lc),) and _np.allclose(cv, lc, rtol=1e-7, atol=1e-9), 'В curve нужны реальные потери каждой эпохи из loss_curve_, в исходном порядке.'
+ ```
+ 
+ ### hint
+@@ -564,11 +566,12 @@
+     _w.simplefilter('ignore')
+     for _ in range(150):
+         n.partial_fit(A0, ya, classes=[0, 1]); tr.append(_auc(ya, n.predict_proba(A0)[:, 1])); te.append(_auc(yb, n.predict_proba(B0)[:, 1]))
+-assert len(need('auc_train')) == 150 and _np.allclose(need('auc_validation'), te, atol=1e-9), 'auc_validation — AUC на тесте после каждой из 150 эпох.'
++assert len(need('auc_train')) == 150 and _np.allclose(need('auc_validation'), te, atol=1e-9), 'auc_validation — AUC на валидации после каждой из 150 эпох.'
+ be = int(_np.argmax(te)) + 1
+ assert need('best_epoch') == be, f'best_epoch = {need("best_epoch")}, а нужно {be}.'
+ assert close(need('best_validation'), round(max(te), 3), 0.0011), f'best_validation = {need("best_validation")}.'
+ assert close(need('gap_end'), round(tr[-1] - te[-1], 3), 0.0011), f'gap_end = {need("gap_end")}.'
++assert _np.asarray(need('auc_train')).shape == (150,) and _np.allclose(need('auc_train'), tr, atol=1e-9, rtol=1e-7), 'auc_train — AUC на обучении после каждой из 150 эпох, без округления.'
+ ```
+ 
+ ### hint
+--- a/content/ch11/04-pytorch.md
++++ b/content/ch11/04-pytorch.md
+@@ -455,6 +455,17 @@
+ L = _run(False)[1]
+ fu = [k for k in range(1, len(L)) if L[k] > L[k - 1]][0]
+ assert need('first_up') == fu, f'first_up = {need("first_up")}, а нужно {fu}: первый k, для которого losses[k] > losses[k - 1], в запуске без обнуления.'
++for _zero in (True, False):
++    _want_w, _want_grad, _want_losses = 5.0, 0.0, []
++    for _step in range(4):
++        if _zero:
++            _want_grad = 0.0
++        _prediction = _want_w * k0
++        _want_losses.append(float(_np.mean((_prediction - m0) ** 2)))
++        _want_grad += _np.mean(2 * (_prediction - m0) * k0)
++        _want_w -= 0.02 * _want_grad
++    _got_w, _got_losses = f(_zero, lr=0.02, steps=4)
++    assert _np.asarray(_got_losses).shape == (4,) and _np.allclose(_got_losses, _want_losses) and close(_got_w, _want_w, 1e-8), 'run должна учитывать переданные lr и steps; длина истории равна steps, в ней потери до каждого шага.'
+ ```
+ 
+ ### hint
+@@ -524,6 +535,7 @@
+ r = float(_np.float32(123456789.12))
+ assert close(need('revenue32'), r), f'revenue32 = {need("revenue32")}, а нужно {r}: np.float32(...) и затем float(...).'
+ assert close(need('lost_rub'), round(r - 123456789.12, 2), 0.006), f'lost_rub = {need("lost_rub")}.'
++assert _np.array_equal(x32, _X.astype(_np.float32)), 'X32 должна сохранять значения всех клеток X64 после преобразования во float32.'
+ ```
+ 
+ ### hint
+--- a/content/ch11/05-project.md
++++ b/content/ch11/05-project.md
+@@ -604,7 +604,7 @@
+ 1. Найдите в `validation` любую ошибку с уверенностью от 0.90 включительно. В `example` запишите `position`, `truth`, `prediction`, `confidence` и `observation` — что на изображении затрудняет чтение цифры.
+ 2. Покажите это изображение. Подпишите четыре величины, например `Позиция …; истина …; прогноз …; p=…` или `position=…; truth=…; prediction=…; confidence=…`. Вероятность можно округлить до двух или трёх знаков либо показать в процентах.
+ 3. Выберите `rule_name`. При `"confidence"` первыми идут цифры с меньшей максимальной вероятностью, при `"margin"` — с меньшей разностью двух наибольших вероятностей. При равенстве берите меньшую позицию. Запишите причину в `rule_reason`, затем сохраните в `queue` ровно 37 разных позиций из `blind` в выбранном порядке.
+-4. Откройте `final_labels = open_blur_labels(example, rule_name, queue, rule_reason)`. Функция фиксирует правило и очередь до выдачи меток. На той же очереди посчитайте `total_errors`, `caught_errors` и `missed_errors`. Назовите одну позицию с ошибкой вне очереди, если такая есть.
++4. Откройте `final_labels = open_blur_labels(example, rule_name, queue, rule_reason)`. Функция фиксирует правило и очередь до выдачи меток. На той же очереди посчитайте `total_errors`, `caught_errors` и `missed_errors`. В `missed_example_position` сохраните одну целую позицию с ошибкой вне очереди, если такая есть; иначе — `None`.
+ 5. Сохраните `evaluation_unit="digit"`, `phone_accuracy=None` и `phone_note`. Какие данные о целых номерах и результате работы оператора нужны для оценки? Автопроверка сверяет единицу и расчёты. Преподаватель может обсудить с вами описание картинки и этот вывод.
+ 
+ ### setup
+@@ -682,7 +682,7 @@
+         assert state, "Сначала зафиксируйте пример, правило и очередь через open_blur_labels."
+         return holdout_target.copy(), blind_proba.copy()
+     # Labels stay in the closure until the queue has been saved.
+-    return dict(images=val_images,proba=val_proba,target=val_target), dict(images=blind_images,proba=blind_proba), open_labels, state, assessment_after_open
++    return dict(images=val_images.copy(),proba=val_proba.copy(),target=val_target.copy()), dict(images=blind_images.copy(),proba=blind_proba.copy()), open_labels, state, assessment_after_open
+ validation, blind, open_blur_labels, _blur_state, _blur_assessment = _prepare_blur_transfer()
+ del _prepare_blur_transfer
+ ```
+@@ -712,6 +712,12 @@
+     assert need(name)==expected, f'{name}: сверьте ошибки по предсказаниям второй партии и сохранённым 37 позициям. Ошибки вне очереди — все ошибки минус пойманные.'
+ assert need('evaluation_unit')=='digit' and need('phone_accuracy') is None, 'Единица этой оценки — digit. Доля верных целых номеров здесь не измерена: phone_accuracy=None.'
+ assert isinstance(need('phone_note'),str) and len(need('phone_note').strip())>=30, 'Запишите ограничение для целых номеров и нужные связанные данные. Содержательность этого объяснения обсуждают вручную.'
++_outside = _np.flatnonzero(errors & ~_np.isin(_np.arange(len(errors)), list(_blur_state['queue'])))
++_position = need('missed_example_position')
++if len(_outside):
++    assert isinstance(_position, (int, _np.integer)) and int(_position) in _outside, 'missed_example_position — целая позиция ошибочной цифры вне сохранённой очереди.'
++else:
++    assert _position is None, 'Если ошибок вне очереди нет, missed_example_position=None.'
+ ```
+ 
+ ### hint
+@@ -743,6 +749,9 @@
+ phone_accuracy=None
+ phone_note="Здесь оценены отдельные цифры. Нужны ID анкеты, порядок цифр внутри телефона, эталон и распознанный целый номер, а также фактические исправления оператора; по ним оценим номера и нагрузку."
+ print("Ошибки вне сохранённой очереди:",missed_errors)
++_outside = np.flatnonzero(errors & ~np.isin(np.arange(len(errors)), queue))
++missed_example_position = int(_outside[0]) if len(_outside) else None
++print("Пример ошибки вне очереди:", missed_example_position)
+ ```
+ 
+ ### explain
