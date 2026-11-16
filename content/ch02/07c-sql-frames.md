@@ -436,13 +436,22 @@ print(half_day)
 ```python
 import pandas as _pd
 _d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])
-_r = _d.groupby(_d['datetime'].dt.normalize())['amount'].sum().cumsum()
+_daily = _d.groupby(_d['datetime'].dt.normalize())['amount'].sum()
+_running = _daily.cumsum()
 b = need('cum', _pd.DataFrame)
 assert list(b.columns) == ['day', 'revenue', 'running'], f'Столбцы: {list(b.columns)}.'
-assert len(b) == len(_r), f'Строк {len(b)}, а дней с заказами {len(_r)}.'
-assert all(abs(float(a) - y) < 1e-6 for a, y in zip(b['running'], _r.values)), 'running не совпадает с накопительным итогом. Окно: SUM(revenue) OVER (ORDER BY day).'
-_h = _r[_r >= _r.iloc[-1] / 2].index[0]
+assert len(b) == len(_daily), f'Строк {len(b)}, а дней с заказами {len(_daily)}.'
+try:
+    _days = _pd.DatetimeIndex(_pd.to_datetime(b['day']))
+except (ValueError, TypeError):
+    assert False, 'day должен содержать календарные дни.'
+assert _days.is_unique and list(_days) == list(_daily.index), 'В cum нужны все дни с заказами по возрастанию, без повторов и сдвига дат.'
+for _day, _revenue, _total in zip(_days, b['revenue'], b['running']):
+    assert close(_revenue, _daily.loc[_day]), f'{_day.date()}: revenue — сумма amount за этот день.'
+    assert close(_total, _running.loc[_day]), f'{_day.date()}: running — накопленная сумма дневной выручки с начала периода.'
+_h = _running[_running >= _running.iloc[-1] / 2].index[0]
 assert str(need('half_day'))[:10] == str(_h.date()), f'half_day = {need("half_day")}, а половина выручки набрана в другой день.'
+
 ```
 
 ### hint

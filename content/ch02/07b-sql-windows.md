@@ -726,18 +726,29 @@ df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
 ```python
 import pandas as _pd
 _d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])
-_m = _d.groupby(['shop_id', _d['datetime'].dt.to_period('M')])['amount'].sum().rename('revenue').reset_index()
-_m['g'] = (100 * (_m['revenue'] / _m.groupby('shop_id')['revenue'].shift(1) - 1)).round(1)
-b = need('mom_shop', _pd.DataFrame)
-assert list(b.columns) == ['shop_id', 'month', 'revenue', 'growth_pct'], f'Столбцы: {list(b.columns)}.'
-assert len(b) == len(_m), f'Строк {len(b)}, а пар «кофейня × месяц» {len(_m)}.'
-assert b['shop_id'].tolist() == _m['shop_id'].tolist(), 'Порядок строк: по shop_id, затем по month.'
-_g = b['growth_pct'].tolist()
-_firsts = [i for i in range(len(_m)) if i == 0 or _m['shop_id'][i] != _m['shop_id'][i - 1]]
-assert all(_pd.isna(_g[i]) for i in _firsts), 'У первого месяца каждой кофейни рост должен быть пустым. Похоже, в окне нет PARTITION BY shop_id.'
-assert all(_pd.isna(x) and _pd.isna(y) or abs(float(x) - y) < 0.051 for x, y in zip(_g, _m['g'])), 'growth_pct не совпадает с ожидаемым.'
-f = need('falls', _pd.DataFrame)
-assert sorted(f['shop_id'].tolist()) == sorted(_m.loc[_m['g'] < 0, 'shop_id'].tolist()), f'В falls кофейни {sorted(f["shop_id"].tolist())}. Нужны все строки с отрицательным ростом.'
+_m = _d.groupby(['shop_id', _d['datetime'].dt.to_period('M')])['amount'].sum().rename('revenue').reset_index().rename(columns={'datetime': 'month'})
+_m['growth_pct'] = (100 * (_m['revenue'] / _m.groupby('shop_id')['revenue'].shift(1) - 1)).round(1)
+def _compare_months(_got, _want, _label, _ordered=False):
+    assert isinstance(_got, _pd.DataFrame), f'{_label} должна быть DataFrame.'
+    assert list(_got.columns) == ['shop_id', 'month', 'revenue', 'growth_pct'], f'Столбцы {_label}: {list(_got.columns)}.'
+    assert len(_got) == len(_want), f'{_label}: строк {len(_got)}, а нужно {len(_want)}.'
+    _a = _got.copy()
+    try:
+        _a['month'] = _pd.PeriodIndex(_a['month'], freq='M')
+    except (ValueError, TypeError):
+        assert False, f'{_label}: month должен содержать календарные месяцы.'
+    _a = _a.set_index(['shop_id', 'month'])
+    _w = _want.set_index(['shop_id', 'month'])
+    assert _a.index.is_unique and set(_a.index) == set(_w.index), f'{_label}: неверные пары shop_id, month.'
+    if _ordered:
+        assert list(_a.index) == list(_w.index), f'{_label}: сортировка по shop_id, затем month.'
+    for _key in _w.index:
+        assert close(_a.loc[_key, 'revenue'], _w.loc[_key, 'revenue']), f'{_label}, {_key}: неверная выручка revenue.'
+        _x, _y = _a.loc[_key, 'growth_pct'], _w.loc[_key, 'growth_pct']
+        assert (_pd.isna(_x) if _pd.isna(_y) else close(_x, _y, 1e-6)), f'{_label}, {_key}: неверный рост. Первый месяц каждой кофейни — NaN; база сравнения — предыдущий месяц этой же кофейни.'
+_compare_months(need('mom_shop'), _m, 'mom_shop', _ordered=True)
+_compare_months(need('falls'), _m[_m['growth_pct'] < 0], 'falls')
+
 ```
 
 ### hint

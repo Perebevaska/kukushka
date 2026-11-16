@@ -485,6 +485,28 @@ df = pd.read_csv("orders_3m.csv")
 import pandas as _pd
 d = _pd.read_csv('orders_3m.csv')
 import numbers as _num
+_want_pairs = d.groupby(['shop_id', 'channel'])['amount'].sum()
+_pairs = need('by_pair')
+if isinstance(_pairs, _pd.DataFrame):
+    if {'shop_id', 'channel'} <= set(_pairs.columns):
+        _pairs = _pairs.set_index(['shop_id', 'channel'])
+    _candidates = [_pairs[_column] for _column in _pairs.columns if _pd.api.types.is_numeric_dtype(_pairs[_column])]
+elif isinstance(_pairs, _pd.Series):
+    _candidates = [_pairs]
+else:
+    _candidates = []
+_match = False
+for _candidate in _candidates:
+    if not isinstance(_candidate.index, _pd.MultiIndex) or _candidate.index.nlevels != 2:
+        continue
+    if set(_candidate.index) != set(_want_pairs.index):
+        _candidate = _candidate.reorder_levels([1, 0])
+    if not _candidate.index.is_unique or set(_candidate.index) != set(_want_pairs.index):
+        continue
+    if all(close(_candidate.loc[_key], _want_pairs.loc[_key]) for _key in _want_pairs.index):
+        _match = True
+        break
+assert _match, 'В by_pair нужны суммы amount по всем парам «кофейня, канал»: Series с двумя ключами или таблица с числовым столбцом суммы. Порядок ключей и имя столбца суммы можно выбрать самостоятельно.'
 want = d[(d['shop_id'] == 'KZN-1') & (d['channel'] == 'доставка')]['amount'].sum()
 _k = need('kzn1_delivery')
 if isinstance(_k, _pd.DataFrame):
@@ -494,7 +516,6 @@ if isinstance(_k, _pd.Series):
     assert False, 'В kzn1_delivery лежит Series из одной строки, а нужно само число. Возьмите его через .iloc[0] — или сразу by_pair[("KZN-1", "доставка")].'
 assert isinstance(_k, _num.Number), f'В kzn1_delivery лежит {type(_k).__name__} ({_k!r}), а нужно число.'
 assert _k == want, f'kzn1_delivery = {_k}, а нужно {want}.'
-assert 'groupby' in _code, 'Посчитайте через groupby по двум столбцам.'
 ```
 
 ### hint
@@ -536,9 +557,13 @@ df = pd.read_csv("orders_3m.csv")
 import pandas as _pd
 b = _pd.read_csv('orders_3m.csv').groupby('drink')['amount'].sum()
 want = (b / b.sum() * 100).round(1).sort_values(ascending=False)
-assert need('top3') == list(want.index[:3]), f'top3 = {need("top3")}, а нужно {list(want.index[:3])}.'
-s = need('share')
-assert abs(float(s.iloc[0]) - want.iloc[0]) < 1e-9, f'Первое значение share = {s.iloc[0]}, а нужно {want.iloc[0]}.'
+s = need('share', _pd.Series)
+assert s.index.is_unique and set(s.index) == set(want.index), 'В share нужна одна доля для каждого напитка, с названиями в индексе.'
+assert s.is_monotonic_decreasing, 'Отсортируйте share по убыванию доли.'
+for _drink in want.index:
+    assert close(s.loc[_drink], want.loc[_drink]), f'{_drink}: неверная доля. Делите выручку напитка на общую выручку, умножайте на 100 и округляйте до одного знака.'
+assert need('top3', list) == list(s.index[:3]), 'top3 — список первых трёх названий из отсортированной share.'
+
 ```
 
 ### hint

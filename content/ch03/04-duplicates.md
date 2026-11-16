@@ -278,7 +278,7 @@ pos[pos.duplicated(subset=["id"], keep=False)]
 Игрушка из пяти заказов: убрать повторы атрибутов, нормализовать написание, взять самую свежую версию — и проверить, что ключ уникален.
 :::
 
-### На настоящей выгрузке
+### На выгрузке доставок
 
 Те же три шага. Сначала просто убираем повторы атрибутов:
 
@@ -399,6 +399,8 @@ d = _pd.read_csv('clients_raw.csv')
 c = need('clean', _pd.DataFrame)
 assert len(c) == len(d.drop_duplicates()), f'В clean {len(c)} строк, а нужно {len(d.drop_duplicates())}.'
 assert list(c.index) == list(range(len(c))), 'Индекс должен идти 0, 1, 2, … — добавьте reset_index(drop=True).'
+# include-check: ch03_records.py
+_assert_records(c, d.drop_duplicates(), 'clean')
 ```
 
 ### hint
@@ -459,6 +461,8 @@ d = need('df', _pd.DataFrame)
 assert len(d) == len(d0), f'В df {len(d)} строк — уберите только полные дубли, их должно остаться {len(d0)}.'
 assert (d['client_id'].str.strip().str.upper() == d['client_id']).all(), 'В client_id остались пробелы по краям или строчные буквы.'
 assert need('n_id_dups') == ids.duplicated().sum(), f'n_id_dups = {need("n_id_dups")}, а нужно {ids.duplicated().sum()}.'
+# include-check: ch03_records.py
+_assert_records(d, d0.assign(client_id=ids), 'df')
 ```
 
 ### hint
@@ -503,6 +507,8 @@ g = c.set_index('client_id')['signup_date']
 bad = [k for k in w.index if g.get(k) != w[k]]
 assert not bad, f'Для {bad[0]} осталась анкета от {g.get(bad[0])}, а нужна самая свежая — {w[bad[0]]}.'
 assert list(c.index) == list(range(len(c))), 'Индекс должен идти по порядку — reset_index(drop=True).'
+# include-check: ch03_records.py
+_assert_records(c, want, 'clients', keys=['client_id'])
 ```
 
 ### hint
@@ -739,6 +745,7 @@ assert not bad_city, f'Город не совпадает у {bad_city}: убе�
 bad_mgr = g.index[g['manager'] != want['manager']].tolist()
 assert not bad_mgr, f'Управляющий у {bad_mgr} не самый свежий. Отсортируйте по date перед drop_duplicates(keep="last").'
 assert need('n_changed') == want_changed, f'n_changed = {need("n_changed")}. Посчитайте кофейни, у которых после нормализации города больше одной версии.'
+assert (g['shop_address'].fillna('') == want['shop_address'].fillna('')).all(), 'shop_address должен относиться к той же кофейне и выбранной свежей версии.'
 ```
 
 ### hint
@@ -787,6 +794,8 @@ v = need('versions', _pd.DataFrame)
 assert len(v) == len(want), f'В versions {len(v)} строк, а нужно {len(want)} — по две и больше на гостя, включая первую анкету.'
 assert list(v['client_id']) == list(want['client_id']) and list(v['signup_date']) == list(want['signup_date']), 'Порядок строк не тот: сначала по номеру, внутри — по дате.'
 assert need('n_guests') == want['client_id'].nunique(), f'n_guests = {need("n_guests")}.'
+# include-check: ch03_records.py
+_assert_records(v, want, 'versions', ordered=True)
 ```
 
 ### hint

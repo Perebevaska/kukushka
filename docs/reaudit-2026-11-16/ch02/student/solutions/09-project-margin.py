@@ -1,0 +1,11 @@
+import pandas as pd
+df=pd.read_csv("orders_3m.csv",parse_dates=["datetime"])
+shops=pd.read_csv("shops.csv")
+menu=pd.read_csv("menu.csv")
+full=df.merge(shops,on="shop_id",how="left",validate="many_to_one").merge(menu,on="drink",how="left",validate="many_to_one")
+SIZE_K={"S":1.,"M":1.25,"L":1.5}
+full["cost"]=full["cost_s"]*full["size"].map(SIZE_K)*full["qty"]
+g=full.groupby("category").agg(revenue=("amount","sum"),cost=("cost","sum"))
+margin_raw=(g["revenue"]-g["cost"])/g["revenue"]*100
+margin=margin_raw.round(1)
+

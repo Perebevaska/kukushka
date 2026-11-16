@@ -15,7 +15,7 @@ recap:
 
 > Нам нужно понять, кто наши гости. Сколько живых участников в программе лояльности, какого они возраста, из каких городов, откуда узнают о нас и кто из них приносит деньги. Анкеты выгрузили из старой CRM — там, говорят, бардак. Заказы — за сентябрь–ноябрь.
 
-Данные: анкеты `clients_raw.csv`, заказы `orders_3m.csv`, кофейни `shops.csv`.
+В учебной выгрузке одна запись CRM — версия анкеты карты. Заказы за сентябрь–ноябрь 2026 года связываются с картой по `client_id`, а с кофейней по `shop_id`. Телефон может встречаться у нескольких карт. Поэтому число очищенных анкет в этом отчёте — число карт. Файлы проекта — `clients_raw.csv`, `orders_3m.csv` и `shops.csv`.
 
 ## План
 
@@ -70,6 +70,8 @@ recap:
 
 Что получилось: соединение проверяют с обеих сторон — «у кого нет заказов» отвечает на вопрос бизнеса, «у каких заказов нет анкеты» — на вопрос о качестве данных.
 
+У совпавшего ключа проверьте ещё и даты. У карты может быть несколько версий анкеты. Сначала возьмите самую раннюю `signup_date` из сырых строк по нормализованному номеру карты, затем сравните с календарной датой покупки. В осенней выгрузке 30 заказов на 11 168 ₽ у 10 карт сделаны раньше этой даты. Оставьте их в отчёте о продажах и запишите наблюдение в журнал качества. Прежде чем считать время «от регистрации до покупки», уточните у владельца CRM, означает ли поле первую регистрацию, дату записи очередной версии или дату переноса. Для проверки нужна история регистрации карт.
+
 ::: warn Типичные ошибки проекта
 - **Средние по маленьким группам.** «Гости из Москвы тратят больше всех» по 8 анкетам — не вывод; рядом со средним — размер группы.
 - **Внутреннее соединение без проверки.** `merge` по умолчанию `how="inner"` молча выбрасывает обе «сироты».
@@ -81,14 +83,14 @@ recap:
 
 Шаги в браузере ниже — тренировка: каждый проверяется сразу. Но маркетингу нужен не набор зелёных галочек, а отчёт, который можно открыть, перезапустить на январской выгрузке и прочитать. Поэтому после шагов соберите проект в Jupyter — так же, как проект главы 2.
 
-1. **Скачайте шаблон** [project-template.ipynb](../notebooks/project-template.ipynb) в папку проекта из урока про uv и положите рядом папку `data/` с тремя файлами: `clients_raw.csv`, `orders_3m.csv`, `shops.csv`. Переименуйте шаблон, например, в `guests.ipynb`.
-2. **Выполните первую ячейку без изменений.** Сверьте найденный путь `DATA`, загрузите из него три файла главы и откройте первую строку каждой таблицы. Демонстрационные ячейки анализа по `daily_sales.csv` замените собственным анализом анкет.
+1. **Скачайте шаблон** [ch03-project-template.ipynb](../notebooks/ch03-project-template.ipynb) в папку проекта из урока про uv и положите рядом папку `data/` с тремя файлами: `clients_raw.csv`, `orders_3m.csv`, `shops.csv`. Переименуйте шаблон, например, в `guests.ipynb`.
+2. **Выполните первую ячейку без изменений.** Сверьте напечатанный путь `DATA`. В разделе «Данные» строка `pd.read_csv(DATA / CLIENTS_FILE)` читает выбранную выгрузку анкет. Загрузите три файла и сравните названия полей со словарём данных. Чтобы передать блокнот маркетингу, выведите названия столбцов, размеры таблиц и сводные числа. Сохранённые в выводах строки анкет также становятся частью файла.
 3. **Раздел «2. Данные»** — загрузка трёх файлов и осмотр по чек-листу из урока «Первый осмотр: что не так с данными»: размер и типы, пропуски, варианты написания, дубли. Сырые файлы не меняйте.
-4. **Раздел «3. Предобработка»** — функция очистки анкет из шага 1, журнал потерь и контракт из урока «Очистка целиком: функция и проверки». Очищенные анкеты сохраните в закрытой папке `private/clients_clean.csv`. Путь к файлу не должен попадать в список публичных артефактов; в портфолио достаточно агрегатов без имён, телефонов и номеров карт. В выводе — журнал словами: «из 307 строк выгрузки осталось 293 анкеты: 8 полных дублей, 6 повторных анкет».
-5. **Раздел «3.1. Качество данных»** — отдельный `## 3.1. Качество данных` сразу после предобработки: что после очистки осталось неизвестным (шаг 2) и какие проблемы надо исправлять в самой CRM. Для каждой такой проблемы — тикет-словарь из урока «Аномалии и проверка на здравый смысл»: где, правило, сколько строк, примеры номеров карт, как найти. Персональные данные гостей в тикеты не попадают.
+4. **Раздел «3. Предобработка»** — функция очистки анкет из шага 1, журнал потерь и контракт из урока «Очистка целиком: функция и проверки». Очищенные анкеты сохраните в закрытой папке `private/clients_clean.csv`. Путь к файлу не должен попадать в список публичных артефактов; в портфолио достаточно агрегатов без имён, телефонов и номеров карт. В выводе — журнал с числами из текущего запуска: сколько строк поступило, сколько удалено на каждом шаге и сколько осталось. Проверьте равенство «вход − полные дубли − повторные анкеты = выход».
+5. **Раздел «3.1. Качество данных»** — отдельный `## 3.1. Качество данных` сразу после предобработки: что после очистки осталось неизвестным (шаг 2) и какие проблемы надо исправлять в самой CRM. Для каждой проблемы запишите поле, правило, число строк и способ повторить поиск. Владельцу CRM передайте отдельный внутренний тикет с примерами ключей, чтобы он нашёл записи. В публичном блокноте оставьте только сводку и правило поиска.
 6. **Раздел «4. Анализ»** — шаги 3–7, по своему `##` на каждый, например `## 4.3. Откуда приходят гости`: скрипт самопроверки ищет вывод после каждого `##`, а подзаголовки `###` он не проверяет. После каждого раздела — markdown-вывод с цифрами и размером групп.
 7. **Раздел «5. Выводы и рекомендации»** — краткая сводка результатов шагов 1–7 и три части: что сделали, что нашли, что предлагаем маркетингу и владельцу CRM. Все пометки ✎ замените своим текстом.
-8. **Самопроверка.** **Kernel → Restart Kernel and Run All Cells**, затем [check_notebook.py](../notebooks/check_notebook.py) рядом с блокнотом:
+8. **Самопроверка.** **Kernel → Restart Kernel and Run All Cells**, затем сохраните блокнот вместе с выводами. Скрипт выполняет проверку в новом ядре, а результаты этого запуска в ваш файл не записывает. Скачайте [check_notebook.py](../notebooks/check_notebook.py) рядом с блокнотом:
 
    ```sh
    uv run python check_notebook.py guests.ipynb
@@ -111,7 +113,7 @@ uv run python check_notebook.py guests.ipynb --project ch03/09-project --course 
 1. Пройдите обязательные шаги 1–7 в браузере. Шаг 8 со звёздочкой — по желанию: упаковка отчёта в одну функцию.
 2. Перенесите решения в шаблон: очистка — функцией, журнал и контракт — в предобработку, тикеты — в «3.1. Качество данных».
 3. Restart & Run All, затем `check_notebook.py` — до чистого результата.
-4. Проверка на повторяемость: замените в первой ячейке имя файла анкет на копию с другим именем и перезапустите — отчёт должен пересчитаться без единой правки в коде.
+4. Для проверки повторяемости замените только `CLIENTS_FILE` в первой ячейке. Подайте новую выгрузку и перезапустите блокнот. Если в ней появилась карта без заказов, число карт и доля активных изменятся. Прочитайте рядом с таблицей и текст вывода. Числа в обычном Markdown сами не пересчитываются. Вставляйте текущие числа из переменных (например, через `display(Markdown(f"..."))`) или подписывайте, к какой выгрузке относится написанный вручную вывод. Перед передачей нового отчёта сверьте все текстовые выводы с текущими таблицами.
 :::
 
 Начиная со второго шага, перед задачей курс сам готовит очищенные анкеты `clients` и заказы `orders` (с датой в `datetime`), а с пятого — и таблицу `guests` с заказами и выручкой гостя. Ошибка на одном шаге не мешает следующим.
@@ -153,7 +155,9 @@ def _ref_clean(raw):
 def _ref_clients():
     return _ref_clean(_pd0.read_csv('clients_raw.csv'))
 def _ref_orders():
-    return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
+    o = _pd0.read_csv('orders_3m.csv')
+    o['datetime'] = _pd0.to_datetime(o['datetime'])
+    return o
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
@@ -217,8 +221,9 @@ import pandas as _pd
 want = _ref_clients().set_index('client_id').sort_index()
 c = need('clients', _pd.DataFrame)
 assert c['client_id'].is_unique and len(c) == len(want), f'В clients {len(c)} строк, а нужно {len(want)} уникальных анкет.'
+assert set(c['client_id']) == set(want.index), 'В clients должны сохраниться исходные нормализованные client_id.'
 g = c.set_index('client_id').sort_index()
-for col in ['gender', 'birth_date', 'city', 'phone', 'signup_date', 'bonus', 'source']:
+for col in ['name', 'gender', 'birth_date', 'city', 'phone', 'signup_date', 'bonus', 'source']:
     a, w = g[col], want[col]
     same = (a.isna() == w.isna()) & ((a == w) | w.isna())
     assert same.all(), f'Столбец {col} не совпадает, например у {g.index[~same][0]}: {a[~same].iloc[0]!r}, а нужно {w[~same].iloc[0]!r}.'
@@ -326,7 +331,9 @@ def _ref_clean(raw):
 def _ref_clients():
     return _ref_clean(_pd0.read_csv('clients_raw.csv'))
 def _ref_orders():
-    return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
+    o = _pd0.read_csv('orders_3m.csv')
+    o['datetime'] = _pd0.to_datetime(o['datetime'])
+    return o
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
@@ -414,7 +421,9 @@ def _ref_clean(raw):
 def _ref_clients():
     return _ref_clean(_pd0.read_csv('clients_raw.csv'))
 def _ref_orders():
-    return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
+    o = _pd0.read_csv('orders_3m.csv')
+    o['datetime'] = _pd0.to_datetime(o['datetime'])
+    return o
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
@@ -513,7 +522,9 @@ def _ref_clean(raw):
 def _ref_clients():
     return _ref_clean(_pd0.read_csv('clients_raw.csv'))
 def _ref_orders():
-    return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
+    o = _pd0.read_csv('orders_3m.csv')
+    o['datetime'] = _pd0.to_datetime(o['datetime'])
+    return o
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
@@ -615,7 +626,9 @@ def _ref_clean(raw):
 def _ref_clients():
     return _ref_clean(_pd0.read_csv('clients_raw.csv'))
 def _ref_orders():
-    return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
+    o = _pd0.read_csv('orders_3m.csv')
+    o['datetime'] = _pd0.to_datetime(o['datetime'])
+    return o
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
@@ -654,8 +667,8 @@ t = w.groupby('source').agg(clients=('client_id', 'count'), act=('orders', lambd
 b = need('by_source', _pd.DataFrame)
 if 'source' in b.columns:
     b = b.set_index('source')
-assert list(b.columns) == ['clients', 'active_pct', 'avg_revenue'], f'Столбцы: {list(b.columns)}.'
-assert set(b.index) == set(t.index), f'Источники: {sorted(b.index)}, а нужны {sorted(t.index)}. Пропуски → «не указано», редкие → «прочее».'
+assert b.columns.is_unique and set(b.columns) == {'clients', 'active_pct', 'avg_revenue'}, f'Столбцы: {list(b.columns)}.'
+assert b.index.is_unique and set(b.index) == set(t.index), f'Источники: {sorted(b.index)}, а нужны {sorted(t.index)}. Пропуски → «не указано», редкие → «прочее».'
 assert b['clients'].to_dict() == t['clients'].to_dict(), 'clients не совпадает.'
 assert (b['active_pct'] - t['act'].round(1)).abs().max() < 1e-9, 'active_pct не совпадает.'
 assert (b['avg_revenue'] - t['avg'].round(0)).abs().max() < 1e-9, 'avg_revenue не совпадает — среднее по всем гостям источника, с нулями.'
@@ -727,7 +740,9 @@ def _ref_clean(raw):
 def _ref_clients():
     return _ref_clean(_pd0.read_csv('clients_raw.csv'))
 def _ref_orders():
-    return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
+    o = _pd0.read_csv('orders_3m.csv')
+    o['datetime'] = _pd0.to_datetime(o['datetime'])
+    return o
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
@@ -766,10 +781,10 @@ t = a.groupby('age_group', observed=True).agg(n=('client_id', 'count'), o=('orde
 b = need('by_age', _pd.DataFrame)
 if 'age_group' in b.columns:
     b = b.set_index('age_group')
-assert list(b.columns) == ['guests_n', 'avg_orders', 'avg_revenue'], f'Столбцы: {list(b.columns)}.'
+assert b.columns.is_unique and set(b.columns) == {'guests_n', 'avg_orders', 'avg_revenue'}, f'Столбцы: {list(b.columns)}.'
 b.index = b.index.astype(str)
 t.index = t.index.astype(str)
-assert set(b.index) == set(t.index), f'Группы: {sorted(b.index)}. Пустые категории уберите: observed=True.'
+assert b.index.is_unique and set(b.index) == set(t.index), f'Группы: {sorted(b.index)}. Пустые категории уберите: observed=True.'
 assert b['guests_n'].to_dict() == t['n'].to_dict(), f'guests_n = {b["guests_n"].to_dict()}. Только активные гости!'
 assert (b['avg_orders'] - t['o'].round(1).reindex(b.index)).abs().max() < 1e-9, 'avg_orders не совпадает.'
 assert (b['avg_revenue'] - t['r'].round(1).reindex(b.index)).abs().max() < 1e-9, 'avg_revenue не совпадает.'
@@ -827,7 +842,9 @@ def _ref_clean(raw):
 def _ref_clients():
     return _ref_clean(_pd0.read_csv('clients_raw.csv'))
 def _ref_orders():
-    return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
+    o = _pd0.read_csv('orders_3m.csv')
+    o['datetime'] = _pd0.to_datetime(o['datetime'])
+    return o
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
@@ -903,7 +920,7 @@ home_pct
 ```
 
 ### explain
-«Свой город» — 85.1 % заказов с известной парой городов (1007 из 1183). Всего в источнике 2089 заказов: у 906 сравнить города нельзя; 1007/2089 ≈ 48.2 % — доля подтверждённых совпадений среди всех заказов, а не оценка неизвестных. «Странников» — 73 из 260 гостей с заказами. Известные пары чаще совпадают, но распространить 85.1 % на заказы с неизвестным городом без допущений нельзя. Интереснее остальные 176 заказов «в гостях». 117 из них сделали 27 гостей из Екатеринбурга и Москвы: кофеен с заказами там нет, и эти люди пьют кофе «Зерна» в поездках, чаще всего в Казани (99 заказов). Перед предложением об открытии EKB-1 сверьте фактическую дату открытия и даты регистрации: отсутствие заказов в выгрузке не означает, что точка ещё не открыта. Использование анкет в маркетинге требует согласованного назначения выгрузки. Ещё одна деталь: среди 73 странников 14 гостей без города в анкете. В `home_pct` их заказы не вошли — сравнивать не с чем, а в `travelers` вошли: там город анкеты не нужен. Когда два показателя считаются по разным подмножествам, это стоит подписать в отчёте.
+«Свой город» — 85.1 % заказов с известной парой городов (1007 из 1183). Всего в источнике 2089 заказов: у 906 сравнить города нельзя; 1007/2089 ≈ 48.2 % — доля подтверждённых совпадений среди всех заказов, а не оценка неизвестных. «Странников» — 73 из 260 гостей с заказами. Известные пары чаще совпадают, но распространить 85.1 % на заказы с неизвестным городом без допущений нельзя. Интереснее остальные 176 заказов «в гостях». У 117 из них город анкеты — Екатеринбург или Москва. Это 27 карт, по которым 99 заказов привязаны к кофейням Казани. По городу анкеты и кофейни нельзя установить, ездил ли человек в другой город. В учебных данных генератор чаще назначает заказ карте из города кофейни, поэтому совпадение ожидаемо. Перед предложением об открытии EKB-1 сверьте фактическую дату открытия и даты регистрации: отсутствие заказов в выгрузке не означает, что точка ещё не открыта. Использование анкет в маркетинге требует согласованного назначения выгрузки. Ещё одна деталь: среди 73 странников 14 гостей без города в анкете. В `home_pct` их заказы не вошли — сравнивать не с чем, а в `travelers` вошли: там город анкеты не нужен. Когда два показателя считаются по разным подмножествам, это стоит подписать в отчёте.
 
 ## task: report | Шаг 8. Отчёт одной функцией | star
 
@@ -939,7 +956,9 @@ def _ref_clean(raw):
 def _ref_clients():
     return _ref_clean(_pd0.read_csv('clients_raw.csv'))
 def _ref_orders():
-    return _pd0.read_csv('orders_3m.csv', parse_dates=['datetime'])
+    o = _pd0.read_csv('orders_3m.csv')
+    o['datetime'] = _pd0.to_datetime(o['datetime'])
+    return o
 def _ref_age(c):
     a = 2026 - c['birth_date'].dt.year - (c['birth_date'].dt.strftime('%m%d') > '1201')
     g = _pd0.cut(a, bins=[14, 25, 35, 45, 60, 101], labels=['14–24', '25–34', '35–44', '45–59', '60–100'], right=False)
@@ -1022,16 +1041,20 @@ _extra['client_id'] = 'C-NEW-ACCEPTANCE'
 _extra['birth_date'] = '1980-04-03'
 _extra['signup_date'] = '2026-11-30'
 _new = _pd.concat([raw, _extra, _extra], ignore_index=True)
-for _raw, part, name in ((raw, o, 'вся осень'), (raw, o[o['datetime'].dt.month == 11], 'только ноябрь'), (_new, o, 'новая CRM с гостем без заказов')):
+for _raw, part, name in ((raw, o, 'вся осень'), (raw, o[o['datetime'].dt.month == 11], 'только ноябрь'), (_new, o, 'новая CRM с гостем без заказов'), (raw, o.iloc[:0], 'период без заказов')):
     g = _ref_guests(c=_ref_clean(_raw), o=part)
     act = g[g['orders'] > 0]
     want = {'clients': len(g), 'active_pct': round((g['orders'] > 0).mean() * 100, 1),
             'median_age': float(g['age'].median()), 'avg_revenue_active': round(act['revenue'].mean(), 1)}
     got = f(_raw.copy(), part.copy())
     assert isinstance(got, dict), 'report должна возвращать словарь.'
-    got = {k: round(float(v), 1) for k, v in got.items()}
-    want = {k: round(float(v), 1) for k, v in want.items()}
-    assert got == want, f'Для «{name}» report = {got}, а нужно {want}.'
+    assert set(got) == set(want), f'В report нужны ключи {list(want)}.'
+    for key, value in want.items():
+        actual = got[key]
+        if _pd.isna(value):
+            assert _pd.isna(actual), f'Для «{name}» {key} не определена: нет наблюдений для среднего.'
+        else:
+            assert not _pd.isna(actual) and close(actual, value, .000001), f'Для «{name}» {key} = {actual}, а нужно {value}. Проверяйте переданные анкеты и период заказов.'
 ```
 
 ### hint

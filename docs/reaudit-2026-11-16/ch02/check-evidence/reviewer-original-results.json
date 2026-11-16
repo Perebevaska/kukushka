@@ -1,0 +1,482 @@
+[
+  [
+    "09-project",
+    "shops",
+    "alternative-map-and-key-sort",
+    true,
+    "",
+    "import pandas as pd\nrev = full.groupby('shop_id')['amount'].sum()\nmeta = full.drop_duplicates('shop_id').set_index('shop_id')\nby_shop = pd.DataFrame({'city': rev.index.map(meta.city), 'revenue': rev, 'seats': rev.index.map(meta.seats)}, index=rev.index)\nby_shop['per_seat'] = (by_shop.revenue/by_shop.seats).round()\nby_shop = by_shop.sort_values(['per_seat','revenue'],ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = rev.nlargest(1).index[0]"
+  ],
+  [
+    "09-project",
+    "shops",
+    "wrong-per-seat-plus-1000",
+    true,
+    "KZN-1, per_seat: неверное значение.",
+    "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nby_shop['per_seat'] += 1000"
+  ],
+  [
+    "09-project",
+    "shops",
+    "wrong-shop-labels",
+    true,
+    "KZN-1, city: неверное значение.",
+    "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nby_shop.index = list(reversed(by_shop.index))"
+  ],
+  [
+    "09-project",
+    "shops",
+    "wrong-unsorted",
+    true,
+    "Сортировка по per_seat должна быть по убыванию.",
+    "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nby_shop = by_shop.sort_values('per_seat')"
+  ],
+  [
+    "09-project",
+    "shops",
+    "reordered-shops",
+    true,
+    "",
+    "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\n"
+  ],
+  [
+    "09-project",
+    "shops",
+    "tie-revenue-any-leader",
+    true,
+    "",
+    "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nleader_by_revenue='KZN-1'"
+  ],
+  [
+    "09-project",
+    "shops",
+    "tie-wrong-revenue-leader",
+    true,
+    "leader_by_revenue должен быть одним из лидеров по выручке.",
+    "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nleader_by_revenue='UFA-1'"
+  ],
+  [
+    "09-project",
+    "shops",
+    "tie-wrong-denominator",
+    true,
+    "KZN-1, per_seat: неверное значение.",
+    "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nby_shop['per_seat']=(by_shop['revenue']/by_shop['revenue'].sum()).round()"
+  ],
+  [
+    "09-project",
+    "margin",
+    "alternative-weighted-formula",
+    true,
+    "",
+    "import pandas as pd\nx=full.assign(total_cost=full.cost_s*full['size'].map({'S':1,'M':1.25,'L':1.5})*full.qty)\ng=x.groupby('category').agg(revenue=('amount','sum'),cost=('total_cost','sum'))\nmargin=(100-100*g.cost/g.revenue).round(1).sort_index(ascending=False)"
+  ],
+  [
+    "09-project",
+    "margin",
+    "wrong-ignore-qty",
+    true,
+    "margin = {'кофе': np.float64(82.8), 'не кофе': np.float64(83.8)}, а нужно {'кофе': 75.9, 'не кофе': 77.3}.",
+    "full['cost']=full.cost_s*full['size'].map({'S':1,'M':1.25,'L':1.5})\ng=full.groupby('category')[['amount','cost']].sum()\nmargin=(100*(g.amount-g.cost)/g.amount).round(1)"
+  ],
+  [
+    "09-project",
+    "margin",
+    "wrong-denominator-cost",
+    true,
+    "margin = {'кофе': np.float64(315.6), 'не кофе': np.float64(340.3)}, а нужно {'кофе': 75.9, 'не кофе': 77.3}.",
+    "full['cost']=full.cost_s*full['size'].map({'S':1,'M':1.25,'L':1.5})*full.qty\ng=full.groupby('category')[['amount','cost']].sum()\nmargin=(100*(g.amount-g.cost)/g.cost).round(1)"
+  ],
+  [
+    "09-project",
+    "margin",
+    "wrong-category-labels",
+    true,
+    "margin = {'не кофе': np.float64(75.9), 'кофе': np.float64(77.3)}, а нужно {'кофе': 75.9, 'не кофе': 77.3}.",
+    "import pandas as pd\nSIZE_K = {\"S\": 1.0, \"M\": 1.25, \"L\": 1.5}\nfull[\"cost\"] = full[\"cost_s\"] * full[\"size\"].map(SIZE_K) * full[\"qty\"]\ng = full.groupby(\"category\")[[\"amount\", \"cost\"]].sum()\nmargin = ((g[\"amount\"] - g[\"cost\"]) / g[\"amount\"] * 100).round(1)\nmargin\nmargin.index=list(reversed(margin.index))"
+  ],
+  [
+    "05-merge",
+    "margin",
+    "alternative-map",
+    true,
+    "",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv'); m=pd.read_csv('menu.csv').set_index('drink')\ndf['cost']=df.drink.map(m.cost_s)*df['size'].map({'S':1,'M':1.25,'L':1.5})*df.qty\ng=df.groupby('drink')[['amount','cost']].sum();best_margin=(1-g.cost/g.amount).idxmax()"
+  ],
+  [
+    "05-merge",
+    "margin",
+    "wrong-ignore-qty",
+    true,
+    "На другой позиции с несколькими чашками результат неверен. Себестоимость строки = cost_s × коэффициент размера × qty; маржа = (сумма amount − сумма cost) / сумма amount.",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');menu=pd.read_csv('menu.csv')\nfull=df.merge(menu,on='drink')\nfull['cost']=full.cost_s*full['size'].map({'S':1,'M':1.25,'L':1.5})\ng=full.groupby('drink')[['amount','cost']].sum()\nbest_margin=(100*(g.amount-g.cost)/g.amount).idxmax()"
+  ],
+  [
+    "05-merge",
+    "margin",
+    "wrong-profit-rubles",
+    true,
+    "best_margin = 'Латте'. Сравнивайте маржу в процентах, а не прибыль в рублях.",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');menu=pd.read_csv('menu.csv')\nfull=df.merge(menu,on='drink');full['cost']=full.cost_s*full['size'].map({'S':1,'M':1.25,'L':1.5})*full.qty\ng=full.groupby('drink')[['amount','cost']].sum();best_margin=(g.amount-g.cost).idxmax()"
+  ],
+  [
+    "05-merge",
+    "per-seat",
+    "wrong-revenue-only",
+    true,
+    "На другом наборе из двух кофеен лидер по рублям и лидер по рублям на место могут различаться. Пересчитайте revenue / seats по shop_id; при равном максимуме допустим любой лидер.",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv'); best_per_seat=df.groupby('shop_id').amount.sum().idxmax()"
+  ],
+  [
+    "05-merge",
+    "city",
+    "wrong-merge-assign-first-city",
+    true,
+    "Поле city не совпадает с данными заказа и справочника. Соединяйте по shop_id, а не по порядку строк.",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');shops=pd.read_csv('shops.csv')\nfull=df.assign(city=shops.city.iloc[0],seats=shops.seats.iloc[0])"
+  ],
+  [
+    "05-merge",
+    "all-shops",
+    "wrong-other-shop-revenue",
+    true,
+    "KZN-1: выручка не совпадает. Суммируйте amount по shop_id; у кофейни без заказов нужен 0.",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\nrev = df.groupby(\"shop_id\", as_index=False).agg(revenue=(\"amount\", \"sum\"))\nreport = pd.merge(shops, rev, on=\"shop_id\", how=\"left\")[[\"shop_id\", \"city\", \"revenue\"]]\nreport[\"revenue\"] = report[\"revenue\"].fillna(0)\nreport.loc[report.shop_id=='KZN-1','revenue']=0"
+  ],
+  [
+    "04-groupby",
+    "shares",
+    "alternative-crosstab",
+    true,
+    "",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');r=df.pivot_table(index='drink',values='amount',aggfunc='sum')['amount']\nshare=(100*r/r.sum()).round(1).sort_values(ascending=False);top3=share.index[:3].tolist()"
+  ],
+  [
+    "04-groupby",
+    "shares",
+    "wrong-nonleader-all-zero",
+    true,
+    "Капучино: неверная доля. Делите выручку напитка на общую выручку, умножайте на 100 и округляйте до одного знака.",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nby_drink = df.groupby(\"drink\")[\"amount\"].sum()\nshare = (by_drink / by_drink.sum() * 100).round(1).sort_values(ascending=False)\ntop3 = list(share.index[:3])\nshare.iloc[1:]=0"
+  ],
+  [
+    "04-groupby",
+    "two-keys",
+    "wrong-only-delivery-groups",
+    true,
+    "В by_pair нужна выручка по всем парам «кофейня, канал», а не только по доставке KZN-1.",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');by_pair=df[df.channel=='доставка'].groupby(['shop_id','channel']).amount.sum();kzn1_delivery=by_pair[('KZN-1','доставка')]"
+  ],
+  [
+    "07a-sql-python",
+    "sqlite-read",
+    "correct-single-quote-cat",
+    true,
+    "",
+    "import pandas as pd, sqlite3\ncon=sqlite3.connect('zerno.db');cat='еда'\nfood=pd.read_sql_query('SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC',con,params=(cat,));con.close()"
+  ],
+  [
+    "07a-sql-python",
+    "sqlite-read",
+    "wrong-zero-price",
+    true,
+    "Цены в food должны совпадать с menu.price.",
+    "import sqlite3\nimport pandas as pd\n\ncat = \"еда\"\ncon = sqlite3.connect(\"zerno.db\")\nfood = pd.read_sql_query(\n    \"SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC\",\n    con, params=(cat,),\n)\ncon.close()\nfood\nfood['price']=0"
+  ],
+  [
+    "06-dates",
+    "mom-net",
+    "wrong-calendar-index",
+    true,
+    "monthly: нужны календарные ключи конца сентября, октября и ноября 2026 по возрастанию.",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\nmonthly = df.resample(\"ME\", on=\"datetime\")[\"amount\"].sum()\ngrowth = (monthly.pct_change() * 100).round(1)\nnov_growth = growth.iloc[-1]\nmonthly.index=monthly.index+pd.DateOffset(months=1)"
+  ],
+  [
+    "06-dates",
+    "mom-net",
+    "wrong-last-growth",
+    true,
+    "growth, 2026-11-30: неверное значение. monthly — сумма amount, growth — pct_change() × 100; первый рост — NaN.",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\nmonthly = df.resample(\"ME\", on=\"datetime\")[\"amount\"].sum()\ngrowth = (monthly.pct_change() * 100).round(1)\nnov_growth = growth.iloc[-1]\ngrowth.iloc[-1]=0"
+  ],
+  [
+    "05-merge",
+    "city",
+    "alternative-join-reversed-result",
+    true,
+    "",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');shops=pd.read_csv('shops.csv')\nfull=df.join(shops.set_index('shop_id'),on='shop_id').iloc[::-1]"
+  ],
+  [
+    "05-merge",
+    "all-shops",
+    "alternative-map-reversed-shops",
+    true,
+    "",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');shops=pd.read_csv('shops.csv')\nrev=df.groupby('shop_id').amount.sum()\nreport=shops[['shop_id','city']].iloc[::-1].copy();report['revenue']=report.shop_id.map(rev).fillna(0)"
+  ],
+  [
+    "05-merge",
+    "per-seat",
+    "alternative-map-reversed-shops",
+    true,
+    "",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');shops=pd.read_csv('shops.csv').iloc[::-1]\nrev=df.groupby('shop_id').amount.sum();rates=rev/rev.index.map(shops.set_index('shop_id').seats)\nbest_per_seat=rates.idxmax()"
+  ],
+  [
+    "04-groupby",
+    "two-keys",
+    "alternative-dataframe-groupby",
+    true,
+    "",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');by_pair=df.groupby(['shop_id','channel'],as_index=False).agg(revenue=('amount','sum'))\nkzn1_delivery=by_pair.loc[(by_pair.shop_id=='KZN-1')&(by_pair.channel=='доставка'),'revenue'].iloc[0]"
+  ],
+  [
+    "04-groupby",
+    "shares",
+    "wrong-share-labels",
+    true,
+    "Латте: неверная доля. Делите выручку напитка на общую выручку, умножайте на 100 и округляйте до одного знака.",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nby_drink = df.groupby(\"drink\")[\"amount\"].sum()\nshare = (by_drink / by_drink.sum() * 100).round(1).sort_values(ascending=False)\ntop3 = list(share.index[:3])\nshare.index=list(reversed(share.index))"
+  ],
+  [
+    "04-groupby",
+    "two-keys",
+    "wrong-pair-labels",
+    true,
+    "Пара ('KZN-1', 'доставка'): неверная выручка в by_pair.",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nby_pair = df.groupby([\"shop_id\", \"channel\"])[\"amount\"].sum()\nkzn1_delivery = by_pair[(\"KZN-1\", \"доставка\")]\nby_pair.index=by_pair.index[::-1]"
+  ],
+  [
+    "07a-sql-python",
+    "sqlite-read",
+    "alternative-named-param",
+    true,
+    "",
+    "import sqlite3 as sql, pandas as pd\ncat='еда'\ncon=sql.connect('zerno.db')\nfood=pd.read_sql_query('SELECT name, price FROM menu WHERE category = :kind ORDER BY price DESC',con,params={'kind':cat});con.close()"
+  ],
+  [
+    "07a-sql-python",
+    "sqlite-read",
+    "correct-another-category",
+    true,
+    "",
+    "import sqlite3, pandas as pd\ncat='не кофе'\ncon=sqlite3.connect('zerno.db')\nfood=pd.read_sql_query('SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC',con,params=(cat,));con.close()"
+  ],
+  [
+    "06-dates",
+    "mom-net",
+    "alternative-indexed-resample",
+    true,
+    "",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv',parse_dates=['datetime'])\nmonthly=df.set_index('datetime').amount.resample('ME').sum();growth=monthly.pct_change().mul(100).round(1);nov_growth=growth.loc['2026-11-30']"
+  ],
+  [
+    "09-project",
+    "shops",
+    "different-revenue-and-seat-leaders",
+    true,
+    "",
+    "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\n"
+  ],
+  [
+    "09-project",
+    "shops",
+    "wrong-same-leader-for-different-metrics",
+    true,
+    "leader_by_revenue должен быть одним из лидеров по выручке.",
+    "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nleader_by_revenue=leader"
+  ],
+  [
+    "03-columns",
+    "map",
+    "alternative-replace-channels",
+    true,
+    "",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv')\ndf['channel_en']=df.channel.replace({'зал':'dine-in','с собой':'takeaway','доставка':'delivery'})\nn_takeaway=df.channel_en.eq('takeaway').sum()"
+  ],
+  [
+    "03-columns",
+    "map",
+    "wrong-swapped-dine-and-delivery",
+    true,
+    "Перевод должен соответствовать каналу каждой строки: зал → dine-in, с собой → takeaway, доставка → delivery.",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\ndf[\"channel_en\"] = df[\"channel\"].map({\"зал\": \"dine-in\", \"с собой\": \"takeaway\", \"доставка\": \"delivery\"})\nn_takeaway = (df[\"channel_en\"] == \"takeaway\").sum()\ndf['channel_en']=df.channel_en.replace({'dine-in':'delivery','delivery':'dine-in'})"
+  ],
+  [
+    "04b-pivot",
+    "wide",
+    "alternative-unstack-manual-totals",
+    true,
+    "",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');df['month']=df.datetime.str[:7]\nreport=df.groupby(['shop_id','month']).amount.sum().unstack()\nreport['Итого']=report.sum(axis=1);report.loc['Итого']=report.sum(axis=0)\nreport=report.iloc[::-1,::-1];oct_total=report.loc['Итого','2026-10']"
+  ],
+  [
+    "04b-pivot",
+    "wide",
+    "wrong-nonchecked-million",
+    true,
+    "PRM-2 × 2026-11: неверная выручка или итог. В ячейках нужна сумма amount.",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\ndf[\"month\"] = df[\"datetime\"].str[:7]\nreport = pd.pivot_table(df, index=\"shop_id\", columns=\"month\", values=\"amount\",\n                        aggfunc=\"sum\", margins=True, margins_name=\"Итого\")\noct_total = report.loc[\"Итого\", \"2026-10\"]\nreport.loc['PRM-2','2026-11']+=1000000"
+  ],
+  [
+    "07b-sql-windows",
+    "w-lag",
+    "alternative-window-file-sql",
+    true,
+    "",
+    "import duckdb\nmom_shop=duckdb.sql(\"\"\"SELECT shop_id,month,revenue,round(100*(revenue/lag(revenue) OVER w-1),1) AS growth_pct FROM (SELECT shop_id,date_trunc('month',datetime) AS month,sum(amount) AS revenue FROM read_csv('orders_3m.csv') GROUP BY 1,2) WINDOW w AS (PARTITION BY shop_id ORDER BY month) ORDER BY shop_id,month\"\"\").df()\nfalls=mom_shop.query('growth_pct<0').copy()"
+  ],
+  [
+    "07b-sql-windows",
+    "w-lag",
+    "wrong-shifted-months",
+    true,
+    "mom_shop: неверные пары shop_id, month.",
+    "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nmom_shop = duckdb.sql(\"\"\"\n    WITH m AS (\n        SELECT shop_id, date_trunc('month', datetime) AS month, SUM(amount) AS revenue\n        FROM df\n        GROUP BY shop_id, month\n    )\n    SELECT shop_id, month, revenue,\n           ROUND(100 * (revenue / LAG(revenue) OVER (PARTITION BY shop_id ORDER BY month) - 1), 1) AS growth_pct\n    FROM m\n    ORDER BY shop_id, month\n\"\"\").df()\nfalls = mom_shop[mom_shop[\"growth_pct\"] < 0]\nfalls\nmom_shop['month']+=pd.DateOffset(months=1);falls['month']+=pd.DateOffset(months=1)"
+  ],
+  [
+    "07b-sql-windows",
+    "w-lag",
+    "wrong-zero-revenues",
+    true,
+    "mom_shop, ('KZN-1', Period('2026-09', 'M')): неверная выручка revenue.",
+    "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nmom_shop = duckdb.sql(\"\"\"\n    WITH m AS (\n        SELECT shop_id, date_trunc('month', datetime) AS month, SUM(amount) AS revenue\n        FROM df\n        GROUP BY shop_id, month\n    )\n    SELECT shop_id, month, revenue,\n           ROUND(100 * (revenue / LAG(revenue) OVER (PARTITION BY shop_id ORDER BY month) - 1), 1) AS growth_pct\n    FROM m\n    ORDER BY shop_id, month\n\"\"\").df()\nfalls = mom_shop[mom_shop[\"growth_pct\"] < 0]\nfalls\nmom_shop['revenue']=0;falls['revenue']=0"
+  ],
+  [
+    "07c-sql-frames",
+    "w-running",
+    "alternative-explicit-frame-file-sql",
+    true,
+    "",
+    "import duckdb\ncum=duckdb.sql(\"\"\"SELECT day,revenue,sum(revenue) OVER (ORDER BY day ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running FROM (SELECT CAST(datetime AS DATE) AS day,sum(amount) AS revenue FROM read_csv('orders_3m.csv') GROUP BY 1) ORDER BY day\"\"\").df()\nhalf_day=cum.loc[cum.running.ge(cum.revenue.sum()/2),'day'].min()"
+  ],
+  [
+    "07c-sql-frames",
+    "w-running",
+    "wrong-shifted-days",
+    true,
+    "В cum нужны все дни с заказами по возрастанию, без повторов и сдвига дат.",
+    "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\ncum = duckdb.sql(\"\"\"\n    WITH d AS (\n        SELECT CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        GROUP BY day\n    )\n    SELECT day, revenue, SUM(revenue) OVER (ORDER BY day) AS running\n    FROM d\n    ORDER BY day\n\"\"\").df()\nhalf_day = cum.loc[cum[\"running\"] >= cum[\"revenue\"].sum() / 2, \"day\"].iloc[0]\nprint(half_day)\ncum['day']+=pd.Timedelta(days=1)"
+  ],
+  [
+    "07c-sql-frames",
+    "w-running",
+    "wrong-zero-daily-revenue",
+    true,
+    "2026-09-01: revenue — сумма amount за этот день.",
+    "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\ncum = duckdb.sql(\"\"\"\n    WITH d AS (\n        SELECT CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        GROUP BY day\n    )\n    SELECT day, revenue, SUM(revenue) OVER (ORDER BY day) AS running\n    FROM d\n    ORDER BY day\n\"\"\").df()\nhalf_day = cum.loc[cum[\"running\"] >= cum[\"revenue\"].sum() / 2, \"day\"].iloc[0]\nprint(half_day)\ncum['revenue']=0"
+  ],
+  [
+    "07a-sql-python",
+    "sqlite-read",
+    "alternative-read-sql-keyword-api",
+    true,
+    "",
+    "import sqlite3, pandas as pd\ncat=\"еда\"\ncon=sqlite3.connect('zerno.db')\nfood=pd.read_sql(sql='SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC',con=con,params=[cat]);con.close()"
+  ],
+  [
+    "05-merge",
+    "city",
+    "missing_city_nullable",
+    false,
+    "",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\nfull = pd.merge(df, shops, on=\"shop_id\", how=\"left\")\nfull['city']=full['city'].astype('string'); full.loc[full.index[0], 'city'] = pd.NA"
+  ],
+  [
+    "05-merge",
+    "all-shops",
+    "missing_city_nullable",
+    false,
+    "",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\nrev = df.groupby(\"shop_id\", as_index=False).agg(revenue=(\"amount\", \"sum\"))\nreport = pd.merge(shops, rev, on=\"shop_id\", how=\"left\")[[\"shop_id\", \"city\", \"revenue\"]]\nreport[\"revenue\"] = report[\"revenue\"].fillna(0)\nreport['city']=report['city'].astype('string'); report.loc[report.index[0], 'city'] = pd.NA"
+  ],
+  [
+    "05-merge",
+    "margin",
+    "ignores_size",
+    false,
+    "",
+    "import pandas as pd\nf=pd.read_csv('orders_3m.csv').merge(pd.read_csv('menu.csv'),on='drink')\nf['cost']=f.cost_s*f.qty\ng=f.groupby('drink')[['amount','cost']].sum()\nbest_margin=(1-g.cost/g.amount).idxmax()\n"
+  ],
+  [
+    "04-groupby",
+    "two-keys",
+    "named_aggregation",
+    false,
+    "Таблица by_pair должна содержать сумму amount по паре shop_id, channel (столбец amount или revenue).",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv')\nby_pair=df.groupby(['shop_id','channel']).agg(total_amount=('amount', 'sum'))\nkzn1_delivery=by_pair.at[('KZN-1','доставка'), 'total_amount']\n"
+  ],
+  [
+    "04-groupby",
+    "two-keys",
+    "reversed_key_fields",
+    false,
+    "В by_pair нужна выручка по всем парам «кофейня, канал», а не только по доставке KZN-1.",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv')\nby_pair=df.groupby(['channel','shop_id']).amount.sum()\nkzn1_delivery=by_pair.loc[('доставка','KZN-1')]\n"
+  ],
+  [
+    "06-dates",
+    "mom-net",
+    "unrounded_growth",
+    false,
+    "",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\nmonthly = df.resample(\"ME\", on=\"datetime\")[\"amount\"].sum()\ngrowth = (monthly.pct_change() * 100).round(1)\nnov_growth = growth.iloc[-1]\ngrowth=monthly.pct_change()*100; nov_growth=growth.iloc[-1]"
+  ],
+  [
+    "07b-sql-windows",
+    "w-lag",
+    "unrounded_growth",
+    false,
+    "",
+    "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nmom_shop = duckdb.sql(\"\"\"\n    WITH m AS (\n        SELECT shop_id, date_trunc('month', datetime) AS month, SUM(amount) AS revenue\n        FROM df\n        GROUP BY shop_id, month\n    )\n    SELECT shop_id, month, revenue,\n           ROUND(100 * (revenue / LAG(revenue) OVER (PARTITION BY shop_id ORDER BY month) - 1), 1) AS growth_pct\n    FROM m\n    ORDER BY shop_id, month\n\"\"\").df()\nfalls = mom_shop[mom_shop[\"growth_pct\"] < 0]\nfalls\nmom_shop['growth_pct']=mom_shop.groupby('shop_id')['revenue'].pct_change()*100\nfalls=mom_shop[mom_shop.growth_pct<0]"
+  ],
+  [
+    "07a-sql-python",
+    "sqlite-read",
+    "contextlib_closing",
+    false,
+    "Закройте подключение: con.close().",
+    "from contextlib import closing\nimport pandas as pd, sqlite3\ncat=\"еда\"\nwith closing(sqlite3.connect('zerno.db')) as con:\n    food=pd.read_sql_query('SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC',con,params=(cat,))\n"
+  ],
+  [
+    "03-columns",
+    "map",
+    "only_uppercase_translation",
+    true,
+    "Перевод должен соответствовать каналу каждой строки: зал → dine-in, с собой → takeaway, доставка → delivery.",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\ndf[\"channel_en\"] = df[\"channel\"].map({\"зал\": \"dine-in\", \"с собой\": \"takeaway\", \"доставка\": \"delivery\"})\nn_takeaway = (df[\"channel_en\"] == \"takeaway\").sum()\ndf.loc[df.index[-1], 'channel_en']=df['channel_en'].iloc[-1].upper()"
+  ],
+  [
+    "04b-pivot",
+    "wide",
+    "wrong_grand_total",
+    true,
+    "Итого × Итого: неверная выручка или итог. В ячейках нужна сумма amount.",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\ndf[\"month\"] = df[\"datetime\"].str[:7]\nreport = pd.pivot_table(df, index=\"shop_id\", columns=\"month\", values=\"amount\",\n                        aggfunc=\"sum\", margins=True, margins_name=\"Итого\")\noct_total = report.loc[\"Итого\", \"2026-10\"]\nreport.at['Итого','Итого']+=1"
+  ],
+  [
+    "07c-sql-frames",
+    "w-running",
+    "wrong_final_running",
+    true,
+    "2026-11-30: running — накопленная сумма дневной выручки с начала периода.",
+    "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\ncum = duckdb.sql(\"\"\"\n    WITH d AS (\n        SELECT CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        GROUP BY day\n    )\n    SELECT day, revenue, SUM(revenue) OVER (ORDER BY day) AS running\n    FROM d\n    ORDER BY day\n\"\"\").df()\nhalf_day = cum.loc[cum[\"running\"] >= cum[\"revenue\"].sum() / 2, \"day\"].iloc[0]\nprint(half_day)\ncum.loc[cum.index[-1], 'running']+=1"
+  ],
+  [
+    "04-groupby",
+    "shares",
+    "correct_share_bad_top3",
+    true,
+    "top3 — список первых трёх названий из отсортированной share.",
+    "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nby_drink = df.groupby(\"drink\")[\"amount\"].sum()\nshare = (by_drink / by_drink.sum() * 100).round(1).sort_values(ascending=False)\ntop3 = list(share.index[:3])\ntop3[2]=top3[0]"
+  ],
+  [
+    "05-merge",
+    "per-seat",
+    "sorted_aggregation",
+    true,
+    "",
+    "import pandas as pd\ndf=pd.read_csv('orders_3m.csv'); shops=pd.read_csv('shops.csv')\njoined=df.merge(shops,on='shop_id')\nm=joined.groupby('shop_id').agg(rev=('amount','sum'),n=('seats','first'))\nbest_per_seat=m.eval('rev/n').sort_values(ascending=False).index[0]\n"
+  ]
+]

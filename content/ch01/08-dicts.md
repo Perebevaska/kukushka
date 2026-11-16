@@ -521,7 +521,11 @@ counts = {"Латте": 41, "Раф": 23, "Капучино": 37, "Америк�
 ```python
 assert need('top_drink') == 'Флэт уайт', f'top_drink = {need("top_drink")!r}.'
 assert need('top_count') == 44, f'top_count = {need("top_count")}.'
-assert _code.count('Флэт уайт') == 1, 'Найдите напиток циклом, а не впишите.'
+for _counts in [{'Айс': 17, 'Матча-латте': 1, 'Ямс': 2}, {'Ямс': 2, 'Айс': 17, 'Матча-латте': 1}, {'Раф': 9, 'Чай': 3, 'Какао': 21}]:
+    _drink = max(_counts, key=_counts.get)
+    _count = _counts[_drink]
+    _other = rerun_with(counts=_counts)
+    assert (_other.get('top_drink'), _other.get('top_count')) == (_drink, _count), 'На другом словаре найдите напиток с наибольшим количеством заказов и сохраните и его имя, и количество. Название и длина строки не определяют популярность.'
 ```
 
 ### hint

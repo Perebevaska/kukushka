@@ -69,7 +69,7 @@ ax.set_title("Выручка по неделям")
 ::: quiz
 Данные заканчиваются в понедельник, и на недельном графике последняя точка резко падает. Что это, скорее всего?
 
-- [x] Последняя неделя неполная: в ней всего пара дней
+- [x] Последняя неделя неполная: в выгрузку попал только понедельник, 30 ноября
   > `resample("W")` складывает всё, что попало в неделю. Неполные первую и последнюю недели убирают или помечают.
 - [ ] Резкое падение продаж — надо бить тревогу
   > Сначала проверьте число дней в периоде: падение может быть артефактом.
@@ -318,6 +318,9 @@ s = df.set_index('datetime').resample('D')['amount'].sum().rolling(7).mean()
 got = need('smooth', _pd.Series)
 assert len(got) == len(s) and got.isna().sum() == 6, 'smooth — rolling(7).mean(): та же длина, первые 6 значений — NaN.'
 assert need('last_smooth') == round(s.iloc[-1]), f'last_smooth = {need("last_smooth")}.'
+assert got.index.is_unique and set(got.index)==set(s.index), 'Индекс smooth — исходные календарные даты.'
+_got = got.reindex(s.index)
+assert (_got.isna()==s.isna()).all() and all(close(a,b,1e-6) for a,b in zip(_got.dropna(),s.dropna())), 'В smooth проверьте каждое среднее по семи дням, включая середину периода; первые шесть значений — NaN.'
 ```
 
 ### hint

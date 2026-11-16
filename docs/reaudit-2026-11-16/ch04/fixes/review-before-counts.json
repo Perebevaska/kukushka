@@ -1,0 +1,722 @@
+[
+  {
+    "id": "07-readable/title",
+    "case": "visible-left-title",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(\"{} — самые медленные: медиана {} мин\".format(m.index[0],int(m.iloc[0])), loc=\"left\")",
+    "prepare": null
+  },
+  {
+    "id": "01-plots/labeled",
+    "case": "reverse-drawing-invert-axis",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index[::-1], rev.values[::-1])\nax.invert_xaxis()\nax.bar_label(bars)\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "prepare": null
+  },
+  {
+    "id": "01-plots/labeled",
+    "case": "misleading-all-numeric-labels",
+    "expected": false,
+    "actual": false,
+    "feedback": "Подпишите над каждым столбцом сумму выручки именно этого канала.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index, rev.values)\nax.bar_label(bars, labels=[\"0\"] * len(bars))\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/five-min",
+    "case": "correct-step-histogram",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.hist(t, histtype=\"step\", bins=range(0,121,5))\nax.set_xlabel(\"минут\")\nax.set_title(\"Время доставки\")",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/compare",
+    "case": "correct-stepfilled-density",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"авто\", \"вело\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t, bins=30, range=(0, 90), histtype=\"stepfilled\", density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/compare",
+    "case": "explicit-legend-artist-handles",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nhandles=[]\nfor c in [\"авто\", \"вело\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    heights, edges, bars = ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5)\n    handles.append(bars[0])\n    medians[c] = t.median()\nax.legend(handles, [\"авто\", \"вело\"])\nax.set_title(\"Время доставки: вело и авто\")",
+    "prepare": null
+  },
+  {
+    "id": "07-readable/title",
+    "case": "wrong-left-title",
+    "expected": false,
+    "actual": false,
+    "feedback": "В заголовке укажите результат по текущим данным: 'пеший — самые медленные: медиана 37 мин'.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(\"{} — самые медленные: медиана {} мин\".format(m.index[0],int(m.iloc[0])+1), loc=\"left\")",
+    "prepare": null
+  },
+  {
+    "id": "01-plots/labeled",
+    "case": "reversed-visually-ascending",
+    "expected": false,
+    "actual": false,
+    "feedback": "Выручка каналов должна убывать слева направо.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index[::-1], rev.values[::-1])\n\nax.bar_label(bars)\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/five-min",
+    "case": "wrong-step-frequencies",
+    "expected": false,
+    "actual": false,
+    "feedback": "Каждая корзина шириной 5 минут должна показывать своё число доставок.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.hist(t+5, histtype=\"step\", bins=range(0,121,5))\nax.set_xlabel(\"минут\")\nax.set_title(\"Время доставки\")",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/compare",
+    "case": "wrong-stepfilled-second-group",
+    "expected": false,
+    "actual": false,
+    "feedback": "авто: проверьте высоты плотности, интервалы 0–90 и соответствие легенды именно этой группе.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"авто\", \"вело\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t + (3 if c==\"авто\" else 0), bins=30, range=(0, 90), histtype=\"stepfilled\", density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/compare",
+    "case": "explicit-legend-swapped-handles",
+    "expected": false,
+    "actual": false,
+    "feedback": "авто: проверьте высоты плотности, интервалы 0–90 и соответствие легенды именно этой группе.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nhandles=[]\nfor c in [\"авто\", \"вело\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    heights, edges, bars = ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5)\n    handles.append(bars[0])\n    medians[c] = t.median()\nax.legend(handles[::-1], [\"авто\", \"вело\"])\nax.set_title(\"Время доставки: вело и авто\")",
+    "prepare": null
+  },
+  {
+    "id": "01-plots/labeled",
+    "case": "separate-artist-labels",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index, rev.values)\nfor bar, value in zip(bars, rev.values):\n    ax.text(bar.get_x()+bar.get_width()/2, value, f\"{value:,.0f}\".replace(\",\", \" \"), ha=\"center\", va=\"bottom\")\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "prepare": null
+  },
+  {
+    "id": "01-plots/labeled",
+    "case": "labels-on-wrong-bars",
+    "expected": false,
+    "actual": false,
+    "feedback": "Подпишите над каждым столбцом сумму выручки именно этого канала.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index, rev.values)\nax.bar_label(bars, labels=rev.values[::-1])\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "prepare": null
+  },
+  {
+    "id": "02b-shape/ufa-empty",
+    "case": "fractional-daily-counts",
+    "expected": false,
+    "actual": true,
+    "feedback": "",
+    "code": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")\nu = d[d[\"shop_id\"] == \"UFA-1\"]\nper_day = u.groupby(u[\"created\"].dt.normalize()).size().reindex(days, fill_value=0)\nmean = per_day.mean()\nlam = round(mean, 2)\nempty = int((per_day == 0).sum())\nexp_empty = round(len(days) * math.exp(-mean), 1)\nprint(lam, empty, exp_empty)\nper_day=per_day.iloc[::-1]\nper_day=per_day+0.25\nempty=empty+0.25",
+    "prepare": null
+  },
+  {
+    "id": "03-boxplots/slow",
+    "case": "fractional-courier-counts",
+    "expected": false,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\ng = ok.groupby(\"courier\")[\"actual_min\"]\nq1 = g.transform(lambda s: s.quantile(0.25))\nq3 = g.transform(lambda s: s.quantile(0.75))\nok[\"slow\"] = ok[\"actual_min\"] > q3 + 1.5 * (q3 - q1)\nslow_by = ok.groupby(\"courier\")[\"slow\"].sum().to_dict()\nok=ok.iloc[::-1]\nslow_by={k:v+.5 for k,v in slow_by.items()}",
+    "prepare": null
+  },
+  {
+    "id": "05b-cohorts/age",
+    "case": "fractional-guest-totals",
+    "expected": false,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\no[\"first\"] = o.groupby(\"guest_id\")[\"date\"].transform(\"min\")\no[\"cohort\"] = o[\"first\"].dt.to_period(\"M\")\no[\"age\"] = (o[\"date\"].dt.year - o[\"first\"].dt.year) * 12 + (o[\"date\"].dt.month - o[\"first\"].dt.month)\nactive = o.pivot_table(index=\"cohort\", columns=\"age\", values=\"guest_id\", aggfunc=\"nunique\")\njan_m3 = active.iloc[0][3]\ntotal_m0 = active[0].sum()\nactive\nactive=active.iloc[::-1,::-1]\njan_m3+=.25\ntotal_m0+=.25",
+    "prepare": null
+  },
+  {
+    "id": "09-project/clean",
+    "case": "fractional-cleaning-log",
+    "expected": false,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"delay\"] = ok[\"actual_min\"] - ok[\"promised_min\"]\nok[\"hour\"] = ok[\"created\"].dt.hour\nlog = {\n    \"всего\": len(d),\n    \"без времени\": d[\"actual_min\"].isna().sum(),\n    \"невозможное время\": (d[\"actual_min\"].notna() & ~d[\"actual_min\"].between(1, 299)).sum(),\n    \"осталось\": len(ok),\n}\nlog\nok=ok.iloc[::-1]\nlog={k:v+.5 for k,v in log.items()}",
+    "prepare": null
+  },
+  {
+    "id": "08-eda/slice-fn",
+    "case": "count-nonmissing-instead-of-group-size",
+    "expected": false,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\n\ndef slice_table(df, by, col):\n    t = df.groupby(by).agg(n=(col,\"count\"),mean=(col,\"mean\"))\n    return t.sort_values(\"mean\", ascending=False)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nslice_table(ok, \"weather\", \"late\")",
+    "prepare": null
+  },
+  {
+    "id": "08-eda/slice-fn",
+    "case": "same-named-columns-reordered",
+    "expected": true,
+    "actual": false,
+    "feedback": "Столбцы: ['mean', 'n'].",
+    "code": "import pandas as pd\n\ndef slice_table(df, by, col):\n    t = df.groupby(by).agg(n=(col,\"size\"),mean=(col,\"mean\"))\n    return t[[\"mean\",\"n\"]].sort_values(\"mean\", ascending=False)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nslice_table(ok, \"weather\", \"late\")",
+    "prepare": null
+  },
+  {
+    "id": "09-project/report",
+    "case": "alternative-report",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport math\ndef delivery_report(raw):\n    ok=raw[raw.actual_min.between(1,299)].copy()\n    if ok.empty:\n        return dict(late_pct=None,worst_courier=None,worst_shop=None,peak_hours=[],fair_promise=None)\n    ok[\"late\"]=ok.actual_min>ok.promised_min\n    ok[\"hour\"]=ok.created.dt.hour\n    g=ok.groupby(\"hour\").late.agg([\"mean\",\"size\"])\n    leader=ok.groupby(\"courier\",sort=True).late.mean().idxmax()\n    s=ok[(ok.courier==leader)&(ok.promised_min==30)].actual_min\n    promise=None if s.empty else math.ceil(s.quantile(.8)/5)*5\n    return dict(late_pct=round(ok.late.mean()*100,1),worst_courier=ok.groupby(\"courier\").late.mean().sort_index().idxmax(),worst_shop=ok.groupby(\"shop_id\").late.mean().sort_index().idxmax(),peak_hours=g[(g[\"size\"]>=50)&(g[\"mean\"]>.25)].index.tolist(),fair_promise=promise)\nraw=pd.read_csv(\"deliveries.csv\",parse_dates=[\"created\"])\ndelivery_report(raw)\n",
+    "prepare": null
+  },
+  {
+    "id": "09-project/report",
+    "case": "fixed-walkers",
+    "expected": false,
+    "actual": false,
+    "feedback": "7 октября, fair_promise: у вас None, нужно 35.",
+    "code": "import pandas as pd\nimport math\ndef delivery_report(raw):\n    ok=raw[raw.actual_min.between(1,299)].copy()\n    if ok.empty:\n        return dict(late_pct=None,worst_courier=None,worst_shop=None,peak_hours=[],fair_promise=None)\n    ok[\"late\"]=ok.actual_min>ok.promised_min\n    ok[\"hour\"]=ok.created.dt.hour\n    g=ok.groupby(\"hour\").late.agg([\"mean\",\"size\"])\n    s=ok[(ok.courier==\"пеший\")&(ok.promised_min==30)].actual_min\n    promise=None if s.empty else math.ceil(s.quantile(.8)/5)*5\n    return dict(late_pct=round(ok.late.mean()*100,1),worst_courier=ok.groupby(\"courier\").late.mean().sort_index().idxmax(),worst_shop=ok.groupby(\"shop_id\").late.mean().sort_index().idxmax(),peak_hours=g[(g[\"size\"]>=50)&(g[\"mean\"]>.25)].index.tolist(),fair_promise=promise)\nraw=pd.read_csv(\"deliveries.csv\",parse_dates=[\"created\"])\ndelivery_report(raw)\n",
+    "prepare": null
+  },
+  {
+    "id": "09-project/report",
+    "case": "zero-for-no30",
+    "expected": false,
+    "actual": false,
+    "feedback": "у лидера нет обещания 30 минут, fair_promise: у вас 0, нужно None.",
+    "code": "import pandas as pd\nimport math\ndef delivery_report(raw):\n    ok=raw[raw.actual_min.between(1,299)].copy()\n    if ok.empty:\n        return dict(late_pct=None,worst_courier=None,worst_shop=None,peak_hours=[],fair_promise=None)\n    ok[\"late\"]=ok.actual_min>ok.promised_min\n    ok[\"hour\"]=ok.created.dt.hour\n    g=ok.groupby(\"hour\").late.agg([\"mean\",\"size\"])\n    leader=ok.groupby(\"courier\",sort=True).late.mean().idxmax()\n    s=ok[(ok.courier==leader)&(ok.promised_min==30)].actual_min\n    promise=0 if s.empty else math.ceil(s.quantile(.8)/5)*5\n    return dict(late_pct=round(ok.late.mean()*100,1),worst_courier=ok.groupby(\"courier\").late.mean().sort_index().idxmax(),worst_shop=ok.groupby(\"shop_id\").late.mean().sort_index().idxmax(),peak_hours=g[(g[\"size\"]>=50)&(g[\"mean\"]>.25)].index.tolist(),fair_promise=promise)\nraw=pd.read_csv(\"deliveries.csv\",parse_dates=[\"created\"])\ndelivery_report(raw)\n",
+    "prepare": null
+  },
+  {
+    "id": "09-project/report",
+    "case": "first-input-tie",
+    "expected": false,
+    "actual": false,
+    "feedback": "7 октября, fair_promise: у вас 30, нужно 35.",
+    "code": "import pandas as pd\nimport math\ndef delivery_report(raw):\n    ok=raw[raw.actual_min.between(1,299)].copy()\n    if ok.empty:\n        return dict(late_pct=None,worst_courier=None,worst_shop=None,peak_hours=[],fair_promise=None)\n    ok[\"late\"]=ok.actual_min>ok.promised_min\n    ok[\"hour\"]=ok.created.dt.hour\n    g=ok.groupby(\"hour\").late.agg([\"mean\",\"size\"])\n    leader=ok.groupby(\"courier\",sort=False).late.mean().idxmax()\n    s=ok[(ok.courier==leader)&(ok.promised_min==30)].actual_min\n    promise=None if s.empty else math.ceil(s.quantile(.8)/5)*5\n    return dict(late_pct=round(ok.late.mean()*100,1),worst_courier=ok.groupby(\"courier\").late.mean().sort_index().idxmax(),worst_shop=ok.groupby(\"shop_id\").late.mean().sort_index().idxmax(),peak_hours=g[(g[\"size\"]>=50)&(g[\"mean\"]>.25)].index.tolist(),fair_promise=promise)\nraw=pd.read_csv(\"deliveries.csv\",parse_dates=[\"created\"])\ndelivery_report(raw)\n",
+    "prepare": null
+  },
+  {
+    "id": "01-plots/labeled",
+    "case": "alternative-aggregate",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index, rev.values)\nax.bar_label(bars)\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "prepare": null
+  },
+  {
+    "id": "01-plots/labeled",
+    "case": "wrong-halved-channel-revenue",
+    "expected": false,
+    "actual": false,
+    "feedback": "«зал»: на графике 163241, а по данным нужно 326482. Проверьте пару «подпись — значение».",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].sum().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index, rev.values)\nax.bar_label(bars)\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]\nfor patch in ax.patches: patch.set_height(patch.get_height()/2)",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/five-min",
+    "case": "alternative-explicit-edges",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.hist(t, bins=range(0,121,5))\nax.set_xlabel(\"минут\")\nax.set_title(\"Время доставки\")",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/five-min",
+    "case": "wrong-reversed-bin-counts",
+    "expected": false,
+    "actual": false,
+    "feedback": "Каждая корзина шириной 5 минут должна показывать своё число доставок.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.hist(t, bins=24, range=(0, 120))\nax.set_xlabel(\"минут\")\nax.set_title(\"Время доставки\")\nheights=[p.get_height() for p in ax.patches]\nfor patch,height in zip(ax.patches,heights[::-1]): patch.set_height(height)",
+    "prepare": null
+  },
+  {
+    "id": "02b-shape/ufa-empty",
+    "case": "alternative-reordered-keyed-days",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")\nu = d[d[\"shop_id\"] == \"UFA-1\"]\nper_day = u.groupby(u[\"created\"].dt.normalize()).size().reindex(days, fill_value=0)\nmean = per_day.mean()\nlam = round(mean, 2)\nempty = int((per_day == 0).sum())\nexp_empty = round(len(days) * math.exp(-mean), 1)\nprint(lam, empty, exp_empty)\nper_day=per_day.iloc[::-1]",
+    "prepare": null
+  },
+  {
+    "id": "02b-shape/ufa-empty",
+    "case": "wrong-date-labels-only",
+    "expected": false,
+    "actual": false,
+    "feedback": "per_day — доставки UFA-1 по дням (dt.normalize()) с нулями в пустых днях, 91 значение.",
+    "code": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")\nu = d[d[\"shop_id\"] == \"UFA-1\"]\nper_day = u.groupby(u[\"created\"].dt.normalize()).size().reindex(days, fill_value=0)\nmean = per_day.mean()\nlam = round(mean, 2)\nempty = int((per_day == 0).sum())\nexp_empty = round(len(days) * math.exp(-mean), 1)\nprint(lam, empty, exp_empty)\nper_day.index=per_day.index[::-1]",
+    "prepare": null
+  },
+  {
+    "id": "03-boxplots/slow",
+    "case": "alternative-whole-deliveries-reordered",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\ng = ok.groupby(\"courier\")[\"actual_min\"]\nq1 = g.transform(lambda s: s.quantile(0.25))\nq3 = g.transform(lambda s: s.quantile(0.75))\nok[\"slow\"] = ok[\"actual_min\"] > q3 + 1.5 * (q3 - q1)\nslow_by = ok.groupby(\"courier\")[\"slow\"].sum().to_dict()\nok=ok.iloc[::-1]",
+    "prepare": null
+  },
+  {
+    "id": "03-boxplots/slow",
+    "case": "wrong-flags-only-reordered",
+    "expected": false,
+    "actual": false,
+    "feedback": "slow не совпадает по delivery_id: границу нужно считать внутри каждой группы курьеров.",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\ng = ok.groupby(\"courier\")[\"actual_min\"]\nq1 = g.transform(lambda s: s.quantile(0.25))\nq3 = g.transform(lambda s: s.quantile(0.75))\nok[\"slow\"] = ok[\"actual_min\"] > q3 + 1.5 * (q3 - q1)\nslow_by = ok.groupby(\"courier\")[\"slow\"].sum().to_dict()\nok[\"slow\"]=ok.slow.iloc[::-1].to_numpy()",
+    "prepare": null
+  },
+  {
+    "id": "03b-sigma/sigma-courier",
+    "case": "alternative-reordered-rows-columns",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ng = ok.groupby(\"courier\")[\"actual_min\"]\nspread = pd.DataFrame({\n    \"mean\": g.mean(),\n    \"std\": g.std(ddof=1),\n    \"iqr\": g.quantile(0.75) - g.quantile(0.25),\n}).round(1)\nmost_stable = spread[\"std\"].idxmin()\nspread\nspread=spread.iloc[::-1][[\"iqr\",\"std\",\"mean\"]]",
+    "prepare": null
+  },
+  {
+    "id": "03b-sigma/sigma-courier",
+    "case": "wrong-courier-labels",
+    "expected": false,
+    "actual": false,
+    "feedback": "Столбец mean не совпадает.",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ng = ok.groupby(\"courier\")[\"actual_min\"]\nspread = pd.DataFrame({\n    \"mean\": g.mean(),\n    \"std\": g.std(ddof=1),\n    \"iqr\": g.quantile(0.75) - g.quantile(0.25),\n}).round(1)\nmost_stable = spread[\"std\"].idxmin()\nspread\nspread.index=spread.index[::-1]",
+    "prepare": null
+  },
+  {
+    "id": "04-slices/share-snow",
+    "case": "alternative-reordered-whole-groups",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nct = pd.crosstab(ok[\"courier\"], ok[\"weather\"], normalize=\"columns\")\nvelo_snow_pct = round(ct.loc[\"вело\", \"снег\"] * 100, 1)\nvelo_clear_pct = round(ct.loc[\"вело\", \"ясно\"] * 100, 1)\nct=ct.iloc[::-1,::-1]",
+    "prepare": null
+  },
+  {
+    "id": "04-slices/share-snow",
+    "case": "wrong-crosstab-labels-only",
+    "expected": false,
+    "actual": false,
+    "feedback": "В ct неверна пара курьер — погода: нужны доли разных курьеров внутри каждой погоды.",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nct = pd.crosstab(ok[\"courier\"], ok[\"weather\"], normalize=\"columns\")\nvelo_snow_pct = round(ct.loc[\"вело\", \"снег\"] * 100, 1)\nvelo_clear_pct = round(ct.loc[\"вело\", \"ясно\"] * 100, 1)\nct.index=ct.index[::-1]",
+    "prepare": null
+  },
+  {
+    "id": "05-time/rolling",
+    "case": "alternative-window-aggregation",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\ndaily = df.set_index(\"datetime\").resample(\"D\")[\"amount\"].sum()\nsmooth = daily.rolling(window=7).agg(\"mean\")\nlast_smooth = round(smooth.iloc[-1])",
+    "prepare": null
+  },
+  {
+    "id": "05-time/rolling",
+    "case": "wrong-middle-rolling-values",
+    "expected": false,
+    "actual": false,
+    "feedback": "В smooth проверьте каждое среднее по семи дням, включая середину периода; первые шесть значений — NaN.",
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\ndaily = df.set_index(\"datetime\").resample(\"D\")[\"amount\"].sum()\nsmooth = daily.rolling(7).mean()\nlast_smooth = round(smooth.iloc[-1])\nsmooth.iloc[6:-1]=0",
+    "prepare": null
+  },
+  {
+    "id": "05b-cohorts/age",
+    "case": "alternative-whole-rows-columns-reordered",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\no[\"first\"] = o.groupby(\"guest_id\")[\"date\"].transform(\"min\")\no[\"cohort\"] = o[\"first\"].dt.to_period(\"M\")\no[\"age\"] = (o[\"date\"].dt.year - o[\"first\"].dt.year) * 12 + (o[\"date\"].dt.month - o[\"first\"].dt.month)\nactive = o.pivot_table(index=\"cohort\", columns=\"age\", values=\"guest_id\", aggfunc=\"nunique\")\njan_m3 = active.iloc[0][3]\ntotal_m0 = active[0].sum()\nactive\nactive=active.iloc[::-1,::-1]",
+    "prepare": null
+  },
+  {
+    "id": "05b-cohorts/age",
+    "case": "wrong-cohort-labels-only",
+    "expected": false,
+    "actual": false,
+    "feedback": "Значения active не совпадают: pivot_table(index=\"cohort\", columns=\"age\", values=\"guest_id\", aggfunc=\"nunique\").",
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\no[\"first\"] = o.groupby(\"guest_id\")[\"date\"].transform(\"min\")\no[\"cohort\"] = o[\"first\"].dt.to_period(\"M\")\no[\"age\"] = (o[\"date\"].dt.year - o[\"first\"].dt.year) * 12 + (o[\"date\"].dt.month - o[\"first\"].dt.month)\nactive = o.pivot_table(index=\"cohort\", columns=\"age\", values=\"guest_id\", aggfunc=\"nunique\")\njan_m3 = active.iloc[0][3]\ntotal_m0 = active[0].sum()\nactive\nactive.index=active.index[::-1]",
+    "prepare": null
+  },
+  {
+    "id": "05c-dau-mau/sticky-city",
+    "case": "alternative-complete-calendar",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")\nj = o.merge(guests, on=\"guest_id\")\nj = j[j[\"date\"].dt.to_period(\"M\") == \"2026-06\"]\ndau = j.pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")\nmau = j.groupby(\"city\")[\"guest_id\"].nunique()\ncity_sticky = (dau.reindex(pd.date_range(\"2026-06-01\",\"2026-06-30\")).fillna(0).mean() / mau * 100).round(1)\nbest_city = city_sticky.idxmax()\nprint(mau)\ncity_sticky",
+    "prepare": null
+  },
+  {
+    "id": "05c-dau-mau/sticky-city",
+    "case": "equal-value-city-labels-reversed",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")\nj = o.merge(guests, on=\"guest_id\")\nj = j[j[\"date\"].dt.to_period(\"M\") == \"2026-06\"]\ndau = j.pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")\nmau = j.groupby(\"city\")[\"guest_id\"].nunique()\ncity_sticky = (dau.mean() / mau * 100).round(1)\nbest_city = city_sticky.idxmax()\nprint(mau)\ncity_sticky\ncity_sticky.index=city_sticky.index[::-1]",
+    "prepare": null
+  },
+  {
+    "id": "05c-dau-mau/sticky-city",
+    "case": "wrong-unequal-city-labels-only",
+    "expected": false,
+    "actual": false,
+    "feedback": "У Пермь получилось 13.9, ожидалось 15.3: средний за дни июня DAU города / MAU города × 100.",
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")\nj = o.merge(guests, on=\"guest_id\")\nj = j[j[\"date\"].dt.to_period(\"M\") == \"2026-06\"]\ndau = j.pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")\nmau = j.groupby(\"city\")[\"guest_id\"].nunique()\ncity_sticky = (dau.mean() / mau * 100).round(1)\nbest_city = city_sticky.idxmax()\nprint(mau)\ncity_sticky\ncity_sticky.index=list(city_sticky.index[1:])+list(city_sticky.index[:1])",
+    "prepare": null
+  },
+  {
+    "id": "05c-dau-mau/sticky-city",
+    "case": "calendar-zero-city-day-correct",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")\nj = o.merge(guests, on=\"guest_id\")\nj = j[j[\"date\"].dt.to_period(\"M\") == \"2026-06\"]\ndau = j.pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")\nmau = j.groupby(\"city\")[\"guest_id\"].nunique()\ncity_sticky = (dau.reindex(pd.date_range(\"2026-06-01\",\"2026-06-30\")).fillna(0).mean() / mau * 100).round(1)\nbest_city = city_sticky.idxmax()\nprint(mau)\ncity_sticky",
+    "prepare": "import pandas as pd\no=pd.read_csv('preorders.csv');g=pd.read_csv('preorder_guests.csv');ids=set(g.loc[g.city=='Пермь','guest_id']);o=o[~((o.date=='2026-06-07') & o.guest_id.isin(ids))];o.to_csv('preorders.csv',index=False)"
+  },
+  {
+    "id": "05c-dau-mau/sticky-city",
+    "case": "calendar-zero-city-day-wrong-ignore",
+    "expected": false,
+    "actual": false,
+    "feedback": "У Пермь получилось 15.6, ожидалось 15.1: средний за дни июня DAU города / MAU города × 100.",
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")\nj = o.merge(guests, on=\"guest_id\")\nj = j[j[\"date\"].dt.to_period(\"M\") == \"2026-06\"]\ndau = j.pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")\nmau = j.groupby(\"city\")[\"guest_id\"].nunique()\ncity_sticky = (dau.mean() / mau * 100).round(1)\nbest_city = city_sticky.idxmax()\nprint(mau)\ncity_sticky\n",
+    "prepare": "import pandas as pd\no=pd.read_csv('preorders.csv');g=pd.read_csv('preorder_guests.csv');ids=set(g.loc[g.city=='Пермь','guest_id']);o=o[~((o.date=='2026-06-07') & o.guest_id.isin(ids))];o.to_csv('preorders.csv',index=False)"
+  },
+  {
+    "id": "06-correlation/spearman",
+    "case": "alternative-pandas-spearman",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\").dropna(subset=[\"actual_min\"])\nr_pearson = round(d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman = round(d[\"distance_km\"].corr(d[\"actual_min\"],method=\"spearman\"), 2)\ndiff = round(d[\"distance_km\"].corr(d[\"actual_min\"],method=\"spearman\") - d[\"distance_km\"].corr(d[\"actual_min\"]), 2)",
+    "prepare": null
+  },
+  {
+    "id": "06-correlation/spearman",
+    "case": "wrong-pearson-as-spearman",
+    "expected": false,
+    "actual": false,
+    "feedback": "r_pearson, r_spearman = 0.1, 0.1, а нужно 0.1, 0.41.",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\").dropna(subset=[\"actual_min\"])\nr_pearson = round(d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()), 2)\ndiff = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()) - d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman=r_pearson;diff=0",
+    "prepare": null
+  },
+  {
+    "id": "06-correlation/spearman",
+    "case": "missing-pairs-pandas-spearman",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\").dropna(subset=[\"actual_min\"])\nr_pearson = round(d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman = round(d[\"distance_km\"].corr(d[\"actual_min\"],method=\"spearman\"), 2)\ndiff = round(d[\"distance_km\"].corr(d[\"actual_min\"],method=\"spearman\") - d[\"distance_km\"].corr(d[\"actual_min\"]), 2)",
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv').iloc[:8].copy();d['distance_km']=[1,None,2,4,None,3,6,5];d['actual_min']=[10,11,12,15,16,17,80,90];d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "id": "06-correlation/spearman",
+    "case": "missing-pairs-complete-before-ranking",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\").dropna(subset=[\"distance_km\",\"actual_min\"])\nr_pearson = round(d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()), 2)\ndiff = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()) - d[\"distance_km\"].corr(d[\"actual_min\"]), 2)",
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv').iloc[:8].copy();d['distance_km']=[1,None,2,4,None,3,6,5];d['actual_min']=[10,11,12,15,16,17,80,90];d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "id": "06-correlation/spearman",
+    "case": "missing-pairs-wrong-rank-before-dropping",
+    "expected": false,
+    "actual": false,
+    "feedback": "r_pearson, r_spearman = 0.84, 0.87, а нужно 0.84, 0.89.",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\").dropna(subset=[\"actual_min\"])\nr_pearson = round(d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()), 2)\ndiff = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()) - d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\n",
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv').iloc[:8].copy();d['distance_km']=[1,None,2,4,None,3,6,5];d['actual_min']=[10,11,12,15,16,17,80,90];d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "id": "07-readable/no-pie",
+    "case": "alternative-inverted-correct-bars",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"drink\")[\"amount\"].sum()\nshare = (rev / rev.sum() * 100).sort_values()\nfig, ax = plt.subplots(figsize=(6, 4))\nbars = ax.barh(share.index[::-1], share.values[::-1])\nax.invert_yaxis()\nax.bar_label(bars, fmt=\"%.1f\")\nax.set_xlabel(\"доля выручки, %\")\nax.set_title(f\"{share.index[-1]} — лидер по выручке\")\nax.spines[[\"top\", \"right\"]].set_visible(False)",
+    "prepare": null
+  },
+  {
+    "id": "07-readable/no-pie",
+    "case": "wrong-drink-labels-only",
+    "expected": false,
+    "actual": false,
+    "feedback": "«Латте»: на графике 2.94426, а по данным нужно 17.584. Проверьте пару «подпись — значение».",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"drink\")[\"amount\"].sum()\nshare = (rev / rev.sum() * 100).sort_values()\nfig, ax = plt.subplots(figsize=(6, 4))\nbars = ax.barh(share.index, share.values)\nax.bar_label(bars, fmt=\"%.1f\")\nax.set_xlabel(\"доля выручки, %\")\nax.set_title(f\"{share.index[-1]} — лидер по выручке\")\nax.spines[[\"top\", \"right\"]].set_visible(False)\nax.set_yticks(ax.get_yticks(),share.index[::-1])",
+    "prepare": null
+  },
+  {
+    "id": "07-readable/title",
+    "case": "alternative-format-string",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(\"{} — самые медленные: медиана {} мин\".format(m.index[0],int(m.iloc[0])))",
+    "prepare": null
+  },
+  {
+    "id": "07-readable/title",
+    "case": "wrong-reversed-visual-order",
+    "expected": false,
+    "actual": false,
+    "feedback": "Медианы должны убывать в видимом порядке слева направо; при обратном порядке данных допустима invert_xaxis().",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index[::-1],m.values[::-1])\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")",
+    "prepare": null
+  },
+  {
+    "id": "07-readable/title",
+    "case": "alternative-reversed-with-inversion",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index[::-1],m.values[::-1])\nax.invert_xaxis()\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")",
+    "prepare": null
+  },
+  {
+    "id": "07-readable/title",
+    "case": "wrong-label-only",
+    "expected": false,
+    "actual": false,
+    "feedback": "«авто»: на графике 37, а по данным нужно 31. Проверьте пару «подпись — значение».",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")\nax.set_xticks(ax.get_xticks(),m.index[::-1])",
+    "prepare": null
+  },
+  {
+    "id": "07-readable/title",
+    "case": "wrong-minute-axis",
+    "expected": false,
+    "actual": false,
+    "feedback": "Результат пока не совпадает с ожидаемым.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")\nax.set_ylabel(\"км\")",
+    "prepare": null
+  },
+  {
+    "id": "07c-metrics/funnel-platform",
+    "case": "alternative-groupby-unstack",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.groupby([\"platform\",\"period\",\"step\"])[\"session_id\"].nunique().unstack(\"step\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)",
+    "prepare": null
+  },
+  {
+    "id": "07c-metrics/funnel-platform",
+    "case": "whole-groups-reordered",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)\npay_conv=pay_conv.iloc[::-1]",
+    "prepare": null
+  },
+  {
+    "id": "07c-metrics/funnel-platform",
+    "case": "labels-only-reordered",
+    "expected": false,
+    "actual": false,
+    "feedback": "Срез ('android', 'до 15.06'): pay_conv = 93.1, нужно 90.6 %: заказ / оплата × 100 по разным сессиям.",
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)\npay_conv.index=pay_conv.index[::-1]",
+    "prepare": null
+  },
+  {
+    "id": "07c-metrics/funnel-platform",
+    "case": "wrong-fractional-lost",
+    "expected": false,
+    "actual": false,
+    "feedback": "lost = 104.8, а нужно 104: сессии Android на оплате после 15.06 × (конверсия до − конверсия после).",
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)\nlost+=0.8",
+    "prepare": null
+  },
+  {
+    "id": "07c-metrics/funnel-platform",
+    "case": "other-platform-loss-dynamic",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)\n",
+    "prepare": "import pandas as pd\nf=pd.read_csv('app_funnel.csv');f['platform']=f.platform.replace({'android':'ios','ios':'android'});f.to_csv('app_funnel.csv',index=False)"
+  },
+  {
+    "id": "07c-metrics/funnel-platform",
+    "case": "other-platform-loss-fixed-104",
+    "expected": false,
+    "actual": false,
+    "feedback": "lost = 104, а нужно -5: сессии Android на оплате после 15.06 × (конверсия до − конверсия после).",
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)\nlost=104",
+    "prepare": "import pandas as pd\nf=pd.read_csv('app_funnel.csv');f['platform']=f.platform.replace({'android':'ios','ios':'android'});f.to_csv('app_funnel.csv',index=False)"
+  },
+  {
+    "id": "08-eda/slice-fn",
+    "case": "alternative-aggregate-columns",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\n\ndef slice_table(df, by, col):\n    t = df.groupby(by).agg(n=(col,\"size\"),mean=(col,\"mean\"))\n    return t.sort_values(\"mean\", ascending=False)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nslice_table(ok, \"weather\", \"late\")",
+    "prepare": null
+  },
+  {
+    "id": "08-eda/slice-fn",
+    "case": "wrong-unchecked-counts-and-mean",
+    "expected": false,
+    "actual": false,
+    "feedback": "Проверьте n и mean в каждой группе, а не только порядок.",
+    "code": "import pandas as pd\n\ndef slice_table(df, by, col):\n    t = df.groupby(by)[col].agg(n=\"size\", mean=\"mean\")\n    t.loc[t.index != \"a\", \"n\"] = 7\n    t.loc[t.index == \"a\", \"mean\"] *= 1.5\n    return t.sort_values(\"mean\", ascending=False)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nslice_table(ok, \"weather\", \"late\")",
+    "prepare": null
+  },
+  {
+    "id": "09-project/walkers",
+    "case": "alternative-largest-sorted-group",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\")[\"late\"].mean().sort_index().sort_values(ascending=False,kind=\"stable\").index[0]\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)",
+    "prepare": null
+  },
+  {
+    "id": "09-project/walkers",
+    "case": "whole-groups-reordered",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=True)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)\npv=pv.iloc[::-1,::-1]",
+    "prepare": null
+  },
+  {
+    "id": "09-project/walkers",
+    "case": "labels-only-reordered",
+    "expected": false,
+    "actual": false,
+    "feedback": "Значения pv не совпадают. Нужна доля опозданий (aggfunc=\"mean\" по late) × 100; строки — promised_min, столбцы — courier.",
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=True)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)\npv.columns=pv.columns[::-1]",
+    "prepare": null
+  },
+  {
+    "id": "07-readable/title",
+    "case": "new-input-other-leader",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")\n",
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');d['courier']=d.courier.replace({'пеший':'авто','авто':'пеший'});d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "id": "07-readable/title",
+    "case": "new-input-wrong-fixed-title",
+    "expected": false,
+    "actual": false,
+    "feedback": "В заголовке укажите результат по текущим данным: 'авто — самые медленные: медиана 37 мин'.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")\nax.set_title(\"пеший — самые медленные: медиана 37 мин\")",
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');d['courier']=d.courier.replace({'пеший':'авто','авто':'пеший'});d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "id": "09-project/walkers",
+    "case": "other-leader-cars",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=True)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)\n",
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');d['courier']=d.courier.replace({'пеший':'авто','авто':'пеший'});d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "id": "09-project/walkers",
+    "case": "input-row-order",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=True)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)\n",
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');d.iloc[::-1].to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "id": "09-project/walkers",
+    "case": "wrong-fixed-walkers-on-cars",
+    "expected": false,
+    "actual": false,
+    "feedback": "walk_p80 = 29.80000000000001, а нужно 40.0.",
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = \"пеший\"\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)",
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');d['courier']=d.courier.replace({'пеший':'авто','авто':'пеший'});d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "id": "09-project/walkers",
+    "case": "tie-alphabetical-first-correct",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=True)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)\n",
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');rows=[]\nfor group,values,km in [('пеший',[25,49,40,68],3.0),('вело',[22,43,37,60],2.0),('авто',[20,36,35,52],1.0)]:\n for i,(promise,actual) in enumerate(zip([30,30,45,45],values)):\n  r=d.iloc[0].copy();r['courier']=group;r['promised_min']=promise;r['actual_min']=actual;r['distance_km']=km;r['created']=f'2026-10-0{i+1} 12:00:00';rows.append(r)\npd.DataFrame(rows).to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "id": "09-project/walkers",
+    "case": "tie-wrong-input-first-group",
+    "expected": false,
+    "actual": false,
+    "feedback": "walk_p80 = 44.2, а нужно 32.8.",
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=False)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)",
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');rows=[]\nfor group,values,km in [('пеший',[25,49,40,68],3.0),('вело',[22,43,37,60],2.0),('авто',[20,36,35,52],1.0)]:\n for i,(promise,actual) in enumerate(zip([30,30,45,45],values)):\n  r=d.iloc[0].copy();r['courier']=group;r['promised_min']=promise;r['actual_min']=actual;r['distance_km']=km;r['created']=f'2026-10-0{i+1} 12:00:00';rows.append(r)\npd.DataFrame(rows).to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "id": "09-project/clean",
+    "case": "alternative-whole-deliveries-reordered",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"delay\"] = ok[\"actual_min\"] - ok[\"promised_min\"]\nok[\"hour\"] = ok[\"created\"].dt.hour\nlog = {\n    \"всего\": len(d),\n    \"без времени\": d[\"actual_min\"].isna().sum(),\n    \"невозможное время\": (d[\"actual_min\"].notna() & ~d[\"actual_min\"].between(1, 299)).sum(),\n    \"осталось\": len(ok),\n}\nlog\nok=ok.iloc[::-1]",
+    "prepare": null
+  },
+  {
+    "id": "09-project/clean",
+    "case": "wrong-content-erased-consistent-derived",
+    "expected": false,
+    "actual": false,
+    "feedback": "Исходные значения courier изменились. В этом шаге отбираем строки, затем добавляем late, delay и hour.",
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"delay\"] = ok[\"actual_min\"] - ok[\"promised_min\"]\nok[\"hour\"] = ok[\"created\"].dt.hour\nlog = {\n    \"всего\": len(d),\n    \"без времени\": d[\"actual_min\"].isna().sum(),\n    \"невозможное время\": (d[\"actual_min\"].notna() & ~d[\"actual_min\"].between(1, 299)).sum(),\n    \"осталось\": len(ok),\n}\nlog\nok[\"courier\"]=\"авто\";ok[\"actual_min\"]=ok.promised_min;ok[\"late\"]=False;ok[\"delay\"]=0",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/compare",
+    "case": "alternative-reverse-group-order",
+    "expected": true,
+    "actual": true,
+    "feedback": "",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"авто\", \"вело\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/compare",
+    "case": "wrong-zero-density",
+    "expected": false,
+    "actual": false,
+    "feedback": "вело: проверьте высоты плотности, интервалы 0–90 и соответствие легенды именно этой группе.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"вело\", \"авто\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")\nfor patch in ax.patches: patch.set_height(0)",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/compare",
+    "case": "wrong-second-group-counts",
+    "expected": false,
+    "actual": false,
+    "feedback": "авто: проверьте высоты плотности, интервалы 0–90 и соответствие легенды именно этой группе.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"вело\", \"авто\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")\nfor patch in ax.patches[30:]: patch.set_height(1)",
+    "prepare": null
+  },
+  {
+    "id": "02-histograms/compare",
+    "case": "wrong-courier-labels",
+    "expected": false,
+    "actual": false,
+    "feedback": "авто: проверьте высоты плотности, интервалы 0–90 и соответствие легенды именно этой группе.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"вело\", \"авто\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")\nax.legend(ax.containers,[\"авто\",\"вело\"])",
+    "prepare": null
+  }
+]

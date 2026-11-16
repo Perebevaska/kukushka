@@ -346,16 +346,64 @@ cat = "еда"
 
 ### check
 ```python
-import pandas as _pd, sqlite3 as _sq
+import pandas as _pd, sqlite3 as _sq, inspect as _inspect
+import sqlite3.dbapi2 as _dbapi
 _c = _sq.connect('zerno.db')
-_w = _pd.read_sql_query("SELECT name, price FROM menu WHERE category = 'еда' ORDER BY price DESC", _c)
-_c.close()
-b = need('food', _pd.DataFrame)
-assert list(b.columns) == ['name', 'price'], f'Столбцы: {list(b.columns)}, а нужны name и price.'
-assert b['name'].tolist() == _w['name'].tolist(), f'Позиции: {b["name"].tolist()}. Нужны все позиции категории, по убыванию цены.'
-assert 'params' in _code, 'Передайте категорию через params= — так запрос не сломается ни на каком значении.'
-assert "'еда'" not in _code and '"еда"' in _code, 'Категория не должна быть вписана в SQL: оставьте в запросе ? или :cat, а значение — переменная cat.'
-assert calls('close') >= 1, 'Закройте подключение: con.close().'
+try:
+    _cat = need('cat', str)
+    _w = _pd.read_sql_query('SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC', _c, params=(_cat,))
+    def _check_food(_got, _want):
+        assert isinstance(_got, _pd.DataFrame), 'food должна быть DataFrame.'
+        assert list(_got.columns) == ['name', 'price'], f'Столбцы: {list(_got.columns)}, а нужны name и price.'
+        assert _got['name'].tolist() == _want['name'].tolist(), 'Нужны все позиции категории cat по убыванию цены.'
+        assert all(close(_x, _y) for _x, _y in zip(_got['price'], _want['price'])), 'Цены в food должны совпадать с menu.price.'
+    _check_food(need('food'), _w)
+    _read_sql = _pd.read_sql_query
+    _queries, _connections = [], []
+    _methods = [(_owner, _name, getattr(_owner, _name)) for _owner in (_pd, _pd.io.sql) for _name in ('read_sql_query', 'read_sql')]
+    _connect_methods = [(_owner, _owner.connect) for _owner in (_sq, _dbapi)]
+    def _capture_sql(_method):
+        def _call(*args, **kwargs):
+            _arguments = _inspect.signature(_method).bind(*args, **kwargs).arguments
+            _queries.append((_arguments.get('sql'), _arguments.get('params')))
+            return _method(*args, **kwargs)
+        return _call
+    def _capture_connect(_method):
+        def _call(*args, **kwargs):
+            _connection = _method(*args, **kwargs)
+            _connections.append(_connection)
+            return _connection
+        return _call
+    try:
+        for _owner, _name, _method in _methods:
+            setattr(_owner, _name, _capture_sql(_method))
+        for _owner, _method in _connect_methods:
+            _owner.connect = _capture_connect(_method)
+        for _category in ('еда', 'не кофе'):
+            _queries.clear()
+            _connections.clear()
+            _other = rerun_with(cat=_category)
+            _want = _read_sql('SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC', _c, params=(_category,))
+            _check_food(_other.get('food'), _want)
+            assert any(_params is not None and _category in (list(_params.values()) if isinstance(_params, dict) else list(_params)) and _category not in str(_sql) for _sql, _params in _queries), 'Передайте cat через params, оставив в SQL заполнитель ? или :cat. При смене cat текст запроса остаётся тем же.'
+            assert _connections, 'Подключитесь к zerno.db через sqlite3.'
+            for _connection in _connections:
+                try:
+                    _connection.execute('SELECT 1')
+                except _sq.ProgrammingError:
+                    continue
+                else:
+                    assert False, 'После получения food подключение осталось открытым. Закройте его через close() или contextlib.closing.'
+    finally:
+        for _owner, _name, _method in _methods:
+            setattr(_owner, _name, _method)
+        for _owner, _method in _connect_methods:
+            _owner.connect = _method
+        for _connection in _connections:
+            _connection.close()
+finally:
+    _c.close()
+
 ```
 
 ### hint

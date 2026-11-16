@@ -144,16 +144,17 @@ NB_CELLS = [
 
 Блокнот к уроку «Книга Excel: листы, шапка, итоги» главы 3. В браузере курса те же примеры работают прямо в уроке; здесь — те же шаги в своём Jupyter на книге `zerno_finance.xlsx`, плюс запись результата обратно в Excel.
 
-**Что нужно.** Библиотека openpyxl: в папке проекта из урока про uv выполните в терминале `uv add openpyxl` и перезапустите ядро (Kernel → Restart Kernel). Блокнот ищет книгу в папке `data` курса (`../../data`), а если не нашёл — рядом с собой.
+**Что нужно.** Библиотека openpyxl: в папке проекта из урока про uv выполните в терминале `uv add openpyxl` и перезапустите ядро (Kernel → Restart Kernel). В распакованном курсе книга лежит в `../../data/`. Если скачали блокнот отдельно, положите книгу рядом с ним или в папку `data/`.
 
 **Как работать.** Выполняйте ячейки сверху вниз. В конце — три упражнения: место для кода помечено ✎, под каждым — ячейка самопроверки.'''),
     ('code', '''from pathlib import Path
 import pandas as pd
 
-DATA = Path("../../data")                   # блокнот лежит в notebooks/extra, данные — в data
-if not (DATA / "zerno_finance.xlsx").exists():
-    DATA = Path(".")                        # книга скачана рядом с блокнотом
-BOOK = DATA / "zerno_finance.xlsx"
+folders = (Path("."), Path("data"), Path("../../data"), Path("../data"))
+BOOK = next((folder / "zerno_finance.xlsx" for folder in folders
+             if (folder / "zerno_finance.xlsx").is_file()), None)
+if BOOK is None:
+    raise FileNotFoundError("Положите zerno_finance.xlsx рядом с блокнотом или в папку data/.")
 MONTHS = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен"]
 
 try:
@@ -198,14 +199,24 @@ from_total = round(total[MONTHS].sum().sum(), 1)
 assert abs(by_shops - from_total) < 0.5, "сумма по кофейням не сходится с «Итого»"
 print("факт за 9 месяцев:", by_shops, "тыс. ₽ — сходится с «Итого»")'''),
     ('md', '''## 5. План против факта'''),
-    ('code', '''p = plan[plan["Код"] != "Итого"].set_index("Код")[MONTHS].sum(axis=1)
-f = body.set_index("Код")[MONTHS].sum(axis=1)
-done = (f / p * 100).round(1)[p > 0].sort_values()
+    ('code', '''plan_months = plan[plan["Код"] != "Итого"].set_index("Код")[MONTHS]
+fact_months = body.set_index("Код")[MONTHS]
+p = plan_months.sum(axis=1)
+f = fact_months.sum(axis=1)
+plan_count = plan_months.count(axis=1)
+fact_count = fact_months.count(axis=1)
+complete = (plan_count == len(MONTHS)) & (fact_count == len(MONTHS)) & (p > 0)
+done = (100 * f[complete] / p[complete]).round(1).sort_values()
 done'''),
     ('md', '''## 6. Сохранить отчёт обратно в Excel
 
-`pd.ExcelWriter` пишет несколько таблиц на разные листы одной книги. Файл появится рядом с блокнотом.'''),
-    ('code', '''report = pd.DataFrame({"план": p, "факт": f, "выполнение, %": (f / p * 100).round(1)})[p > 0]
+В сводке сохраняем все кофейни. Рядом с суммой внесённых значений показываем, сколько месяцев заполнено. Для сравнения выполнения нужны полный период и положительный план. Проверьте строку EKB-1 в сохранённой книге: чем она отличается от строки с девятью явно внесёнными нулями?
+
+`pd.ExcelWriter` пишет две таблицы на разные листы одной книги. Файл появится рядом с блокнотом.'''),
+    ('code', '''report = pd.DataFrame({"сумма внесённого плана, тыс. ₽": p,
+                       "сумма внесённого факта, тыс. ₽": f,
+                       "месяцев плана": plan_count, "месяцев факта": fact_count,
+                       "выполнение, %": done})
 with pd.ExcelWriter("plan_fact_report.xlsx") as writer:
     report.to_excel(writer, sheet_name="Выполнение")
     body.to_excel(writer, sheet_name="Факт без итога", index=False)
@@ -226,7 +237,7 @@ else:
 else:
     assert list(sheets) == ["Описание", "План", "Факт"], f"получилось {sheets}"
     print("✓ упражнение 2")'''),
-    ('md', '''**3.** В каких месяцах сеть целиком (сумма по кофейням) выполнила план меньше чем на 97 %? Сохраните в `weak` список названий месяцев («Янв», «Фев», …).'''),
+    ('md', '''**3.** В каких месяцах сумма внесённого факта по сети оказалась меньше 97 % суммы внесённого плана? Посчитайте отношение двух сумм по каждому месяцу и сохраните названия в `weak` («Янв», «Фев», …). Пустые ячейки не дают вклада в эти суммы. Чтобы сделать вывод о выполнении плана всей сетью, дополнительно сверили бы работающие в этом месяце точки с перечнем ожидаемых и проверили заполненность их данных.'''),
     ('code', '''weak = None   # ✎ ваш код'''),
     ('code', '''if weak is None:
     print("✎ упражнение 3 ещё не решено")

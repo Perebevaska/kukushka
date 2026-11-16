@@ -481,11 +481,16 @@ def _nb_tasks(cid: str) -> int:
     return sum(1 for c in nb['cells'] if c['cell_type'] == 'code' and ''.join(c['source']).startswith('%%task '))
 
 
-def _nb_tools(root: str) -> str:
-    if not (NB_DIR / 'project-template.ipynb').exists():
+def _nb_tools(root: str, cid: str = '') -> str:
+    outlines = {'ch02': 'цель → данные → гипотезы или вопросы → выводы',
+                'ch03': 'цель → данные → журнал очистки → качество данных → портрет гостей',
+                'ch04': 'главный вывод → журнал очистки → графики → проверка рекомендаций'}
+    filename = f'{cid}-project-template.ipynb' if cid in outlines else 'project-template.ipynb'
+    outline = outlines.get(cid, 'цель → данные → предобработка → анализ и модели → выводы, с чек-листом')
+    if not (NB_DIR / filename).exists():
         return ''
-    return (f'<p>Для проектов — <a href="{root}notebooks/project-template.ipynb" download>шаблон проектного блокнота</a> '
-            '(цель → данные → предобработка → анализ и модели → выводы, с чек-листом) и '
+    return (f'<p>Для проектов — <a href="{root}notebooks/{filename}" download>шаблон проектного блокнота</a> '
+            f'({outline}) и '
             f'<a href="{root}notebooks/check_notebook.py" download>check_notebook.py</a> — самопроверка перед ревью: '
             'выполняет блокнот с чистого ядра и ищет ошибки, абсолютные пути, закомментированный код и разделы без выводов. '
             'Запуск: <code>python check_notebook.py проект.ipynb</code>.</p>')
@@ -515,7 +520,7 @@ def jupyter_chapter_block(root: str, cid: str) -> str:
       </ol>
       <p>Если блокнот испортился, скачайте свежий и положите в <code>site/notebooks</code>: <a class="btn" href="{root}notebooks/{name}" download>Скачать {name}</a> <a class="btn" href="{root}notebooks/dsc.py" download>Скачать dsc.py</a></p>
       <p class="muted">Скачанные файлы работают только внутри папки курса: <code>dsc.py</code> берёт проверки из <code>site/notebooks/tasks</code>, данные — из <code>site/data</code>.</p>
-      {_nb_tools(root)}
+      {_nb_tools(root, cid)}
     </details>
   </section>'''
 

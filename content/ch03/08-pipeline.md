@@ -362,7 +362,7 @@ print(pd.read_csv("t.csv").columns.tolist())
 import pandas as pd
 
 SYNONYMS = {"соц. сети": "соцсети", "от друзей": "друзья", "проходил мимо": "мимо",
-            "2 гис": "карты", "яндекс карты": "карты"}
+            "2гис": "карты", "яндекс карты": "карты"}
 
 def clean_city(s):
     return (s.str.strip().str.lower().str.removeprefix("г.").str.strip()
@@ -374,13 +374,14 @@ def clean_phone(s):
     return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
 
 def clean_gender(s):
-    return s.str.strip().str.lower().str[0].map({"м": "М", "ж": "Ж"})
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
 
 def parse_birth(s):
     iso = pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
     ru = pd.to_datetime(s, format="%d.%m.%Y", errors="coerce")
     born = iso.fillna(ru)
-    return born.where(born.between("1926-12-01", "2012-12-01"))   # возраст 14–100
+    age = 2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")
+    return born.where(age.between(14, 100))
 
 def clean_bonus(s):
     b = pd.to_numeric(s.str.replace(" ", ""), errors="coerce")
@@ -406,7 +407,7 @@ clients.info()
 clients.head()
 ```
 
-В `parse_birth` сначала вычислите полные годы на 1 декабря 2026 и сохраните даты для возрастов 14–100 включительно. Простая граница рождения «не раньше 1926-12-01» ошибочно исключила бы часть людей со 100 полными годами. В день перед 101-летием возраст ещё 100; в день 101-летия дата перестаёт соответствовать правилу.
+На 1 декабря 2026 года гостю с датой рождения 2 декабря 1925 года ещё 100 лет. Функция `parse_birth` сохраняет эту дату. Тому, кто родился на день раньше, уже исполнился 101 год, и его дату функция отправляет на сверку, оставляя в таблице пропуск.
 
 Сравните `info()` с уроком «Первый осмотр: что не так с данными»: даты стали датами, бонусы — числами, анкеты не повторяются. Пропусков стало больше — это заглушки и невозможные значения, честно превращённые в `NaN`.
 
@@ -658,6 +659,14 @@ assert list(b.columns) == ['client_id', 'city', 'signup_date'], f'Столбцы
 assert _pd.api.types.is_datetime64_any_dtype(b['signup_date']), f'signup_date прочитался как {b["signup_date"].dtype}. Добавьте parse_dates=["signup_date"].'
 f = _pd.read_csv('clients_clean.csv')
 assert len(f) == 3, 'В файле clients_clean.csv должно быть 3 строки.'
+# include-check: ch03_records.py
+_expected = _pd.DataFrame({'client_id': ['C1000', 'C1001', 'C1002'],
+                          'city': ['Пермь', 'Казань', None],
+                          'signup_date': _pd.to_datetime(['2025-03-14', '2026-01-20', '2024-11-02'])})
+assert list(f.columns) == list(_expected.columns), 'В самом clients_clean.csv нужны исходные столбцы без индекса: index=False.'
+f['signup_date'] = _pd.to_datetime(f['signup_date'])
+_assert_records(f, _expected, 'clients_clean.csv', keys=['client_id'])
+_assert_records(b, _expected, 'back', keys=['client_id'])
 ```
 
 ### hint
@@ -694,21 +703,28 @@ log
 
 ### check
 ```python
-import pandas as _pd
+# include-check: ch03_records.py
 raw = _pd.read_csv('clients_raw.csv')
-before = raw.copy()
-res = need('clean_with_log')(raw)
-assert isinstance(res, tuple) and len(res) == 2, 'Функция должна возвращать пару: return df, log.'
-df, log = res
-assert raw.equals(before), 'Функция изменила исходную таблицу — работайте с копией.'
-d1 = raw.drop_duplicates()
-d2 = d1.assign(client_id=d1['client_id'].str.strip().str.upper())
-d3 = d2.sort_values('signup_date').drop_duplicates('client_id', keep='last')
-want = [len(raw), len(d1), len(d2), len(d3)]
-assert len(log) == 4, f'В журнале {len(log)} записей, а нужно 4.'
-assert [n for _, n in log] == want, f'Числа в журнале: {[n for _, n in log]}, а нужно {want}.'
-assert log[0][0] == 'загрузка', 'Первая запись — ("загрузка", len(raw)).'
-assert df['client_id'].is_unique and len(df) == len(d3), 'В df должны остаться уникальные анкеты.'
+_changed = raw.iloc[[0, 1, 0]].copy().reset_index(drop=True)
+_changed['client_id'] = [' NEW1 ', 'NEW2', 'new1']
+_changed['signup_date'] = ['2026-01-01', '2026-02-01', '2026-03-01']
+_changed['city'] = ['Пермь', 'Уфа', 'Казань']
+for _raw in (raw, _changed):
+    before = _raw.copy(deep=True)
+    res = need('clean_with_log')(_raw)
+    assert isinstance(res, tuple) and len(res) == 2, 'Функция должна возвращать пару: return df, log.'
+    df, log = res
+    assert _raw.equals(before), 'Функция изменила исходную таблицу — работайте с копией.'
+    d1 = before.drop_duplicates()
+    d2 = d1.assign(client_id=d1['client_id'].str.strip().str.upper())
+    d3 = d2.sort_values('signup_date').drop_duplicates('client_id', keep='last')
+    want = [len(before), len(d1), len(d2), len(d3)]
+    assert isinstance(log, list) and len(log) == 4, 'В журнале нужен список из 4 записей: загрузка и три шага очистки.'
+    assert all(isinstance(x, (tuple, list)) and len(x) == 2 for x in log), 'Запись журнала — пара (название шага, число строк).'
+    assert all(isinstance(name, str) and name.strip() for name, _ in log), 'У каждого шага журнала должно быть непустое название.'
+    assert [n for _, n in log] == want, f'Числа в журнале: {[n for _, n in log]}, а нужно {want}. Считайте их на переданной таблице.'
+    assert log[0][0] == 'загрузка', 'Первая запись — ("загрузка", len(raw)).'
+    _assert_records(df, d3, 'df из clean_with_log', keys=['client_id'])
 ```
 
 ### hint
@@ -883,6 +899,7 @@ assert c['client_id'].is_unique, 'Номера карт в clients повтор�
 assert len(c) == len(want), f'В clients {len(c)} строк, а нужно {len(want)}.'
 assert list(c.index) == list(range(len(c))), 'Индекс — по порядку: reset_index(drop=True).'
 assert _r.equals(_pd.read_csv('clients_raw.csv')), 'Файл изменился?'
+assert set(c['client_id']) == set(want.index), 'В clients должны сохраниться исходные нормализованные client_id.'
 g = c.set_index('client_id').sort_index()
 for col in ['name', 'gender', 'birth_date', 'city', 'phone', 'signup_date', 'bonus', 'source']:
     a, w = g[col], want[col]
@@ -992,6 +1009,10 @@ assert [x for x in f(old)] == ['Пермь', 'Екатеринбург', 'Каз
 new = _pd.Series(['гор. Уфа', 'Пермь, Россия', 'Гор. Пермь', 'Казань, Россия'])
 assert f(new).tolist() == ['Уфа', 'Пермь', 'Пермь', 'Казань'], f'Новые варианты: {f(new).tolist()}.'
 assert need('jan_cities') == {'Уфа', 'Пермь', 'Казань', 'Екатеринбург', 'Тюмень', 'Москва'}, f'jan_cities = {need("jan_cities")}.'
+_other = _pd.Series(['Горячий Ключ', 'Горно-Алтайск', None], index=[7, 3, 9])
+_result = f(_other)
+assert isinstance(_result, _pd.Series) and _result.index.equals(_other.index), 'clean_city должна сохранять индекс переданной Series.'
+assert _result.iloc[:2].tolist() == ['Горячий ключ', 'Горно-алтайск'] and _pd.isna(_result.iloc[2]), 'Удаляйте точный префикс «гор.», а не начало настоящего названия; пропуск должен остаться пропуском.'
 ```
 
 ### hint

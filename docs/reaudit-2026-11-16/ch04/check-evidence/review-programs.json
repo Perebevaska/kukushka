@@ -1,0 +1,1069 @@
+[
+  {
+    "lesson": "07-readable",
+    "task": "title",
+    "case": "visible-left-title",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(\"{} — самые медленные: медиана {} мин\".format(m.index[0],int(m.iloc[0])), loc=\"left\")",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nm = ok.groupby('courier')['actual_min'].median().sort_values(ascending=False)\nax = ax_of()\nwant = f'{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин'\nassert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'\nassert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'\nh = [p.get_height() for p in ax.patches]\n_labels = [t.get_text() for t in ax.get_xticklabels()]\nassert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'\nassert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'\nfor _label, _height in zip(_labels, h):\n    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'\nassert ax.get_ylabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "01-plots",
+    "task": "labeled",
+    "case": "reverse-drawing-invert-axis",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index[::-1], rev.values[::-1])\nax.invert_xaxis()\nax.bar_label(bars)\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "check": "import pandas as _pd\nrev = _pd.read_csv('orders_3m.csv').groupby('channel')['amount'].sum().sort_values(ascending=False)\nax = ax_of(0)\nassert len(ax.patches) == 3, f'Столбцов на графике {len(ax.patches)}, а каналов 3.'\nhs = [p.get_height() for p in ax.patches]\nassert hs == sorted(hs, reverse=True), 'Столбцы должны идти по убыванию.'\nassert len(ax.texts) >= 3, 'Не вижу подписей над столбцами — ax.bar_label(bars).'\nassert ax.get_title().strip(), 'Добавьте заголовок.'\nassert need('top_channel') == rev.index[0], f'top_channel = {need(\"top_channel\")!r}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "01-plots",
+    "task": "labeled",
+    "case": "misleading-all-numeric-labels",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index, rev.values)\nax.bar_label(bars, labels=[\"0\"] * len(bars))\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "check": "import pandas as _pd\nrev = _pd.read_csv('orders_3m.csv').groupby('channel')['amount'].sum().sort_values(ascending=False)\nax = ax_of(0)\nassert len(ax.patches) == 3, f'Столбцов на графике {len(ax.patches)}, а каналов 3.'\nhs = [p.get_height() for p in ax.patches]\nassert hs == sorted(hs, reverse=True), 'Столбцы должны идти по убыванию.'\nassert len(ax.texts) >= 3, 'Не вижу подписей над столбцами — ax.bar_label(bars).'\nassert ax.get_title().strip(), 'Добавьте заголовок.'\nassert need('top_channel') == rev.index[0], f'top_channel = {need(\"top_channel\")!r}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "five-min",
+    "case": "correct-step-histogram",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.hist(t, histtype=\"step\", bins=range(0,121,5))\nax.set_xlabel(\"минут\")\nax.set_title(\"Время доставки\")",
+    "check": "import pandas as _pd\na = _pd.read_csv('deliveries.csv')['actual_min']\nt = a[a.between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 24, f'Корзин {len(ax.patches)}: от 0 до 120 по 5 минут — это 24 корзины.'\nx0 = ax.patches[0].get_x()\nw = ax.patches[0].get_width()\nassert abs(x0) < 1e-9 and abs(w - 5) < 1e-9, f'Первая корзина начинается с {x0} шириной {w}. Нужно range=(0, 120).'\ntotal = sum(p.get_height() for p in ax.patches)\nassert total == t.between(0, 120).sum(), f'В корзинах {total} доставок — проверьте фильтр 1–299.'\nassert ax.get_xlabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "compare",
+    "case": "correct-stepfilled-density",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"авто\", \"вело\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t, bins=30, range=(0, 90), histtype=\"stepfilled\", density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 60, f'Столбцов {len(ax.patches)}, а нужно 60: две гистограммы по 30 корзин.'\nlabels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []\nassert sorted(labels) == ['авто', 'вело'], f'Легенда: {labels}. Передайте label=... в hist и вызовите ax.legend().'\narea = sum(p.get_height() * p.get_width() for p in ax.patches[:30])\nassert area < 1.01, 'Высоты — доли (density=True), а не количества.'\nwant = {c: ok.loc[ok['courier'] == c, 'actual_min'].median() for c in ('вело', 'авто')}\ngot = dict(need('medians'))\nassert set(got) == set(want), f'Ключи medians: {sorted(got)} — нужны ровно \"вело\" и \"авто\".'\nassert all(close(got[k], want[k]) for k in want), f'medians = {got}: медианы не совпадают. Считайте по ok (время 1–299 минут), отдельно для каждого типа курьера: ok.loc[ok[\"courier\"] == c, \"actual_min\"].median().'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "compare",
+    "case": "explicit-legend-artist-handles",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nhandles=[]\nfor c in [\"авто\", \"вело\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    heights, edges, bars = ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5)\n    handles.append(bars[0])\n    medians[c] = t.median()\nax.legend(handles, [\"авто\", \"вело\"])\nax.set_title(\"Время доставки: вело и авто\")",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 60, f'Столбцов {len(ax.patches)}, а нужно 60: две гистограммы по 30 корзин.'\nlabels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []\nassert sorted(labels) == ['авто', 'вело'], f'Легенда: {labels}. Передайте label=... в hist и вызовите ax.legend().'\narea = sum(p.get_height() * p.get_width() for p in ax.patches[:30])\nassert area < 1.01, 'Высоты — доли (density=True), а не количества.'\nwant = {c: ok.loc[ok['courier'] == c, 'actual_min'].median() for c in ('вело', 'авто')}\ngot = dict(need('medians'))\nassert set(got) == set(want), f'Ключи medians: {sorted(got)} — нужны ровно \"вело\" и \"авто\".'\nassert all(close(got[k], want[k]) for k in want), f'medians = {got}: медианы не совпадают. Считайте по ok (время 1–299 минут), отдельно для каждого типа курьера: ok.loc[ok[\"courier\"] == c, \"actual_min\"].median().'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07-readable",
+    "task": "title",
+    "case": "wrong-left-title",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(\"{} — самые медленные: медиана {} мин\".format(m.index[0],int(m.iloc[0])+1), loc=\"left\")",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nm = ok.groupby('courier')['actual_min'].median().sort_values(ascending=False)\nax = ax_of()\nwant = f'{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин'\nassert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'\nassert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'\nh = [p.get_height() for p in ax.patches]\n_labels = [t.get_text() for t in ax.get_xticklabels()]\nassert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'\nassert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'\nfor _label, _height in zip(_labels, h):\n    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'\nassert ax.get_ylabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "01-plots",
+    "task": "labeled",
+    "case": "reversed-visually-ascending",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index[::-1], rev.values[::-1])\n\nax.bar_label(bars)\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "check": "import pandas as _pd\nrev = _pd.read_csv('orders_3m.csv').groupby('channel')['amount'].sum().sort_values(ascending=False)\nax = ax_of(0)\nassert len(ax.patches) == 3, f'Столбцов на графике {len(ax.patches)}, а каналов 3.'\nhs = [p.get_height() for p in ax.patches]\nassert hs == sorted(hs, reverse=True), 'Столбцы должны идти по убыванию.'\nassert len(ax.texts) >= 3, 'Не вижу подписей над столбцами — ax.bar_label(bars).'\nassert ax.get_title().strip(), 'Добавьте заголовок.'\nassert need('top_channel') == rev.index[0], f'top_channel = {need(\"top_channel\")!r}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "five-min",
+    "case": "wrong-step-frequencies",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.hist(t+5, histtype=\"step\", bins=range(0,121,5))\nax.set_xlabel(\"минут\")\nax.set_title(\"Время доставки\")",
+    "check": "import pandas as _pd\na = _pd.read_csv('deliveries.csv')['actual_min']\nt = a[a.between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 24, f'Корзин {len(ax.patches)}: от 0 до 120 по 5 минут — это 24 корзины.'\nx0 = ax.patches[0].get_x()\nw = ax.patches[0].get_width()\nassert abs(x0) < 1e-9 and abs(w - 5) < 1e-9, f'Первая корзина начинается с {x0} шириной {w}. Нужно range=(0, 120).'\ntotal = sum(p.get_height() for p in ax.patches)\nassert total == t.between(0, 120).sum(), f'В корзинах {total} доставок — проверьте фильтр 1–299.'\nassert ax.get_xlabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "compare",
+    "case": "wrong-stepfilled-second-group",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"авто\", \"вело\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t + (3 if c==\"авто\" else 0), bins=30, range=(0, 90), histtype=\"stepfilled\", density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 60, f'Столбцов {len(ax.patches)}, а нужно 60: две гистограммы по 30 корзин.'\nlabels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []\nassert sorted(labels) == ['авто', 'вело'], f'Легенда: {labels}. Передайте label=... в hist и вызовите ax.legend().'\narea = sum(p.get_height() * p.get_width() for p in ax.patches[:30])\nassert area < 1.01, 'Высоты — доли (density=True), а не количества.'\nwant = {c: ok.loc[ok['courier'] == c, 'actual_min'].median() for c in ('вело', 'авто')}\ngot = dict(need('medians'))\nassert set(got) == set(want), f'Ключи medians: {sorted(got)} — нужны ровно \"вело\" и \"авто\".'\nassert all(close(got[k], want[k]) for k in want), f'medians = {got}: медианы не совпадают. Считайте по ok (время 1–299 минут), отдельно для каждого типа курьера: ok.loc[ok[\"courier\"] == c, \"actual_min\"].median().'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "compare",
+    "case": "explicit-legend-swapped-handles",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nhandles=[]\nfor c in [\"авто\", \"вело\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    heights, edges, bars = ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5)\n    handles.append(bars[0])\n    medians[c] = t.median()\nax.legend(handles[::-1], [\"авто\", \"вело\"])\nax.set_title(\"Время доставки: вело и авто\")",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 60, f'Столбцов {len(ax.patches)}, а нужно 60: две гистограммы по 30 корзин.'\nlabels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []\nassert sorted(labels) == ['авто', 'вело'], f'Легенда: {labels}. Передайте label=... в hist и вызовите ax.legend().'\narea = sum(p.get_height() * p.get_width() for p in ax.patches[:30])\nassert area < 1.01, 'Высоты — доли (density=True), а не количества.'\nwant = {c: ok.loc[ok['courier'] == c, 'actual_min'].median() for c in ('вело', 'авто')}\ngot = dict(need('medians'))\nassert set(got) == set(want), f'Ключи medians: {sorted(got)} — нужны ровно \"вело\" и \"авто\".'\nassert all(close(got[k], want[k]) for k in want), f'medians = {got}: медианы не совпадают. Считайте по ok (время 1–299 минут), отдельно для каждого типа курьера: ok.loc[ok[\"courier\"] == c, \"actual_min\"].median().'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "01-plots",
+    "task": "labeled",
+    "case": "separate-artist-labels",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index, rev.values)\nfor bar, value in zip(bars, rev.values):\n    ax.text(bar.get_x()+bar.get_width()/2, value, f\"{value:,.0f}\".replace(\",\", \" \"), ha=\"center\", va=\"bottom\")\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "check": "import pandas as _pd\nrev = _pd.read_csv('orders_3m.csv').groupby('channel')['amount'].sum().sort_values(ascending=False)\nax = ax_of(0)\nassert len(ax.patches) == 3, f'Столбцов на графике {len(ax.patches)}, а каналов 3.'\nhs = [p.get_height() for p in ax.patches]\nassert hs == sorted(hs, reverse=True), 'Столбцы должны идти по убыванию.'\nassert len(ax.texts) >= 3, 'Не вижу подписей над столбцами — ax.bar_label(bars).'\nassert ax.get_title().strip(), 'Добавьте заголовок.'\nassert need('top_channel') == rev.index[0], f'top_channel = {need(\"top_channel\")!r}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "01-plots",
+    "task": "labeled",
+    "case": "labels-on-wrong-bars",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index, rev.values)\nax.bar_label(bars, labels=rev.values[::-1])\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "check": "import pandas as _pd\nrev = _pd.read_csv('orders_3m.csv').groupby('channel')['amount'].sum().sort_values(ascending=False)\nax = ax_of(0)\nassert len(ax.patches) == 3, f'Столбцов на графике {len(ax.patches)}, а каналов 3.'\nhs = [p.get_height() for p in ax.patches]\nassert hs == sorted(hs, reverse=True), 'Столбцы должны идти по убыванию.'\nassert len(ax.texts) >= 3, 'Не вижу подписей над столбцами — ax.bar_label(bars).'\nassert ax.get_title().strip(), 'Добавьте заголовок.'\nassert need('top_channel') == rev.index[0], f'top_channel = {need(\"top_channel\")!r}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02b-shape",
+    "task": "ufa-empty",
+    "case": "fractional-daily-counts",
+    "expected": false,
+    "code": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")\nu = d[d[\"shop_id\"] == \"UFA-1\"]\nper_day = u.groupby(u[\"created\"].dt.normalize()).size().reindex(days, fill_value=0)\nmean = per_day.mean()\nlam = round(mean, 2)\nempty = int((per_day == 0).sum())\nexp_empty = round(len(days) * math.exp(-mean), 1)\nprint(lam, empty, exp_empty)\nper_day=per_day.iloc[::-1]\nper_day=per_day+0.25\nempty=empty+0.25",
+    "check": "import math as _m\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nu = d[d['shop_id'] == 'UFA-1']\ndays = _pd.date_range('2026-09-01', '2026-11-30')\nraw = u.groupby(u['created'].dt.normalize()).size()\npdw = raw.reindex(days, fill_value=0)\nlw = pdw.mean()\nif close(need('lam'), round(raw.mean(), 2), 0.006):\n    raise AssertionError(f'lam = {need(\"lam\")} — это среднее только по дням с доставками ({len(raw)} дней). Добавьте пустые дни: reindex(days, fill_value=0).')\ns = need('per_day', _pd.Series)\nassert len(s) == len(days) and [int(x) for x in s.values] == [int(x) for x in pdw.values], 'per_day — доставки UFA-1 по дням (dt.normalize()) с нулями в пустых днях, 91 значение.'\nassert close(need('lam'), round(lw, 2), 0.006), f'lam = {need(\"lam\")}: среднее per_day, 2 знака.'\nassert int(need('empty')) == int((pdw == 0).sum()), f'empty = {need(\"empty\")}: (per_day == 0).sum().'\nassert close(need('exp_empty'), round(91 * _m.exp(-lw), 1), 0.051), f'exp_empty = {need(\"exp_empty\")}: 91 · e^(−λ) с неокруглённым средним.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "03-boxplots",
+    "task": "slow",
+    "case": "fractional-courier-counts",
+    "expected": false,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\ng = ok.groupby(\"courier\")[\"actual_min\"]\nq1 = g.transform(lambda s: s.quantile(0.25))\nq3 = g.transform(lambda s: s.quantile(0.75))\nok[\"slow\"] = ok[\"actual_min\"] > q3 + 1.5 * (q3 - q1)\nslow_by = ok.groupby(\"courier\")[\"slow\"].sum().to_dict()\nok=ok.iloc[::-1]\nslow_by={k:v+.5 for k,v in slow_by.items()}",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)].copy()\ng = o.groupby('courier')['actual_min']\nq1 = g.transform(lambda s: s.quantile(0.25))\nq3 = g.transform(lambda s: s.quantile(0.75))\nslow = o['actual_min'] > q3 + 1.5 * (q3 - q1)\nokk = need('ok', _pd.DataFrame)\nassert 'slow' in okk.columns, 'Нет столбца slow.'\nassert (okk['slow'].values == slow.values).all(), 'slow не совпадает: границу нужно считать внутри каждой группы курьеров.'\nwant = {k: int(v) for k, v in slow.groupby(o['courier']).sum().items()}\ngot = {k: int(v) for k, v in dict(need('slow_by')).items()}\nassert got == want, f'slow_by = {got}, а нужно {want}.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05b-cohorts",
+    "task": "age",
+    "case": "fractional-guest-totals",
+    "expected": false,
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\no[\"first\"] = o.groupby(\"guest_id\")[\"date\"].transform(\"min\")\no[\"cohort\"] = o[\"first\"].dt.to_period(\"M\")\no[\"age\"] = (o[\"date\"].dt.year - o[\"first\"].dt.year) * 12 + (o[\"date\"].dt.month - o[\"first\"].dt.month)\nactive = o.pivot_table(index=\"cohort\", columns=\"age\", values=\"guest_id\", aggfunc=\"nunique\")\njan_m3 = active.iloc[0][3]\ntotal_m0 = active[0].sum()\nactive\nactive=active.iloc[::-1,::-1]\njan_m3+=.25\ntotal_m0+=.25",
+    "check": "import pandas as _pd\nr = _pd.read_csv('preorders.csv', parse_dates=['date'])\nf = r.groupby('guest_id')['date'].transform('min')\nr['cohort'] = f.dt.to_period('M')\nr['age'] = (r['date'].dt.year - f.dt.year) * 12 + (r['date'].dt.month - f.dt.month)\nw = r.pivot_table(index='cohort', columns='age', values='guest_id', aggfunc='nunique').fillna(0)\na = need('active', _pd.DataFrame).fillna(0)\nassert a.shape == w.shape, f'Размер active {a.shape}, а нужно {w.shape}: строки — когорты, столбцы — месяцы жизни.'\nif a.values.sum() > w.values.sum() * 1.5:\n    raise AssertionError('В ячейках похоже число заказов, а нужно число разных гостей: aggfunc=\"nunique\".')\nassert (a.values == w.values).all(), 'Значения active не совпадают: pivot_table(index=\"cohort\", columns=\"age\", values=\"guest_id\", aggfunc=\"nunique\").'\nassert int(need('jan_m3')) == int(w.iloc[0][3]), f'jan_m3 = {need(\"jan_m3\")}: строка января, столбец 3.'\nassert int(need('total_m0')) == r['guest_id'].nunique(), f'total_m0 = {need(\"total_m0\")}, а гостей {r[\"guest_id\"].nunique()}.'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "preorder_guests.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "clean",
+    "case": "fractional-cleaning-log",
+    "expected": false,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"delay\"] = ok[\"actual_min\"] - ok[\"promised_min\"]\nok[\"hour\"] = ok[\"created\"].dt.hour\nlog = {\n    \"всего\": len(d),\n    \"без времени\": d[\"actual_min\"].isna().sum(),\n    \"невозможное время\": (d[\"actual_min\"].notna() & ~d[\"actual_min\"].between(1, 299)).sum(),\n    \"осталось\": len(ok),\n}\nlog\nok=ok.iloc[::-1]\nlog={k:v+.5 for k,v in log.items()}",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\no = need('ok', _pd.DataFrame)\nassert len(o) == d['actual_min'].between(1, 299).sum(), f'В ok {len(o)} строк — оставьте время 1–299.'\nfor c in ('late', 'delay', 'hour'):\n    assert c in o.columns, f'В ok нет столбца {c}.'\nassert (o['late'] == (o['actual_min'] > o['promised_min'])).all(), 'late — actual_min > promised_min.'\nassert (o['hour'] == o['created'].dt.hour).all(), 'hour — час из created (created должен быть датой).'\nwant = {'всего': len(d), 'без времени': int(d['actual_min'].isna().sum()),\n        'невозможное время': int((d['actual_min'].notna() & ~d['actual_min'].between(1, 299)).sum()),\n        'осталось': int(d['actual_min'].between(1, 299).sum())}\ngot = {k: int(v) for k, v in dict(need('log')).items()}\nassert got == want, f'log = {got}, а нужно {want}.'\nassert (o['delay'] == o['actual_min'] - o['promised_min']).all(), 'delay = actual_min - promised_min: положительное значение — опоздание.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "08-eda",
+    "task": "slice-fn",
+    "case": "count-nonmissing-instead-of-group-size",
+    "expected": false,
+    "code": "import pandas as pd\n\ndef slice_table(df, by, col):\n    t = df.groupby(by).agg(n=(col,\"count\"),mean=(col,\"mean\"))\n    return t.sort_values(\"mean\", ascending=False)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nslice_table(ok, \"weather\", \"late\")",
+    "check": "import pandas as _pd\nf = need('slice_table')\nt = _pd.DataFrame({'g': ['a', 'a', 'b', 'c', 'c', 'c'], 'v': [1, 3, 10, 0, 0, 3]})\nr = f(t, 'g', 'v')\nassert list(r.columns) == ['n', 'mean'], f'Столбцы: {list(r.columns)}.'\nassert list(r.index) == ['b', 'a', 'c'], f'Порядок групп: {list(r.index)} — по убыванию mean.'\nassert r.loc['a', 'n'] == 2 and r.loc['c', 'mean'] == 1, 'n — размер группы, mean — среднее.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "08-eda",
+    "task": "slice-fn",
+    "case": "same-named-columns-reordered",
+    "expected": true,
+    "code": "import pandas as pd\n\ndef slice_table(df, by, col):\n    t = df.groupby(by).agg(n=(col,\"size\"),mean=(col,\"mean\"))\n    return t[[\"mean\",\"n\"]].sort_values(\"mean\", ascending=False)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nslice_table(ok, \"weather\", \"late\")",
+    "check": "import pandas as _pd\nf = need('slice_table')\nt = _pd.DataFrame({'g': ['a', 'a', 'b', 'c', 'c', 'c'], 'v': [1, 3, 10, 0, 0, 3]})\nr = f(t, 'g', 'v')\nassert list(r.columns) == ['n', 'mean'], f'Столбцы: {list(r.columns)}.'\nassert list(r.index) == ['b', 'a', 'c'], f'Порядок групп: {list(r.index)} — по убыванию mean.'\nassert r.loc['a', 'n'] == 2 and r.loc['c', 'mean'] == 1, 'n — размер группы, mean — среднее.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "report",
+    "case": "alternative-report",
+    "code": "import pandas as pd\nimport math\ndef delivery_report(raw):\n    ok=raw[raw.actual_min.between(1,299)].copy()\n    if ok.empty:\n        return dict(late_pct=None,worst_courier=None,worst_shop=None,peak_hours=[],fair_promise=None)\n    ok[\"late\"]=ok.actual_min>ok.promised_min\n    ok[\"hour\"]=ok.created.dt.hour\n    g=ok.groupby(\"hour\").late.agg([\"mean\",\"size\"])\n    leader=ok.groupby(\"courier\",sort=True).late.mean().idxmax()\n    s=ok[(ok.courier==leader)&(ok.promised_min==30)].actual_min\n    promise=None if s.empty else math.ceil(s.quantile(.8)/5)*5\n    return dict(late_pct=round(ok.late.mean()*100,1),worst_courier=ok.groupby(\"courier\").late.mean().sort_index().idxmax(),worst_shop=ok.groupby(\"shop_id\").late.mean().sort_index().idxmax(),peak_hours=g[(g[\"size\"]>=50)&(g[\"mean\"]>.25)].index.tolist(),fair_promise=promise)\nraw=pd.read_csv(\"deliveries.csv\",parse_dates=[\"created\"])\ndelivery_report(raw)\n",
+    "expected": true
+  },
+  {
+    "lesson": "09-project",
+    "task": "report",
+    "case": "fixed-walkers",
+    "code": "import pandas as pd\nimport math\ndef delivery_report(raw):\n    ok=raw[raw.actual_min.between(1,299)].copy()\n    if ok.empty:\n        return dict(late_pct=None,worst_courier=None,worst_shop=None,peak_hours=[],fair_promise=None)\n    ok[\"late\"]=ok.actual_min>ok.promised_min\n    ok[\"hour\"]=ok.created.dt.hour\n    g=ok.groupby(\"hour\").late.agg([\"mean\",\"size\"])\n    s=ok[(ok.courier==\"пеший\")&(ok.promised_min==30)].actual_min\n    promise=None if s.empty else math.ceil(s.quantile(.8)/5)*5\n    return dict(late_pct=round(ok.late.mean()*100,1),worst_courier=ok.groupby(\"courier\").late.mean().sort_index().idxmax(),worst_shop=ok.groupby(\"shop_id\").late.mean().sort_index().idxmax(),peak_hours=g[(g[\"size\"]>=50)&(g[\"mean\"]>.25)].index.tolist(),fair_promise=promise)\nraw=pd.read_csv(\"deliveries.csv\",parse_dates=[\"created\"])\ndelivery_report(raw)\n",
+    "expected": false
+  },
+  {
+    "lesson": "09-project",
+    "task": "report",
+    "case": "zero-for-no30",
+    "code": "import pandas as pd\nimport math\ndef delivery_report(raw):\n    ok=raw[raw.actual_min.between(1,299)].copy()\n    if ok.empty:\n        return dict(late_pct=None,worst_courier=None,worst_shop=None,peak_hours=[],fair_promise=None)\n    ok[\"late\"]=ok.actual_min>ok.promised_min\n    ok[\"hour\"]=ok.created.dt.hour\n    g=ok.groupby(\"hour\").late.agg([\"mean\",\"size\"])\n    leader=ok.groupby(\"courier\",sort=True).late.mean().idxmax()\n    s=ok[(ok.courier==leader)&(ok.promised_min==30)].actual_min\n    promise=0 if s.empty else math.ceil(s.quantile(.8)/5)*5\n    return dict(late_pct=round(ok.late.mean()*100,1),worst_courier=ok.groupby(\"courier\").late.mean().sort_index().idxmax(),worst_shop=ok.groupby(\"shop_id\").late.mean().sort_index().idxmax(),peak_hours=g[(g[\"size\"]>=50)&(g[\"mean\"]>.25)].index.tolist(),fair_promise=promise)\nraw=pd.read_csv(\"deliveries.csv\",parse_dates=[\"created\"])\ndelivery_report(raw)\n",
+    "expected": false
+  },
+  {
+    "lesson": "09-project",
+    "task": "report",
+    "case": "first-input-tie",
+    "code": "import pandas as pd\nimport math\ndef delivery_report(raw):\n    ok=raw[raw.actual_min.between(1,299)].copy()\n    if ok.empty:\n        return dict(late_pct=None,worst_courier=None,worst_shop=None,peak_hours=[],fair_promise=None)\n    ok[\"late\"]=ok.actual_min>ok.promised_min\n    ok[\"hour\"]=ok.created.dt.hour\n    g=ok.groupby(\"hour\").late.agg([\"mean\",\"size\"])\n    leader=ok.groupby(\"courier\",sort=False).late.mean().idxmax()\n    s=ok[(ok.courier==leader)&(ok.promised_min==30)].actual_min\n    promise=None if s.empty else math.ceil(s.quantile(.8)/5)*5\n    return dict(late_pct=round(ok.late.mean()*100,1),worst_courier=ok.groupby(\"courier\").late.mean().sort_index().idxmax(),worst_shop=ok.groupby(\"shop_id\").late.mean().sort_index().idxmax(),peak_hours=g[(g[\"size\"]>=50)&(g[\"mean\"]>.25)].index.tolist(),fair_promise=promise)\nraw=pd.read_csv(\"deliveries.csv\",parse_dates=[\"created\"])\ndelivery_report(raw)\n",
+    "expected": false
+  },
+  {
+    "lesson": "05c-dau-mau",
+    "task": "wau-full",
+    "case": "week-without-orders-counts-seven-days",
+    "prepare": "import pandas as pd\nsrc=pd.read_csv(\"preorders.csv\")\nsrc.loc[~src.date.between(\"2026-01-05\",\"2026-01-11\")].to_csv(\"preorders.csv\",index=False)",
+    "code": "import pandas as pd\norders = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\ncalendar = pd.DataFrame({\"date\":pd.date_range(\"2026-01-01\", \"2026-06-30\")})\ncalendar[\"week\"] = calendar.date.dt.to_period(\"W\")\norders[\"week\"] = orders.date.dt.to_period(\"W\")\nweekly = calendar.groupby(\"week\").size().to_frame(\"days\").join(orders.groupby(\"week\").guest_id.nunique().rename(\"wau\")).fillna(0)\nfull = weekly.loc[weekly.days.eq(7)].copy()\nn_full, min_wau = len(full), full.wau.min()",
+    "expected": true
+  },
+  {
+    "lesson": "05c-dau-mau",
+    "task": "wau-full",
+    "case": "week-without-orders-wrong-days",
+    "prepare": "import pandas as pd\nsrc=pd.read_csv(\"preorders.csv\")\nsrc.loc[~src.date.between(\"2026-01-05\",\"2026-01-11\")].to_csv(\"preorders.csv\",index=False)",
+    "code": "import pandas as pd\norders = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\ncalendar = pd.DataFrame({\"date\":pd.date_range(\"2026-01-01\", \"2026-06-30\")})\ncalendar[\"week\"] = calendar.date.dt.to_period(\"W\")\norders[\"week\"] = orders.date.dt.to_period(\"W\")\nweekly = calendar.groupby(\"week\").size().to_frame(\"days\").join(orders.groupby(\"week\").guest_id.nunique().rename(\"wau\")).fillna(0)\nfull = weekly.loc[weekly.days.eq(7)].copy()\nn_full, min_wau = len(full), full.wau.min()\nweekly.loc[weekly.wau.eq(0), \"days\"]=0",
+    "expected": false
+  },
+  {
+    "lesson": "05c-dau-mau",
+    "task": "wau-full",
+    "case": "weekly-right-full-wrong",
+    "prepare": "import pandas as pd\nsrc=pd.read_csv(\"preorders.csv\")\nsrc.loc[~src.date.between(\"2026-01-05\",\"2026-01-11\")].to_csv(\"preorders.csv\",index=False)",
+    "code": "import pandas as pd\norders = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\ncalendar = pd.DataFrame({\"date\":pd.date_range(\"2026-01-01\", \"2026-06-30\")})\ncalendar[\"week\"] = calendar.date.dt.to_period(\"W\")\norders[\"week\"] = orders.date.dt.to_period(\"W\")\nweekly = calendar.groupby(\"week\").size().to_frame(\"days\").join(orders.groupby(\"week\").guest_id.nunique().rename(\"wau\")).fillna(0)\nfull = weekly.loc[weekly.days.eq(7)].copy()\nn_full, min_wau = len(full), full.wau.min()\nfull=full.copy();full.loc[full.wau.eq(0),\"wau\"]=1",
+    "expected": false
+  },
+  {
+    "lesson": "01-plots",
+    "task": "labeled",
+    "case": "alternative-aggregate",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].agg(\"sum\").sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index, rev.values)\nax.bar_label(bars)\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]",
+    "check": "import pandas as _pd\nrev = _pd.read_csv('orders_3m.csv').groupby('channel')['amount'].sum().sort_values(ascending=False)\nax = ax_of(0)\nassert len(ax.patches) == 3, f'Столбцов на графике {len(ax.patches)}, а каналов 3.'\nhs = [p.get_height() for p in ax.patches]\nassert hs == sorted(hs, reverse=True), 'Столбцы должны идти по убыванию.'\nassert len(ax.texts) >= 3, 'Не вижу подписей над столбцами — ax.bar_label(bars).'\nassert ax.get_title().strip(), 'Добавьте заголовок.'\nassert need('top_channel') == rev.index[0], f'top_channel = {need(\"top_channel\")!r}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "01-plots",
+    "task": "labeled",
+    "case": "wrong-halved-channel-revenue",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"channel\")[\"amount\"].sum().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nbars = ax.bar(rev.index, rev.values)\nax.bar_label(bars)\nax.set_title(\"Зал приносит больше всего выручки\")\ntop_channel = rev.index[0]\nfor patch in ax.patches: patch.set_height(patch.get_height()/2)",
+    "check": "import pandas as _pd\nrev = _pd.read_csv('orders_3m.csv').groupby('channel')['amount'].sum().sort_values(ascending=False)\nax = ax_of(0)\nassert len(ax.patches) == 3, f'Столбцов на графике {len(ax.patches)}, а каналов 3.'\nhs = [p.get_height() for p in ax.patches]\nassert hs == sorted(hs, reverse=True), 'Столбцы должны идти по убыванию.'\nassert len(ax.texts) >= 3, 'Не вижу подписей над столбцами — ax.bar_label(bars).'\nassert ax.get_title().strip(), 'Добавьте заголовок.'\nassert need('top_channel') == rev.index[0], f'top_channel = {need(\"top_channel\")!r}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "five-min",
+    "case": "alternative-explicit-edges",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.hist(t, bins=range(0,121,5))\nax.set_xlabel(\"минут\")\nax.set_title(\"Время доставки\")",
+    "check": "import pandas as _pd\na = _pd.read_csv('deliveries.csv')['actual_min']\nt = a[a.between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 24, f'Корзин {len(ax.patches)}: от 0 до 120 по 5 минут — это 24 корзины.'\nx0 = ax.patches[0].get_x()\nw = ax.patches[0].get_width()\nassert abs(x0) < 1e-9 and abs(w - 5) < 1e-9, f'Первая корзина начинается с {x0} шириной {w}. Нужно range=(0, 120).'\ntotal = sum(p.get_height() for p in ax.patches)\nassert total == t.between(0, 120).sum(), f'В корзинах {total} доставок — проверьте фильтр 1–299.'\nassert ax.get_xlabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "five-min",
+    "case": "wrong-reversed-bin-counts",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nt = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"]\nfig, ax = plt.subplots(figsize=(8, 3.5))\nax.hist(t, bins=24, range=(0, 120))\nax.set_xlabel(\"минут\")\nax.set_title(\"Время доставки\")\nheights=[p.get_height() for p in ax.patches]\nfor patch,height in zip(ax.patches,heights[::-1]): patch.set_height(height)",
+    "check": "import pandas as _pd\na = _pd.read_csv('deliveries.csv')['actual_min']\nt = a[a.between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 24, f'Корзин {len(ax.patches)}: от 0 до 120 по 5 минут — это 24 корзины.'\nx0 = ax.patches[0].get_x()\nw = ax.patches[0].get_width()\nassert abs(x0) < 1e-9 and abs(w - 5) < 1e-9, f'Первая корзина начинается с {x0} шириной {w}. Нужно range=(0, 120).'\ntotal = sum(p.get_height() for p in ax.patches)\nassert total == t.between(0, 120).sum(), f'В корзинах {total} доставок — проверьте фильтр 1–299.'\nassert ax.get_xlabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02b-shape",
+    "task": "ufa-empty",
+    "case": "alternative-reordered-keyed-days",
+    "expected": true,
+    "code": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")\nu = d[d[\"shop_id\"] == \"UFA-1\"]\nper_day = u.groupby(u[\"created\"].dt.normalize()).size().reindex(days, fill_value=0)\nmean = per_day.mean()\nlam = round(mean, 2)\nempty = int((per_day == 0).sum())\nexp_empty = round(len(days) * math.exp(-mean), 1)\nprint(lam, empty, exp_empty)\nper_day=per_day.iloc[::-1]",
+    "check": "import math as _m\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nu = d[d['shop_id'] == 'UFA-1']\ndays = _pd.date_range('2026-09-01', '2026-11-30')\nraw = u.groupby(u['created'].dt.normalize()).size()\npdw = raw.reindex(days, fill_value=0)\nlw = pdw.mean()\nif close(need('lam'), round(raw.mean(), 2), 0.006):\n    raise AssertionError(f'lam = {need(\"lam\")} — это среднее только по дням с доставками ({len(raw)} дней). Добавьте пустые дни: reindex(days, fill_value=0).')\ns = need('per_day', _pd.Series)\nassert len(s) == len(days) and [int(x) for x in s.values] == [int(x) for x in pdw.values], 'per_day — доставки UFA-1 по дням (dt.normalize()) с нулями в пустых днях, 91 значение.'\nassert close(need('lam'), round(lw, 2), 0.006), f'lam = {need(\"lam\")}: среднее per_day, 2 знака.'\nassert int(need('empty')) == int((pdw == 0).sum()), f'empty = {need(\"empty\")}: (per_day == 0).sum().'\nassert close(need('exp_empty'), round(91 * _m.exp(-lw), 1), 0.051), f'exp_empty = {need(\"exp_empty\")}: 91 · e^(−λ) с неокруглённым средним.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02b-shape",
+    "task": "ufa-empty",
+    "case": "wrong-date-labels-only",
+    "expected": false,
+    "code": "import math\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\ndays = pd.date_range(\"2026-09-01\", \"2026-11-30\")\nu = d[d[\"shop_id\"] == \"UFA-1\"]\nper_day = u.groupby(u[\"created\"].dt.normalize()).size().reindex(days, fill_value=0)\nmean = per_day.mean()\nlam = round(mean, 2)\nempty = int((per_day == 0).sum())\nexp_empty = round(len(days) * math.exp(-mean), 1)\nprint(lam, empty, exp_empty)\nper_day.index=per_day.index[::-1]",
+    "check": "import math as _m\nimport pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\nu = d[d['shop_id'] == 'UFA-1']\ndays = _pd.date_range('2026-09-01', '2026-11-30')\nraw = u.groupby(u['created'].dt.normalize()).size()\npdw = raw.reindex(days, fill_value=0)\nlw = pdw.mean()\nif close(need('lam'), round(raw.mean(), 2), 0.006):\n    raise AssertionError(f'lam = {need(\"lam\")} — это среднее только по дням с доставками ({len(raw)} дней). Добавьте пустые дни: reindex(days, fill_value=0).')\ns = need('per_day', _pd.Series)\nassert len(s) == len(days) and [int(x) for x in s.values] == [int(x) for x in pdw.values], 'per_day — доставки UFA-1 по дням (dt.normalize()) с нулями в пустых днях, 91 значение.'\nassert close(need('lam'), round(lw, 2), 0.006), f'lam = {need(\"lam\")}: среднее per_day, 2 знака.'\nassert int(need('empty')) == int((pdw == 0).sum()), f'empty = {need(\"empty\")}: (per_day == 0).sum().'\nassert close(need('exp_empty'), round(91 * _m.exp(-lw), 1), 0.051), f'exp_empty = {need(\"exp_empty\")}: 91 · e^(−λ) с неокруглённым средним.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "03-boxplots",
+    "task": "slow",
+    "case": "alternative-whole-deliveries-reordered",
+    "expected": true,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\ng = ok.groupby(\"courier\")[\"actual_min\"]\nq1 = g.transform(lambda s: s.quantile(0.25))\nq3 = g.transform(lambda s: s.quantile(0.75))\nok[\"slow\"] = ok[\"actual_min\"] > q3 + 1.5 * (q3 - q1)\nslow_by = ok.groupby(\"courier\")[\"slow\"].sum().to_dict()\nok=ok.iloc[::-1]",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)].copy()\ng = o.groupby('courier')['actual_min']\nq1 = g.transform(lambda s: s.quantile(0.25))\nq3 = g.transform(lambda s: s.quantile(0.75))\nslow = o['actual_min'] > q3 + 1.5 * (q3 - q1)\nokk = need('ok', _pd.DataFrame)\nassert 'slow' in okk.columns, 'Нет столбца slow.'\nassert (okk['slow'].values == slow.values).all(), 'slow не совпадает: границу нужно считать внутри каждой группы курьеров.'\nwant = {k: int(v) for k, v in slow.groupby(o['courier']).sum().items()}\ngot = {k: int(v) for k, v in dict(need('slow_by')).items()}\nassert got == want, f'slow_by = {got}, а нужно {want}.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "03-boxplots",
+    "task": "slow",
+    "case": "wrong-flags-only-reordered",
+    "expected": false,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\ng = ok.groupby(\"courier\")[\"actual_min\"]\nq1 = g.transform(lambda s: s.quantile(0.25))\nq3 = g.transform(lambda s: s.quantile(0.75))\nok[\"slow\"] = ok[\"actual_min\"] > q3 + 1.5 * (q3 - q1)\nslow_by = ok.groupby(\"courier\")[\"slow\"].sum().to_dict()\nok[\"slow\"]=ok.slow.iloc[::-1].to_numpy()",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)].copy()\ng = o.groupby('courier')['actual_min']\nq1 = g.transform(lambda s: s.quantile(0.25))\nq3 = g.transform(lambda s: s.quantile(0.75))\nslow = o['actual_min'] > q3 + 1.5 * (q3 - q1)\nokk = need('ok', _pd.DataFrame)\nassert 'slow' in okk.columns, 'Нет столбца slow.'\nassert (okk['slow'].values == slow.values).all(), 'slow не совпадает: границу нужно считать внутри каждой группы курьеров.'\nwant = {k: int(v) for k, v in slow.groupby(o['courier']).sum().items()}\ngot = {k: int(v) for k, v in dict(need('slow_by')).items()}\nassert got == want, f'slow_by = {got}, а нужно {want}.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "03b-sigma",
+    "task": "sigma-courier",
+    "case": "alternative-reordered-rows-columns",
+    "expected": true,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ng = ok.groupby(\"courier\")[\"actual_min\"]\nspread = pd.DataFrame({\n    \"mean\": g.mean(),\n    \"std\": g.std(ddof=1),\n    \"iqr\": g.quantile(0.75) - g.quantile(0.25),\n}).round(1)\nmost_stable = spread[\"std\"].idxmin()\nspread\nspread=spread.iloc[::-1][[\"iqr\",\"std\",\"mean\"]]",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)]\ng = o.groupby('courier')['actual_min']\nw = _pd.DataFrame({'mean': g.mean(), 'std': g.std(), 'iqr': g.quantile(0.75) - g.quantile(0.25)}).round(1)\ns = need('spread', _pd.DataFrame)\nif 'courier' in s.columns:\n    s = s.set_index('courier')\nfor c in ('mean', 'std', 'iqr'):\n    assert c in s.columns, f'В spread нет столбца {c}.'\nassert set(s.index) == set(w.index), f'Строки spread: {list(s.index)} — типы курьеров.'\ng0 = o.groupby('courier')['actual_min'].std(ddof=0).round(1)\nif all(close(s.loc[k, 'std'], g0[k], 0.051) for k in w.index) and not all(close(s.loc[k, 'std'], w.loc[k, 'std'], 0.051) for k in w.index):\n    raise AssertionError('std посчитан с ddof=0 (как в numpy). Нужно по выборке: ddof=1 — это значение по умолчанию у pandas.')\nfor c in ('mean', 'std', 'iqr'):\n    assert all(close(s.loc[k, c], w.loc[k, c], 0.051) for k in w.index), f'Столбец {c} не совпадает.'\nassert need('most_stable') == w['std'].idxmin(), f'most_stable = {need(\"most_stable\")!r}.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "03b-sigma",
+    "task": "sigma-courier",
+    "case": "wrong-courier-labels",
+    "expected": false,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ng = ok.groupby(\"courier\")[\"actual_min\"]\nspread = pd.DataFrame({\n    \"mean\": g.mean(),\n    \"std\": g.std(ddof=1),\n    \"iqr\": g.quantile(0.75) - g.quantile(0.25),\n}).round(1)\nmost_stable = spread[\"std\"].idxmin()\nspread\nspread.index=spread.index[::-1]",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)]\ng = o.groupby('courier')['actual_min']\nw = _pd.DataFrame({'mean': g.mean(), 'std': g.std(), 'iqr': g.quantile(0.75) - g.quantile(0.25)}).round(1)\ns = need('spread', _pd.DataFrame)\nif 'courier' in s.columns:\n    s = s.set_index('courier')\nfor c in ('mean', 'std', 'iqr'):\n    assert c in s.columns, f'В spread нет столбца {c}.'\nassert set(s.index) == set(w.index), f'Строки spread: {list(s.index)} — типы курьеров.'\ng0 = o.groupby('courier')['actual_min'].std(ddof=0).round(1)\nif all(close(s.loc[k, 'std'], g0[k], 0.051) for k in w.index) and not all(close(s.loc[k, 'std'], w.loc[k, 'std'], 0.051) for k in w.index):\n    raise AssertionError('std посчитан с ddof=0 (как в numpy). Нужно по выборке: ddof=1 — это значение по умолчанию у pandas.')\nfor c in ('mean', 'std', 'iqr'):\n    assert all(close(s.loc[k, c], w.loc[k, c], 0.051) for k in w.index), f'Столбец {c} не совпадает.'\nassert need('most_stable') == w['std'].idxmin(), f'most_stable = {need(\"most_stable\")!r}.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04-slices",
+    "task": "share-snow",
+    "case": "alternative-reordered-whole-groups",
+    "expected": true,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nct = pd.crosstab(ok[\"courier\"], ok[\"weather\"], normalize=\"columns\")\nvelo_snow_pct = round(ct.loc[\"вело\", \"снег\"] * 100, 1)\nvelo_clear_pct = round(ct.loc[\"вело\", \"ясно\"] * 100, 1)\nct=ct.iloc[::-1,::-1]",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)]\nwant = _pd.crosstab(o['courier'], o['weather'], normalize='columns')\nc = need('ct', _pd.DataFrame)\nassert c.shape == want.shape and all(close(v, 1) for v in c.sum()), 'Каждый столбец (погода) в сумме должен давать 1: normalize=\"columns\".'\nraw = _pd.crosstab(d['courier'], d['weather'], normalize='columns')\n_vs, _ws = need('velo_snow_pct'), round(want.loc['вело', 'снег'] * 100, 1)\nif close(_vs, round(raw.loc['вело', 'снег'] * 100, 1)) and not close(_vs, _ws):\n    raise AssertionError(f'velo_snow_pct = {_vs}: похоже, таблица построена по d. Нужны доставки 1–299 минут — таблица ok, тогда получится {_ws}.')\nassert close(_vs, _ws), f'velo_snow_pct = {_vs}, а нужно {_ws}: доля строки «вело» в столбце «снег», × 100, 1 знак.'\n_vc, _wc = need('velo_clear_pct'), round(want.loc['вело', 'ясно'] * 100, 1)\nassert close(_vc, _wc), f'velo_clear_pct = {_vc}, а нужно {_wc}: доля строки «вело» в столбце «ясно».'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04-slices",
+    "task": "share-snow",
+    "case": "wrong-crosstab-labels-only",
+    "expected": false,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nct = pd.crosstab(ok[\"courier\"], ok[\"weather\"], normalize=\"columns\")\nvelo_snow_pct = round(ct.loc[\"вело\", \"снег\"] * 100, 1)\nvelo_clear_pct = round(ct.loc[\"вело\", \"ясно\"] * 100, 1)\nct.index=ct.index[::-1]",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\no = d[d['actual_min'].between(1, 299)]\nwant = _pd.crosstab(o['courier'], o['weather'], normalize='columns')\nc = need('ct', _pd.DataFrame)\nassert c.shape == want.shape and all(close(v, 1) for v in c.sum()), 'Каждый столбец (погода) в сумме должен давать 1: normalize=\"columns\".'\nraw = _pd.crosstab(d['courier'], d['weather'], normalize='columns')\n_vs, _ws = need('velo_snow_pct'), round(want.loc['вело', 'снег'] * 100, 1)\nif close(_vs, round(raw.loc['вело', 'снег'] * 100, 1)) and not close(_vs, _ws):\n    raise AssertionError(f'velo_snow_pct = {_vs}: похоже, таблица построена по d. Нужны доставки 1–299 минут — таблица ok, тогда получится {_ws}.')\nassert close(_vs, _ws), f'velo_snow_pct = {_vs}, а нужно {_ws}: доля строки «вело» в столбце «снег», × 100, 1 знак.'\n_vc, _wc = need('velo_clear_pct'), round(want.loc['вело', 'ясно'] * 100, 1)\nassert close(_vc, _wc), f'velo_clear_pct = {_vc}, а нужно {_wc}: доля строки «вело» в столбце «ясно».'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-time",
+    "task": "rolling",
+    "case": "alternative-window-aggregation",
+    "expected": true,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\ndaily = df.set_index(\"datetime\").resample(\"D\")[\"amount\"].sum()\nsmooth = daily.rolling(window=7).agg(\"mean\")\nlast_smooth = round(smooth.iloc[-1])",
+    "check": "import pandas as _pd\ndf = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\ns = df.set_index('datetime').resample('D')['amount'].sum().rolling(7).mean()\ngot = need('smooth', _pd.Series)\nassert len(got) == len(s) and got.isna().sum() == 6, 'smooth — rolling(7).mean(): та же длина, первые 6 значений — NaN.'\nassert need('last_smooth') == round(s.iloc[-1]), f'last_smooth = {need(\"last_smooth\")}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-time",
+    "task": "rolling",
+    "case": "wrong-middle-rolling-values",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\ndaily = df.set_index(\"datetime\").resample(\"D\")[\"amount\"].sum()\nsmooth = daily.rolling(7).mean()\nlast_smooth = round(smooth.iloc[-1])\nsmooth.iloc[6:-1]=0",
+    "check": "import pandas as _pd\ndf = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\ns = df.set_index('datetime').resample('D')['amount'].sum().rolling(7).mean()\ngot = need('smooth', _pd.Series)\nassert len(got) == len(s) and got.isna().sum() == 6, 'smooth — rolling(7).mean(): та же длина, первые 6 значений — NaN.'\nassert need('last_smooth') == round(s.iloc[-1]), f'last_smooth = {need(\"last_smooth\")}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05b-cohorts",
+    "task": "age",
+    "case": "alternative-whole-rows-columns-reordered",
+    "expected": true,
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\no[\"first\"] = o.groupby(\"guest_id\")[\"date\"].transform(\"min\")\no[\"cohort\"] = o[\"first\"].dt.to_period(\"M\")\no[\"age\"] = (o[\"date\"].dt.year - o[\"first\"].dt.year) * 12 + (o[\"date\"].dt.month - o[\"first\"].dt.month)\nactive = o.pivot_table(index=\"cohort\", columns=\"age\", values=\"guest_id\", aggfunc=\"nunique\")\njan_m3 = active.iloc[0][3]\ntotal_m0 = active[0].sum()\nactive\nactive=active.iloc[::-1,::-1]",
+    "check": "import pandas as _pd\nr = _pd.read_csv('preorders.csv', parse_dates=['date'])\nf = r.groupby('guest_id')['date'].transform('min')\nr['cohort'] = f.dt.to_period('M')\nr['age'] = (r['date'].dt.year - f.dt.year) * 12 + (r['date'].dt.month - f.dt.month)\nw = r.pivot_table(index='cohort', columns='age', values='guest_id', aggfunc='nunique').fillna(0)\na = need('active', _pd.DataFrame).fillna(0)\nassert a.shape == w.shape, f'Размер active {a.shape}, а нужно {w.shape}: строки — когорты, столбцы — месяцы жизни.'\nif a.values.sum() > w.values.sum() * 1.5:\n    raise AssertionError('В ячейках похоже число заказов, а нужно число разных гостей: aggfunc=\"nunique\".')\nassert (a.values == w.values).all(), 'Значения active не совпадают: pivot_table(index=\"cohort\", columns=\"age\", values=\"guest_id\", aggfunc=\"nunique\").'\nassert int(need('jan_m3')) == int(w.iloc[0][3]), f'jan_m3 = {need(\"jan_m3\")}: строка января, столбец 3.'\nassert int(need('total_m0')) == r['guest_id'].nunique(), f'total_m0 = {need(\"total_m0\")}, а гостей {r[\"guest_id\"].nunique()}.'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "preorder_guests.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05b-cohorts",
+    "task": "age",
+    "case": "wrong-cohort-labels-only",
+    "expected": false,
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\no[\"first\"] = o.groupby(\"guest_id\")[\"date\"].transform(\"min\")\no[\"cohort\"] = o[\"first\"].dt.to_period(\"M\")\no[\"age\"] = (o[\"date\"].dt.year - o[\"first\"].dt.year) * 12 + (o[\"date\"].dt.month - o[\"first\"].dt.month)\nactive = o.pivot_table(index=\"cohort\", columns=\"age\", values=\"guest_id\", aggfunc=\"nunique\")\njan_m3 = active.iloc[0][3]\ntotal_m0 = active[0].sum()\nactive\nactive.index=active.index[::-1]",
+    "check": "import pandas as _pd\nr = _pd.read_csv('preorders.csv', parse_dates=['date'])\nf = r.groupby('guest_id')['date'].transform('min')\nr['cohort'] = f.dt.to_period('M')\nr['age'] = (r['date'].dt.year - f.dt.year) * 12 + (r['date'].dt.month - f.dt.month)\nw = r.pivot_table(index='cohort', columns='age', values='guest_id', aggfunc='nunique').fillna(0)\na = need('active', _pd.DataFrame).fillna(0)\nassert a.shape == w.shape, f'Размер active {a.shape}, а нужно {w.shape}: строки — когорты, столбцы — месяцы жизни.'\nif a.values.sum() > w.values.sum() * 1.5:\n    raise AssertionError('В ячейках похоже число заказов, а нужно число разных гостей: aggfunc=\"nunique\".')\nassert (a.values == w.values).all(), 'Значения active не совпадают: pivot_table(index=\"cohort\", columns=\"age\", values=\"guest_id\", aggfunc=\"nunique\").'\nassert int(need('jan_m3')) == int(w.iloc[0][3]), f'jan_m3 = {need(\"jan_m3\")}: строка января, столбец 3.'\nassert int(need('total_m0')) == r['guest_id'].nunique(), f'total_m0 = {need(\"total_m0\")}, а гостей {r[\"guest_id\"].nunique()}.'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "preorder_guests.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05c-dau-mau",
+    "task": "sticky-city",
+    "case": "alternative-complete-calendar",
+    "expected": true,
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")\nj = o.merge(guests, on=\"guest_id\")\nj = j[j[\"date\"].dt.to_period(\"M\") == \"2026-06\"]\ndau = j.pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")\nmau = j.groupby(\"city\")[\"guest_id\"].nunique()\ncity_sticky = (dau.reindex(pd.date_range(\"2026-06-01\",\"2026-06-30\")).fillna(0).mean() / mau * 100).round(1)\nbest_city = city_sticky.idxmax()\nprint(mau)\ncity_sticky",
+    "check": "import pandas as _pd\nr = _pd.read_csv('preorders.csv', parse_dates=['date']).merge(_pd.read_csv('preorder_guests.csv'), on='guest_id')\nj = r[r['date'].dt.to_period('M') == _pd.Period('2026-06', 'M')]\nt = j.pivot_table(index='date', columns='city', values='guest_id', aggfunc='nunique')\nmau = j.groupby('city')['guest_id'].nunique()\nw = (t.mean() / mau * 100).round(1)\ns = need('city_sticky', _pd.Series)\ngot = {str(k): float(v) for k, v in s.items()}\nassert set(got) == set(w.index), f'Города в city_sticky: {sorted(got)}, а нужно {sorted(w.index)}.'\ndau_all = j.groupby('date')['guest_id'].nunique().mean()\nif all(close(got[c], dau_all / mau[c] * 100, 0.06) for c in got):\n    raise AssertionError('Средний DAU взят по всей сети. Нужен DAU гостей своего города: nunique по паре (дата, город).')\nfor c in w.index:\n    assert close(got[c], float(w[c]), 0.051), f'У {c} получилось {got[c]}, ожидалось {float(w[c])}: средний за дни июня DAU города / MAU города × 100.'\nassert str(need('best_city')) == str(w.idxmax()), f'best_city = {need(\"best_city\")!r}.'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "preorder_guests.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05c-dau-mau",
+    "task": "sticky-city",
+    "case": "equal-value-city-labels-reversed",
+    "expected": true,
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")\nj = o.merge(guests, on=\"guest_id\")\nj = j[j[\"date\"].dt.to_period(\"M\") == \"2026-06\"]\ndau = j.pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")\nmau = j.groupby(\"city\")[\"guest_id\"].nunique()\ncity_sticky = (dau.mean() / mau * 100).round(1)\nbest_city = city_sticky.idxmax()\nprint(mau)\ncity_sticky\ncity_sticky.index=city_sticky.index[::-1]",
+    "check": "import pandas as _pd\nr = _pd.read_csv('preorders.csv', parse_dates=['date']).merge(_pd.read_csv('preorder_guests.csv'), on='guest_id')\nj = r[r['date'].dt.to_period('M') == _pd.Period('2026-06', 'M')]\nt = j.pivot_table(index='date', columns='city', values='guest_id', aggfunc='nunique')\nmau = j.groupby('city')['guest_id'].nunique()\nw = (t.mean() / mau * 100).round(1)\ns = need('city_sticky', _pd.Series)\ngot = {str(k): float(v) for k, v in s.items()}\nassert set(got) == set(w.index), f'Города в city_sticky: {sorted(got)}, а нужно {sorted(w.index)}.'\ndau_all = j.groupby('date')['guest_id'].nunique().mean()\nif all(close(got[c], dau_all / mau[c] * 100, 0.06) for c in got):\n    raise AssertionError('Средний DAU взят по всей сети. Нужен DAU гостей своего города: nunique по паре (дата, город).')\nfor c in w.index:\n    assert close(got[c], float(w[c]), 0.051), f'У {c} получилось {got[c]}, ожидалось {float(w[c])}: средний за дни июня DAU города / MAU города × 100.'\nassert str(need('best_city')) == str(w.idxmax()), f'best_city = {need(\"best_city\")!r}.'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "preorder_guests.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05c-dau-mau",
+    "task": "sticky-city",
+    "case": "wrong-unequal-city-labels-only",
+    "expected": false,
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")\nj = o.merge(guests, on=\"guest_id\")\nj = j[j[\"date\"].dt.to_period(\"M\") == \"2026-06\"]\ndau = j.pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")\nmau = j.groupby(\"city\")[\"guest_id\"].nunique()\ncity_sticky = (dau.mean() / mau * 100).round(1)\nbest_city = city_sticky.idxmax()\nprint(mau)\ncity_sticky\ncity_sticky.index=list(city_sticky.index[1:])+list(city_sticky.index[:1])",
+    "check": "import pandas as _pd\nr = _pd.read_csv('preorders.csv', parse_dates=['date']).merge(_pd.read_csv('preorder_guests.csv'), on='guest_id')\nj = r[r['date'].dt.to_period('M') == _pd.Period('2026-06', 'M')]\nt = j.pivot_table(index='date', columns='city', values='guest_id', aggfunc='nunique')\nmau = j.groupby('city')['guest_id'].nunique()\nw = (t.mean() / mau * 100).round(1)\ns = need('city_sticky', _pd.Series)\ngot = {str(k): float(v) for k, v in s.items()}\nassert set(got) == set(w.index), f'Города в city_sticky: {sorted(got)}, а нужно {sorted(w.index)}.'\ndau_all = j.groupby('date')['guest_id'].nunique().mean()\nif all(close(got[c], dau_all / mau[c] * 100, 0.06) for c in got):\n    raise AssertionError('Средний DAU взят по всей сети. Нужен DAU гостей своего города: nunique по паре (дата, город).')\nfor c in w.index:\n    assert close(got[c], float(w[c]), 0.051), f'У {c} получилось {got[c]}, ожидалось {float(w[c])}: средний за дни июня DAU города / MAU города × 100.'\nassert str(need('best_city')) == str(w.idxmax()), f'best_city = {need(\"best_city\")!r}.'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "preorder_guests.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05c-dau-mau",
+    "task": "sticky-city",
+    "case": "calendar-zero-city-day-correct",
+    "expected": true,
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")\nj = o.merge(guests, on=\"guest_id\")\nj = j[j[\"date\"].dt.to_period(\"M\") == \"2026-06\"]\ndau = j.pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")\nmau = j.groupby(\"city\")[\"guest_id\"].nunique()\ncity_sticky = (dau.reindex(pd.date_range(\"2026-06-01\",\"2026-06-30\")).fillna(0).mean() / mau * 100).round(1)\nbest_city = city_sticky.idxmax()\nprint(mau)\ncity_sticky",
+    "check": "import pandas as _pd\nr = _pd.read_csv('preorders.csv', parse_dates=['date']).merge(_pd.read_csv('preorder_guests.csv'), on='guest_id')\nj = r[r['date'].dt.to_period('M') == _pd.Period('2026-06', 'M')]\nt = j.pivot_table(index='date', columns='city', values='guest_id', aggfunc='nunique')\nmau = j.groupby('city')['guest_id'].nunique()\nw = (t.mean() / mau * 100).round(1)\ns = need('city_sticky', _pd.Series)\ngot = {str(k): float(v) for k, v in s.items()}\nassert set(got) == set(w.index), f'Города в city_sticky: {sorted(got)}, а нужно {sorted(w.index)}.'\ndau_all = j.groupby('date')['guest_id'].nunique().mean()\nif all(close(got[c], dau_all / mau[c] * 100, 0.06) for c in got):\n    raise AssertionError('Средний DAU взят по всей сети. Нужен DAU гостей своего города: nunique по паре (дата, город).')\nfor c in w.index:\n    assert close(got[c], float(w[c]), 0.051), f'У {c} получилось {got[c]}, ожидалось {float(w[c])}: средний за дни июня DAU города / MAU города × 100.'\nassert str(need('best_city')) == str(w.idxmax()), f'best_city = {need(\"best_city\")!r}.'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "preorder_guests.csv"
+    ],
+    "prepare": "import pandas as pd\no=pd.read_csv('preorders.csv');g=pd.read_csv('preorder_guests.csv');ids=set(g.loc[g.city=='Пермь','guest_id']);o=o[~((o.date=='2026-06-07') & o.guest_id.isin(ids))];o.to_csv('preorders.csv',index=False)"
+  },
+  {
+    "lesson": "05c-dau-mau",
+    "task": "sticky-city",
+    "case": "calendar-zero-city-day-wrong-ignore",
+    "expected": false,
+    "code": "import pandas as pd\no = pd.read_csv(\"preorders.csv\", parse_dates=[\"date\"])\nguests = pd.read_csv(\"preorder_guests.csv\")\nj = o.merge(guests, on=\"guest_id\")\nj = j[j[\"date\"].dt.to_period(\"M\") == \"2026-06\"]\ndau = j.pivot_table(index=\"date\", columns=\"city\", values=\"guest_id\", aggfunc=\"nunique\")\nmau = j.groupby(\"city\")[\"guest_id\"].nunique()\ncity_sticky = (dau.mean() / mau * 100).round(1)\nbest_city = city_sticky.idxmax()\nprint(mau)\ncity_sticky\n",
+    "check": "import pandas as _pd\nr = _pd.read_csv('preorders.csv', parse_dates=['date']).merge(_pd.read_csv('preorder_guests.csv'), on='guest_id')\nj = r[r['date'].dt.to_period('M') == _pd.Period('2026-06', 'M')]\nt = j.pivot_table(index='date', columns='city', values='guest_id', aggfunc='nunique')\nmau = j.groupby('city')['guest_id'].nunique()\nw = (t.mean() / mau * 100).round(1)\ns = need('city_sticky', _pd.Series)\ngot = {str(k): float(v) for k, v in s.items()}\nassert set(got) == set(w.index), f'Города в city_sticky: {sorted(got)}, а нужно {sorted(w.index)}.'\ndau_all = j.groupby('date')['guest_id'].nunique().mean()\nif all(close(got[c], dau_all / mau[c] * 100, 0.06) for c in got):\n    raise AssertionError('Средний DAU взят по всей сети. Нужен DAU гостей своего города: nunique по паре (дата, город).')\nfor c in w.index:\n    assert close(got[c], float(w[c]), 0.051), f'У {c} получилось {got[c]}, ожидалось {float(w[c])}: средний за дни июня DAU города / MAU города × 100.'\nassert str(need('best_city')) == str(w.idxmax()), f'best_city = {need(\"best_city\")!r}.'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "preorder_guests.csv"
+    ],
+    "prepare": "import pandas as pd\no=pd.read_csv('preorders.csv');g=pd.read_csv('preorder_guests.csv');ids=set(g.loc[g.city=='Пермь','guest_id']);o=o[~((o.date=='2026-06-07') & o.guest_id.isin(ids))];o.to_csv('preorders.csv',index=False)"
+  },
+  {
+    "lesson": "06-correlation",
+    "task": "spearman",
+    "case": "alternative-pandas-spearman",
+    "expected": true,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\").dropna(subset=[\"actual_min\"])\nr_pearson = round(d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman = round(d[\"distance_km\"].corr(d[\"actual_min\"],method=\"spearman\"), 2)\ndiff = round(d[\"distance_km\"].corr(d[\"actual_min\"],method=\"spearman\") - d[\"distance_km\"].corr(d[\"actual_min\"]), 2)",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv').dropna(subset=['actual_min'])\np = round(d['distance_km'].corr(d['actual_min']), 2)\ns = round(d['distance_km'].rank().corr(d['actual_min'].rank()), 2)\nassert close(need('r_pearson'), p) and close(need('r_spearman'), s), f'r_pearson, r_spearman = {need(\"r_pearson\")}, {need(\"r_spearman\")}, а нужно {p}, {s}.'\nassert close(need('diff'), round(d['distance_km'].rank().corr(d['actual_min'].rank()) - d['distance_km'].corr(d['actual_min']), 2)), f'diff = {need(\"diff\")}.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "06-correlation",
+    "task": "spearman",
+    "case": "wrong-pearson-as-spearman",
+    "expected": false,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\").dropna(subset=[\"actual_min\"])\nr_pearson = round(d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()), 2)\ndiff = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()) - d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman=r_pearson;diff=0",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv').dropna(subset=['actual_min'])\np = round(d['distance_km'].corr(d['actual_min']), 2)\ns = round(d['distance_km'].rank().corr(d['actual_min'].rank()), 2)\nassert close(need('r_pearson'), p) and close(need('r_spearman'), s), f'r_pearson, r_spearman = {need(\"r_pearson\")}, {need(\"r_spearman\")}, а нужно {p}, {s}.'\nassert close(need('diff'), round(d['distance_km'].rank().corr(d['actual_min'].rank()) - d['distance_km'].corr(d['actual_min']), 2)), f'diff = {need(\"diff\")}.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "06-correlation",
+    "task": "spearman",
+    "case": "missing-pairs-pandas-spearman",
+    "expected": true,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\").dropna(subset=[\"actual_min\"])\nr_pearson = round(d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman = round(d[\"distance_km\"].corr(d[\"actual_min\"],method=\"spearman\"), 2)\ndiff = round(d[\"distance_km\"].corr(d[\"actual_min\"],method=\"spearman\") - d[\"distance_km\"].corr(d[\"actual_min\"]), 2)",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv').dropna(subset=['actual_min'])\np = round(d['distance_km'].corr(d['actual_min']), 2)\ns = round(d['distance_km'].rank().corr(d['actual_min'].rank()), 2)\nassert close(need('r_pearson'), p) and close(need('r_spearman'), s), f'r_pearson, r_spearman = {need(\"r_pearson\")}, {need(\"r_spearman\")}, а нужно {p}, {s}.'\nassert close(need('diff'), round(d['distance_km'].rank().corr(d['actual_min'].rank()) - d['distance_km'].corr(d['actual_min']), 2)), f'diff = {need(\"diff\")}.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv').iloc[:8].copy();d['distance_km']=[1,None,2,4,None,3,6,5];d['actual_min']=[10,11,12,15,16,17,80,90];d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "lesson": "06-correlation",
+    "task": "spearman",
+    "case": "missing-pairs-complete-before-ranking",
+    "expected": true,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\").dropna(subset=[\"distance_km\",\"actual_min\"])\nr_pearson = round(d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()), 2)\ndiff = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()) - d[\"distance_km\"].corr(d[\"actual_min\"]), 2)",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv').dropna(subset=['actual_min'])\np = round(d['distance_km'].corr(d['actual_min']), 2)\ns = round(d['distance_km'].rank().corr(d['actual_min'].rank()), 2)\nassert close(need('r_pearson'), p) and close(need('r_spearman'), s), f'r_pearson, r_spearman = {need(\"r_pearson\")}, {need(\"r_spearman\")}, а нужно {p}, {s}.'\nassert close(need('diff'), round(d['distance_km'].rank().corr(d['actual_min'].rank()) - d['distance_km'].corr(d['actual_min']), 2)), f'diff = {need(\"diff\")}.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv').iloc[:8].copy();d['distance_km']=[1,None,2,4,None,3,6,5];d['actual_min']=[10,11,12,15,16,17,80,90];d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "lesson": "06-correlation",
+    "task": "spearman",
+    "case": "missing-pairs-wrong-rank-before-dropping",
+    "expected": false,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\").dropna(subset=[\"actual_min\"])\nr_pearson = round(d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\nr_spearman = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()), 2)\ndiff = round(d[\"distance_km\"].rank().corr(d[\"actual_min\"].rank()) - d[\"distance_km\"].corr(d[\"actual_min\"]), 2)\n",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv').dropna(subset=['actual_min'])\np = round(d['distance_km'].corr(d['actual_min']), 2)\ns = round(d['distance_km'].rank().corr(d['actual_min'].rank()), 2)\nassert close(need('r_pearson'), p) and close(need('r_spearman'), s), f'r_pearson, r_spearman = {need(\"r_pearson\")}, {need(\"r_spearman\")}, а нужно {p}, {s}.'\nassert close(need('diff'), round(d['distance_km'].rank().corr(d['actual_min'].rank()) - d['distance_km'].corr(d['actual_min']), 2)), f'diff = {need(\"diff\")}.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv').iloc[:8].copy();d['distance_km']=[1,None,2,4,None,3,6,5];d['actual_min']=[10,11,12,15,16,17,80,90];d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "lesson": "07-readable",
+    "task": "no-pie",
+    "case": "alternative-inverted-correct-bars",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"drink\")[\"amount\"].sum()\nshare = (rev / rev.sum() * 100).sort_values()\nfig, ax = plt.subplots(figsize=(6, 4))\nbars = ax.barh(share.index[::-1], share.values[::-1])\nax.invert_yaxis()\nax.bar_label(bars, fmt=\"%.1f\")\nax.set_xlabel(\"доля выручки, %\")\nax.set_title(f\"{share.index[-1]} — лидер по выручке\")\nax.spines[[\"top\", \"right\"]].set_visible(False)",
+    "check": "import pandas as _pd\nfrom matplotlib.patches import Wedge as _W\nr = _pd.read_csv('orders_3m.csv').groupby('drink')['amount'].sum()\nshare = (r / r.sum() * 100).sort_values()\nax = ax_of()\nassert not any(isinstance(p, _W) for p in ax.patches), 'На графике остался круг — уберите ax.pie.'\nw = [p.get_width() for p in ax.patches]\nassert len(w) == len(share), f'Столбцов {len(w)}, а напитков {len(share)}: нужен ax.barh по всем напиткам.'\nif all(close(a, b) for a, b in zip(w, share.values[::-1])):\n    raise AssertionError('Самый большой столбец оказался внизу: у barh первый элемент рисуется внизу. Чтобы лидер был наверху, сортируйте по возрастанию — .sort_values() без ascending=False.')\nif sorted(round(x, 3) for x in w) != sorted(round(x, 3) for x in share.values) and close(max(w), r.max()):\n    raise AssertionError('Длины столбцов — выручка в рублях, а нужна доля в процентах: rev / rev.sum() * 100.')\nassert all(close(a, b) for a, b in zip(w, share.values)), 'Длины столбцов — доля выручки в процентах по возрастанию снизу вверх (лидер наверху): rev / rev.sum() * 100, затем .sort_values().'\nassert ax.get_xlabel() == 'доля выручки, %', f'Подпись оси X: {ax.get_xlabel()!r}.'\nassert ax.get_title().strip(), 'Добавьте заголовок-вывод.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07-readable",
+    "task": "no-pie",
+    "case": "wrong-drink-labels-only",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv(\"orders_3m.csv\")\nrev = df.groupby(\"drink\")[\"amount\"].sum()\nshare = (rev / rev.sum() * 100).sort_values()\nfig, ax = plt.subplots(figsize=(6, 4))\nbars = ax.barh(share.index, share.values)\nax.bar_label(bars, fmt=\"%.1f\")\nax.set_xlabel(\"доля выручки, %\")\nax.set_title(f\"{share.index[-1]} — лидер по выручке\")\nax.spines[[\"top\", \"right\"]].set_visible(False)\nax.set_yticks(ax.get_yticks(),share.index[::-1])",
+    "check": "import pandas as _pd\nfrom matplotlib.patches import Wedge as _W\nr = _pd.read_csv('orders_3m.csv').groupby('drink')['amount'].sum()\nshare = (r / r.sum() * 100).sort_values()\nax = ax_of()\nassert not any(isinstance(p, _W) for p in ax.patches), 'На графике остался круг — уберите ax.pie.'\nw = [p.get_width() for p in ax.patches]\nassert len(w) == len(share), f'Столбцов {len(w)}, а напитков {len(share)}: нужен ax.barh по всем напиткам.'\nif all(close(a, b) for a, b in zip(w, share.values[::-1])):\n    raise AssertionError('Самый большой столбец оказался внизу: у barh первый элемент рисуется внизу. Чтобы лидер был наверху, сортируйте по возрастанию — .sort_values() без ascending=False.')\nif sorted(round(x, 3) for x in w) != sorted(round(x, 3) for x in share.values) and close(max(w), r.max()):\n    raise AssertionError('Длины столбцов — выручка в рублях, а нужна доля в процентах: rev / rev.sum() * 100.')\nassert all(close(a, b) for a, b in zip(w, share.values)), 'Длины столбцов — доля выручки в процентах по возрастанию снизу вверх (лидер наверху): rev / rev.sum() * 100, затем .sort_values().'\nassert ax.get_xlabel() == 'доля выручки, %', f'Подпись оси X: {ax.get_xlabel()!r}.'\nassert ax.get_title().strip(), 'Добавьте заголовок-вывод.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07-readable",
+    "task": "title",
+    "case": "alternative-format-string",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(\"{} — самые медленные: медиана {} мин\".format(m.index[0],int(m.iloc[0])))",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nm = ok.groupby('courier')['actual_min'].median().sort_values(ascending=False)\nax = ax_of()\nwant = f'{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин'\nassert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'\nassert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'\nh = [p.get_height() for p in ax.patches]\n_labels = [t.get_text() for t in ax.get_xticklabels()]\nassert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'\nassert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'\nfor _label, _height in zip(_labels, h):\n    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'\nassert ax.get_ylabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07-readable",
+    "task": "title",
+    "case": "wrong-reversed-visual-order",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index[::-1],m.values[::-1])\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nm = ok.groupby('courier')['actual_min'].median().sort_values(ascending=False)\nax = ax_of()\nwant = f'{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин'\nassert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'\nassert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'\nh = [p.get_height() for p in ax.patches]\n_labels = [t.get_text() for t in ax.get_xticklabels()]\nassert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'\nassert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'\nfor _label, _height in zip(_labels, h):\n    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'\nassert ax.get_ylabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07-readable",
+    "task": "title",
+    "case": "alternative-reversed-with-inversion",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index[::-1],m.values[::-1])\nax.invert_xaxis()\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nm = ok.groupby('courier')['actual_min'].median().sort_values(ascending=False)\nax = ax_of()\nwant = f'{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин'\nassert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'\nassert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'\nh = [p.get_height() for p in ax.patches]\n_labels = [t.get_text() for t in ax.get_xticklabels()]\nassert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'\nassert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'\nfor _label, _height in zip(_labels, h):\n    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'\nassert ax.get_ylabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07-readable",
+    "task": "title",
+    "case": "wrong-label-only",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")\nax.set_xticks(ax.get_xticks(),m.index[::-1])",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nm = ok.groupby('courier')['actual_min'].median().sort_values(ascending=False)\nax = ax_of()\nwant = f'{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин'\nassert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'\nassert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'\nh = [p.get_height() for p in ax.patches]\n_labels = [t.get_text() for t in ax.get_xticklabels()]\nassert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'\nassert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'\nfor _label, _height in zip(_labels, h):\n    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'\nassert ax.get_ylabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07-readable",
+    "task": "title",
+    "case": "wrong-minute-axis",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")\nax.set_ylabel(\"км\")",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nm = ok.groupby('courier')['actual_min'].median().sort_values(ascending=False)\nax = ax_of()\nwant = f'{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин'\nassert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'\nassert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'\nh = [p.get_height() for p in ax.patches]\n_labels = [t.get_text() for t in ax.get_xticklabels()]\nassert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'\nassert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'\nfor _label, _height in zip(_labels, h):\n    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'\nassert ax.get_ylabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07c-metrics",
+    "task": "funnel-platform",
+    "case": "alternative-groupby-unstack",
+    "expected": true,
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.groupby([\"platform\",\"period\",\"step\"])[\"session_id\"].nunique().unstack(\"step\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)",
+    "check": "import pandas as _pd\nf = _pd.read_csv('app_funnel.csv', parse_dates=['ts'])\nf['p'] = (f['ts'] >= '2026-06-15').map({True: 'после 15.06', False: 'до 15.06'})\npv = f.pivot_table(index=['platform', 'p'], columns='step', values='session_id', aggfunc='nunique')\nc = pv['заказ'] / pv['оплата']\npc = need('pay_conv', _pd.Series)\nassert len(pc) == 4, f'В pay_conv {len(pc)} значений, а нужно 4: две платформы × два периода.'\nassert pc.index.is_unique and set(pc.index) == set(c.index), 'Индекс pay_conv — четыре разные пары (платформа, период). Сохраняйте подписи срезов.'\nif all(float(v) < 1.5 for v in pc.values):\n    raise AssertionError('pay_conv — в процентах: умножьте долю на 100.')\nfor key in c.index:\n    want = round(float(c.loc[key]) * 100, 1)\n    assert close(pc.loc[key], want, 0.051), f'Срез {key}: pay_conv = {pc.loc[key]}, нужно {want} %: заказ / оплата × 100 по разным сессиям.'\na_b, a_a = c[('android', 'до 15.06')], c[('android', 'после 15.06')]\nlw = round(pv.loc[('android', 'после 15.06'), 'оплата'] * (a_b - a_a))\nassert int(need('lost')) == int(lw), f'lost = {need(\"lost\")}, а нужно {int(lw)}: сессии Android на оплате после 15.06 × (конверсия до − конверсия после).'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "app_funnel.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07c-metrics",
+    "task": "funnel-platform",
+    "case": "whole-groups-reordered",
+    "expected": true,
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)\npay_conv=pay_conv.iloc[::-1]",
+    "check": "import pandas as _pd\nf = _pd.read_csv('app_funnel.csv', parse_dates=['ts'])\nf['p'] = (f['ts'] >= '2026-06-15').map({True: 'после 15.06', False: 'до 15.06'})\npv = f.pivot_table(index=['platform', 'p'], columns='step', values='session_id', aggfunc='nunique')\nc = pv['заказ'] / pv['оплата']\npc = need('pay_conv', _pd.Series)\nassert len(pc) == 4, f'В pay_conv {len(pc)} значений, а нужно 4: две платформы × два периода.'\nassert pc.index.is_unique and set(pc.index) == set(c.index), 'Индекс pay_conv — четыре разные пары (платформа, период). Сохраняйте подписи срезов.'\nif all(float(v) < 1.5 for v in pc.values):\n    raise AssertionError('pay_conv — в процентах: умножьте долю на 100.')\nfor key in c.index:\n    want = round(float(c.loc[key]) * 100, 1)\n    assert close(pc.loc[key], want, 0.051), f'Срез {key}: pay_conv = {pc.loc[key]}, нужно {want} %: заказ / оплата × 100 по разным сессиям.'\na_b, a_a = c[('android', 'до 15.06')], c[('android', 'после 15.06')]\nlw = round(pv.loc[('android', 'после 15.06'), 'оплата'] * (a_b - a_a))\nassert int(need('lost')) == int(lw), f'lost = {need(\"lost\")}, а нужно {int(lw)}: сессии Android на оплате после 15.06 × (конверсия до − конверсия после).'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "app_funnel.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07c-metrics",
+    "task": "funnel-platform",
+    "case": "labels-only-reordered",
+    "expected": false,
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)\npay_conv.index=pay_conv.index[::-1]",
+    "check": "import pandas as _pd\nf = _pd.read_csv('app_funnel.csv', parse_dates=['ts'])\nf['p'] = (f['ts'] >= '2026-06-15').map({True: 'после 15.06', False: 'до 15.06'})\npv = f.pivot_table(index=['platform', 'p'], columns='step', values='session_id', aggfunc='nunique')\nc = pv['заказ'] / pv['оплата']\npc = need('pay_conv', _pd.Series)\nassert len(pc) == 4, f'В pay_conv {len(pc)} значений, а нужно 4: две платформы × два периода.'\nassert pc.index.is_unique and set(pc.index) == set(c.index), 'Индекс pay_conv — четыре разные пары (платформа, период). Сохраняйте подписи срезов.'\nif all(float(v) < 1.5 for v in pc.values):\n    raise AssertionError('pay_conv — в процентах: умножьте долю на 100.')\nfor key in c.index:\n    want = round(float(c.loc[key]) * 100, 1)\n    assert close(pc.loc[key], want, 0.051), f'Срез {key}: pay_conv = {pc.loc[key]}, нужно {want} %: заказ / оплата × 100 по разным сессиям.'\na_b, a_a = c[('android', 'до 15.06')], c[('android', 'после 15.06')]\nlw = round(pv.loc[('android', 'после 15.06'), 'оплата'] * (a_b - a_a))\nassert int(need('lost')) == int(lw), f'lost = {need(\"lost\")}, а нужно {int(lw)}: сессии Android на оплате после 15.06 × (конверсия до − конверсия после).'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "app_funnel.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07c-metrics",
+    "task": "funnel-platform",
+    "case": "wrong-fractional-lost",
+    "expected": false,
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)\nlost+=0.8",
+    "check": "import pandas as _pd\nf = _pd.read_csv('app_funnel.csv', parse_dates=['ts'])\nf['p'] = (f['ts'] >= '2026-06-15').map({True: 'после 15.06', False: 'до 15.06'})\npv = f.pivot_table(index=['platform', 'p'], columns='step', values='session_id', aggfunc='nunique')\nc = pv['заказ'] / pv['оплата']\npc = need('pay_conv', _pd.Series)\nassert len(pc) == 4, f'В pay_conv {len(pc)} значений, а нужно 4: две платформы × два периода.'\nassert pc.index.is_unique and set(pc.index) == set(c.index), 'Индекс pay_conv — четыре разные пары (платформа, период). Сохраняйте подписи срезов.'\nif all(float(v) < 1.5 for v in pc.values):\n    raise AssertionError('pay_conv — в процентах: умножьте долю на 100.')\nfor key in c.index:\n    want = round(float(c.loc[key]) * 100, 1)\n    assert close(pc.loc[key], want, 0.051), f'Срез {key}: pay_conv = {pc.loc[key]}, нужно {want} %: заказ / оплата × 100 по разным сессиям.'\na_b, a_a = c[('android', 'до 15.06')], c[('android', 'после 15.06')]\nlw = round(pv.loc[('android', 'после 15.06'), 'оплата'] * (a_b - a_a))\nassert int(need('lost')) == int(lw), f'lost = {need(\"lost\")}, а нужно {int(lw)}: сессии Android на оплате после 15.06 × (конверсия до − конверсия после).'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "app_funnel.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07c-metrics",
+    "task": "funnel-platform",
+    "case": "other-platform-loss-dynamic",
+    "expected": true,
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)\n",
+    "check": "import pandas as _pd\nf = _pd.read_csv('app_funnel.csv', parse_dates=['ts'])\nf['p'] = (f['ts'] >= '2026-06-15').map({True: 'после 15.06', False: 'до 15.06'})\npv = f.pivot_table(index=['platform', 'p'], columns='step', values='session_id', aggfunc='nunique')\nc = pv['заказ'] / pv['оплата']\npc = need('pay_conv', _pd.Series)\nassert len(pc) == 4, f'В pay_conv {len(pc)} значений, а нужно 4: две платформы × два периода.'\nassert pc.index.is_unique and set(pc.index) == set(c.index), 'Индекс pay_conv — четыре разные пары (платформа, период). Сохраняйте подписи срезов.'\nif all(float(v) < 1.5 for v in pc.values):\n    raise AssertionError('pay_conv — в процентах: умножьте долю на 100.')\nfor key in c.index:\n    want = round(float(c.loc[key]) * 100, 1)\n    assert close(pc.loc[key], want, 0.051), f'Срез {key}: pay_conv = {pc.loc[key]}, нужно {want} %: заказ / оплата × 100 по разным сессиям.'\na_b, a_a = c[('android', 'до 15.06')], c[('android', 'после 15.06')]\nlw = round(pv.loc[('android', 'после 15.06'), 'оплата'] * (a_b - a_a))\nassert int(need('lost')) == int(lw), f'lost = {need(\"lost\")}, а нужно {int(lw)}: сессии Android на оплате после 15.06 × (конверсия до − конверсия после).'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "app_funnel.csv"
+    ],
+    "prepare": "import pandas as pd\nf=pd.read_csv('app_funnel.csv');f['platform']=f.platform.replace({'android':'ios','ios':'android'});f.to_csv('app_funnel.csv',index=False)"
+  },
+  {
+    "lesson": "07c-metrics",
+    "task": "funnel-platform",
+    "case": "other-platform-loss-fixed-104",
+    "expected": false,
+    "code": "import pandas as pd\nf = pd.read_csv(\"app_funnel.csv\", parse_dates=[\"ts\"])\nsteps = [\"открыл\", \"меню\", \"корзина\", \"оплата\", \"заказ\"]\nf[\"period\"] = (f[\"ts\"] >= \"2026-06-15\").map({True: \"после 15.06\", False: \"до 15.06\"})\npv = f.pivot_table(index=[\"platform\", \"period\"], columns=\"step\", values=\"session_id\", aggfunc=\"nunique\")[steps]\nconv = pv[\"заказ\"] / pv[\"оплата\"]\npay_conv = (conv * 100).round(1)\nbefore, after = conv[(\"android\", \"до 15.06\")], conv[(\"android\", \"после 15.06\")]\nlost = round(pv.loc[(\"android\", \"после 15.06\"), \"оплата\"] * (before - after))\nprint(pay_conv)\nprint(lost)\nlost=104",
+    "check": "import pandas as _pd\nf = _pd.read_csv('app_funnel.csv', parse_dates=['ts'])\nf['p'] = (f['ts'] >= '2026-06-15').map({True: 'после 15.06', False: 'до 15.06'})\npv = f.pivot_table(index=['platform', 'p'], columns='step', values='session_id', aggfunc='nunique')\nc = pv['заказ'] / pv['оплата']\npc = need('pay_conv', _pd.Series)\nassert len(pc) == 4, f'В pay_conv {len(pc)} значений, а нужно 4: две платформы × два периода.'\nassert pc.index.is_unique and set(pc.index) == set(c.index), 'Индекс pay_conv — четыре разные пары (платформа, период). Сохраняйте подписи срезов.'\nif all(float(v) < 1.5 for v in pc.values):\n    raise AssertionError('pay_conv — в процентах: умножьте долю на 100.')\nfor key in c.index:\n    want = round(float(c.loc[key]) * 100, 1)\n    assert close(pc.loc[key], want, 0.051), f'Срез {key}: pay_conv = {pc.loc[key]}, нужно {want} %: заказ / оплата × 100 по разным сессиям.'\na_b, a_a = c[('android', 'до 15.06')], c[('android', 'после 15.06')]\nlw = round(pv.loc[('android', 'после 15.06'), 'оплата'] * (a_b - a_a))\nassert int(need('lost')) == int(lw), f'lost = {need(\"lost\")}, а нужно {int(lw)}: сессии Android на оплате после 15.06 × (конверсия до − конверсия после).'",
+    "setup": "",
+    "files": [
+      "preorders.csv",
+      "app_funnel.csv"
+    ],
+    "prepare": "import pandas as pd\nf=pd.read_csv('app_funnel.csv');f['platform']=f.platform.replace({'android':'ios','ios':'android'});f.to_csv('app_funnel.csv',index=False)"
+  },
+  {
+    "lesson": "08-eda",
+    "task": "slice-fn",
+    "case": "alternative-aggregate-columns",
+    "expected": true,
+    "code": "import pandas as pd\n\ndef slice_table(df, by, col):\n    t = df.groupby(by).agg(n=(col,\"size\"),mean=(col,\"mean\"))\n    return t.sort_values(\"mean\", ascending=False)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nslice_table(ok, \"weather\", \"late\")",
+    "check": "import pandas as _pd\nf = need('slice_table')\nt = _pd.DataFrame({'g': ['a', 'a', 'b', 'c', 'c', 'c'], 'v': [1, 3, 10, 0, 0, 3]})\nr = f(t, 'g', 'v')\nassert list(r.columns) == ['n', 'mean'], f'Столбцы: {list(r.columns)}.'\nassert list(r.index) == ['b', 'a', 'c'], f'Порядок групп: {list(r.index)} — по убыванию mean.'\nassert r.loc['a', 'n'] == 2 and r.loc['c', 'mean'] == 1, 'n — размер группы, mean — среднее.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "08-eda",
+    "task": "slice-fn",
+    "case": "wrong-unchecked-counts-and-mean",
+    "expected": false,
+    "code": "import pandas as pd\n\ndef slice_table(df, by, col):\n    t = df.groupby(by)[col].agg(n=\"size\", mean=\"mean\")\n    t.loc[t.index != \"a\", \"n\"] = 7\n    t.loc[t.index == \"a\", \"mean\"] *= 1.5\n    return t.sort_values(\"mean\", ascending=False)\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nslice_table(ok, \"weather\", \"late\")",
+    "check": "import pandas as _pd\nf = need('slice_table')\nt = _pd.DataFrame({'g': ['a', 'a', 'b', 'c', 'c', 'c'], 'v': [1, 3, 10, 0, 0, 3]})\nr = f(t, 'g', 'v')\nassert list(r.columns) == ['n', 'mean'], f'Столбцы: {list(r.columns)}.'\nassert list(r.index) == ['b', 'a', 'c'], f'Порядок групп: {list(r.index)} — по убыванию mean.'\nassert r.loc['a', 'n'] == 2 and r.loc['c', 'mean'] == 1, 'n — размер группы, mean — среднее.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "walkers",
+    "case": "alternative-largest-sorted-group",
+    "expected": true,
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\")[\"late\"].mean().sort_index().sort_values(ascending=False,kind=\"stable\").index[0]\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)",
+    "check": "import pandas as _pd\no = _ref_ok()\npv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100\np = need('pv', _pd.DataFrame)\nassert p.shape == pv.shape, f'Форма pv {p.shape}, а нужно {pv.shape}: строки — promised_min (30, 45, 60), столбцы — courier.'\nassert p.index.is_unique and p.columns.is_unique and set(p.index) == set(pv.index) and set(p.columns) == set(pv.columns), 'Проверьте подписи строк (обещания) и столбцов (типы курьеров).'\n_a = p.loc[pv.index, pv.columns].fillna(-1).values.ravel()\n_b = pv.fillna(-1).values.ravel()\nif any(b > 0 for b in _b) and all(close(a * 100, b, 0.051) for a, b in zip(_a, _b) if b >= 0):\n    raise AssertionError('В pv доли от 0 до 1, а нужны проценты: умножьте на 100.')\nassert all(close(a, b, 0.051) for a, b in zip(_a, _b)), 'Значения pv не совпадают. Нужна доля опозданий (aggfunc=\"mean\" по late) × 100; строки — promised_min, столбцы — courier.'\ngroup = o.groupby('courier', sort=True)['late'].mean().idxmax()\nw = o[(o['courier'] == group) & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)\nassert close(need('walk_p80'), w), f'walk_p80 = {need(\"walk_p80\")}, а нужно {w}.'\nassert need('fair_promise') == int(_m0.ceil(w / 5) * 5), f'fair_promise = {need(\"fair_promise\")}, а нужно {int(_m0.ceil(w / 5) * 5)}.'\nw45 = o[(o['courier'] == group) & (o['promised_min'] == 45)]\nassert close(need('walk45_km'), w45['distance_km'].median()), f'walk45_km = {need(\"walk45_km\")}: медиана distance_km для {group} с обещанием 45 минут.'\nassert close(need('walk45_min'), w45['actual_min'].median()), f'walk45_min = {need(\"walk45_min\")}: медиана actual_min для {group} с обещанием 45 минут.'",
+    "setup": "import pandas as _pd0\nimport math as _m0\ndef _ref_ok(raw=None):\n    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()\n    o = d[d['actual_min'].between(1, 299)].copy()\n    o['late'] = o['actual_min'] > o['promised_min']\n    o['delay'] = o['actual_min'] - o['promised_min']\n    o['hour'] = o['created'].dt.hour\n    return o\nok = _ref_ok()",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "walkers",
+    "case": "whole-groups-reordered",
+    "expected": true,
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=True)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)\npv=pv.iloc[::-1,::-1]",
+    "check": "import pandas as _pd\no = _ref_ok()\npv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100\np = need('pv', _pd.DataFrame)\nassert p.shape == pv.shape, f'Форма pv {p.shape}, а нужно {pv.shape}: строки — promised_min (30, 45, 60), столбцы — courier.'\nassert p.index.is_unique and p.columns.is_unique and set(p.index) == set(pv.index) and set(p.columns) == set(pv.columns), 'Проверьте подписи строк (обещания) и столбцов (типы курьеров).'\n_a = p.loc[pv.index, pv.columns].fillna(-1).values.ravel()\n_b = pv.fillna(-1).values.ravel()\nif any(b > 0 for b in _b) and all(close(a * 100, b, 0.051) for a, b in zip(_a, _b) if b >= 0):\n    raise AssertionError('В pv доли от 0 до 1, а нужны проценты: умножьте на 100.')\nassert all(close(a, b, 0.051) for a, b in zip(_a, _b)), 'Значения pv не совпадают. Нужна доля опозданий (aggfunc=\"mean\" по late) × 100; строки — promised_min, столбцы — courier.'\ngroup = o.groupby('courier', sort=True)['late'].mean().idxmax()\nw = o[(o['courier'] == group) & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)\nassert close(need('walk_p80'), w), f'walk_p80 = {need(\"walk_p80\")}, а нужно {w}.'\nassert need('fair_promise') == int(_m0.ceil(w / 5) * 5), f'fair_promise = {need(\"fair_promise\")}, а нужно {int(_m0.ceil(w / 5) * 5)}.'\nw45 = o[(o['courier'] == group) & (o['promised_min'] == 45)]\nassert close(need('walk45_km'), w45['distance_km'].median()), f'walk45_km = {need(\"walk45_km\")}: медиана distance_km для {group} с обещанием 45 минут.'\nassert close(need('walk45_min'), w45['actual_min'].median()), f'walk45_min = {need(\"walk45_min\")}: медиана actual_min для {group} с обещанием 45 минут.'",
+    "setup": "import pandas as _pd0\nimport math as _m0\ndef _ref_ok(raw=None):\n    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()\n    o = d[d['actual_min'].between(1, 299)].copy()\n    o['late'] = o['actual_min'] > o['promised_min']\n    o['delay'] = o['actual_min'] - o['promised_min']\n    o['hour'] = o['created'].dt.hour\n    return o\nok = _ref_ok()",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "walkers",
+    "case": "labels-only-reordered",
+    "expected": false,
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=True)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)\npv.columns=pv.columns[::-1]",
+    "check": "import pandas as _pd\no = _ref_ok()\npv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100\np = need('pv', _pd.DataFrame)\nassert p.shape == pv.shape, f'Форма pv {p.shape}, а нужно {pv.shape}: строки — promised_min (30, 45, 60), столбцы — courier.'\nassert p.index.is_unique and p.columns.is_unique and set(p.index) == set(pv.index) and set(p.columns) == set(pv.columns), 'Проверьте подписи строк (обещания) и столбцов (типы курьеров).'\n_a = p.loc[pv.index, pv.columns].fillna(-1).values.ravel()\n_b = pv.fillna(-1).values.ravel()\nif any(b > 0 for b in _b) and all(close(a * 100, b, 0.051) for a, b in zip(_a, _b) if b >= 0):\n    raise AssertionError('В pv доли от 0 до 1, а нужны проценты: умножьте на 100.')\nassert all(close(a, b, 0.051) for a, b in zip(_a, _b)), 'Значения pv не совпадают. Нужна доля опозданий (aggfunc=\"mean\" по late) × 100; строки — promised_min, столбцы — courier.'\ngroup = o.groupby('courier', sort=True)['late'].mean().idxmax()\nw = o[(o['courier'] == group) & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)\nassert close(need('walk_p80'), w), f'walk_p80 = {need(\"walk_p80\")}, а нужно {w}.'\nassert need('fair_promise') == int(_m0.ceil(w / 5) * 5), f'fair_promise = {need(\"fair_promise\")}, а нужно {int(_m0.ceil(w / 5) * 5)}.'\nw45 = o[(o['courier'] == group) & (o['promised_min'] == 45)]\nassert close(need('walk45_km'), w45['distance_km'].median()), f'walk45_km = {need(\"walk45_km\")}: медиана distance_km для {group} с обещанием 45 минут.'\nassert close(need('walk45_min'), w45['actual_min'].median()), f'walk45_min = {need(\"walk45_min\")}: медиана actual_min для {group} с обещанием 45 минут.'",
+    "setup": "import pandas as _pd0\nimport math as _m0\ndef _ref_ok(raw=None):\n    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()\n    o = d[d['actual_min'].between(1, 299)].copy()\n    o['late'] = o['actual_min'] > o['promised_min']\n    o['delay'] = o['actual_min'] - o['promised_min']\n    o['hour'] = o['created'].dt.hour\n    return o\nok = _ref_ok()",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07-readable",
+    "task": "title",
+    "case": "new-input-other-leader",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")\n",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nm = ok.groupby('courier')['actual_min'].median().sort_values(ascending=False)\nax = ax_of()\nwant = f'{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин'\nassert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'\nassert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'\nh = [p.get_height() for p in ax.patches]\n_labels = [t.get_text() for t in ax.get_xticklabels()]\nassert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'\nassert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'\nfor _label, _height in zip(_labels, h):\n    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'\nassert ax.get_ylabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');d['courier']=d.courier.replace({'пеший':'авто','авто':'пеший'});d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "lesson": "07-readable",
+    "task": "title",
+    "case": "new-input-wrong-fixed-title",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nm = ok.groupby(\"courier\")[\"actual_min\"].median().sort_values(ascending=False)\nfig, ax = plt.subplots(figsize=(5, 3))\nax.bar(m.index, m.values)\nax.set_ylabel(\"минут\")\nax.set_title(f\"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин\")\nax.set_title(\"пеший — самые медленные: медиана 37 мин\")",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nm = ok.groupby('courier')['actual_min'].median().sort_values(ascending=False)\nax = ax_of()\nwant = f'{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин'\nassert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'\nassert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'\nh = [p.get_height() for p in ax.patches]\n_labels = [t.get_text() for t in ax.get_xticklabels()]\nassert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'\nassert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'\nfor _label, _height in zip(_labels, h):\n    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'\nassert ax.get_ylabel() == 'минут'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "deliveries.csv"
+    ],
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');d['courier']=d.courier.replace({'пеший':'авто','авто':'пеший'});d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "lesson": "09-project",
+    "task": "walkers",
+    "case": "other-leader-cars",
+    "expected": true,
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=True)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)\n",
+    "check": "import pandas as _pd\no = _ref_ok()\npv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100\np = need('pv', _pd.DataFrame)\nassert p.shape == pv.shape, f'Форма pv {p.shape}, а нужно {pv.shape}: строки — promised_min (30, 45, 60), столбцы — courier.'\nassert p.index.is_unique and p.columns.is_unique and set(p.index) == set(pv.index) and set(p.columns) == set(pv.columns), 'Проверьте подписи строк (обещания) и столбцов (типы курьеров).'\n_a = p.loc[pv.index, pv.columns].fillna(-1).values.ravel()\n_b = pv.fillna(-1).values.ravel()\nif any(b > 0 for b in _b) and all(close(a * 100, b, 0.051) for a, b in zip(_a, _b) if b >= 0):\n    raise AssertionError('В pv доли от 0 до 1, а нужны проценты: умножьте на 100.')\nassert all(close(a, b, 0.051) for a, b in zip(_a, _b)), 'Значения pv не совпадают. Нужна доля опозданий (aggfunc=\"mean\" по late) × 100; строки — promised_min, столбцы — courier.'\ngroup = o.groupby('courier', sort=True)['late'].mean().idxmax()\nw = o[(o['courier'] == group) & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)\nassert close(need('walk_p80'), w), f'walk_p80 = {need(\"walk_p80\")}, а нужно {w}.'\nassert need('fair_promise') == int(_m0.ceil(w / 5) * 5), f'fair_promise = {need(\"fair_promise\")}, а нужно {int(_m0.ceil(w / 5) * 5)}.'\nw45 = o[(o['courier'] == group) & (o['promised_min'] == 45)]\nassert close(need('walk45_km'), w45['distance_km'].median()), f'walk45_km = {need(\"walk45_km\")}: медиана distance_km для {group} с обещанием 45 минут.'\nassert close(need('walk45_min'), w45['actual_min'].median()), f'walk45_min = {need(\"walk45_min\")}: медиана actual_min для {group} с обещанием 45 минут.'",
+    "setup": "import pandas as _pd0\nimport math as _m0\ndef _ref_ok(raw=None):\n    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()\n    o = d[d['actual_min'].between(1, 299)].copy()\n    o['late'] = o['actual_min'] > o['promised_min']\n    o['delay'] = o['actual_min'] - o['promised_min']\n    o['hour'] = o['created'].dt.hour\n    return o\nok = _ref_ok()",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');d['courier']=d.courier.replace({'пеший':'авто','авто':'пеший'});d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "lesson": "09-project",
+    "task": "walkers",
+    "case": "input-row-order",
+    "expected": true,
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=True)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)\n",
+    "check": "import pandas as _pd\no = _ref_ok()\npv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100\np = need('pv', _pd.DataFrame)\nassert p.shape == pv.shape, f'Форма pv {p.shape}, а нужно {pv.shape}: строки — promised_min (30, 45, 60), столбцы — courier.'\nassert p.index.is_unique and p.columns.is_unique and set(p.index) == set(pv.index) and set(p.columns) == set(pv.columns), 'Проверьте подписи строк (обещания) и столбцов (типы курьеров).'\n_a = p.loc[pv.index, pv.columns].fillna(-1).values.ravel()\n_b = pv.fillna(-1).values.ravel()\nif any(b > 0 for b in _b) and all(close(a * 100, b, 0.051) for a, b in zip(_a, _b) if b >= 0):\n    raise AssertionError('В pv доли от 0 до 1, а нужны проценты: умножьте на 100.')\nassert all(close(a, b, 0.051) for a, b in zip(_a, _b)), 'Значения pv не совпадают. Нужна доля опозданий (aggfunc=\"mean\" по late) × 100; строки — promised_min, столбцы — courier.'\ngroup = o.groupby('courier', sort=True)['late'].mean().idxmax()\nw = o[(o['courier'] == group) & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)\nassert close(need('walk_p80'), w), f'walk_p80 = {need(\"walk_p80\")}, а нужно {w}.'\nassert need('fair_promise') == int(_m0.ceil(w / 5) * 5), f'fair_promise = {need(\"fair_promise\")}, а нужно {int(_m0.ceil(w / 5) * 5)}.'\nw45 = o[(o['courier'] == group) & (o['promised_min'] == 45)]\nassert close(need('walk45_km'), w45['distance_km'].median()), f'walk45_km = {need(\"walk45_km\")}: медиана distance_km для {group} с обещанием 45 минут.'\nassert close(need('walk45_min'), w45['actual_min'].median()), f'walk45_min = {need(\"walk45_min\")}: медиана actual_min для {group} с обещанием 45 минут.'",
+    "setup": "import pandas as _pd0\nimport math as _m0\ndef _ref_ok(raw=None):\n    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()\n    o = d[d['actual_min'].between(1, 299)].copy()\n    o['late'] = o['actual_min'] > o['promised_min']\n    o['delay'] = o['actual_min'] - o['promised_min']\n    o['hour'] = o['created'].dt.hour\n    return o\nok = _ref_ok()",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');d.iloc[::-1].to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "lesson": "09-project",
+    "task": "walkers",
+    "case": "wrong-fixed-walkers-on-cars",
+    "expected": false,
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = \"пеший\"\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)",
+    "check": "import pandas as _pd\no = _ref_ok()\npv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100\np = need('pv', _pd.DataFrame)\nassert p.shape == pv.shape, f'Форма pv {p.shape}, а нужно {pv.shape}: строки — promised_min (30, 45, 60), столбцы — courier.'\nassert p.index.is_unique and p.columns.is_unique and set(p.index) == set(pv.index) and set(p.columns) == set(pv.columns), 'Проверьте подписи строк (обещания) и столбцов (типы курьеров).'\n_a = p.loc[pv.index, pv.columns].fillna(-1).values.ravel()\n_b = pv.fillna(-1).values.ravel()\nif any(b > 0 for b in _b) and all(close(a * 100, b, 0.051) for a, b in zip(_a, _b) if b >= 0):\n    raise AssertionError('В pv доли от 0 до 1, а нужны проценты: умножьте на 100.')\nassert all(close(a, b, 0.051) for a, b in zip(_a, _b)), 'Значения pv не совпадают. Нужна доля опозданий (aggfunc=\"mean\" по late) × 100; строки — promised_min, столбцы — courier.'\ngroup = o.groupby('courier', sort=True)['late'].mean().idxmax()\nw = o[(o['courier'] == group) & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)\nassert close(need('walk_p80'), w), f'walk_p80 = {need(\"walk_p80\")}, а нужно {w}.'\nassert need('fair_promise') == int(_m0.ceil(w / 5) * 5), f'fair_promise = {need(\"fair_promise\")}, а нужно {int(_m0.ceil(w / 5) * 5)}.'\nw45 = o[(o['courier'] == group) & (o['promised_min'] == 45)]\nassert close(need('walk45_km'), w45['distance_km'].median()), f'walk45_km = {need(\"walk45_km\")}: медиана distance_km для {group} с обещанием 45 минут.'\nassert close(need('walk45_min'), w45['actual_min'].median()), f'walk45_min = {need(\"walk45_min\")}: медиана actual_min для {group} с обещанием 45 минут.'",
+    "setup": "import pandas as _pd0\nimport math as _m0\ndef _ref_ok(raw=None):\n    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()\n    o = d[d['actual_min'].between(1, 299)].copy()\n    o['late'] = o['actual_min'] > o['promised_min']\n    o['delay'] = o['actual_min'] - o['promised_min']\n    o['hour'] = o['created'].dt.hour\n    return o\nok = _ref_ok()",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');d['courier']=d.courier.replace({'пеший':'авто','авто':'пеший'});d.to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "lesson": "09-project",
+    "task": "walkers",
+    "case": "tie-alphabetical-first-correct",
+    "expected": true,
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=True)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)\n",
+    "check": "import pandas as _pd\no = _ref_ok()\npv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100\np = need('pv', _pd.DataFrame)\nassert p.shape == pv.shape, f'Форма pv {p.shape}, а нужно {pv.shape}: строки — promised_min (30, 45, 60), столбцы — courier.'\nassert p.index.is_unique and p.columns.is_unique and set(p.index) == set(pv.index) and set(p.columns) == set(pv.columns), 'Проверьте подписи строк (обещания) и столбцов (типы курьеров).'\n_a = p.loc[pv.index, pv.columns].fillna(-1).values.ravel()\n_b = pv.fillna(-1).values.ravel()\nif any(b > 0 for b in _b) and all(close(a * 100, b, 0.051) for a, b in zip(_a, _b) if b >= 0):\n    raise AssertionError('В pv доли от 0 до 1, а нужны проценты: умножьте на 100.')\nassert all(close(a, b, 0.051) for a, b in zip(_a, _b)), 'Значения pv не совпадают. Нужна доля опозданий (aggfunc=\"mean\" по late) × 100; строки — promised_min, столбцы — courier.'\ngroup = o.groupby('courier', sort=True)['late'].mean().idxmax()\nw = o[(o['courier'] == group) & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)\nassert close(need('walk_p80'), w), f'walk_p80 = {need(\"walk_p80\")}, а нужно {w}.'\nassert need('fair_promise') == int(_m0.ceil(w / 5) * 5), f'fair_promise = {need(\"fair_promise\")}, а нужно {int(_m0.ceil(w / 5) * 5)}.'\nw45 = o[(o['courier'] == group) & (o['promised_min'] == 45)]\nassert close(need('walk45_km'), w45['distance_km'].median()), f'walk45_km = {need(\"walk45_km\")}: медиана distance_km для {group} с обещанием 45 минут.'\nassert close(need('walk45_min'), w45['actual_min'].median()), f'walk45_min = {need(\"walk45_min\")}: медиана actual_min для {group} с обещанием 45 минут.'",
+    "setup": "import pandas as _pd0\nimport math as _m0\ndef _ref_ok(raw=None):\n    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()\n    o = d[d['actual_min'].between(1, 299)].copy()\n    o['late'] = o['actual_min'] > o['promised_min']\n    o['delay'] = o['actual_min'] - o['promised_min']\n    o['hour'] = o['created'].dt.hour\n    return o\nok = _ref_ok()",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');rows=[]\nfor group,values,km in [('пеший',[25,49,40,68],3.0),('вело',[22,43,37,60],2.0),('авто',[20,36,35,52],1.0)]:\n for i,(promise,actual) in enumerate(zip([30,30,45,45],values)):\n  r=d.iloc[0].copy();r['courier']=group;r['promised_min']=promise;r['actual_min']=actual;r['distance_km']=km;r['created']=f'2026-10-0{i+1} 12:00:00';rows.append(r)\npd.DataFrame(rows).to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "lesson": "09-project",
+    "task": "walkers",
+    "case": "tie-wrong-input-first-group",
+    "expected": false,
+    "code": "import pandas as pd\nimport math\npv = ok.pivot_table(index=\"promised_min\", columns=\"courier\", values=\"late\", aggfunc=\"mean\") * 100\ngroup = ok.groupby(\"courier\", sort=False)[\"late\"].mean().idxmax()\nwalk30 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 30)]\nwalk_p80 = walk30[\"actual_min\"].quantile(0.8)\nfair_promise = math.ceil(walk_p80 / 5) * 5\nwalk45 = ok[(ok[\"courier\"] == group) & (ok[\"promised_min\"] == 45)]\nwalk45_km = walk45[\"distance_km\"].median()\nwalk45_min = walk45[\"actual_min\"].median()\nprint(walk_p80, fair_promise, walk45_km, walk45_min)\npv.round(1)",
+    "check": "import pandas as _pd\no = _ref_ok()\npv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100\np = need('pv', _pd.DataFrame)\nassert p.shape == pv.shape, f'Форма pv {p.shape}, а нужно {pv.shape}: строки — promised_min (30, 45, 60), столбцы — courier.'\nassert p.index.is_unique and p.columns.is_unique and set(p.index) == set(pv.index) and set(p.columns) == set(pv.columns), 'Проверьте подписи строк (обещания) и столбцов (типы курьеров).'\n_a = p.loc[pv.index, pv.columns].fillna(-1).values.ravel()\n_b = pv.fillna(-1).values.ravel()\nif any(b > 0 for b in _b) and all(close(a * 100, b, 0.051) for a, b in zip(_a, _b) if b >= 0):\n    raise AssertionError('В pv доли от 0 до 1, а нужны проценты: умножьте на 100.')\nassert all(close(a, b, 0.051) for a, b in zip(_a, _b)), 'Значения pv не совпадают. Нужна доля опозданий (aggfunc=\"mean\" по late) × 100; строки — promised_min, столбцы — courier.'\ngroup = o.groupby('courier', sort=True)['late'].mean().idxmax()\nw = o[(o['courier'] == group) & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)\nassert close(need('walk_p80'), w), f'walk_p80 = {need(\"walk_p80\")}, а нужно {w}.'\nassert need('fair_promise') == int(_m0.ceil(w / 5) * 5), f'fair_promise = {need(\"fair_promise\")}, а нужно {int(_m0.ceil(w / 5) * 5)}.'\nw45 = o[(o['courier'] == group) & (o['promised_min'] == 45)]\nassert close(need('walk45_km'), w45['distance_km'].median()), f'walk45_km = {need(\"walk45_km\")}: медиана distance_km для {group} с обещанием 45 минут.'\nassert close(need('walk45_min'), w45['actual_min'].median()), f'walk45_min = {need(\"walk45_min\")}: медиана actual_min для {group} с обещанием 45 минут.'",
+    "setup": "import pandas as _pd0\nimport math as _m0\ndef _ref_ok(raw=None):\n    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()\n    o = d[d['actual_min'].between(1, 299)].copy()\n    o['late'] = o['actual_min'] > o['promised_min']\n    o['delay'] = o['actual_min'] - o['promised_min']\n    o['hour'] = o['created'].dt.hour\n    return o\nok = _ref_ok()",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": "import pandas as pd\nd=pd.read_csv('deliveries.csv');rows=[]\nfor group,values,km in [('пеший',[25,49,40,68],3.0),('вело',[22,43,37,60],2.0),('авто',[20,36,35,52],1.0)]:\n for i,(promise,actual) in enumerate(zip([30,30,45,45],values)):\n  r=d.iloc[0].copy();r['courier']=group;r['promised_min']=promise;r['actual_min']=actual;r['distance_km']=km;r['created']=f'2026-10-0{i+1} 12:00:00';rows.append(r)\npd.DataFrame(rows).to_csv('deliveries.csv',index=False)"
+  },
+  {
+    "lesson": "09-project",
+    "task": "clean",
+    "case": "alternative-whole-deliveries-reordered",
+    "expected": true,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"delay\"] = ok[\"actual_min\"] - ok[\"promised_min\"]\nok[\"hour\"] = ok[\"created\"].dt.hour\nlog = {\n    \"всего\": len(d),\n    \"без времени\": d[\"actual_min\"].isna().sum(),\n    \"невозможное время\": (d[\"actual_min\"].notna() & ~d[\"actual_min\"].between(1, 299)).sum(),\n    \"осталось\": len(ok),\n}\nlog\nok=ok.iloc[::-1]",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\no = need('ok', _pd.DataFrame)\nassert len(o) == d['actual_min'].between(1, 299).sum(), f'В ok {len(o)} строк — оставьте время 1–299.'\nfor c in ('late', 'delay', 'hour'):\n    assert c in o.columns, f'В ok нет столбца {c}.'\nassert (o['late'] == (o['actual_min'] > o['promised_min'])).all(), 'late — actual_min > promised_min.'\nassert (o['hour'] == o['created'].dt.hour).all(), 'hour — час из created (created должен быть датой).'\nwant = {'всего': len(d), 'без времени': int(d['actual_min'].isna().sum()),\n        'невозможное время': int((d['actual_min'].notna() & ~d['actual_min'].between(1, 299)).sum()),\n        'осталось': int(d['actual_min'].between(1, 299).sum())}\ngot = {k: int(v) for k, v in dict(need('log')).items()}\nassert got == want, f'log = {got}, а нужно {want}.'\nassert (o['delay'] == o['actual_min'] - o['promised_min']).all(), 'delay = actual_min - promised_min: положительное значение — опоздание.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "clean",
+    "case": "wrong-content-erased-consistent-derived",
+    "expected": false,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"late\"] = ok[\"actual_min\"] > ok[\"promised_min\"]\nok[\"delay\"] = ok[\"actual_min\"] - ok[\"promised_min\"]\nok[\"hour\"] = ok[\"created\"].dt.hour\nlog = {\n    \"всего\": len(d),\n    \"без времени\": d[\"actual_min\"].isna().sum(),\n    \"невозможное время\": (d[\"actual_min\"].notna() & ~d[\"actual_min\"].between(1, 299)).sum(),\n    \"осталось\": len(ok),\n}\nlog\nok[\"courier\"]=\"авто\";ok[\"actual_min\"]=ok.promised_min;ok[\"late\"]=False;ok[\"delay\"]=0",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv', parse_dates=['created'])\no = need('ok', _pd.DataFrame)\nassert len(o) == d['actual_min'].between(1, 299).sum(), f'В ok {len(o)} строк — оставьте время 1–299.'\nfor c in ('late', 'delay', 'hour'):\n    assert c in o.columns, f'В ok нет столбца {c}.'\nassert (o['late'] == (o['actual_min'] > o['promised_min'])).all(), 'late — actual_min > promised_min.'\nassert (o['hour'] == o['created'].dt.hour).all(), 'hour — час из created (created должен быть датой).'\nwant = {'всего': len(d), 'без времени': int(d['actual_min'].isna().sum()),\n        'невозможное время': int((d['actual_min'].notna() & ~d['actual_min'].between(1, 299)).sum()),\n        'осталось': int(d['actual_min'].between(1, 299).sum())}\ngot = {k: int(v) for k, v in dict(need('log')).items()}\nassert got == want, f'log = {got}, а нужно {want}.'\nassert (o['delay'] == o['actual_min'] - o['promised_min']).all(), 'delay = actual_min - promised_min: положительное значение — опоздание.'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "compare",
+    "case": "alternative-reverse-group-order",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"авто\", \"вело\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 60, f'Столбцов {len(ax.patches)}, а нужно 60: две гистограммы по 30 корзин.'\nlabels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []\nassert sorted(labels) == ['авто', 'вело'], f'Легенда: {labels}. Передайте label=... в hist и вызовите ax.legend().'\narea = sum(p.get_height() * p.get_width() for p in ax.patches[:30])\nassert area < 1.01, 'Высоты — доли (density=True), а не количества.'\nwant = {c: ok.loc[ok['courier'] == c, 'actual_min'].median() for c in ('вело', 'авто')}\ngot = dict(need('medians'))\nassert set(got) == set(want), f'Ключи medians: {sorted(got)} — нужны ровно \"вело\" и \"авто\".'\nassert all(close(got[k], want[k]) for k in want), f'medians = {got}: медианы не совпадают. Считайте по ok (время 1–299 минут), отдельно для каждого типа курьера: ok.loc[ok[\"courier\"] == c, \"actual_min\"].median().'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "compare",
+    "case": "wrong-zero-density",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"вело\", \"авто\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")\nfor patch in ax.patches: patch.set_height(0)",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 60, f'Столбцов {len(ax.patches)}, а нужно 60: две гистограммы по 30 корзин.'\nlabels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []\nassert sorted(labels) == ['авто', 'вело'], f'Легенда: {labels}. Передайте label=... в hist и вызовите ax.legend().'\narea = sum(p.get_height() * p.get_width() for p in ax.patches[:30])\nassert area < 1.01, 'Высоты — доли (density=True), а не количества.'\nwant = {c: ok.loc[ok['courier'] == c, 'actual_min'].median() for c in ('вело', 'авто')}\ngot = dict(need('medians'))\nassert set(got) == set(want), f'Ключи medians: {sorted(got)} — нужны ровно \"вело\" и \"авто\".'\nassert all(close(got[k], want[k]) for k in want), f'medians = {got}: медианы не совпадают. Считайте по ok (время 1–299 минут), отдельно для каждого типа курьера: ok.loc[ok[\"courier\"] == c, \"actual_min\"].median().'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "compare",
+    "case": "wrong-second-group-counts",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"вело\", \"авто\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")\nfor patch in ax.patches[30:]: patch.set_height(1)",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 60, f'Столбцов {len(ax.patches)}, а нужно 60: две гистограммы по 30 корзин.'\nlabels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []\nassert sorted(labels) == ['авто', 'вело'], f'Легенда: {labels}. Передайте label=... в hist и вызовите ax.legend().'\narea = sum(p.get_height() * p.get_width() for p in ax.patches[:30])\nassert area < 1.01, 'Высоты — доли (density=True), а не количества.'\nwant = {c: ok.loc[ok['courier'] == c, 'actual_min'].median() for c in ('вело', 'авто')}\ngot = dict(need('medians'))\nassert set(got) == set(want), f'Ключи medians: {sorted(got)} — нужны ровно \"вело\" и \"авто\".'\nassert all(close(got[k], want[k]) for k in want), f'medians = {got}: медианы не совпадают. Считайте по ok (время 1–299 минут), отдельно для каждого типа курьера: ok.loc[ok[\"courier\"] == c, \"actual_min\"].median().'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "02-histograms",
+    "task": "compare",
+    "case": "wrong-courier-labels",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nmedians = {}\nfig, ax = plt.subplots(figsize=(8, 3.5))\nfor c in [\"вело\", \"авто\"]:\n    t = ok.loc[ok[\"courier\"] == c, \"actual_min\"]\n    ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5, label=c)\n    medians[c] = t.median()\nax.legend()\nax.set_title(\"Время доставки: вело и авто\")\nax.legend(ax.containers,[\"авто\",\"вело\"])",
+    "check": "import pandas as _pd\nd = _pd.read_csv('deliveries.csv')\nok = d[d['actual_min'].between(1, 299)]\nax = ax_of()\nassert len(ax.patches) == 60, f'Столбцов {len(ax.patches)}, а нужно 60: две гистограммы по 30 корзин.'\nlabels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []\nassert sorted(labels) == ['авто', 'вело'], f'Легенда: {labels}. Передайте label=... в hist и вызовите ax.legend().'\narea = sum(p.get_height() * p.get_width() for p in ax.patches[:30])\nassert area < 1.01, 'Высоты — доли (density=True), а не количества.'\nwant = {c: ok.loc[ok['courier'] == c, 'actual_min'].median() for c in ('вело', 'авто')}\ngot = dict(need('medians'))\nassert set(got) == set(want), f'Ключи medians: {sorted(got)} — нужны ровно \"вело\" и \"авто\".'\nassert all(close(got[k], want[k]) for k in want), f'medians = {got}: медианы не совпадают. Считайте по ok (время 1–299 минут), отдельно для каждого типа курьера: ok.loc[ok[\"courier\"] == c, \"actual_min\"].median().'",
+    "setup": "",
+    "files": [
+      "deliveries.csv"
+    ],
+    "prepare": ""
+  }
+]

@@ -4,7 +4,8 @@ import pandas as pd
 with Chapter('ch04') as chapter:
     chapter.probe('07-readable','title','ax.patches[1].set_height(0)')
     chapter.probe('07-readable','title','ax.patches[-1].remove()')
-    chapter.probe('07-readable','title','ax.clear()\nax.bar(m.index[::-1], m.values[::-1])\nax.set_ylabel("минут")\nax.set_title(f"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин")', expected=True)
+    chapter.probe('07-readable','title','ax.clear()\nax.bar(m.index[::-1], m.values[::-1])\nax.invert_xaxis()\nax.set_ylabel("минут")\nax.set_title(f"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин")', expected=True)
+    chapter.probe('07-readable','title','ax.clear()\nax.bar(m.index[::-1], m.values[::-1])\nax.set_ylabel("минут")\nax.set_title(f"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин")')
     chapter.probe('09-project','clean','ok["delay"] = -ok["delay"]')
     chapter.probe('09-project','scale','ax.clear()\nax.hist(-ok["delay"],bins=16,range=(-40,40))\nax.axvline(0)')
     chapter.probe('09-project','report', expected=True)

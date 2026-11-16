@@ -71,7 +71,7 @@ full.groupby("city")["amount"].sum().sort_values(ascending=False)
 | `"right"` | `RIGHT JOIN` | все из правой |
 | `"outer"` | `FULL OUTER JOIN` | все из обеих |
 
-Посмотрим на разницу. В справочнике есть кофейня `EKB-1` — она открывается только 15 октября, и заказов у неё в выгрузке нет:
+Посмотрим на разницу. В справочнике есть кофейня `EKB-1` — в справочнике указана дата открытия 15 октября. В выгрузке заказов за сентябрь–ноябрь строк с этим кодом нет. Чтобы объяснить причину, уточните у управляющего фактическую дату открытия и проверьте полноту выгрузки:
 
 ```python
 import pandas as pd
@@ -105,7 +105,7 @@ print(len(pd.merge(a, b, on="k")))
 :::
 
 ::: quiz
-Управляющему нужен отчёт о выручке **всех** кофеен сети, включая `EKB-1`, у которой ещё нет заказов. Как соединить справочник `shops` и таблицу выручки `rev`?
+Управляющему нужен отчёт о выручке **всех** кофеен сети, включая `EKB-1`, у которой за этот период в выгрузке нет заказов. Как соединить справочник `shops` и таблицу выручки `rev`?
 
 - [x] `pd.merge(shops, rev, on="shop_id", how="left")` — справочник слева
   > `left` сохраняет все строки левой таблицы. Справочник слева — все кофейни в отчёте, у `EKB-1` выручка `NaN`, её заменяют нулём.
@@ -247,9 +247,17 @@ shops = pd.read_csv("shops.csv")
 ### check
 ```python
 import pandas as _pd
+_f = _pd.read_csv('orders_3m.csv').merge(_pd.read_csv('shops.csv'), on='shop_id', how='left', validate='many_to_one')
 f = need('full', _pd.DataFrame)
-assert 'city' in f.columns and 'seats' in f.columns, 'В full должны появиться столбцы справочника: city, seats…'
-assert len(f) == len(df), f'Строк стало {len(f)}, а было {len(df)}. Для LEFT JOIN со справочником число строк не меняется.'
+assert {'order_id', 'city', 'seats'} <= set(f.columns), 'В full нужны исходные заказы и столбцы справочника: city, seats…'
+assert len(f) == len(_f), f'Строк стало {len(f)}, а было {len(_f)}. Для LEFT JOIN со справочником число строк не меняется.'
+assert f['order_id'].is_unique and set(f['order_id']) == set(_f['order_id']), 'После соединения изменились order_id или появились дубли.'
+_a = f.set_index('order_id').reindex(_f['order_id'])
+_w = _f.set_index('order_id')
+for _col in _w.columns:
+    assert _col in _a, f'После соединения пропал столбец {_col}.'
+    assert ((_a[_col] == _w[_col]) | (_a[_col].isna() & _w[_col].isna())).fillna(False).all(), f'Поле {_col} не совпадает с данными заказа и справочника. Соединяйте по shop_id, а не по порядку строк.'
+
 ```
 
 ### hint
@@ -385,12 +393,18 @@ shops = pd.read_csv("shops.csv")
 ```python
 import pandas as _pd
 r = need('report', _pd.DataFrame)
-assert len(r) == 7, f'Строк {len(r)}, а кофеен в справочнике 7.'
+s = _pd.read_csv('shops.csv')
+assert len(r) == len(s), f'Строк {len(r)}, а кофеен в справочнике {len(s)}.'
 assert list(r.columns) == ['shop_id', 'city', 'revenue'], f'Столбцы: {list(r.columns)}.'
+assert r['shop_id'].is_unique and set(r['shop_id']) == set(s['shop_id']), 'В report нужна ровно одна строка для каждого shop_id справочника.'
 assert r['revenue'].notna().all(), 'В revenue есть NaN — замените на 0 через fillna(0).'
-assert r.set_index('shop_id').loc['EKB-1', 'revenue'] == 0, 'У EKB-1 выручка должна быть 0.'
-want = _pd.read_csv('orders_3m.csv').groupby('shop_id')['amount'].sum()
-assert r.set_index('shop_id').loc['PRM-1', 'revenue'] == want['PRM-1'], 'Выручка PRM-1 не совпадает.'
+_rev = _pd.read_csv('orders_3m.csv').groupby('shop_id')['amount'].sum()
+_w = s.set_index('shop_id')[['city']].assign(revenue=lambda x: x.index.map(_rev).fillna(0))
+_a = r.set_index('shop_id').reindex(_w.index)
+assert (_a['city'] == _w['city']).fillna(False).all(), 'Города в report должны соответствовать shop_id справочника.'
+for _id in _w.index:
+    assert close(_a.loc[_id, 'revenue'], _w.loc[_id, 'revenue']), f'{_id}: выручка не совпадает. Суммируйте amount по shop_id; у кофейни без заказов нужен 0.'
+
 ```
 
 ### hint
@@ -427,14 +441,27 @@ shops = pd.read_csv("shops.csv")
 ### check
 ```python
 import pandas as _pd
+import numbers as _num
 s = _pd.read_csv('shops.csv').set_index('shop_id')
 rev = _pd.read_csv('orders_3m.csv').groupby('shop_id')['amount'].sum()
-import numbers as _num
-want = (rev / s.loc[rev.index, 'seats']).idxmax()
+_rate = rev / s.loc[rev.index, 'seats']
 _b = need('best_per_seat')
 assert not isinstance(_b, (_pd.Series, _pd.DataFrame)), f'В best_per_seat лежит {type(_b).__name__}, а нужен один код кофейни — строка вида "KZN-1".'
-assert not isinstance(_b, _num.Integral), f'best_per_seat = {_b} — это номер строки, а нужен код кофейни. После merge индекс таблицы — номера 0, 1, 2…, и idxmax возвращает номер. Возьмите по нему shop_id: t.loc[номер, "shop_id"] — или отсортируйте таблицу.'
-assert _b == want, f'best_per_seat = {_b!r}, а нужна другая кофейня. Делите выручку кофейни на её seats и ищите максимум.'
+assert not isinstance(_b, _num.Integral), f'best_per_seat = {_b} — это номер строки, а нужен код кофейни. После merge возьмите shop_id по найденному индексу через loc.'
+assert _b in set(_rate.index[_rate == _rate.max()]), f'best_per_seat = {_b!r}. Делите выручку кофейни на её seats и ищите максимум.'
+# include-check: ch02_csv_replay.py
+for _amounts, _seats in [([600, 900], [10, 30]), ([900, 600], [30, 10]), ([600, 900], [10, 15])]:
+    _orders = _pd.read_csv('orders_3m.csv').iloc[:2].copy()
+    _orders['shop_id'] = ['PRM-1', 'KZN-1']
+    _orders['amount'] = _amounts
+    _shops = _pd.read_csv('shops.csv')
+    for _id, _n in zip(['PRM-1', 'KZN-1'], _seats):
+        _shops.loc[_shops['shop_id'] == _id, 'seats'] = _n
+    _shops = _shops.iloc[::-1].reset_index(drop=True)
+    _got = _replay_csv(_code, {'orders_3m.csv': _orders, 'shops.csv': _shops}).get('best_per_seat')
+    _rates = _pd.Series(_amounts, index=['PRM-1', 'KZN-1']) / _seats
+    assert _got in set(_rates.index[_rates == _rates.max()]), 'На другом наборе из двух кофеен лидер по рублям и лидер по рублям на место могут различаться. Пересчитайте revenue / seats по shop_id; при равном максимуме допустим любой лидер.'
+
 ```
 
 ### hint
@@ -484,8 +511,23 @@ import pandas as _pd
 f = _pd.read_csv('orders_3m.csv').merge(_pd.read_csv('menu.csv'), on='drink')
 f['cost'] = f['cost_s'] * f['size'].map({'S': 1.0, 'M': 1.25, 'L': 1.5}) * f['qty']
 g = f.groupby('drink')[['amount', 'cost']].sum()
-want = ((g['amount'] - g['cost']) / g['amount']).idxmax()
-assert need('best_margin') == want, f'best_margin = {need("best_margin")!r}, а нужно {want!r}.'
+_rate = (g['amount'] - g['cost']) / g['amount']
+assert need('best_margin') in set(_rate.index[_rate == _rate.max()]), f'best_margin = {need("best_margin")!r}. Сравнивайте маржу в процентах, а не прибыль в рублях.'
+# include-check: ch02_csv_replay.py
+for _costs, _sizes, _qty in [([15, 20], ['S', 'S'], [1, 4]), ([50, 10], ['L', 'M'], [2, 3]), ([14, 32], ['L', 'S'], [1, 1]), ([14, 32], ['M', 'S'], [1, 1])]:
+    _orders = _pd.read_csv('orders_3m.csv').iloc[:2].copy()
+    _orders['drink'] = ['Чай', 'Латте']
+    _orders['size'] = _sizes
+    _orders['qty'] = _qty
+    _orders['amount'] = [100, 200]
+    _menu = _pd.read_csv('menu.csv')
+    for _drink, _cost in zip(['Чай', 'Латте'], _costs):
+        _menu.loc[_menu['drink'] == _drink, 'cost_s'] = _cost
+    _got = _replay_csv(_code, {'orders_3m.csv': _orders, 'menu.csv': _menu.iloc[::-1]}).get('best_margin')
+    _cost = _pd.Series(_costs) * _pd.Series(_sizes).map({'S': 1.0, 'M': 1.25, 'L': 1.5}) * _qty
+    _rates = (1 - _cost / [100, 200]).set_axis(['Чай', 'Латте'])
+    assert _got in set(_rates.index[_rates == _rates.max()]), 'На другой позиции с несколькими чашками результат неверен. Себестоимость строки = cost_s × коэффициент размера × qty; маржа = (сумма amount − сумма cost) / сумма amount.'
+
 ```
 
 ### hint
@@ -508,7 +550,7 @@ best_margin = g["margin"].idxmax()
 ```
 
 ### explain
-Самая высокая маржа — у чая (87.5 %), самая низкая — у матчи (68 %). Разница почти в 20 пунктов: продвигать чай выгоднее, чем матчу, даже если матча дороже в чеке.
+Из каждых 100 ₽ выручки после себестоимости у чая остаётся 87,50 ₽, у матчи — 68 ₽. Одна дополнительная чашка размера S принесёт 105 ₽ у чая (120 − 15) и 170 ₽ у матчи (250 − 80). Если расходы на акцию одинаковы и прибавится по одной продаже, матча даст на 65 ₽ больше. А если продадутся два дополнительных чая против одной матчи? Сравните результат в рублях. Чтобы выбрать реальную акцию, оцените дополнительные продажи каждого напитка и вычтите расходы на продвижение.
 
 ## task: validate | Ловим дубль в справочнике | star
 

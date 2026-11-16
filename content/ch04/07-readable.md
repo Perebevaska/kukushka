@@ -423,19 +423,15 @@ ax.pie(rev.values, labels=rev.index)
 
 ### check
 ```python
+# include-check: ch04_bars.py
 import pandas as _pd
 from matplotlib.patches import Wedge as _W
 r = _pd.read_csv('orders_3m.csv').groupby('drink')['amount'].sum()
 share = (r / r.sum() * 100).sort_values()
 ax = ax_of()
 assert not any(isinstance(p, _W) for p in ax.patches), 'На графике остался круг — уберите ax.pie.'
-w = [p.get_width() for p in ax.patches]
-assert len(w) == len(share), f'Столбцов {len(w)}, а напитков {len(share)}: нужен ax.barh по всем напиткам.'
-if all(close(a, b) for a, b in zip(w, share.values[::-1])):
-    raise AssertionError('Самый большой столбец оказался внизу: у barh первый элемент рисуется внизу. Чтобы лидер был наверху, сортируйте по возрастанию — .sort_values() без ascending=False.')
-if sorted(round(x, 3) for x in w) != sorted(round(x, 3) for x in share.values) and close(max(w), r.max()):
-    raise AssertionError('Длины столбцов — выручка в рублях, а нужна доля в процентах: rev / rev.sum() * 100.')
-assert all(close(a, b) for a, b in zip(w, share.values)), 'Длины столбцов — доля выручки в процентах по возрастанию снизу вверх (лидер наверху): rev / rev.sum() * 100, затем .sort_values().'
+visible = _check_category_bars(ax, share.to_dict(), horizontal=True)
+assert [v for _,v in visible] == sorted(share.values,reverse=True), 'Доли выручки должны убывать сверху вниз: лидер наверху, сохраняйте подписи напитков.'
 assert ax.get_xlabel() == 'доля выручки, %', f'Подпись оси X: {ax.get_xlabel()!r}.'
 assert ax.get_title().strip(), 'Добавьте заголовок-вывод.'
 ```
@@ -474,11 +470,9 @@ ax.spines[["top", "right"]].set_visible(False)
 ### explain
 Горизонтальные столбцы, отсортированные по доле, сразу дают рейтинг: латте (17.6 %) и капучино (16.1 %) впереди, эспрессо (2.9 %) — последний. Круговая диаграмма с одиннадцатью секторами не позволяла даже отличить латте от капучино.
 
-Перед сдачей сопоставьте каждую подпись с высотой: пеший — 37, вело — 32, авто — 31 минута на данных этой главы. Перестановка категорий допустима, если сохранены все пары и требуемый порядок; единственный столбец лидера не представляет сравнение всех групп.
-
 ## task: title | Заголовок-вывод | base
 
-Нарисуйте медианное время доставки по типу курьера (время 1–299 минут, столбцы по убыванию) и сделайте заголовок-вывод, который **вычисляется из данных**: «<тип> — самые медленные: медиана N мин», где тип и N берутся из таблицы (N — целое). Подпишите ось Y: «минут».
+Нарисуйте медианное время доставки по типу курьера (время 1–299 минут, столбцы слева направо по убыванию медианы) и сделайте заголовок-вывод, который **вычисляется из данных**: «<тип> — самые медленные: медиана N мин», где тип и N берутся из таблицы (N — целое). Подпишите ось Y: «минут». Например, если в пункте выдачи медиана ожидания 12 минут у стойки А и 7 минут у стойки Б, первый столбец относится к А и имеет высоту 12. Когда значения меняются, порядок и заголовок должны измениться вместе с ними. Способ подстановки чисел в строку выберите сами.
 
 ### starter
 ```python
@@ -492,20 +486,16 @@ ok = d[d["actual_min"].between(1, 299)]
 
 ### check
 ```python
+# include-check: ch04_bars.py
 import pandas as _pd
 d = _pd.read_csv('deliveries.csv')
 ok = d[d['actual_min'].between(1, 299)]
 m = ok.groupby('courier')['actual_min'].median().sort_values(ascending=False)
 ax = ax_of()
 want = f'{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин'
-assert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'
-assert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'
-h = [p.get_height() for p in ax.patches]
-_labels = [t.get_text() for t in ax.get_xticklabels()]
-assert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'
-assert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'
-for _label, _height in zip(_labels, h):
-    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'
+assert want in [ax.get_title(loc=loc) for loc in ('left', 'center', 'right')], f'В заголовке укажите результат по текущим данным: {want!r}.'
+visible = _check_category_bars(ax, m.to_dict())
+assert [v for _,v in visible] == sorted(m.values,reverse=True), 'Медианы должны убывать в видимом порядке слева направо; при обратном порядке данных допустима invert_xaxis().'
 assert ax.get_ylabel() == 'минут'
 ```
 

@@ -97,6 +97,7 @@
       var s = [x.solved, y.solved].filter(Boolean).sort();
       n.solved = s[0] || null;
       if (x.monthlyReportAccepted || y.monthlyReportAccepted) n.monthlyReportAccepted = true;
+      if (x.qualityReportAccepted || y.qualityReportAccepted) n.qualityReportAccepted = true;
       out.tasks[k] = n;
     });
     // словари «ключ → {…, t}»: заметки, ответы на вопросы, «понятно/непонятно», контрольные

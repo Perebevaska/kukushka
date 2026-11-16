@@ -401,10 +401,16 @@ df = pd.read_csv("orders_3m.csv")
 ### check
 ```python
 import pandas as _pd
-assert 'channel_en' in df.columns, 'Нет столбца channel_en.'
-assert df['channel_en'].notna().all(), 'В channel_en есть пустые значения — проверьте написание ключей словаря.'
-assert set(df['channel_en']) == {'dine-in', 'takeaway', 'delivery'}, f'Значения: {sorted(set(df["channel_en"]))}.'
-assert need('n_takeaway') == (df['channel'] == 'с собой').sum(), f'n_takeaway = {need("n_takeaway")}.'
+_d = _pd.read_csv('orders_3m.csv')
+_f = need('df', _pd.DataFrame)
+assert 'channel_en' in _f.columns, 'Нет столбца channel_en.'
+assert len(_f) == len(_d) and _f['order_id'].is_unique and set(_f['order_id']) == set(_d['order_id']), 'Добавление channel_en не должно менять заказы и их order_id.'
+_w = _d.set_index('order_id')['channel'].map({'зал': 'dine-in', 'с собой': 'takeaway', 'доставка': 'delivery'})
+_a = _f.set_index('order_id')['channel_en'].reindex(_w.index)
+assert _a.notna().all(), 'В channel_en есть пустые значения — проверьте ключи словаря.'
+assert (_a == _w).all(), 'Перевод должен соответствовать каналу каждой строки: зал → dine-in, с собой → takeaway, доставка → delivery.'
+assert need('n_takeaway') == int((_w == 'takeaway').sum()), f'n_takeaway = {need("n_takeaway")}. Считайте строки channel_en == "takeaway".'
+
 ```
 
 ### hint

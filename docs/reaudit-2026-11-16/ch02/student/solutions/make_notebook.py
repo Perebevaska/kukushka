@@ -1,0 +1,47 @@
+import json,pathlib,nbformat
+from nbclient import NotebookClient
+root=pathlib.Path('/private/tmp/kuch02round/student')
+source=json.loads((root/'project-template.ipynb').read_text())
+def answer(task):
+    return next(json.loads(l)['code'] for l in (root/'work/09-project.jsonl').read_text().splitlines() if json.loads(l).get('task')==task)
+load=answer('load')
+load=load.replace('"orders_3m.csv"','DATA / "orders_3m.csv"').replace('"shops.csv"','DATA / "shops.csv"').replace('"menu.csv"','DATA / "menu.csv"')
+fullprefix=answer('monthly').split('monthly=')[0]
+def body(task):
+    code=answer(task)
+    return code[len(fullprefix):] if code.startswith(fullprefix) else code
+cells=[]
+def md(s):cells.append(nbformat.v4.new_markdown_cell(s))
+def code(s):cells.append(nbformat.v4.new_code_cell(s))
+md('# Итоги осени сети «Зерно»\n\nСамостоятельный отчёт SQL-аналитика. Заказы сентября–ноября 2026 года. Получатель — руководитель сети: где выросли продажи, как сопоставимы точки, какие выводы допустимы о карте и новом напитке. Для повтора положите блокнот в папку рядом с data/ и выполните сверху вниз в Python с pandas, numpy, matplotlib и IPython. Окружение и версии напечатаны ниже.')
+code(''.join(source['cells'][1]['source']))
+md('## 1. Цель и правила решения\n\nДо расчётов фиксирую правила брифа. H1: оба прироста помесячной выручки >0. H2: есть общая кофейня среди всех лидеров по местам и всех лидеров по выручке. H3: сезонный напиток вызвал рост ноября — причинный вывод по этим данным недоступен, нужен эксперимент. H4: чек заказов с картой как минимум на 5% выше чека без карты. H5: максимальная клетка нагрузки — выходной до 12:00. H6: маржа «не кофе» выше кофе минимум на 3 процентных пункта.\n\nРезультат — шесть вердиктов, показатели по городам и точкам и действия для руководителя. Вывод о выполнении описательного порога не означает статистическую значимость или причинный эффект.')
+md('## 2. Данные и проверки качества\n\nТри входа: orders_3m.csv — одна строка на заказ одного напитка, qty чашек; shops.csv — кофейни и места; menu.csv — категории и себестоимость чашки S. Сверяю типы, период, дубли, ключи и пропуски до соединения.')
+code(load+'\nprint(df.shape, shops.shape, menu.shape)\nprint(df.dtypes)\nprint(df["datetime"].min(),df["datetime"].max())\nprint(df.isna().sum())\nprint("Полные дубли",df.duplicated().sum(),"Дубли order_id",df["order_id"].duplicated().sum())\nassert shops["shop_id"].notna().all() and shops["shop_id"].is_unique\nassert menu["drink"].notna().all() and menu["drink"].is_unique\nassert full[["city","seats","category","cost_s"]].notna().all().all()\nassert same_rows\nassert (df["amount"]>0).all() and (df["qty"]>0).all()\ndisplay(df.head(1),shops.head(1),menu.head(1))')
+code('from IPython.display import display, Markdown\nquality=f"**Вывод по данным.** {len(df)} заказов, {df[\'shop_id\'].nunique()} продающих кофеен, {df[\'drink\'].nunique()} напитков; справочник включает {len(shops)} кофеен. Пропусков client_id — {df[\'client_id\'].isna().sum()}, это заказы без карты, не неизвестная сумма. Дубли строк и order_id: {df.duplicated().sum()} и {df[\'order_id\'].duplicated().sum()}. После двух LEFT JOIN осталось {len(full)} строк, ключевые атрибуты найдены."\ndisplay(Markdown(quality))')
+md('**Качество и ограничения.** Исходные строки сохраняю: нули в идентификатор карты не подставляю, повторные визиты не удаляю. У EKB-1 нет заказов в выгрузке: отсутствие продаж не доказывает отсутствие работы. Для анализа эффективности ниже использую продающие точки и отдельно показываю покрытие справочника. Места — грубый знаменатель: доставка и заказы с собой могут не занимать место. Себестоимость — расчёт по коэффициентам размера без аренды, труда и других расходов, поэтому маржа здесь не чистая прибыль. Проверки кардинальности и полноты атрибутов пройдены; причинность и люди без карты из этих файлов не восстанавливаются.')
+md('## 3. Предобработка\n\nДата прочитана как datetime при загрузке, справочники присоединены many_to_one. Пропуски карты сохранены для разделения заказов; суммы не округляю до агрегирования.')
+code('print("Заказов без соответствия кофейне:", (~df["shop_id"].isin(shops["shop_id"])).sum())\nprint("Заказов без соответствия меню:", (~df["drink"].isin(menu["drink"])).sum())\nprint("Кофейни без заказов:", shops.loc[~shops["shop_id"].isin(df["shop_id"]),"shop_id"].tolist())')
+md('**Вывод.** Несопоставленных заказов 0. У EKB-1 заказов нет; эта точка остаётся в справочнике, но не создаёт фиктивные строки заказов. Удаление или заполнение исходных наблюдений не потребовалось.')
+md('## 4.1. H1: сеть растёт каждый месяц')
+code(body('monthly')+'\ngrowth=monthly["revenue"].pct_change()*100\ndisplay(monthly)\norders_growth=(monthly["orders"].iloc[-1]/monthly["orders"].iloc[-2]-1)*100\nchecks=full.groupby(full["datetime"].dt.to_period("M"))["amount"].mean()\ncheck_growth=(checks.iloc[-1]/checks.iloc[-2]-1)*100\ndisplay(Markdown(f"**Вывод H1.** Выручка: {monthly[\'revenue\'].tolist()} ₽; приросты {growth.dropna().round(1).tolist()}%. H1 подтвердилась, оба больше нуля. В ноябре заказов {orders_growth:+.1f}%, чек {check_growth:+.1f}%; их произведение даёт рост выручки {nov_vs_oct:+.1f}%, это два рычага роста."))')
+md('## 4.2. H2: вместительность и лидеры')
+code(body('shops')+'\nby_city=full.groupby("city").agg(revenue=("amount","sum"),orders=("order_id","size"),shops=("shop_id","nunique"))\nby_city["revenue_per_shop"]=by_city["revenue"]/by_city["shops"]\ndisplay(by_shop,by_city)\nmost_seats=set(by_shop.index[by_shop["seats"]==by_shop["seats"].max()])\nmost_revenue=set(by_shop.index[by_shop["revenue"]==by_shop["revenue"].max()])\ndisplay(Markdown(f"**Вывод H2.** Лидеры по местам {sorted(most_seats)}, по выручке {sorted(most_revenue)}. Общие лидеры: {sorted(most_seats & most_revenue)} — H2 {\'подтвердилась\' if most_seats & most_revenue else \'не подтвердилась\'}. На место лидирует {leader}: {by_shop.loc[leader,\'per_seat\']:.0f} ₽. Общая выручка города зависит от числа точек, поэтому рядом указана выручка на продающую кофейню."))')
+md('## 4.3. H3: сезонный напиток и рост ноября')
+code(body('seasonal')+'\ndisplay(nov.groupby("drink")["amount"].sum())\ndisplay(Markdown(f"**Вывод H3.** Новые напитки: {sorted(new_drinks)}, доля выручки ноября {seasonal_share:.1f}%; чек изменился на {check_change:+.1f}%. Гипотеза не опровергнута, нужен эксперимент: совместный рост не доказывает вклад напитка. Предлагаю случайное предложение напитка сопоставимым гостям с контролем; целевая метрика — выручка на участника, проверять каннибализацию других напитков."))')
+md('## 4.4. H4: заказы с картой и без')
+code(body('loyalty')+'\ncard_n=full["client_id"].notna().sum()\ndisplay(Markdown(f"**Вывод H4.** С картой {card_n} заказов, средний чек {avg_card:.1f} ₽; без карты {len(full)-card_n}, чек {avg_no_card:.1f} ₽. Разница {diff_pct:+.1f}% при пороге 5% — H4 {\'подтвердилась\' if (card/no_card-1)*100>=5 else \'не подтвердилась\'}. Это сравнение заказов, а не причинный эффект оформления карты и не средняя выручка на человека."))')
+md('## 4.5. H5: пик нагрузки')
+code(body('heatmap')+'\ndisplay(load)\nfig,ax=plt.subplots(figsize=(10,4))\nim=ax.imshow(load,aspect="auto")\nax.set_xticks(range(len(load.columns)),load.columns)\nax.set_yticks(range(7),["Пн","Вт","Ср","Чт","Пт","Сб","Вс"])\nax.set_xlabel("Час местного времени")\nax.set_ylabel("День недели")\nax.set_title("Число заказов за сентябрь–ноябрь")\nfig.colorbar(im,ax=ax,label="Заказы")\nplt.show()\ndisplay(Markdown(f"**Вывод H5.** Максимум {load.loc[peak[0],peak[1]]} заказов: день недели {peak[0]} (0=понедельник), час {peak[1]}. H5 {\'подтвердилась\' if peak[0] in [5,6] and peak[1]<12 else \'не подтвердилась\'}. Планирование смен стоит уточнить по отдельным кофейням: агрегат сети скрывает местные пики и считает заказы, не чашки."))')
+md('## 4.6. H6: маржа категорий')
+code(body('margin')+'\ndisplay(g.assign(margin_pct=margin))\ndelta=margin_raw["не кофе"]-margin_raw["кофе"]\ndisplay(Markdown(f"**Вывод H6.** Маржа кофе {margin_raw[\'кофе\']:.1f}%, не кофе {margin_raw[\'не кофе\']:.1f}%; разница {delta:+.1f} п.п. при пороге +3 — H6 {\'подтвердилась\' if delta>=3 else \'не подтвердилась\'}. Расчёт взвешен рублями, а не средним процентов заказов. Для решения о меню дополнительно нужны трудозатраты и спрос."))')
+md('## 5. Вердикты и рекомендации')
+v=body('verdicts')
+v=v[v.index('def verdict'):]
+code(v+'\nverdict_table=pd.DataFrame({"Вердикт":{**verdicts,"H3":"не опровергнута, нужен эксперимент"}}).sort_index()\ndisplay(verdict_table)\n'+body('summary')+'\ndisplay(summary(full))\ndisplay(Markdown(f"**Что сделали:** проанализировали {len(full)} заказов за три месяца по шести темам. **Что нашли:** выручка {full[\'amount\'].sum():,.0f} ₽, ноябрь к октябрю {nov_vs_oct:+.1f}%; максимум эффективности на место — {leader}, рост чека и продаж сезонной позиции совпадает во времени. **Что предлагаем:** планировать смены по локальным пикам, проверить сезонную позицию экспериментом и пересчитать экономику меню с полными издержками. Для карты нужен эксперимент или анализ сопоставимых гостей; отсутствие прохождения порога 5% не измеряет полезность программы."))')
+nb=nbformat.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'}})
+path=root/'work/autumn.ipynb'
+nbformat.write(nb,path)
+NotebookClient(nb,timeout=180,kernel_name='python3',resources={'metadata':{'path':str(root/'work')}}).execute()
+nbformat.write(nb,path)
+print('Executed',path,'cells',len(cells))

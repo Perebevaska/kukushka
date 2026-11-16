@@ -456,7 +456,7 @@
       $('#test-result').before(project);
       function showReportStatus() {
         var task = P.task(orderReportKey);
-        status.textContent = task && task.monthlyReportAccepted ? 'Проект: файл отчёта принят. ' :
+        status.textContent = task && task.qualityReportAccepted ? 'Проект: файл отчёта принят. ' :
           task && task.solved ? 'Проект: прежняя версия зачтена. Обновлённый отчёт можно проверить отдельно. ' : 'Проект: файл отчёта ещё не сдан. ';
       }
       showReportStatus();
@@ -600,12 +600,17 @@
       var run = runner(out, function () { saveCode(); return { code: cm.getValue(), setup: t.setup, files: LESSON.files }; });
       var check = runner(out, function () {
         saveCode();
+        var previousExplanation = $('.x-explain', extras);
+        if (previousExplanation && !$('.x-sol', extras)) previousExplanation.remove();
         return { code: cm.getValue(), setup: t.setup, check: t.check, files: LESSON.files, orderReport: k === orderReportKey };
       }, function (res) {
         if (res.stopped || !res.check) return;
         var e = P.task(k) || {};
         var attemptUpdate = { att: (e.att || 0) + 1 };
-        if (res.check.passed && k === orderReportKey) attemptUpdate.monthlyReportAccepted = true;
+        if (res.check.passed && k === orderReportKey) {
+          attemptUpdate.monthlyReportAccepted = true;
+          attemptUpdate.qualityReportAccepted = true;
+        }
         P.updateTask(k, attemptUpdate);
         verdict.textContent = '';
         if (res.check.passed) {
@@ -640,7 +645,7 @@
           verdict.appendChild(el('b', '', 'Пока не так. '));
           if (!examOpen()) verdict.appendChild(el('span', '', res.check.msg));
           else verdict.appendChild(el('span', '', 'Проверьте условие и попробуйте ещё раз.'));
-          if ((e.att || 0) + 1 >= 2 && hintsShown < t.hints.length) verdict.appendChild(el('span', 'muted', ' Возьмите подсказку — это нормально.'));
+          if (!examOpen() && (e.att || 0) + 1 >= 2 && hintsShown < t.hints.length) verdict.appendChild(el('span', 'muted', ' Возьмите подсказку — это нормально.'));
         }
       });
 

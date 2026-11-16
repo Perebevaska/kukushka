@@ -171,7 +171,8 @@ print(sum(len(d) for d in days), len(set().union(*days)))
 import pandas as pd
 o = pd.read_csv("preorders.csv", parse_dates=["date"])
 
-dau = o.groupby("date")["guest_id"].nunique()                       # гостей в каждый день
+days = pd.date_range("2026-01-01", "2026-06-30")                   # границы полной выгрузки
+dau = o.groupby("date")["guest_id"].nunique().reindex(days, fill_value=0)
 month = o["date"].dt.to_period("M")
 mau = o.groupby(month)["guest_id"].nunique()                         # гостей за месяц
 dau_avg = dau.groupby(dau.index.to_period("M")).mean()               # средний DAU месяца
@@ -187,7 +188,7 @@ print(wau.tail(4))
 
 Что здесь происходит:
 
-- `groupby("date")["guest_id"].nunique()` — DAU: уникальные гости в каждый день, Series с датой в индексе;
+- `groupby("date")["guest_id"].nunique()` — DAU: уникальные гости в каждый день, Series с датой в индексе. Полный календарь включает и наблюдавшиеся дни без заказов, их DAU равен нулю;
 - MAU считаем **по заказам**, а не суммой DAU: `groupby(month)["guest_id"].nunique()`;
 - WAU — так же, но по неделе: `to_period("W")` превращает дату в неделю с понедельника по воскресенье (`2026-06-22/2026-06-28`);
 - средний DAU месяца — `dau.groupby(dau.index.to_period("M")).mean()`. Это новый приём, он разобран ниже на трёх днях;
@@ -204,7 +205,7 @@ dau.groupby(dau.index.to_period("M")).mean()
 
 Метки — `['2026-01', '2026-01', '2026-02']`: два январских дня и один февральский. Дальше всё как с обычным столбцом в `groupby`: январь — (2 + 1) / 2 = 1.5, февраль — 3.0. Так же работает `dau.groupby(dau.index.dayofweek)`: метки — номера дней недели.
 
-Как читать: sticky factor вырос с 8.6 % в январе до 14.5 % в июне — гости стали заходить чаще: в июне в среднем около четырёх дней из тридцати. Январская цифра занижена: гости приходили в течение всего месяца, и в начале января их почти не было. В будни DAU около 110, в выходные — 42–44: предзаказ — привычка офисных гостей по дороге на работу. WAU в полных неделях июня — 455–499 гостей, а в последней строке всего 249: от недели 29 июня – 5 июля в выгрузке только два дня (об этом — в типичных ошибках ниже).
+Как читать: sticky factor вырос с 8.6 % в январе до 14.5 % в июне — активный гость июня заказывал в среднем в 4.4 дня из 30. У месяцев разный состав гостей. Например, в январе база только набиралась и у пришедших в конце месяца было мало дней для повторных заказов. В будни DAU около 110, в выходные — 42–44: выгрузка показывает недельный ритм заказов. О занятии гостя и цели его поездки полей нет. WAU в полных неделях июня — 455–499 гостей, а в последней строке всего 249: от недели 29 июня – 5 июля в выгрузке только два дня (об этом — в типичных ошибках ниже).
 
 ::: deep Скользящий MAU
 Календарный MAU прыгает в начале месяца. Продуктовые команды часто считают **скользящий** MAU — уникальные гости за последние 28 или 30 дней на каждый день. Тогда sticky = DAU / MAU28 можно рисовать линией по дням.
@@ -225,7 +226,7 @@ print((dau / mau28 * 100).round(1).describe())
 ::: warn Типичные ошибки
 - **MAU = сумма DAU.** Сумма считает постоянного гостя по разу на каждый день; MAU — уникальные гости за месяц, его считают по исходным заказам.
 - **Неполная неделя или месяц.** Последняя неделя июня (29–30 июня) с двумя днями даст WAU вдвое ниже соседних — это не падение (урок «Динамика во времени»).
-- **Sticky в первый месяц запуска.** Пока база набирается, DAU в начале месяца маленький — липкость занижена.
+- **Sticky в первый месяц запуска.** У зарегистрировавшихся в конце месяца мало дней для заказа. При сравнении месяцев проверьте, сколько пришло новых гостей.
 - **Активность без определения.** «Открыл приложение» и «сделал заказ» — разные DAU. Пишите в отчёте, что считается активностью.
 :::
 
@@ -503,7 +504,7 @@ monthly
 ```
 
 ### explain
-Липкость выросла с 8.6 % в январе до 14.5 % в июне: средний гость месяца в июне заказывал около четырёх дней из тридцати. MAU с марта не рос (939 в марте, 874 в июне), а средний DAU рос (99.4 → 127.0) — значит, растёт не аудитория, а привычка. Если бы MAU посчитали суммой DAU, в январе вышло бы 885 вместо 330: постоянный гость посчитался бы по разу за каждый свой день, и липкость стала бы бессмысленной.
+Липкость выросла с 8.6 % в январе до 14.5 % в июне: средний гость месяца в июне заказывал около четырёх дней из тридцати. В марте и июне MAU составил 939 и 874, средний DAU — 99.4 и 127.0. Чтобы выяснить, стали ли прежние гости заказывать чаще, сравните дни заказов одной и той же группы за сопоставимые периоды. Если бы MAU посчитали суммой DAU, в январе вышло бы 885 вместо 330: постоянный гость посчитался бы по разу за каждый свой день, и липкость стала бы бессмысленной.
 
 ## task: wau-full | WAU только по полным неделям | base
 
@@ -527,17 +528,21 @@ _days = _pd.Series(1, index=_calendar).groupby(_calendar.to_period('W')).sum()
 w = _pd.DataFrame({'wau': g['guest_id'].nunique().reindex(_days.index, fill_value=0), 'days': _days})
 wf = w[w['days'] == 7]
 wk = need('weekly', _pd.DataFrame)
-for c in ('wau', 'days'):
-    assert c in wk.columns, f'В weekly нет столбца {c}.'
-assert len(wk) == len(w), f'В weekly {len(wk)} строк, а недель в выгрузке {len(w)}: группируйте по to_period("W").'
-if len(g) == len(wk) and [int(x) for x in wk['days']] == [int(x) for x in g.size()]:
-    raise AssertionError('days — это число заказов в неделе. Нужно число разных дат: g["date"].nunique().')
-assert [int(x) for x in wk['days']] == [int(x) for x in w['days']], f'days = {[int(x) for x in wk["days"]][:3]}…, а нужно {[int(x) for x in w["days"]][:3]}…: разные даты в неделе — nunique() по date.'
-assert [int(x) for x in wk['wau']] == [int(x) for x in w['wau']], 'wau — разные гости за неделю: nunique() по guest_id.'
-fu = need('full', _pd.DataFrame)
-assert len(fu) == len(wf), f'В full {len(fu)} строк, а полных недель {len(wf)}: оставьте days == 7.'
-assert int(need('n_full')) == len(wf), f'n_full = {need("n_full")}, а полных недель {len(wf)}.'
-assert int(need('min_wau')) == int(wf['wau'].min()), f'min_wau = {need("min_wau")}: наименьший wau среди полных недель.'
+def _verify_weeks(table, expected):
+    assert {'wau','days'} <= set(table.columns), 'Сохраните в таблице столбцы wau и days.'
+    indexed = table.copy()
+    indexed.index = indexed.index.astype(str)
+    target = expected.copy()
+    target.index = target.index.astype(str)
+    assert indexed.index.is_unique and set(indexed.index)==set(target.index), 'Сверьте ключи недель по календарю периода наблюдения.'
+    indexed = indexed.reindex(target.index)
+    assert indexed['days'].eq(target['days']).all(), 'days — число календарных дней наблюдения в неделе. Используйте календарь с 1 января по 30 июня, включая даты без заказов.'
+    assert indexed['wau'].eq(target['wau']).all(), 'wau — число разных гостей за эту неделю. Для недели без заказов укажите 0.'
+_verify_weeks(wk, w)
+_verify_weeks(need('full', _pd.DataFrame), wf)
+assert need('n_full') == len(wf), 'n_full — число недель, в которых наблюдались все семь дней.'
+assert need('min_wau') == wf['wau'].min(), 'min_wau — наименьший WAU среди полных недель.'
+
 ```
 
 ### hint
@@ -567,7 +572,7 @@ weekly.head(3)
 
 ## task: sticky-city | Липкость по городам | star
 
-Город гостя — в справочнике `preorder_guests.csv` (столбец `city`). Посчитайте липкость **июня 2026** по каждому городу: средний DAU за 30 дней июня (DAU — разные гости **этого города** в день; дней без заказов в июне нет ни в одном городе) делить на MAU июня этого города, × 100, округлить до 1 знака. Сохраните Series `city_sticky` (индекс — город) и `best_city` — город с наибольшей липкостью.
+Город гостя — в справочнике `preorder_guests.csv` (столбец `city`). Посчитайте липкость **июня 2026** по каждому городу: средний DAU за 30 дней июня (DAU — разные гости **этого города** в день. Выгрузка за июнь полная, день без заказов даёт ноль) делить на MAU июня этого города, × 100, округлить до 1 знака. Сохраните Series `city_sticky` (индекс — город) и `best_city` — город с наибольшей липкостью.
 
 ### starter
 ```python
@@ -582,10 +587,11 @@ guests = pd.read_csv("preorder_guests.csv")
 import pandas as _pd
 r = _pd.read_csv('preorders.csv', parse_dates=['date']).merge(_pd.read_csv('preorder_guests.csv'), on='guest_id')
 j = r[r['date'].dt.to_period('M') == _pd.Period('2026-06', 'M')]
-t = j.pivot_table(index='date', columns='city', values='guest_id', aggfunc='nunique')
+t = j.pivot_table(index='date', columns='city', values='guest_id', aggfunc='nunique').reindex(_pd.date_range('2026-06-01','2026-06-30')).fillna(0)
 mau = j.groupby('city')['guest_id'].nunique()
 w = (t.mean() / mau * 100).round(1)
 s = need('city_sticky', _pd.Series)
+assert s.index.is_unique, 'Каждый город должен встречаться в city_sticky ровно один раз.'
 got = {str(k): float(v) for k, v in s.items()}
 assert set(got) == set(w.index), f'Города в city_sticky: {sorted(got)}, а нужно {sorted(w.index)}.'
 dau_all = j.groupby('date')['guest_id'].nunique().mean()
@@ -600,7 +606,7 @@ assert str(need('best_city')) == str(w.idxmax()), f'best_city = {need("best_city
 Сначала `merge` заказов со справочником по `guest_id`, затем фильтр июня: `o["date"].dt.to_period("M") == "2026-06"`. DAU по городам удобно получить сводной: `pivot_table(index="date", columns="city", values="guest_id", aggfunc="nunique")` — строка на день, столбец на город.
 
 ### hint
-Средний DAU — `.mean()` этой сводной (по каждому столбцу), MAU — `groupby("city")["guest_id"].nunique()`. Делите Series на Series: pandas выровняет их по городам.
+Восстановите все 30 дат июня через `.reindex(pd.date_range("2026-06-01", "2026-06-30"))`. Заполните нулями пустые пары «дата, город» и возьмите `.mean()` по каждому столбцу. MAU — `groupby("city")["guest_id"].nunique()`. Делите Series на Series: pandas выровняет их по городам.
 
 ### solution
 ```python
@@ -610,6 +616,8 @@ guests = pd.read_csv("preorder_guests.csv")
 j = o.merge(guests, on="guest_id")
 j = j[j["date"].dt.to_period("M") == "2026-06"]
 dau = j.pivot_table(index="date", columns="city", values="guest_id", aggfunc="nunique")
+days = pd.date_range("2026-06-01", "2026-06-30")
+dau = dau.reindex(days).fillna(0)
 mau = j.groupby("city")["guest_id"].nunique()
 city_sticky = (dau.mean() / mau * 100).round(1)
 best_city = city_sticky.idxmax()

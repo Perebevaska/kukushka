@@ -540,9 +540,13 @@ q3 = g.transform(lambda s: s.quantile(0.75))
 slow = o['actual_min'] > q3 + 1.5 * (q3 - q1)
 okk = need('ok', _pd.DataFrame)
 assert 'slow' in okk.columns, 'Нет столбца slow.'
-assert (okk['slow'].values == slow.values).all(), 'slow не совпадает: границу нужно считать внутри каждой группы курьеров.'
+assert 'delivery_id' in okk.columns and okk['delivery_id'].is_unique, 'Сохраните уникальный delivery_id каждой доставки.'
+assert set(okk['delivery_id']) == set(o['delivery_id']), 'В ok должны остаться исходные доставки со временем 1–299 минут.'
+want_slow = _pd.Series(slow.values,index=o['delivery_id'])
+got_slow = okk.set_index('delivery_id')['slow'].reindex(want_slow.index)
+assert (got_slow.values == want_slow.values).all(), 'slow не совпадает по delivery_id: границу нужно считать внутри каждой группы курьеров.'
 want = {k: int(v) for k, v in slow.groupby(o['courier']).sum().items()}
-got = {k: int(v) for k, v in dict(need('slow_by')).items()}
+got = dict(need('slow_by'))
 assert got == want, f'slow_by = {got}, а нужно {want}.'
 ```
 

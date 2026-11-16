@@ -742,15 +742,41 @@ df = pd.read_csv("orders_3m.csv")
 
 ### check
 ```python
+# include-check: ch04_bars.py
 import pandas as _pd
 rev = _pd.read_csv('orders_3m.csv').groupby('channel')['amount'].sum().sort_values(ascending=False)
 ax = ax_of(0)
-assert len(ax.patches) == 3, f'Столбцов на графике {len(ax.patches)}, а каналов 3.'
-hs = [p.get_height() for p in ax.patches]
-assert hs == sorted(hs, reverse=True), 'Столбцы должны идти по убыванию.'
-assert len(ax.texts) >= 3, 'Не вижу подписей над столбцами — ax.bar_label(bars).'
-assert ax.get_title().strip(), 'Добавьте заголовок.'
-assert need('top_channel') == rev.index[0], f'top_channel = {need("top_channel")!r}.'
+visible = _check_category_bars(ax, rev.to_dict())
+assert [v for _, v in visible] == sorted(rev.values, reverse=True), 'Выручка каналов должна убывать слева направо.'
+assert any(ax.get_title(loc=loc).strip() for loc in ('left', 'center', 'right')), 'Добавьте заголовок.'
+assert need('top_channel') == rev.index[0], 'Найдите канал с наибольшей выручкой.'
+from matplotlib.text import Annotation as _Annotation
+import re as _re
+for _bar in ax.patches:
+    _x = _bar.get_x() + _bar.get_width() / 2
+    _y = _bar.get_height()
+    _values = []
+    for _text in ax.texts:
+        if not _text.get_visible():
+            continue
+        if isinstance(_text, _Annotation):
+            if _text.xycoords != 'data':
+                continue
+            _tx, _ty = _text.xy
+        else:
+            _pos = _text.get_transform().transform(_text.get_position())
+            _tx, _ty = ax.transData.inverted().transform(_pos)
+        if abs(_tx - _x) < 0.3 and _ty >= _y - 1e-5:
+            _label = _text.get_text().strip().replace('₽', '').strip()
+            _label = _re.sub(r'(?<=\d)[\s\u00a0\u202f_](?=\d)', '', _label)
+            if _re.fullmatch(r'[+-]?\d{1,3}(?:,\d{3})+', _label):
+                _label = _label.replace(',', '')
+            try:
+                _values.append(float(_label.replace(',', '.')))
+            except ValueError:
+                pass
+    assert any(close(_v, _y, 0.01) for _v in _values), 'Подпишите над каждым столбцом сумму выручки именно этого канала.'
+
 ```
 
 ### hint

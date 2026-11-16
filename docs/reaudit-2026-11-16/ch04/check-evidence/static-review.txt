@@ -1,0 +1,3544 @@
+
+==== ch04/01-plots/line ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+daily = df.set_index("datetime").resample("D")["amount"].sum()
+
+fig, ax = plt.subplots(figsize=(9, 3.5))
+ax.plot(daily.index, daily.values)
+ax.set_title("Выручка по дням")
+SETUP
+
+CHECK
+ax = ax_of()
+assert ax.lines, 'На графике нет линии. Используйте ax.plot(...).'
+y = list(ax.lines[0].get_ydata())
+import pandas as _pd
+d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime']).set_index('datetime').resample('D')['amount'].sum()
+assert len(y) == len(d) and [float(v) for v in y] == [float(v) for v in d.values], 'Линия должна показывать выручку по дням — значения daily.'
+assert ax.get_title() == 'Выручка по дням', f'Заголовок: {ax.get_title()!r}.'
+
+==== ch04/01-plots/bar-shop ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv")
+counts = df["shop_id"].value_counts()
+
+fig, ax = plt.subplots(figsize=(7, 3.5))
+ax.bar(counts.index, counts.values)
+ax.set_ylabel("заказов")
+SETUP
+
+CHECK
+# Shared by chapter 4 chart checks through include-check; no student-code execution here.
+def _check_category_bars(ax, expected, *, horizontal=False):
+    import numpy as _np
+
+    ax.figure.canvas.draw()
+    patches = list(ax.patches)
+    ticks = ax.get_yticks() if horizontal else ax.get_xticks()
+    texts = ax.get_yticklabels() if horizontal else ax.get_xticklabels()
+    labels = [(float(position), text.get_text()) for position, text in zip(ticks, texts) if text.get_visible()]
+    assert len(patches) == len(expected), f'Столбцов {len(patches)}, а категорий {len(expected)}: нужен столбец для каждой категории.'
+    assert len(labels) == len(expected) and {name for _, name in labels} == set(expected), 'Подпишите каждую категорию ровно один раз; названия должны соответствовать данным.'
+    result = []
+    seen = set()
+    for patch in patches:
+        position = (patch.get_y() + patch.get_height() / 2 if horizontal
+                    else patch.get_x() + patch.get_width() / 2)
+        matching = [name for tick, name in labels if _np.isclose(tick, position, rtol=0, atol=1e-7)]
+        assert len(matching) == 1, 'Подпись категории должна стоять напротив своего столбца.'
+        name = matching[0]
+        assert name not in seen, f'Для категории «{name}» нарисовано несколько столбцов.'
+        seen.add(name)
+        origin = patch.get_x() if horizontal else patch.get_y()
+        assert _np.isclose(origin, 0, rtol=0, atol=1e-7), f'«{name}»: количественный столбец должен начинаться от 0, а не от {origin:g}.'
+        value = patch.get_width() if horizontal else patch.get_height()
+        assert _np.isfinite(value) and _np.isclose(value, expected[name], rtol=1e-9, atol=1e-6), f'«{name}»: на графике {value:g}, а по данным нужно {expected[name]:g}. Проверьте пару «подпись — значение».'
+        screen = ax.transData.transform((0, position) if horizontal else (position, 0))
+        # Read the chart as the viewer sees it: top to bottom, or left to right.
+        visual_position = -float(screen[1]) if horizontal else float(screen[0])
+        result.append((visual_position, name, float(value)))
+    return [(name, value) for _, name, value in sorted(result)]
+import pandas as _pd
+want = _pd.read_csv('orders_3m.csv')['shop_id'].value_counts()
+ax = ax_of()
+visible = _check_category_bars(ax, want.to_dict())
+values = [value for _, value in visible]
+assert values == sorted(values, reverse=True), 'В видимом порядке слева направо число заказов должно убывать.'
+assert ax.get_ylabel() == 'заказов', f'Подпись оси Y: {ax.get_ylabel()!r}.'
+
+==== ch04/01-plots/p-plot ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+df = pd.read_csv("orders_3m.csv")
+avg = df.groupby("channel")["amount"].mean()
+fig, ax = plt.subplots(figsize=(6, 3))
+ax.bar(avg.index, avg.values)
+ax.set_title("Средний чек по каналам")
+SETUP
+
+CHECK
+import pandas as _pd
+want = _pd.read_csv('orders_3m.csv').groupby('channel')['amount'].mean()
+ax = ax_of()
+h = [round(p.get_height(), 6) for p in ax.patches]
+assert len(h) == len(want), f'Столбцов {len(h)}, а каналов {len(want)}. Рисует строка ax.bar(...) — она должна идти после plt.subplots.'
+assert h == [round(v, 6) for v in want.values], 'Высоты столбцов не совпадают со средним чеком по каналам: avg должен быть посчитан до строки с ax.bar.'
+assert ax.get_title() == 'Средний чек по каналам', f'Заголовок {ax.get_title()!r}: строка с set_title должна идти после plt.subplots.'
+
+==== ch04/01-plots/barh ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv")
+counts = df["drink"].value_counts().sort_values()
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.barh(counts.index, counts.values)
+ax.set_title("Заказы по напиткам")
+SETUP
+
+CHECK
+# Shared by chapter 4 chart checks through include-check; no student-code execution here.
+def _check_category_bars(ax, expected, *, horizontal=False):
+    import numpy as _np
+
+    ax.figure.canvas.draw()
+    patches = list(ax.patches)
+    ticks = ax.get_yticks() if horizontal else ax.get_xticks()
+    texts = ax.get_yticklabels() if horizontal else ax.get_xticklabels()
+    labels = [(float(position), text.get_text()) for position, text in zip(ticks, texts) if text.get_visible()]
+    assert len(patches) == len(expected), f'Столбцов {len(patches)}, а категорий {len(expected)}: нужен столбец для каждой категории.'
+    assert len(labels) == len(expected) and {name for _, name in labels} == set(expected), 'Подпишите каждую категорию ровно один раз; названия должны соответствовать данным.'
+    result = []
+    seen = set()
+    for patch in patches:
+        position = (patch.get_y() + patch.get_height() / 2 if horizontal
+                    else patch.get_x() + patch.get_width() / 2)
+        matching = [name for tick, name in labels if _np.isclose(tick, position, rtol=0, atol=1e-7)]
+        assert len(matching) == 1, 'Подпись категории должна стоять напротив своего столбца.'
+        name = matching[0]
+        assert name not in seen, f'Для категории «{name}» нарисовано несколько столбцов.'
+        seen.add(name)
+        origin = patch.get_x() if horizontal else patch.get_y()
+        assert _np.isclose(origin, 0, rtol=0, atol=1e-7), f'«{name}»: количественный столбец должен начинаться от 0, а не от {origin:g}.'
+        value = patch.get_width() if horizontal else patch.get_height()
+        assert _np.isfinite(value) and _np.isclose(value, expected[name], rtol=1e-9, atol=1e-6), f'«{name}»: на графике {value:g}, а по данным нужно {expected[name]:g}. Проверьте пару «подпись — значение».'
+        screen = ax.transData.transform((0, position) if horizontal else (position, 0))
+        # Read the chart as the viewer sees it: top to bottom, or left to right.
+        visual_position = -float(screen[1]) if horizontal else float(screen[0])
+        result.append((visual_position, name, float(value)))
+    return [(name, value) for _, name, value in sorted(result)]
+import pandas as _pd
+want = _pd.read_csv('orders_3m.csv')['drink'].value_counts()
+ax = ax_of()
+visible = _check_category_bars(ax, want.to_dict(), horizontal=True)
+assert close(visible[0][1], float(want.max())), 'Наверху должен быть напиток с максимальным числом заказов. Учитывайте направление оси Y; invert_yaxis() тоже допустим.'
+assert ax.get_title() == 'Заказы по напиткам', f'Заголовок: {ax.get_title()!r}.'
+
+==== ch04/01-plots/pandas-plot ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv")
+by_size = df.groupby("size")["amount"].sum().reindex(["S", "M", "L"])
+
+fig, ax = plt.subplots(figsize=(5, 3))
+by_size.plot(kind="bar", ax=ax, title="Выручка по размерам", rot=0)
+SETUP
+
+CHECK
+# Shared by chapter 4 chart checks through include-check; no student-code execution here.
+def _check_category_bars(ax, expected, *, horizontal=False):
+    import numpy as _np
+
+    ax.figure.canvas.draw()
+    patches = list(ax.patches)
+    ticks = ax.get_yticks() if horizontal else ax.get_xticks()
+    texts = ax.get_yticklabels() if horizontal else ax.get_xticklabels()
+    labels = [(float(position), text.get_text()) for position, text in zip(ticks, texts) if text.get_visible()]
+    assert len(patches) == len(expected), f'Столбцов {len(patches)}, а категорий {len(expected)}: нужен столбец для каждой категории.'
+    assert len(labels) == len(expected) and {name for _, name in labels} == set(expected), 'Подпишите каждую категорию ровно один раз; названия должны соответствовать данным.'
+    result = []
+    seen = set()
+    for patch in patches:
+        position = (patch.get_y() + patch.get_height() / 2 if horizontal
+                    else patch.get_x() + patch.get_width() / 2)
+        matching = [name for tick, name in labels if _np.isclose(tick, position, rtol=0, atol=1e-7)]
+        assert len(matching) == 1, 'Подпись категории должна стоять напротив своего столбца.'
+        name = matching[0]
+        assert name not in seen, f'Для категории «{name}» нарисовано несколько столбцов.'
+        seen.add(name)
+        origin = patch.get_x() if horizontal else patch.get_y()
+        assert _np.isclose(origin, 0, rtol=0, atol=1e-7), f'«{name}»: количественный столбец должен начинаться от 0, а не от {origin:g}.'
+        value = patch.get_width() if horizontal else patch.get_height()
+        assert _np.isfinite(value) and _np.isclose(value, expected[name], rtol=1e-9, atol=1e-6), f'«{name}»: на графике {value:g}, а по данным нужно {expected[name]:g}. Проверьте пару «подпись — значение».'
+        screen = ax.transData.transform((0, position) if horizontal else (position, 0))
+        # Read the chart as the viewer sees it: top to bottom, or left to right.
+        visual_position = -float(screen[1]) if horizontal else float(screen[0])
+        result.append((visual_position, name, float(value)))
+    return [(name, value) for _, name, value in sorted(result)]
+import pandas as _pd
+import matplotlib.pyplot as _plt
+from unittest.mock import patch as _patch
+want = _pd.read_csv('orders_3m.csv').groupby('size')['amount'].sum()
+ax = ax_of()
+visible = _check_category_bars(ax, want.to_dict())
+assert [name for name, _ in visible] == ['S','M','L'], 'Видимый порядок по оси X — S, M, L.'
+assert ax.get_title() == 'Выручка по размерам', 'Заголовок должен быть «Выручка по размерам».'
+# Observe an actual Series bar call, including helpers and arbitrary pandas chains.
+# Stop the short replay at that call; the finished original chart was checked above.
+_Accessor = type(_pd.Series(dtype=float).plot)
+_original_plot = _Accessor.__call__
+class _SeriesBarSeen(Exception):
+    pass
+def _observe_plot(self, *args, **kwargs):
+    kind = kwargs.get('kind', args[0] if args else 'line')
+    if isinstance(self._parent, _pd.Series) and kind == 'bar':
+        raise _SeriesBarSeen()
+    return _original_plot(self, *args, **kwargs)
+_before = set(_plt.get_fignums())
+_seen = False
+try:
+    with _patch.object(_Accessor, '__call__', _observe_plot):
+        try:
+            exec(_code, {'__name__': '__main__'})
+        except _SeriesBarSeen:
+            _seen = True
+finally:
+    for _number in set(_plt.get_fignums()) - _before:
+        _plt.close(_number)
+assert _seen, 'Нарисуйте столбцы именно через Series.plot(kind="bar") или Series.plot.bar(...), а не ax.bar вместе с посторонним ax.plot.'
+
+==== ch04/01-plots/two ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+by_hour = df["datetime"].dt.hour.value_counts().sort_index()
+by_day = df["datetime"].dt.dayofweek.value_counts().sort_index()
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 3.5))
+axes[0].plot(by_hour.index, by_hour.values)
+axes[0].set_title("По часам")
+axes[1].bar(by_day.index, by_day.values)
+axes[1].set_title("По дням недели")
+fig.tight_layout()
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])
+assert len(figs) == 1 and len(figs[0].axes) == 2, 'Нужно одно полотно с двумя графиками: plt.subplots(1, 2).'
+a, b = figs[0].axes
+assert a.get_title() == 'По часам' and b.get_title() == 'По дням недели', f'Заголовки: {a.get_title()!r}, {b.get_title()!r}.'
+hh = d['datetime'].dt.hour.value_counts().sort_index()
+assert a.lines and [float(v) for v in a.lines[0].get_ydata()] == [float(v) for v in hh.values], 'Слева — линия: число заказов по часу, по возрастанию часа.'
+ww = d['datetime'].dt.dayofweek.value_counts().sort_index()
+assert [p.get_height() for p in b.patches] == [float(v) for v in ww.values], 'Справа — столбцы: заказы по дню недели (0 — понедельник), по порядку дней.'
+
+==== ch04/01-plots/cities ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+df["city"] = df["shop_id"].str[:3]
+pv = pd.pivot_table(df, index=pd.Grouper(key="datetime", freq="W"),
+                    columns="city", values="amount", aggfunc="sum")
+
+fig, ax = plt.subplots(figsize=(9, 3.5))
+pv.plot(ax=ax, title="Выручка по неделям")
+ax.set_ylabel("выручка, ₽")
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])
+d['city'] = d['shop_id'].str[:3]
+w = d.pivot_table(index=_pd.Grouper(key='datetime', freq='W'), columns='city', values='amount', aggfunc='sum')
+ax = ax_of()
+assert len(ax.lines) == w.shape[1], f'Линий {len(ax.lines)}, а городов {w.shape[1]}.'
+got = sorted(sum(float(v) for v in l.get_ydata()) for l in ax.lines)
+assert all(abs(a - b) < 1e-6 for a, b in zip(got, sorted(w.sum().values))), 'Сумма значений линий не совпадает с выручкой городов.'
+assert all(len(l.get_ydata()) == len(w) for l in ax.lines), f'В каждой линии должно быть {len(w)} недель.'
+assert ax.get_title() == 'Выручка по неделям', f'Заголовок: {ax.get_title()!r}.'
+assert ax.get_legend() is not None, 'Нужна легенда — какой город какой линией.'
+
+==== ch04/01-plots/highlight ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+days = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
+by_day = df.groupby(df["datetime"].dt.dayofweek)["amount"].sum()
+colors = ["tab:orange" if v == by_day.max() else "lightgray" for v in by_day.values]
+
+fig, ax = plt.subplots(figsize=(7, 3.5))
+bars = ax.bar(days, by_day.values, color=colors)
+ax.bar_label(bars)
+ax.set_title("Лучший день недели — по выручке")
+SETUP
+
+CHECK
+import pandas as _pd
+from matplotlib.colors import to_hex as _hex
+d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])
+by = d.groupby(d['datetime'].dt.dayofweek)['amount'].sum()
+ax = ax_of()
+assert [p.get_height() for p in ax.patches] == [float(v) for v in by.values], 'Высоты — выручка по дням недели, с понедельника.'
+labels = [t.get_text() for t in ax.get_xticklabels()]
+assert labels == ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'], f'Подписи: {labels}.'
+cols = [_hex(p.get_facecolor()) for p in ax.patches]
+best = int(by.values.argmax())
+assert cols[best] == _hex('tab:orange'), 'Лучший день должен быть оранжевым ("tab:orange").'
+assert all(c == _hex('lightgray') for i, c in enumerate(cols) if i != best), 'Остальные столбцы — "lightgray".'
+assert len(ax.texts) == 7, f'Подписей значений {len(ax.texts)}, а нужно 7: ax.bar_label(bars).'
+
+==== ch04/01-plots/labeled ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+df = pd.read_csv("orders_3m.csv")
+rev = df.groupby("channel")["amount"].sum().sort_values(ascending=False)
+fig, ax = plt.subplots(figsize=(6, 3.5))
+bars = ax.bar(rev.index, rev.values)
+ax.bar_label(bars)
+ax.set_title("Зал приносит больше всего выручки")
+top_channel = rev.index[0]
+SETUP
+
+CHECK
+import pandas as _pd
+rev = _pd.read_csv('orders_3m.csv').groupby('channel')['amount'].sum().sort_values(ascending=False)
+ax = ax_of(0)
+assert len(ax.patches) == 3, f'Столбцов на графике {len(ax.patches)}, а каналов 3.'
+hs = [p.get_height() for p in ax.patches]
+assert hs == sorted(hs, reverse=True), 'Столбцы должны идти по убыванию.'
+assert len(ax.texts) >= 3, 'Не вижу подписей над столбцами — ax.bar_label(bars).'
+assert ax.get_title().strip(), 'Добавьте заголовок.'
+assert need('top_channel') == rev.index[0], f'top_channel = {need("top_channel")!r}.'
+
+==== ch04/02-histograms/hist-km ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.hist(d["distance_km"], bins=30)
+ax.set_title("Расстояние, км")
+SETUP
+
+CHECK
+import numpy as _np
+import pandas as _pd
+from matplotlib.patches import Rectangle as _Rectangle, Polygon as _Polygon, StepPatch as _StepPatch
+km = _pd.read_csv('deliveries.csv')['distance_km'].dropna().to_numpy()
+ax = ax_of()
+candidates = []
+patches = list(ax.patches)
+if len(patches) == 30 and all(isinstance(p,_Rectangle) for p in patches):
+    bars = sorted(patches,key=lambda p:p.get_x()+p.get_width()/2)
+    centers = _np.array([p.get_x()+p.get_width()/2 for p in bars])
+    widths = _np.array([p.get_width() for p in bars])
+    heights = _np.array([p.get_height() for p in bars])
+    assert all(close(p.get_y(),0) for p in bars), 'Корзины числа доставок должны начинаться от нуля по оси Y.'
+    spacing = _np.diff(centers)
+    assert _np.isfinite(centers).all() and _np.isfinite(widths).all() and (spacing>0).all() and (widths>0).all(), 'Корзины должны иметь конечные границы расстояний и положительную ширину.'
+    # rwidth may leave gaps between bars; infer the actual bins, not the rectangles' widths.
+    for align, ratios in [('mid',(widths[:-1]+widths[1:])/(2*spacing)),('left',widths[:-1]/spacing),('right',widths[1:]/spacing)]:
+        ratio = ratios.mean()
+        if ratio>0 and _np.allclose(ratios,ratio,rtol=1e-7,atol=1e-9):
+            bin_widths=widths/ratio
+            left = centers-bin_widths/2 if align=='mid' else centers if align=='left' else centers-bin_widths
+            if _np.allclose(left[1:],left[:-1]+bin_widths[:-1],rtol=1e-7,atol=1e-7):
+                candidates.append((_np.r_[left,left[-1]+bin_widths[-1]],heights))
+elif len(patches)==1 and isinstance(patches[0],_StepPatch):
+    data=patches[0].get_data()
+    assert patches[0].orientation=='vertical', 'По горизонтальной шкале должны быть расстояния в км.'
+    assert data.baseline is None or _np.allclose(data.baseline,0), 'Отсчёт числа доставок начинается от нуля.'
+    candidates.append((_np.asarray(data.edges),_np.asarray(data.values)))
+elif len(patches)==1 and isinstance(patches[0],_Polygon):
+    vertices=patches[0].get_xy()
+    segments=[(a[0],b[0],a[1]) for a,b in zip(vertices[:-1],vertices[1:]) if b[0]>a[0] and close(a[1],b[1])]
+    if len(segments)==30:
+        left,right,heights=map(_np.asarray,zip(*segments))
+        if _np.allclose(right[:-1],left[1:]):
+            candidates.append((_np.r_[left,right[-1]],heights))
+assert candidates, 'Нужна гистограмма с 30 корзинами: допустимы столбцы, step, stepfilled и stairs.'
+def _correct_histogram(edges,heights):
+    if len(edges)!=31 or len(heights)!=30 or not _np.isfinite(edges).all() or not _np.isfinite(heights).all() or not (_np.diff(edges)>0).all():
+        return False
+    if (heights<0).any() or not _np.allclose(heights,_np.round(heights),rtol=0,atol=1e-7) or not close(heights.sum(),len(km)):
+        return False
+    eps=1e-7*max(1.,float(_np.abs(edges).max()))
+    if km.min()<edges[0]-eps or km.max()>edges[-1]+eps:
+        return False
+    # Rendered edges can move by a floating-point ulp. Only samples on such an edge
+    # may legitimately fall on either side; all other cumulative counts are exact.
+    cumulative=_np.cumsum(heights)[:-1]
+    return all(int((km<edge-eps).sum())<=count<=int((km<=edge+eps).sum()) for edge,count in zip(edges[1:-1],cumulative))
+assert any(_correct_histogram(edges,heights) for edges,heights in candidates), 'Границы корзин — расстояния в км; высота каждой — число доставок с distance_km в её границах. Проверьте, не подставили ли amount или другую величину.'
+assert ax.get_title()=='Расстояние, км', f'Заголовок: {ax.get_title()!r}.'
+
+==== ch04/02-histograms/p90 ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+t = d.loc[d["actual_min"].between(1, 299), "actual_min"]
+p50 = t.median()
+p90 = t.quantile(0.9)
+SETUP
+
+CHECK
+import pandas as _pd
+a = _pd.read_csv('deliveries.csv')['actual_min']
+t = a[a.between(1, 299)]
+p50 = need('p50')
+if close(p50, a.median()) and not close(p50, t.median()):
+    raise AssertionError('p50 посчитан по всем данным, вместе с невозможными временами. Медиану считайте по отфильтрованным 1–299 минутам.')
+assert close(p50, t.median()), f'p50 = {p50} не совпадает с медианой времени 1–299 минут. Проверьте фильтр between(1, 299) и что берёте median() (или quantile(0.5)).'
+got = need('p90')
+if close(got, a.quantile(0.9)) and not close(got, t.quantile(0.9)):
+    raise AssertionError('p90 посчитан по всем данным. Сначала оставьте время от 1 до 299 минут.')
+assert close(got, t.quantile(0.9)), f'p90 = {got} не совпадает с квантилем 0.9 времени 1–299 минут. Проверьте аргумент quantile: 0.9, а не 90.'
+
+==== ch04/02-histograms/p-hist ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+d = pd.read_csv("deliveries.csv")
+fig, ax = plt.subplots(figsize=(8, 3))
+ax.hist(d["amount"], bins=25)
+ax.set_title("Сумма заказа, ₽")
+SETUP
+
+CHECK
+ax = ax_of()
+assert len(ax.patches) == 25, f'Столбцов {len(ax.patches)}, а нужно 25: гистограмма рисуется строкой ax.hist(...) после plt.subplots.'
+assert ax.get_title() == 'Сумма заказа, ₽', f'Заголовок {ax.get_title()!r}: строка с set_title должна идти после plt.subplots.'
+
+==== ch04/02-histograms/five-min ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+t = d.loc[d["actual_min"].between(1, 299), "actual_min"]
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.hist(t, bins=24, range=(0, 120))
+ax.set_xlabel("минут")
+ax.set_title("Время доставки")
+SETUP
+
+CHECK
+import pandas as _pd
+a = _pd.read_csv('deliveries.csv')['actual_min']
+t = a[a.between(1, 299)]
+ax = ax_of()
+assert len(ax.patches) == 24, f'Корзин {len(ax.patches)}: от 0 до 120 по 5 минут — это 24 корзины.'
+x0 = ax.patches[0].get_x()
+w = ax.patches[0].get_width()
+assert abs(x0) < 1e-9 and abs(w - 5) < 1e-9, f'Первая корзина начинается с {x0} шириной {w}. Нужно range=(0, 120).'
+total = sum(p.get_height() for p in ax.patches)
+assert total == t.between(0, 120).sum(), f'В корзинах {total} доставок — проверьте фильтр 1–299.'
+assert ax.get_xlabel() == 'минут'
+
+==== ch04/02-histograms/skew ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+mean_km = round(d["distance_km"].mean(), 2)
+median_km = round(d["distance_km"].median(), 2)
+right_tail = mean_km > median_km
+SETUP
+
+CHECK
+import pandas as _pd
+km = _pd.read_csv('deliveries.csv')['distance_km']
+assert close(need('mean_km'), round(km.mean(), 2)), f'mean_km = {need("mean_km")}.'
+assert close(need('median_km'), round(km.median(), 2)), f'median_km = {need("median_km")}.'
+assert need('right_tail') == bool(km.mean() > km.median()), 'right_tail — результат сравнения среднего и медианы.'
+
+==== ch04/02-histograms/items ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+counts = d["items"].value_counts().sort_index()
+fig, ax = plt.subplots(figsize=(6, 3))
+ax.bar(counts.index, counts.values)
+ax.set_title("Позиций в заказе")
+share_1_2 = round(d["items"].isin([1, 2]).mean() * 100, 1)
+SETUP
+
+CHECK
+import pandas as _pd
+it = _pd.read_csv('deliveries.csv')['items']
+vc = it.value_counts().sort_index()
+ax = ax_of()
+assert [p.get_height() for p in ax.patches] == [float(v) for v in vc.values], 'Высоты — число заказов для 1, 2, …, 6 позиций по порядку. Нужны столбцы (bar), а не hist.'
+assert close(need('share_1_2'), round(it.isin([1, 2]).mean() * 100, 1)), f'share_1_2 = {need("share_1_2")}.'
+
+==== ch04/02-histograms/vline ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+t = d.loc[d["actual_min"].between(1, 299), "actual_min"]
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.hist(t, bins=40)
+ax.axvline(t.median(), linestyle="--", color="red")
+ax.set_title("Время доставки и медиана")
+SETUP
+
+CHECK
+import pandas as _pd
+a = _pd.read_csv('deliveries.csv')['actual_min']
+med = a[a.between(1, 299)].median()
+ax = ax_of()
+assert len(ax.patches) == 40, f'Корзин {len(ax.patches)}, нужно 40.'
+v = [l for l in ax.lines if len(set(l.get_xdata())) == 1]
+assert v, 'Нет вертикальной линии: ax.axvline(...).'
+assert close(float(v[0].get_xdata()[0]), med), f'Линия стоит на {v[0].get_xdata()[0]}, а должна — на медиане времени 1–299 минут: t.median() по отфильтрованным данным.'
+assert v[0].get_linestyle() == '--', 'Линия должна быть пунктирной: linestyle="--".'
+
+==== ch04/02-histograms/compare ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+medians = {}
+fig, ax = plt.subplots(figsize=(8, 3.5))
+for c in ["вело", "авто"]:
+    t = ok.loc[ok["courier"] == c, "actual_min"]
+    ax.hist(t, bins=30, range=(0, 90), density=True, alpha=0.5, label=c)
+    medians[c] = t.median()
+ax.legend()
+ax.set_title("Время доставки: вело и авто")
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+ax = ax_of()
+assert len(ax.patches) == 60, f'Столбцов {len(ax.patches)}, а нужно 60: две гистограммы по 30 корзин.'
+labels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []
+assert sorted(labels) == ['авто', 'вело'], f'Легенда: {labels}. Передайте label=... в hist и вызовите ax.legend().'
+area = sum(p.get_height() * p.get_width() for p in ax.patches[:30])
+assert area < 1.01, 'Высоты — доли (density=True), а не количества.'
+want = {c: ok.loc[ok['courier'] == c, 'actual_min'].median() for c in ('вело', 'авто')}
+got = dict(need('medians'))
+assert set(got) == set(want), f'Ключи medians: {sorted(got)} — нужны ровно "вело" и "авто".'
+assert all(close(got[k], want[k]) for k in want), f'medians = {got}: медианы не совпадают. Считайте по ok (время 1–299 минут), отдельно для каждого типа курьера: ok.loc[ok["courier"] == c, "actual_min"].median().'
+
+==== ch04/02-histograms/delay ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+delay = ok["actual_min"] - ok["promised_min"]
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.hist(delay, bins=16, range=(-40, 40))
+ax.axvline(0, color="red")
+ax.set_title("Опоздание, мин (справа от нуля — опоздали)")
+late_pct = round((delay > 0).mean() * 100, 1)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+dl = ok['actual_min'] - ok['promised_min']
+ax = ax_of()
+assert len(ax.patches) == 16 and abs(ax.patches[0].get_x() + 40) < 1e-9, 'Нужно 16 корзин по 5 минут от −40 до 40: bins=16, range=(-40, 40).'
+assert any(len(set(l.get_xdata())) == 1 and float(l.get_xdata()[0]) == 0 for l in ax.lines), 'Отметьте ноль: ax.axvline(0).'
+lp = need('late_pct')
+all_dl = d['actual_min'] - d['promised_min']
+if close(lp, round((all_dl > 0).mean() * 100, 1)) and not close(lp, round((dl > 0).mean() * 100, 1)):
+    raise AssertionError(f'late_pct = {lp} посчитан без фильтра: сначала оставьте доставки с временем 1–299 минут.')
+assert close(lp, round((dl > 0).mean() * 100, 1)), f'late_pct = {lp}. Нужна доля delay > 0 (строго позже обещанного) среди доставок 1–299 минут, в процентах (× 100) с 1 знаком.'
+
+==== ch04/02b-shape/poisson-hand ====
+PROMPT
+
+SOLUTION
+import math
+lam = 3
+p0 = math.exp(-lam)
+p1 = p0 * lam / 1
+p2 = p1 * lam / 2
+p3plus = 1 - (p0 + p1 + p2)
+p0, p1, p2, p3plus = (round(x, 3) for x in (p0, p1, p2, p3plus))
+print(p0, p1, p2, p3plus)
+SETUP
+
+CHECK
+import math as _m
+q0 = _m.exp(-3); q1 = q0 * 3; q2 = q1 * 3 / 2
+assert close(need('p0'), round(q0, 3), 0.0006), f'p0 = {need("p0")}: math.exp(-lam).'
+if close(need('p1'), round(q0 * 3 / 2, 3), 0.0006):
+    raise AssertionError('p1: умножайте p0 на lam / k с k = 1, то есть на 3.')
+assert close(need('p1'), round(q1, 3), 0.0006), f'p1 = {need("p1")}: p0 · lam / 1.'
+assert close(need('p2'), round(q2, 3), 0.0006), f'p2 = {need("p2")}: p1 · lam / 2.'
+assert close(need('p3plus'), round(1 - q0 - q1 - q2, 3), 0.0011), f'p3plus = {need("p3plus")}: 1 − (p0 + p1 + p2).'
+
+==== ch04/02b-shape/ufa-empty ====
+PROMPT
+
+SOLUTION
+import math
+import pandas as pd
+
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+days = pd.date_range("2026-09-01", "2026-11-30")
+u = d[d["shop_id"] == "UFA-1"]
+per_day = u.groupby(u["created"].dt.normalize()).size().reindex(days, fill_value=0)
+mean = per_day.mean()
+lam = round(mean, 2)
+empty = int((per_day == 0).sum())
+exp_empty = round(len(days) * math.exp(-mean), 1)
+print(lam, empty, exp_empty)
+SETUP
+
+CHECK
+import math as _m
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv', parse_dates=['created'])
+u = d[d['shop_id'] == 'UFA-1']
+days = _pd.date_range('2026-09-01', '2026-11-30')
+raw = u.groupby(u['created'].dt.normalize()).size()
+pdw = raw.reindex(days, fill_value=0)
+lw = pdw.mean()
+if close(need('lam'), round(raw.mean(), 2), 0.006):
+    raise AssertionError(f'lam = {need("lam")} — это среднее только по дням с доставками ({len(raw)} дней). Добавьте пустые дни: reindex(days, fill_value=0).')
+s = need('per_day', _pd.Series)
+assert len(s) == len(days) and [int(x) for x in s.values] == [int(x) for x in pdw.values], 'per_day — доставки UFA-1 по дням (dt.normalize()) с нулями в пустых днях, 91 значение.'
+assert close(need('lam'), round(lw, 2), 0.006), f'lam = {need("lam")}: среднее per_day, 2 знака.'
+assert int(need('empty')) == int((pdw == 0).sum()), f'empty = {need("empty")}: (per_day == 0).sum().'
+assert close(need('exp_empty'), round(91 * _m.exp(-lw), 1), 0.051), f'exp_empty = {need("exp_empty")}: 91 · e^(−λ) с неокруглённым средним.'
+
+==== ch04/02b-shape/minute-flat ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+minute = d["created"].dt.minute
+fig, ax = plt.subplots(figsize=(8, 3))
+counts, edges, bars = ax.hist(minute, bins=12, range=(0, 60))
+e = len(minute) / 12
+ax.axhline(e, color="red", linestyle="--")
+ax.set_xlabel("минута часа")
+ax.set_title("Минута создания заказа: ровно, как и ожидали")
+expected = round(e, 1)
+max_dev_pct = round(abs(counts - e).max() / e * 100, 1)
+SETUP
+
+CHECK
+import pandas as _pd
+import numpy as _np
+m = _pd.read_csv('deliveries.csv', parse_dates=['created'])['created'].dt.minute
+c, _ = _np.histogram(m, bins=12, range=(0, 60))
+e = len(m) / 12
+ax = ax_of()
+assert len(ax.patches) == 12, f'Корзин {len(ax.patches)}: от 0 до 60 по 5 минут — 12 корзин, range=(0, 60).'
+assert [int(p.get_height()) for p in ax.patches] == [int(x) for x in c], 'Высоты не совпадают с числом заказов по минутам: ax.hist(d["created"].dt.minute, bins=12, range=(0, 60)).'
+assert close(need('expected'), round(e, 1), 0.051), f'expected = {need("expected")}: все заказы, делённые на число корзин.'
+want = round(max(abs(c - e)) / e * 100, 1)
+assert close(need('max_dev_pct'), want, 0.051), f'max_dev_pct = {need("max_dev_pct")} не совпадает. Нужно наибольшее |корзина − expected| / expected × 100: модуль отклонения (abs), максимум по 12 корзинам, деление на неокруглённое expected.'
+
+==== ch04/02b-shape/poisson-day ====
+PROMPT
+
+SOLUTION
+import math
+import pandas as pd
+
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+days = pd.date_range("2026-09-01", "2026-11-30")
+k = d[d["shop_id"] == "KZN-1"]
+per_day = k.groupby(k["created"].dt.normalize()).size().reindex(days, fill_value=0)
+mean = per_day.mean()
+lam = round(mean, 2)
+obs = per_day.value_counts(normalize=True).sort_index()
+exp = pd.Series({j: mean ** j * math.exp(-mean) / math.factorial(j) for j in obs.index})
+table = pd.DataFrame({"obs": obs, "exp": exp})
+worst_k = (table["obs"] - table["exp"]).abs().idxmax()
+table.round(3)
+SETUP
+
+CHECK
+import math as _m
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv', parse_dates=['created'])
+k = d[d['shop_id'] == 'KZN-1']
+days = _pd.date_range('2026-09-01', '2026-11-30')
+pdw = k.groupby(k['created'].dt.normalize()).size().reindex(days, fill_value=0)
+lw = pdw.mean()
+s = need('per_day', _pd.Series)
+if len(s) < len(days):
+    raise AssertionError(f'В per_day {len(s)} дней, а в периоде {len(days)}: добавьте пустые дни через reindex(days, fill_value=0).')
+assert [int(x) for x in s.values] == [int(x) for x in pdw.values], 'per_day не совпадает: доставки KZN-1 по дням (dt.normalize()) с нулями в пустых днях.'
+assert close(need('lam'), round(lw, 2), 0.006), f'lam = {need("lam")}: среднее per_day с нулями в пустых днях, округлённое до 2 знаков.'
+obs = pdw.value_counts(normalize=True).sort_index()
+exp = _pd.Series({j: lw ** j * _m.exp(-lw) / _m.factorial(j) for j in obs.index})
+t = need('table', _pd.DataFrame)
+assert list(t.columns[:2]) == ['obs', 'exp'] or set(['obs', 'exp']) <= set(t.columns), f'Столбцы table: {list(t.columns)} — нужны obs и exp.'
+assert [int(i) for i in t.index] == [int(i) for i in obs.index], f'Индекс table: {list(t.index)} — встречавшиеся значения по возрастанию.'
+assert all(close(a, b, 0.001) for a, b in zip(t['obs'], obs)), 'obs — доли дней: value_counts(normalize=True).sort_index().'
+assert all(close(a, b, 0.001) for a, b in zip(t['exp'], exp)), 'exp — λ^k · e^(−λ) / k! для каждого k из индекса.'
+assert int(need('worst_k')) == int((obs - exp).abs().idxmax()), f'worst_k = {need("worst_k")}.'
+
+==== ch04/02b-shape/weekday-sqrt ====
+PROMPT
+
+SOLUTION
+import math
+import pandas as pd
+
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+counts = d["created"].dt.dayofweek.value_counts().sort_index()
+e = len(d) / 7
+expected = e
+steps = ((counts - e) / math.sqrt(e)).round(1)
+loud = list(steps.index[steps.abs() >= 2])
+print(counts.tolist(), round(expected, 1), steps.tolist(), loud)
+SETUP
+
+CHECK
+import math as _m
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv', parse_dates=['created'])
+c = d['created'].dt.dayofweek.value_counts().sort_index()
+e = len(d) / 7
+st = ((c - e) / _m.sqrt(e)).round(1)
+cc = need('counts', _pd.Series)
+assert [int(i) for i in cc.sort_index().index] == list(range(7)) and [int(x) for x in cc.sort_index().values] == [int(x) for x in c.values], 'counts — d["created"].dt.dayofweek.value_counts().sort_index().'
+assert close(need('expected'), e, 1e-9), f'expected = {need("expected")}: все доставки / 7.'
+s = need('steps', _pd.Series).sort_index()
+assert len(s) == 7 and all(close(a, b, 0.051) for a, b in zip(s.values, st.values)), f'steps = {[float(x) for x in s.values]}, а нужно {[float(x) for x in st.values]}: (counts − expected) / √expected.'
+want = sorted(int(i) for i in st.index[st.abs() >= 2])
+assert sorted(int(x) for x in need('loud')) == want, f'loud = {need("loud")}, а нужно {want}: дни, где |steps| ≥ 2.'
+
+==== ch04/03-boxplots/box-km ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+fig, ax = plt.subplots(figsize=(4, 4))
+ax.boxplot(d["distance_km"])
+ax.set_title("Расстояние, км")
+SETUP
+
+CHECK
+import pandas as _pd
+km = _pd.read_csv('deliveries.csv')['distance_km']
+ax = ax_of()
+flat = {round(float(l.get_ydata()[0]), 6) for l in ax.lines if len(l.get_ydata()) == 2 and l.get_ydata()[0] == l.get_ydata()[1]}
+assert round(km.median(), 6) in flat, 'На графике не видно медианы расстояния — нарисуйте ax.boxplot(d["distance_km"]).'
+assert ax.get_title() == 'Расстояние, км', f'Заголовок сейчас {ax.get_title()!r}, а нужен «Расстояние, км» — буква в букву, с запятой.'
+
+==== ch04/03-boxplots/quartiles ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+t = d.loc[d["actual_min"].between(1, 299), "actual_min"]
+q1 = t.quantile(0.25)
+q3 = t.quantile(0.75)
+iqr = q3 - q1
+SETUP
+
+CHECK
+import pandas as _pd
+a = _pd.read_csv('deliveries.csv')['actual_min']
+t = a[a.between(1, 299)]
+assert close(need('q1'), t.quantile(0.25)) and close(need('q3'), t.quantile(0.75)), f'q1, q3 = {need("q1")}, {need("q3")}.'
+assert close(need('iqr'), t.quantile(0.75) - t.quantile(0.25)), f'iqr = {need("iqr")}.'
+
+==== ch04/03-boxplots/p-box ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+groups = [ok.loc[ok["weather"] == w, "actual_min"] for w in ["ясно", "снег"]]
+fig, ax = plt.subplots(figsize=(5, 4))
+ax.boxplot(groups, tick_labels=["ясно", "снег"])
+SETUP
+
+CHECK
+ax = ax_of()
+assert [t.get_text() for t in ax.get_xticklabels()] == ['ясно', 'снег']
+
+==== ch04/03-boxplots/couriers ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+couriers = ["пеший", "вело", "авто"]
+groups = [ok.loc[ok["courier"] == c, "actual_min"] for c in couriers]
+fig, ax = plt.subplots(figsize=(6, 4))
+ax.boxplot(groups, tick_labels=couriers, showfliers=False)
+ax.set_ylabel("минут")
+medians = ok.groupby("courier")["actual_min"].median().to_dict()
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+ax = ax_of()
+assert [t.get_text() for t in ax.get_xticklabels()] == ['пеший', 'вело', 'авто'], 'Порядок и подписи ящиков: пеший, вело, авто (tick_labels).'
+assert not any(l.get_marker() not in ('None', None, '') and len(l.get_xdata()) > 0 and l.get_linestyle() in ('None', '') for l in ax.lines), 'Точки-выбросы рисовать не нужно: showfliers=False.'
+assert ax.get_ylabel() == 'минут'
+want = ok.groupby('courier')['actual_min'].median().to_dict()
+got = dict(need('medians'))
+assert set(got) == set(want) and all(close(got[k], want[k]) for k in want), f'medians = {got}.'
+
+==== ch04/03-boxplots/far ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+km = d["distance_km"]
+q1, q3 = km.quantile(0.25), km.quantile(0.75)
+high = q3 + 1.5 * (q3 - q1)
+n_far = (km > high).sum()
+far_share = round((km > high).mean() * 100, 1)
+SETUP
+
+CHECK
+import pandas as _pd
+km = _pd.read_csv('deliveries.csv')['distance_km']
+q1, q3 = km.quantile(0.25), km.quantile(0.75)
+hi = q3 + 1.5 * (q3 - q1)
+assert close(need('high'), hi), f'high = {need("high")}, а нужно {hi}.'
+assert need('n_far') == (km > hi).sum(), f'n_far = {need("n_far")}.'
+assert close(need('far_share'), round((km > hi).mean() * 100, 1)), f'far_share = {need("far_share")}.'
+
+==== ch04/03-boxplots/zoom ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+fig, ax = plt.subplots(figsize=(4, 4))
+ax.boxplot(d["actual_min"].dropna())
+ax.set_ylim(0, 120)
+ax.set_title("Время доставки, видимая часть 0–120")
+SETUP
+
+CHECK
+import pandas as _pd
+a = _pd.read_csv('deliveries.csv')['actual_min'].dropna()
+ax = ax_of()
+flat = {round(float(l.get_ydata()[0]), 6) for l in ax.lines if len(l.get_ydata()) == 2 and l.get_ydata()[0] == l.get_ydata()[1]}
+assert round(a.median(), 6) in flat, 'Медиана ящика не совпадает с медианой всех значений — данные удалять не нужно, только dropna.'
+lo, hi = ax.get_ylim()
+assert abs(lo) < 1e-9 and abs(hi - 120) < 1e-9, f'Видимый диапазон оси Y: {lo}–{hi}. Нужно ax.set_ylim(0, 120).'
+
+==== ch04/03-boxplots/spread ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+g = ok.groupby("weather")["actual_min"]
+spread = pd.DataFrame({"q1": g.quantile(0.25), "median": g.median(), "q3": g.quantile(0.75)})
+spread["iqr"] = spread["q3"] - spread["q1"]
+spread = spread.sort_values("median", ascending=False)
+spread
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+g = ok.groupby('weather')['actual_min']
+s = need('spread', _pd.DataFrame)
+if 'weather' in s.columns:
+    s = s.set_index('weather')
+assert list(s.columns) == ['q1', 'median', 'q3', 'iqr'], f'Столбцы: {list(s.columns)}.'
+for col, w in (('q1', g.quantile(0.25)), ('median', g.median()), ('q3', g.quantile(0.75))):
+    assert all(close(s.loc[k, col], w[k]) for k in w.index), f'Столбец {col} не совпадает.'
+assert all(close(s.loc[k, 'iqr'], s.loc[k, 'q3'] - s.loc[k, 'q1']) for k in s.index), 'iqr = q3 - q1.'
+assert list(s['median']) == sorted(s['median'], reverse=True), 'Отсортируйте по медиане по убыванию.'
+
+==== ch04/03-boxplots/slow ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+g = ok.groupby("courier")["actual_min"]
+q1 = g.transform(lambda s: s.quantile(0.25))
+q3 = g.transform(lambda s: s.quantile(0.75))
+ok["slow"] = ok["actual_min"] > q3 + 1.5 * (q3 - q1)
+slow_by = ok.groupby("courier")["slow"].sum().to_dict()
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)].copy()
+g = o.groupby('courier')['actual_min']
+q1 = g.transform(lambda s: s.quantile(0.25))
+q3 = g.transform(lambda s: s.quantile(0.75))
+slow = o['actual_min'] > q3 + 1.5 * (q3 - q1)
+okk = need('ok', _pd.DataFrame)
+assert 'slow' in okk.columns, 'Нет столбца slow.'
+assert (okk['slow'].values == slow.values).all(), 'slow не совпадает: границу нужно считать внутри каждой группы курьеров.'
+want = {k: int(v) for k, v in slow.groupby(o['courier']).sum().items()}
+got = {k: int(v) for k, v in dict(need('slow_by')).items()}
+assert got == want, f'slow_by = {got}, а нужно {want}.'
+
+==== ch04/03-boxplots/shops-sorted ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+order = ok.groupby("shop_id")["actual_min"].median().sort_values().index
+groups = [ok.loc[ok["shop_id"] == s, "actual_min"] for s in order]
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.boxplot(groups, tick_labels=list(order), orientation="horizontal", showfliers=False)
+ax.set_xlabel("минут")
+ax.set_title("Время доставки по кофейням")
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+med = ok.groupby('shop_id')['actual_min'].median()
+ax = ax_of()
+labels = [t.get_text() for t in ax.get_yticklabels()]
+assert sorted(labels) == sorted(med.index), f'Подписи по оси Y: {labels}. Нужны ящики лёжа: orientation="horizontal", подписи — коды кофеен.'
+vals = [med[k] for k in labels]
+assert vals == sorted(vals), 'Порядок не по медиане: у горизонтальных ящиков первый — внизу, поэтому сортируйте по возрастанию медианы.'
+assert labels[-1] == 'KZN-2' or med[labels[-1]] == med.max(), 'Наверху должна быть самая медленная кофейня.'
+
+==== ch04/03b-sigma/sigma-hand ====
+PROMPT
+
+SOLUTION
+x = [28, 35, 31, 40, 26]
+mean = sum(x) / len(x)
+dev = [v - mean for v in x]
+ss = sum(d ** 2 for d in dev)
+var1 = round(ss / (len(x) - 1), 2)
+sd1 = round((ss / (len(x) - 1)) ** 0.5, 2)
+sd0 = round((ss / len(x)) ** 0.5, 2)
+print(dev, var1, sd1, sd0)
+SETUP
+
+CHECK
+import math as _m
+x = [28, 35, 31, 40, 26]
+mu = sum(x) / len(x)
+ss = sum((v - mu) ** 2 for v in x)
+assert [float(v) for v in need('dev')] == [v - mu for v in x], f'dev = {need("dev")}: каждое значение минус среднее {mu}.'
+assert calls('std') == 0 and calls('var') == 0, 'Здесь нужно посчитать по формуле — без .std() и .var().'
+assert close(need('var1'), round(ss / 4, 2)), f'var1 = {need("var1")}: сумма квадратов отклонений / (n − 1).'
+assert close(need('sd1'), round(_m.sqrt(ss / 4), 2)), f'sd1 = {need("sd1")}: корень из дисперсии.'
+if close(need('sd0'), round(_m.sqrt(ss / 4), 2)):
+    raise AssertionError('sd0 совпал с sd1: для sd0 делите сумму квадратов на n = 5, а не на 4.')
+assert close(need('sd0'), round(_m.sqrt(ss / 5), 2)), f'sd0 = {need("sd0")}.'
+
+==== ch04/03b-sigma/ddof-small ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+walk = ok[(ok["weather"] == "снег") & (ok["courier"] == "пеший")].sort_values("created")["actual_min"]
+last5 = walk.tail(5)
+gap5 = round((last5.std(ddof=1) / last5.std(ddof=0) - 1) * 100, 1)
+gap35 = round((walk.std(ddof=1) / walk.std(ddof=0) - 1) * 100, 1)
+print(last5.tolist(), gap5, gap35)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)]
+w = o[(o['weather'] == 'снег') & (o['courier'] == 'пеший')].sort_values('created')['actual_min']
+l5 = w.tail(5)
+g5 = round((l5.std(ddof=1) / l5.std(ddof=0) - 1) * 100, 1)
+g35 = round((w.std(ddof=1) / w.std(ddof=0) - 1) * 100, 1)
+x = need('last5')
+vals = sorted(float(v) for v in (x['actual_min'] if isinstance(x, _pd.DataFrame) else x))
+assert vals == sorted(float(v) for v in l5), f'В last5 значения {vals}, а нужны пять последних по created пеших доставок в снег: {sorted(float(v) for v in l5)}.'
+assert close(need('gap5'), g5, 0.051), f'gap5 = {need("gap5")}, а нужно {g5}: (std(ddof=1) / std(ddof=0) − 1) × 100 по пяти доставкам.'
+assert close(need('gap35'), g35, 0.051), f'gap35 = {need("gap35")}, а нужно {g35}: то же по всем 35.'
+
+==== ch04/03b-sigma/sigma-courier ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+g = ok.groupby("courier")["actual_min"]
+spread = pd.DataFrame({
+    "mean": g.mean(),
+    "std": g.std(ddof=1),
+    "iqr": g.quantile(0.75) - g.quantile(0.25),
+}).round(1)
+most_stable = spread["std"].idxmin()
+spread
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)]
+g = o.groupby('courier')['actual_min']
+w = _pd.DataFrame({'mean': g.mean(), 'std': g.std(), 'iqr': g.quantile(0.75) - g.quantile(0.25)}).round(1)
+s = need('spread', _pd.DataFrame)
+if 'courier' in s.columns:
+    s = s.set_index('courier')
+for c in ('mean', 'std', 'iqr'):
+    assert c in s.columns, f'В spread нет столбца {c}.'
+assert set(s.index) == set(w.index), f'Строки spread: {list(s.index)} — типы курьеров.'
+g0 = o.groupby('courier')['actual_min'].std(ddof=0).round(1)
+if all(close(s.loc[k, 'std'], g0[k], 0.051) for k in w.index) and not all(close(s.loc[k, 'std'], w.loc[k, 'std'], 0.051) for k in w.index):
+    raise AssertionError('std посчитан с ddof=0 (как в numpy). Нужно по выборке: ddof=1 — это значение по умолчанию у pandas.')
+for c in ('mean', 'std', 'iqr'):
+    assert all(close(s.loc[k, c], w.loc[k, c], 0.051) for k in w.index), f'Столбец {c} не совпадает.'
+assert need('most_stable') == w['std'].idxmin(), f'most_stable = {need("most_stable")!r}.'
+
+==== ch04/03b-sigma/sigma-shops ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+raw = d.groupby("shop_id")["actual_min"].std().round(1)
+clean = d[d["actual_min"].between(1, 299)].groupby("shop_id")["actual_min"].std().round(1)
+shops = pd.DataFrame({"raw": raw, "clean": clean})
+shops["ratio"] = (shops["raw"] / shops["clean"]).round(1)
+inflated = list(shops.index[shops["ratio"] > 2])
+shops
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+a = d.dropna(subset=['actual_min']).groupby('shop_id')['actual_min'].std().round(1)
+b = d[d['actual_min'].between(1, 299)].groupby('shop_id')['actual_min'].std().round(1)
+w = _pd.DataFrame({'raw': a, 'clean': b})
+w['ratio'] = (w['raw'] / w['clean']).round(1)
+s = need('shops', _pd.DataFrame)
+if 'shop_id' in s.columns:
+    s = s.set_index('shop_id')
+for c in ('raw', 'clean', 'ratio'):
+    assert c in s.columns, f'В shops нет столбца {c}.'
+assert set(s.index) == set(w.index), f'Строки shops: {list(s.index)} — кофейни.'
+for c in ('raw', 'clean'):
+    assert all(close(s.loc[k, c], w.loc[k, c], 0.051) for k in w.index), f'Столбец {c} не совпадает: {c} — std() по {"всем непустым значениям" if c == "raw" else "доставкам 1–299 минут"}.'
+assert all(close(s.loc[k, 'ratio'], w.loc[k, 'ratio'], 0.051) for k in w.index), 'ratio = raw / clean, 1 знак.'
+exp = sorted(w.index[w['ratio'] > 2])
+assert sorted(str(x) for x in need('inflated')) == exp, f'inflated = {need("inflated")}, а нужно {exp}.'
+
+==== ch04/03b-sigma/two-sigma ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+s = d.loc[d["actual_min"].between(1, 299), "actual_min"]
+m, sd = s.mean(), s.std()
+share2 = round(s.between(m - 2 * sd, m + 2 * sd).mean() * 100, 1)
+above = int((s > m + 2 * sd).sum())
+below = int((s < m - 2 * sd).sum())
+print(round(m - 2 * sd, 1), round(m + 2 * sd, 1), share2, above, below)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+s = d.loc[d['actual_min'].between(1, 299), 'actual_min']
+m, sd = s.mean(), s.std()
+sh = round(s.between(m - 2 * sd, m + 2 * sd).mean() * 100, 1)
+assert close(need('share2'), sh, 0.051), f'share2 = {need("share2")}, а нужно {sh}: between(m - 2 * sd, m + 2 * sd).mean() × 100.'
+assert int(need('above')) == int((s > m + 2 * sd).sum()), f'above = {need("above")}: (s > m + 2 * sd).sum().'
+assert int(need('below')) == int((s < m - 2 * sd).sum()), f'below = {need("below")}: (s < m - 2 * sd).sum().'
+
+==== ch04/04-slices/late-share ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+late_pct = round(ok["late"].mean() * 100, 1)
+by_courier = (ok.groupby("courier")["late"].mean() * 100).round(1).to_dict()
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)]
+late = o['actual_min'] > o['promised_min']
+assert close(need('late_pct'), round(late.mean() * 100, 1)), f'late_pct = {need("late_pct")}.'
+want = (late.groupby(o['courier']).mean() * 100).round(1).to_dict()
+got = dict(need('by_courier'))
+assert set(got) == set(want) and all(close(got[k], want[k]) for k in want), f'by_courier = {got}, а нужно {want}.'
+
+==== ch04/04-slices/weather-bar ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+t = (ok.groupby("weather")["late"].mean() * 100).sort_values(ascending=False)
+fig, ax = plt.subplots(figsize=(6, 3.5))
+ax.bar(t.index, t.values)
+ax.set_title("Опоздания по погоде")
+ax.set_ylabel("опозданий, %")
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)]
+w = ((o['actual_min'] > o['promised_min']).groupby(o['weather']).mean() * 100).sort_values(ascending=False)
+ax = ax_of()
+h = [p.get_height() for p in ax.patches]
+assert len(h) == len(w) and all(close(a, b) for a, b in zip(h, w.values)), 'Высоты — доля опозданий в процентах, по убыванию.'
+assert [t.get_text() for t in ax.get_xticklabels()] == list(w.index), 'Подписи столбцов — виды погоды в порядке убывания доли.'
+assert ax.get_title() == 'Опоздания по погоде', f'Заголовок сейчас {ax.get_title()!r}, а нужен «Опоздания по погоде» — буква в букву.'
+
+==== ch04/04-slices/p-crosstab ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ct = pd.crosstab(d["courier"], d["weather"])
+print(ct.loc["вело", "снег"])
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+want = ((d['courier'] == 'вело') & (d['weather'] == 'снег')).sum()
+assert _lines == [str(want)], f'Должно вывестись {want}. Сейчас: {_lines}'
+
+==== ch04/04-slices/hours ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+by_hour = ok.groupby(ok["created"].dt.hour)["late"].mean() * 100
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.plot(by_hour.index, by_hour.values, marker="o")
+ax.set_title("Опоздания по часам")
+peak_hours = list(by_hour[by_hour > 25].index)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv', parse_dates=['created'])
+o = d[d['actual_min'].between(1, 299)]
+s = (o['actual_min'] > o['promised_min']).groupby(o['created'].dt.hour).mean() * 100
+ax = ax_of()
+assert ax.lines, 'Нужна линия: ax.plot(...).'
+l = ax.lines[0]
+assert [int(x) for x in l.get_xdata()] == list(s.index), 'По оси X — часы по порядку.'
+assert all(close(a, b) for a, b in zip(l.get_ydata(), s.values)), 'По оси Y — доля опозданий в процентах.'
+assert l.get_marker() == 'o', 'Добавьте точки: marker="o".'
+assert need('peak_hours') == [int(h) for h in s[s > 25].index], f'peak_hours = {need("peak_hours")}, а нужно {[int(h) for h in s[s > 25].index]}.'
+
+==== ch04/04-slices/shop-slice ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+by_shop = ok.groupby("shop_id").agg(
+    deliveries=("late", "size"),
+    late_pct=("late", "mean"),
+    median_min=("actual_min", "median"),
+)
+by_shop["late_pct"] = (by_shop["late_pct"] * 100).round(1)
+by_shop = by_shop.sort_values("late_pct", ascending=False)
+worst = by_shop.index[0]
+by_shop
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)].copy()
+o['late'] = o['actual_min'] > o['promised_min']
+g = o.groupby('shop_id')
+b = need('by_shop', _pd.DataFrame)
+if 'shop_id' in b.columns:
+    b = b.set_index('shop_id')
+assert list(b.columns) == ['deliveries', 'late_pct', 'median_min'], f'Столбцы: {list(b.columns)}.'
+assert b['deliveries'].to_dict() == g.size().to_dict(), 'deliveries не совпадает.'
+assert all(close(b.loc[k, 'late_pct'], round(v * 100, 1)) for k, v in g['late'].mean().items()), 'late_pct не совпадает (проценты, 1 знак).'
+assert all(close(b.loc[k, 'median_min'], v) for k, v in g['actual_min'].median().items()), 'median_min не совпадает.'
+assert list(b['late_pct']) == sorted(b['late_pct'], reverse=True), 'Отсортируйте по late_pct по убыванию.'
+assert need('worst') == g['late'].mean().idxmax(), f'worst = {need("worst")!r}.'
+
+==== ch04/04-slices/share-snow ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+ct = pd.crosstab(ok["courier"], ok["weather"], normalize="columns")
+velo_snow_pct = round(ct.loc["вело", "снег"] * 100, 1)
+velo_clear_pct = round(ct.loc["вело", "ясно"] * 100, 1)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)]
+want = _pd.crosstab(o['courier'], o['weather'], normalize='columns')
+c = need('ct', _pd.DataFrame)
+assert c.shape == want.shape and all(close(v, 1) for v in c.sum()), 'Каждый столбец (погода) в сумме должен давать 1: normalize="columns".'
+raw = _pd.crosstab(d['courier'], d['weather'], normalize='columns')
+_vs, _ws = need('velo_snow_pct'), round(want.loc['вело', 'снег'] * 100, 1)
+if close(_vs, round(raw.loc['вело', 'снег'] * 100, 1)) and not close(_vs, _ws):
+    raise AssertionError(f'velo_snow_pct = {_vs}: похоже, таблица построена по d. Нужны доставки 1–299 минут — таблица ok, тогда получится {_ws}.')
+assert close(_vs, _ws), f'velo_snow_pct = {_vs}, а нужно {_ws}: доля строки «вело» в столбце «снег», × 100, 1 знак.'
+_vc, _wc = need('velo_clear_pct'), round(want.loc['вело', 'ясно'] * 100, 1)
+assert close(_vc, _wc), f'velo_clear_pct = {_vc}, а нужно {_wc}: доля строки «вело» в столбце «ясно».'
+
+==== ch04/04-slices/chain ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+shops = ["KZN-1", "KZN-2"]
+t = (
+    pd.read_csv("deliveries.csv")
+    .query("actual_min >= 1 and actual_min <= 299 and shop_id in @shops")
+    .assign(
+        late=lambda x: x["actual_min"] > x["promised_min"],
+        delay=lambda x: x["actual_min"] - x["promised_min"],
+    )
+    .groupby(["shop_id", "courier"])
+    .agg(n=("late", "size"), late_pct=("late", "mean"), delay_med=("delay", "median"))
+    .assign(late_pct=lambda x: (x["late_pct"] * 100).round(1))
+)
+t
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299) & d['shop_id'].isin(['KZN-1', 'KZN-2'])].copy()
+o['late'] = o['actual_min'] > o['promised_min']
+o['delay'] = o['actual_min'] - o['promised_min']
+w = o.groupby(['shop_id', 'courier']).agg(n=('late', 'size'), late_pct=('late', 'mean'), delay_med=('delay', 'median'))
+w['late_pct'] = (w['late_pct'] * 100).round(1)
+assert '.query(' in _code and '@shops' in _code, 'Отфильтруйте кофейни через query с переменной: query("shop_id in @shops").'
+assert '.assign(' in _code and 'lambda' in _code, 'Новые столбцы добавьте через assign(...=lambda x: ...).'
+tt = need('t', _pd.DataFrame)
+if 'shop_id' in tt.columns:
+    tt = tt.set_index(['shop_id', 'courier'])
+for c in ('n', 'late_pct', 'delay_med'):
+    assert c in tt.columns, f'В t нет столбца {c}.'
+assert len(tt) == len(w), f'Строк в t {len(tt)}, а пар (кофейня, курьер) {len(w)}.'
+if close(tt['late_pct'].max(), w['late_pct'].max() / 100, 0.01):
+    raise AssertionError('late_pct в долях — переведите в проценты: assign(late_pct=lambda x: (x["late_pct"] * 100).round(1)).')
+for k in w.index:
+    assert int(tt.loc[k, 'n']) == int(w.loc[k, 'n']), f'n для {k}: {tt.loc[k, "n"]}, а нужно {w.loc[k, "n"]}. Проверьте фильтр 1–299 минут.'
+    assert close(tt.loc[k, 'late_pct'], w.loc[k, 'late_pct'], 0.051), f'late_pct для {k}: {tt.loc[k, "late_pct"]}.'
+    assert close(tt.loc[k, 'delay_med'], w.loc[k, 'delay_med']), f'delay_med для {k}: {tt.loc[k, "delay_med"]}.'
+
+==== ch04/04-slices/grouped ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+pv = ok.pivot_table(index="promised_min", columns="courier", values="late", aggfunc="mean") * 100
+fig, ax = plt.subplots(figsize=(7, 3.5))
+pv.plot(kind="bar", ax=ax, rot=0)
+ax.set_ylabel("опозданий, %")
+walk_30 = round(pv.loc[30, "пеший"], 1)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)].copy()
+o['late'] = o['actual_min'] > o['promised_min']
+pv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100
+ax = ax_of()
+assert ax.get_legend() is not None and sorted(t.get_text() for t in ax.get_legend().get_texts()) == sorted(pv.columns), 'Нужна легенда с типами курьеров.'
+assert len(ax.patches) == pv.size, f'Столбцов {len(ax.patches)}, а нужно {pv.size} (3 обещания × 3 типа курьера).'
+assert close(need('walk_30'), round(pv.loc[30, 'пеший'], 1)), f'walk_30 = {need("walk_30")}.'
+
+==== ch04/04-slices/stacked ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+ct = pd.crosstab(d["created"].dt.month, d["weather"], normalize="index") * 100
+fig, ax = plt.subplots(figsize=(6, 3.5))
+ct.plot(kind="bar", stacked=True, ax=ax, rot=0)
+ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+snow_nov = round(ct.loc[11, "снег"], 1)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv', parse_dates=['created'])
+want = _pd.crosstab(d['created'].dt.month, d['weather'], normalize='index') * 100
+c = need('ct', _pd.DataFrame)
+assert c.shape == want.shape and all(close(v, 100) for v in c.sum(axis=1)), 'Каждая строка-месяц в сумме — 100 %: normalize="index" и × 100.'
+ax = ax_of()
+assert len(ax.patches) == want.size, f'Прямоугольников {len(ax.patches)}, а нужно {want.size}.'
+bottoms = {round(p.get_y(), 6) for p in ax.patches}
+assert len(bottoms) > 1, 'Столбцы должны стоять друг на друге: stacked=True.'
+assert close(need('snow_nov'), round(want.loc[11, 'снег'], 1)), f'snow_nov = {need("snow_nov")}.'
+
+==== ch04/04-slices/heatmap ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+ok["dow"] = ok["created"].dt.dayofweek
+ok["hour"] = ok["created"].dt.hour
+pv = ok.pivot_table(index="dow", columns="hour", values="late", aggfunc="mean")
+
+fig, ax = plt.subplots(figsize=(9, 3.5))
+im = ax.imshow(pv.values, aspect="auto", cmap="Reds")
+fig.colorbar(im, ax=ax, label="доля опозданий")
+ax.set_xticks(range(len(pv.columns)))
+ax.set_xticklabels(pv.columns)
+ax.set_yticks(range(7))
+ax.set_yticklabels(["пн", "вт", "ср", "чт", "пт", "сб", "вс"])
+ax.set_title("Опоздания: день недели × час")
+n = ok.pivot_table(index="dow", columns="hour", values="late", aggfunc="size")
+worst_cell = pv.where(n >= 30).stack().idxmax()
+worst_n = n.loc[worst_cell]
+print(worst_cell, worst_n)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv', parse_dates=['created'])
+o = d[d['actual_min'].between(1, 299)].copy()
+o['late'] = o['actual_min'] > o['promised_min']
+want = o.pivot_table(index=o['created'].dt.dayofweek, columns=o['created'].dt.hour, values='late', aggfunc='mean')
+p = need('pv', _pd.DataFrame)
+assert p.shape == want.shape, f'Размер pv {p.shape}, а нужно {want.shape} (7 дней × 13 часов).'
+ax = ax_of()
+assert ax.images, 'Нужна картинка-матрица: ax.imshow(pv.values, ...).'
+assert ax.images[0].get_array().shape == want.shape
+assert len(figs[0].axes) == 2, 'Добавьте шкалу цветов: fig.colorbar(im, ax=ax).'
+labels = [t.get_text() for t in ax.get_xticklabels()]
+assert labels == [str(h) for h in want.columns], f'Подписи по X: {labels[:4]}… — часы по порядку.'
+nw = o.pivot_table(index=o['created'].dt.dayofweek, columns=o['created'].dt.hour, values='late', aggfunc='size')
+nn = need('n', _pd.DataFrame)
+assert nn.shape == nw.shape and int(nn.fillna(0).values.sum()) == int(nw.fillna(0).values.sum()), 'n — та же сводная, но aggfunc="size": сколько доставок в каждой ячейке.'
+k0 = want.stack().idxmax()
+k = want.where(nw >= 30).stack().idxmax()
+wc = tuple(int(x) for x in need('worst_cell'))
+if wc == (int(k0[0]), int(k0[1])):
+    raise AssertionError(f'worst_cell = {wc} — это максимум по всем ячейкам, а в ней всего {int(nw.loc[k0])} доставок. Ищите только среди ячеек, где n >= 30.')
+assert wc == (int(k[0]), int(k[1])), f'worst_cell = {wc}, а нужно ({int(k[0])}, {int(k[1])}): максимум доли среди ячеек с n >= 30.'
+assert int(need('worst_n')) == int(nw.loc[k]), f'worst_n = {need("worst_n")}: n в ячейке worst_cell.'
+
+==== ch04/05-time/weekly ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+daily = df.set_index("datetime").resample("D")["amount"].sum()
+weekly = daily.resample("W").sum()
+n_weeks = len(weekly)
+SETUP
+
+CHECK
+import pandas as _pd
+df = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])
+w = df.set_index('datetime').resample('D')['amount'].sum().resample('W').sum()
+got = need('weekly', _pd.Series)
+assert len(got) == len(w) and [int(x) for x in got] == [int(x) for x in w], 'weekly — сумма по неделям: daily.resample("W").sum().'
+assert need('n_weeks') == len(w), f'n_weeks = {need("n_weeks")}.'
+
+==== ch04/05-time/rolling ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+daily = df.set_index("datetime").resample("D")["amount"].sum()
+smooth = daily.rolling(7).mean()
+last_smooth = round(smooth.iloc[-1])
+SETUP
+
+CHECK
+import pandas as _pd
+df = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])
+s = df.set_index('datetime').resample('D')['amount'].sum().rolling(7).mean()
+got = need('smooth', _pd.Series)
+assert len(got) == len(s) and got.isna().sum() == 6, 'smooth — rolling(7).mean(): та же длина, первые 6 значений — NaN.'
+assert need('last_smooth') == round(s.iloc[-1]), f'last_smooth = {need("last_smooth")}.'
+
+==== ch04/05-time/p-roll ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+daily = df.set_index("datetime").resample("D")["order_id"].count()
+smooth = daily.rolling(7).mean()
+fig, ax = plt.subplots(figsize=(9, 3))
+ax.plot(smooth.index, smooth.values)
+SETUP
+
+CHECK
+ax = ax_of()
+assert ax.lines and len(ax.lines[0].get_ydata()) == 91
+
+==== ch04/05-time/dow ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+daily = df.set_index("datetime").resample("D")["amount"].sum()
+by_dow = daily.groupby(daily.index.dayofweek).mean()
+best_dow = by_dow.idxmax()
+ratio = round(by_dow.max() / by_dow.min(), 2)
+SETUP
+
+CHECK
+import pandas as _pd
+df = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])
+daily = df.set_index('datetime').resample('D')['amount'].sum()
+m = daily.groupby(daily.index.dayofweek).mean()
+got = need('by_dow', _pd.Series)
+assert len(got) == 7, 'by_dow — 7 значений, по дню недели.'
+assert all(close(a, b) for a, b in zip(got.values, m.values)), 'by_dow — среднее дневной выручки, а не сумма.'
+assert need('best_dow') == m.idxmax(), f'best_dow = {need("best_dow")}.'
+assert close(need('ratio'), round(m.max() / m.min(), 2)), f'ratio = {need("ratio")}.'
+
+==== ch04/05-time/two-lines ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+daily = df.set_index("datetime").resample("D")["amount"].sum()
+fig, ax = plt.subplots(figsize=(9, 3.5))
+ax.plot(daily.index, daily.values, color="lightgray", label="по дням")
+ax.plot(daily.index, daily.rolling(7).mean().values, label="7 дней")
+ax.legend()
+SETUP
+
+CHECK
+from matplotlib.colors import to_hex as _hex
+ax = ax_of()
+assert len(ax.lines) == 2, f'Линий {len(ax.lines)}, а нужно 2.'
+labels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []
+assert sorted(labels) == sorted(['по дням', '7 дней']), f'Легенда: {labels}.'
+gray = [l for l in ax.lines if _hex(l.get_color()) == _hex('lightgray')]
+assert gray and gray[0].get_label() == 'по дням', 'Дневная линия — светло-серая (color="lightgray").'
+import math
+other = [l for l in ax.lines if l is not gray[0]][0]
+ys = list(other.get_ydata())
+assert sum(1 for v in ys if isinstance(v, float) and math.isnan(v)) == 6, 'Вторая линия — rolling(7).mean().'
+
+==== ch04/05-time/uplift ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+daily = df.set_index("datetime").resample("D")["amount"].sum()
+before = daily["2026-10-11":"2026-10-31"]
+after = daily["2026-11-01":"2026-11-21"]
+before_avg = round(before.mean())
+after_avg = round(after.mean())
+uplift_pct = round((after.mean() / before.mean() - 1) * 100, 1)
+SETUP
+
+CHECK
+import pandas as _pd
+df = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])
+daily = df.set_index('datetime').resample('D')['amount'].sum()
+b, a = daily['2026-10-11':'2026-10-31'], daily['2026-11-01':'2026-11-21']
+assert need('before_avg') == round(b.mean()) and need('after_avg') == round(a.mean()), f'before_avg, after_avg = {need("before_avg")}, {need("after_avg")}, а нужно {round(b.mean())}, {round(a.mean())}. Обе даты включительно.'
+assert close(need('uplift_pct'), round((a.mean() / b.mean() - 1) * 100, 1)), f'uplift_pct = {need("uplift_pct")}.'
+
+==== ch04/05-time/full-weeks ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+s = ok.set_index("created")
+share = s.resample("W")["late"].mean()                       # доля опозданий по неделям
+days = s.resample("D")["late"].mean().resample("W").count()  # дней с доставками в неделе
+weekly_late = (share[days == 7] * 100).round(1)
+
+fig, ax = plt.subplots(figsize=(9, 3.5))
+ax.plot(weekly_late.index, weekly_late.values, marker="o")
+ax.set_ylabel("опозданий, %")
+ax.set_title("Опоздания по неделям")
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv', parse_dates=['created'])
+o = d[d['actual_min'].between(1, 299)].copy()
+o['late'] = o['actual_min'] > o['promised_min']
+s = o.set_index('created')
+share = s.resample('W')['late'].mean()
+days = s.resample('W')['late'].apply(lambda x: x.index.normalize().nunique())
+want = (share[days == 7] * 100).round(1)
+got = need('weekly_late', _pd.Series)
+assert len(got) == len(want), f'Недель {len(got)}, а полных недель {len(want)}. Неполные — первая и последняя.'
+assert all(close(a, b) for a, b in zip(got.values, want.values)), 'Значения не совпадают: доля опозданий в процентах, 1 знак.'
+ax = ax_of()
+assert ax.lines and len(ax.lines[0].get_ydata()) == len(want), 'Нарисуйте weekly_late линией.'
+
+==== ch04/05-time/twin ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+day = ok.set_index("created").resample("D")["late"].agg(["size", "mean"])
+
+fig, ax = plt.subplots(figsize=(9, 3.5))
+ax.bar(day.index, day["size"], color="lightgray")
+ax.set_ylabel("доставок")
+ax2 = ax.twinx()
+ax2.plot(day.index, day["mean"].rolling(7).mean() * 100, color="tab:red")
+ax2.set_ylabel("опозданий, %")
+SETUP
+
+CHECK
+assert len(figs) == 1 and len(figs[0].axes) == 2, 'Нужна вторая ось: ax2 = ax.twinx().'
+a, b = figs[0].axes
+assert len(a.patches) == 91, f'На основной оси должно быть 91 столбец (дни), сейчас {len(a.patches)}.'
+assert a.get_ylabel() == 'доставок' and b.get_ylabel() == 'опозданий, %', f'Подписи осей: {a.get_ylabel()!r}, {b.get_ylabel()!r}.'
+assert b.lines, 'На второй оси нужна линия.'
+import math
+ys = list(b.lines[0].get_ydata())
+assert sum(1 for v in ys if isinstance(v, float) and math.isnan(v)) == 6 and max(v for v in ys if not math.isnan(v)) > 1, 'Линия — rolling(7).mean() доли опозданий × 100.'
+
+==== ch04/05-time/index100 ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+df["city"] = df["shop_id"].str[:3]
+pv = df.pivot_table(index=pd.Grouper(key="datetime", freq="W"), columns="city",
+                    values="amount", aggfunc="sum").iloc[1:-1]
+idx = pv / pv.iloc[0] * 100
+leader = idx.iloc[-1].idxmax()
+
+fig, ax = plt.subplots(figsize=(9, 3.5))
+idx.plot(ax=ax, title="Выручка по городам, индекс (первая неделя = 100)")
+ax.axhline(100, color="gray", linewidth=0.8)
+SETUP
+
+CHECK
+import pandas as _pd
+df = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])
+df['city'] = df['shop_id'].str[:3]
+pv = df.pivot_table(index=_pd.Grouper(key='datetime', freq='W'), columns='city', values='amount', aggfunc='sum').iloc[1:-1]
+want = pv / pv.iloc[0] * 100
+got = need('idx', _pd.DataFrame)
+assert got.shape == want.shape, f'Размер idx {got.shape}, а нужно {want.shape}: только полные недели.'
+assert all(close(v, 100) for v in got.iloc[0]), 'Первая строка индекса — 100 у всех городов.'
+assert all(close(a, b, 1e-6) for a, b in zip(got.values.ravel(), want[got.columns].values.ravel())), 'Значения индекса не совпадают.'
+assert need('leader') == want.iloc[-1].idxmax(), f'leader = {need("leader")!r}.'
+ax = ax_of()
+assert len([l for l in ax.lines if not l.get_label().startswith('_')]) == want.shape[1], 'Нарисуйте линию для каждого города (idx.plot(ax=ax)).'
+
+==== ch04/05b-cohorts/first-month ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+o["first"] = o.groupby("guest_id")["date"].transform("min")
+o["cohort"] = o["first"].dt.to_period("M")
+sizes = o.groupby("cohort")["guest_id"].nunique()
+sizes
+SETUP
+
+CHECK
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date'])
+f = r.groupby('guest_id')['date'].transform('min')
+oo = need('o', _pd.DataFrame)
+assert 'first' in oo.columns, 'В o нет столбца first.'
+assert len(oo) == len(r), f'В o {len(oo)} строк, а заказов {len(r)}: first нужен на каждой строке — transform, а не agg.'
+assert (_pd.to_datetime(oo['first']).values == f.values).all(), 'first не совпадает с первой датой гостя: groupby("guest_id")["date"].transform("min").'
+assert 'cohort' in oo.columns, 'В o нет столбца cohort.'
+assert [str(x)[:7] for x in oo['cohort']] == [str(x) for x in f.dt.to_period('M')], 'cohort — месяц даты first: .dt.to_period("M").'
+want = r.assign(c=f.dt.to_period('M')).groupby('c')['guest_id'].nunique()
+s = need('sizes', _pd.Series)
+assert [int(v) for v in s.values] == [int(v) for v in want.values], f'sizes = {list(s.values)}, а нужно столько разных гостей в когорте: nunique, а не size.'
+
+==== ch04/05b-cohorts/p-cohort ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+o["first"] = o.groupby("guest_id")["date"].transform("min")
+years = o["date"].dt.year - o["first"].dt.year
+months = o["date"].dt.month - o["first"].dt.month
+o["age"] = years * 12 + months
+SETUP
+
+CHECK
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date'])
+f = r.groupby('guest_id')['date'].transform('min')
+oo = need('o', _pd.DataFrame)
+assert 'age' in oo.columns, 'В o нет столбца age: последняя строка должна его создать.'
+assert (oo['age'].values == ((r['date'].dt.year - f.dt.year) * 12 + (r['date'].dt.month - f.dt.month)).values).all(), 'age не совпадает с календарными месяцами от первого заказа: годы × 12 + месяцы, и first — до них.'
+
+==== ch04/05b-cohorts/age ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+o["first"] = o.groupby("guest_id")["date"].transform("min")
+o["cohort"] = o["first"].dt.to_period("M")
+o["age"] = (o["date"].dt.year - o["first"].dt.year) * 12 + (o["date"].dt.month - o["first"].dt.month)
+active = o.pivot_table(index="cohort", columns="age", values="guest_id", aggfunc="nunique")
+jan_m3 = active.iloc[0][3]
+total_m0 = active[0].sum()
+active
+SETUP
+
+CHECK
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date'])
+f = r.groupby('guest_id')['date'].transform('min')
+r['cohort'] = f.dt.to_period('M')
+r['age'] = (r['date'].dt.year - f.dt.year) * 12 + (r['date'].dt.month - f.dt.month)
+w = r.pivot_table(index='cohort', columns='age', values='guest_id', aggfunc='nunique').fillna(0)
+a = need('active', _pd.DataFrame).fillna(0)
+assert a.shape == w.shape, f'Размер active {a.shape}, а нужно {w.shape}: строки — когорты, столбцы — месяцы жизни.'
+if a.values.sum() > w.values.sum() * 1.5:
+    raise AssertionError('В ячейках похоже число заказов, а нужно число разных гостей: aggfunc="nunique".')
+assert (a.values == w.values).all(), 'Значения active не совпадают: pivot_table(index="cohort", columns="age", values="guest_id", aggfunc="nunique").'
+assert int(need('jan_m3')) == int(w.iloc[0][3]), f'jan_m3 = {need("jan_m3")}: строка января, столбец 3.'
+assert int(need('total_m0')) == r['guest_id'].nunique(), f'total_m0 = {need("total_m0")}, а гостей {r["guest_id"].nunique()}.'
+
+==== ch04/05b-cohorts/retention ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+ret = (active.div(active[0], axis=0) * 100).round(1)
+m1_march = ret.iloc[2][1]
+best_m1 = str(ret[1].idxmax())
+ret
+SETUP
+import pandas as _pd0
+_r0 = _pd0.read_csv('preorders.csv', parse_dates=['date'])
+_f0 = _r0.groupby('guest_id')['date'].transform('min')
+_r0['cohort'] = _f0.dt.to_period('M')
+_r0['age'] = (_r0['date'].dt.year - _f0.dt.year) * 12 + (_r0['date'].dt.month - _f0.dt.month)
+active = _r0.pivot_table(index='cohort', columns='age', values='guest_id', aggfunc='nunique')
+CHECK
+import pandas as _pd
+a = active
+w = (a.div(a[0], axis=0) * 100).round(1)
+r = need('ret', _pd.DataFrame)
+assert r.shape == w.shape, f'Размер ret {r.shape}, а нужно {w.shape}.'
+x, y = r.fillna(-1).values, w.fillna(-1).values
+if abs(x[0][1] - y[0][1] / 100) < 0.01:
+    raise AssertionError('ret в долях, а нужно в процентах: умножьте на 100.')
+assert all(close(p, q, 0.051) for p, q in zip(x.ravel(), y.ravel())), 'Значения ret не совпадают: active.div(active[0], axis=0) * 100, округление до 1 знака.'
+assert close(need('m1_march'), w.iloc[2][1], 0.051), f'm1_march = {need("m1_march")}.'
+assert str(need('best_m1'))[:7] == str(w[1].idxmax()), f'best_m1 = {need("best_m1")!r}: у какой когорты больше всего в столбце 1?'
+
+==== ch04/05b-cohorts/heat ====
+PROMPT
+
+SOLUTION
+import matplotlib.pyplot as plt
+show = ret.drop(columns=0)
+fig, ax = plt.subplots(figsize=(7, 4))
+im = ax.imshow(show.values, cmap="YlGn", aspect="auto", vmin=0)
+fig.colorbar(im, ax=ax, label="удержание, %")
+ax.set_xticks(range(show.shape[1]))
+ax.set_xticklabels(show.columns)
+ax.set_yticks(range(show.shape[0]))
+ax.set_yticklabels(show.index.astype(str))
+ax.set_xlabel("месяц жизни")
+ax.set_title("Удержание когорт, %")
+SETUP
+import pandas as _pd0
+_r0 = _pd0.read_csv('preorders.csv', parse_dates=['date'])
+_f0 = _r0.groupby('guest_id')['date'].transform('min')
+_r0['cohort'] = _f0.dt.to_period('M')
+_r0['age'] = (_r0['date'].dt.year - _f0.dt.year) * 12 + (_r0['date'].dt.month - _f0.dt.month)
+_a0 = _r0.pivot_table(index='cohort', columns='age', values='guest_id', aggfunc='nunique')
+ret = _a0.div(_a0[0], axis=0) * 100
+CHECK
+import numpy as _np
+w = ret.drop(columns=0)
+ax = ax_of()
+assert ax.images, 'Нужна картинка-матрица: ax.imshow(...).'
+arr = _np.ma.filled(_np.ma.asarray(ax.images[0].get_array(), dtype=float), _np.nan)
+if arr.shape == ret.shape:
+    raise AssertionError('В карте 6 столбцов: уберите месяц 0 — ret.drop(columns=0). Он всегда 100 % и съедает шкалу цвета.')
+assert arr.shape == w.shape, f'Размер картинки {arr.shape}, а нужно {w.shape}.'
+ok = _np.isnan(arr) == _np.isnan(w.values)
+assert ok.all() and _np.allclose(_np.nan_to_num(arr), _np.nan_to_num(w.values), atol=0.06), 'Значения картинки не совпадают с удержанием в процентах.'
+assert len(figs[0].axes) == 2, 'Добавьте шкалу цветов: fig.colorbar(im, ax=ax).'
+ylab = [t.get_text()[:7] for t in ax.get_yticklabels()]
+assert ylab == [str(c) for c in w.index], f'Подписи по Y: {ylab} — когорты по порядку (set_yticks и set_yticklabels).'
+xlab = [t.get_text() for t in ax.get_xticklabels()]
+assert xlab == [str(c) for c in w.columns], f'Подписи по X: {xlab} — месяцы 1–5.'
+assert ax.get_xlabel() == 'месяц жизни', f'Подпись оси X: {ax.get_xlabel()!r}, а нужно «месяц жизни» — ax.set_xlabel(...).'
+
+==== ch04/05b-cohorts/by-source ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+g = pd.read_csv("preorder_guests.csv")
+o["first"] = o.groupby("guest_id")["date"].transform("min")
+o["cohort"] = o["first"].dt.to_period("M").astype(str)
+o["age"] = (o["date"].dt.year - o["first"].dt.year) * 12 + (o["date"].dt.month - o["first"].dt.month)
+x = o[o["cohort"] <= "2026-05"].merge(g, on="guest_id")
+t = x.pivot_table(index="source", columns="age", values="guest_id", aggfunc="nunique")
+m1 = (t[1] / t[0] * 100).round(1)
+m1_by_source = m1.to_dict()
+worst = m1.idxmin()
+m1
+SETUP
+
+CHECK
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date']).merge(_pd.read_csv('preorder_guests.csv'), on='guest_id')
+f = r.groupby('guest_id')['date'].transform('min')
+r['cohort'] = f.dt.to_period('M').astype(str)
+r['age'] = (r['date'].dt.year - f.dt.year) * 12 + (r['date'].dt.month - f.dt.month)
+def _m1(x):
+    t = x.pivot_table(index='source', columns='age', values='guest_id', aggfunc='nunique')
+    return (t[1] / t[0] * 100).round(1)
+w = _m1(r[r['cohort'] <= '2026-05'])
+allc = _m1(r)
+got = {k: float(v) for k, v in dict(need('m1_by_source')).items()}
+assert set(got) == set(w.index), f'Ключи: {sorted(got)} — нужны все три источника.'
+if all(close(got[k], allc[k], 0.051) for k in got) and not all(close(got[k], w[k], 0.051) for k in got):
+    raise AssertionError('В расчёт попала июньская когорта: у неё месяц 1 ещё не наступил, и она занижает удержание. Оставьте когорты январь–май.')
+assert all(close(got[k], w[k], 0.051) for k in w.index), f'm1_by_source = {got}, а нужно {w.to_dict()}.'
+assert need('worst') == w.idxmin(), f'worst = {need("worst")!r}.'
+
+==== ch04/05b-cohorts/promo-payoff ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+g = pd.read_csv("preorder_guests.csv")
+o["first"] = o.groupby("guest_id")["date"].transform("min")
+o["cohort"] = o["first"].dt.to_period("M").astype(str)
+o["age"] = (o["date"].dt.year - o["first"].dt.year) * 12 + (o["date"].dt.month - o["first"].dt.month)
+m = o[o["cohort"] == "2026-03"].merge(g, on="guest_id")
+size = m.groupby("source")["guest_id"].nunique()
+rev = (m[m["age"] <= 2].groupby("source")["amount"].sum() / size).round(0)
+rev3 = rev.to_dict()
+times = round(rev["приложение"] / rev["акция"], 1)
+rev
+SETUP
+
+CHECK
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date']).merge(_pd.read_csv('preorder_guests.csv'), on='guest_id')
+f = r.groupby('guest_id')['date'].transform('min')
+r['cohort'] = f.dt.to_period('M').astype(str)
+r['age'] = (r['date'].dt.year - f.dt.year) * 12 + (r['date'].dt.month - f.dt.month)
+m = r[r['cohort'] == '2026-03']
+size = m.groupby('source')['guest_id'].nunique()
+w = (m[m['age'] <= 2].groupby('source')['amount'].sum() / size).round(0)
+got = {k: float(v) for k, v in dict(need('rev3')).items()}
+assert set(got) == set(w.index), f'Ключи rev3: {sorted(got)}.'
+bad = (m[m['age'] <= 2].groupby('source')['amount'].sum() / m[m['age'] <= 2].groupby('source').size()).round(0)
+if all(close(got[k], bad[k], 1) for k in got):
+    raise AssertionError('Это выручка на заказ, а нужна на гостя: делите на число разных гостей источника в когорте.')
+assert all(close(got[k], w[k], 1) for k in w.index), f'rev3 = {got}, а нужно {w.to_dict()}.'
+assert close(need('times'), round(w['приложение'] / w['акция'], 1), 0.051), f'times = {need("times")}.'
+
+==== ch04/05c-dau-mau/duckdb-ret ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import duckdb
+raw = pd.read_csv("preorders.csv", parse_dates=["date"])
+sql = duckdb.sql("""
+    WITH f AS (
+        SELECT guest_id, MIN(date) AS first FROM raw GROUP BY guest_id
+    )
+    SELECT date_trunc('month', f.first) AS cohort,
+           date_diff('month', date_trunc('month', f.first), date_trunc('month', r.date)) AS age,
+           COUNT(DISTINCT r.guest_id) AS guests
+    FROM raw AS r
+    JOIN f USING (guest_id)
+    GROUP BY 1, 2
+    ORDER BY 1, 2
+""").df()
+wide = sql.pivot_table(index="cohort", columns="age", values="guests")
+wide
+SETUP
+
+CHECK
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date'])
+f = r.groupby('guest_id')['date'].transform('min')
+r['cohort'] = f.dt.to_period('M').astype(str)
+r['age'] = (r['date'].dt.year - f.dt.year) * 12 + (r['date'].dt.month - f.dt.month)
+w = r.groupby(['cohort', 'age'])['guest_id'].nunique()
+assert 'duckdb' in _code and calls('sql') >= 1, 'Посчитайте через duckdb.sql(...), а не pandas.'
+s = need('sql', _pd.DataFrame)
+for c in ('cohort', 'age', 'guests'):
+    assert c in s.columns, f'В sql нет столбца {c}: дайте ему имя через AS {c}.'
+got = {(str(a)[:7], int(b)): int(c) for a, b, c in zip(s['cohort'], s['age'], s['guests'])}
+if len(got) > len(w):
+    raise AssertionError(f'Пар (когорта, месяц) {len(got)}, а нужно {len(w)}: месяц жизни — date_diff("month") между обрезанными до месяца датами, не дни / 30.')
+assert got == {k: int(v) for k, v in w.items()}, 'Числа не совпадают: COUNT(DISTINCT r.guest_id) и date_diff(\'month\', date_trunc(\'month\', f.first), date_trunc(\'month\', r.date)).'
+wd = need('wide', _pd.DataFrame)
+assert wd.shape == (6, 6), f'wide {wd.shape}, а нужно 6 когорт × 6 месяцев: pivot_table(index="cohort", columns="age", values="guests").'
+
+==== ch04/05c-dau-mau/reconcile ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import duckdb
+raw = pd.read_csv("preorders.csv", parse_dates=["date"])
+theirs = duckdb.sql("""
+    WITH f AS (SELECT guest_id, MIN(date) AS first FROM raw GROUP BY guest_id)
+    SELECT date_trunc('month', f.first) AS cohort,
+           date_diff('day', f.first, r.date) // 30 AS age,
+           COUNT(DISTINCT r.guest_id) AS guests
+    FROM raw AS r JOIN f USING (guest_id)
+    GROUP BY 1, 2
+""").df()
+b = theirs.pivot_table(index="cohort", columns="age", values="guests", aggfunc="sum", fill_value=0)
+b.index = b.index.strftime("%Y-%m")
+diff = a.sub(b, fill_value=0)
+n_diff = int((diff != 0).sum().sum())
+extra_cols = [c for c in b.columns if c not in a.columns]
+print(diff)
+SETUP
+import pandas as _pd0
+_r0 = _pd0.read_csv('preorders.csv', parse_dates=['date'])
+_f0 = _r0.groupby('guest_id')['date'].transform('min')
+_r0['cohort'] = _f0.dt.to_period('M')
+_r0['age'] = (_r0['date'].dt.year - _f0.dt.year) * 12 + (_r0['date'].dt.month - _f0.dt.month)
+a = _r0.pivot_table(index='cohort', columns='age', values='guest_id', aggfunc='nunique', fill_value=0)
+a.index = a.index.astype(str)
+CHECK
+import pandas as _pd
+import duckdb as _dk
+raw0 = _pd.read_csv('preorders.csv', parse_dates=['date'])
+t = _dk.sql("""
+    WITH f AS (SELECT guest_id, MIN(date) AS first FROM raw0 GROUP BY guest_id)
+    SELECT date_trunc('month', f.first) AS cohort, date_diff('day', f.first, r.date) // 30 AS age,
+           COUNT(DISTINCT r.guest_id) AS guests
+    FROM raw0 AS r JOIN f USING (guest_id) GROUP BY 1, 2
+""").df()
+bw = t.pivot_table(index='cohort', columns='age', values='guests', fill_value=0)
+bw.index = bw.index.strftime('%Y-%m')
+dw = a.sub(bw, fill_value=0)
+bb = need('b', _pd.DataFrame)
+assert [str(i)[:7] for i in bb.index] == list(bw.index), f'Индекс b: {list(bb.index)[:2]}… — приведите к строкам "2026-01" через strftime("%Y-%m").'
+assert bb.shape == bw.shape and (bb.fillna(0).values == bw.values).all(), 'b — pivot_table(index="cohort", columns="age", values="guests", fill_value=0) по результату коллеги.'
+nd = int((dw != 0).sum().sum())
+got = int(need('n_diff'))
+extra = ', '.join(str(int(c)) for c in bw.columns if c not in a.columns)
+if got == int((a - bw).fillna(0).ne(0).sum().sum()) and got != nd:
+    raise AssertionError(f'n_diff = {got}, а ячеек с разницей {nd}: вы спрятали расхождения. Обычное a - b даёт NaN в столбце {extra}, которого нет у a, а fillna(0) превращает эти NaN в «нет разницы». Используйте a.sub(b, fill_value=0).')
+if got == int((a - bw).ne(0).sum().sum()) and got != nd:
+    raise AssertionError(f'n_diff = {got}, а ячеек с разницей {nd}: вы посчитали NaN как разницу. В столбце {extra} у a нет значений, a - b даёт там NaN, а NaN != 0 — это True, поэтому засчиталась каждая ячейка столбца, даже где у b ноль. Используйте a.sub(b, fill_value=0).')
+assert got == nd, f'n_diff = {got}, а ячеек с разницей {nd}. Считайте по diff = a.sub(b, fill_value=0): (diff != 0).sum().sum().'
+assert sorted(int(x) for x in need('extra_cols')) == sorted(int(c) for c in bw.columns if c not in a.columns), f'extra_cols = {need("extra_cols")}.'
+
+==== ch04/05c-dau-mau/dau-max ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+dau = o.groupby("date")["guest_id"].nunique()
+best_day = dau.idxmax()
+best_dau = dau.max()
+print(best_day.date(), best_dau)
+SETUP
+
+CHECK
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date'])
+w = r.groupby('date')['guest_id'].nunique()
+s = need('dau', _pd.Series)
+if len(s) == len(w) and int(s.sum()) == int(r.groupby('date').size().sum()):
+    raise AssertionError('В dau — число заказов в день, а нужно число разных гостей: nunique вместо size.')
+assert len(s) == len(w) and [int(v) for v in s.values] == [int(v) for v in w.values], 'dau — groupby("date")["guest_id"].nunique().'
+assert _pd.Timestamp(need('best_day')) == w.idxmax(), f'best_day = {need("best_day")}: возьмите idxmax() у dau.'
+assert int(need('best_dau')) == int(w.max()), f'best_dau = {need("best_dau")}.'
+
+==== ch04/05c-dau-mau/sticky ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+dau = o.groupby("date")["guest_id"].nunique().reindex(pd.date_range("2026-01-01", "2026-06-30"), fill_value=0)
+dau_avg = dau.groupby(dau.index.to_period("M")).mean()
+mau = o.groupby(o["date"].dt.to_period("M"))["guest_id"].nunique()
+monthly = pd.DataFrame({"dau": dau_avg.round(1), "mau": mau})
+monthly["sticky"] = (monthly["dau"] / monthly["mau"] * 100).round(1)
+best_month = str(monthly["sticky"].idxmax())
+monthly
+SETUP
+
+CHECK
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date'])
+dau = r.groupby('date')['guest_id'].nunique().reindex(_pd.date_range('2026-01-01', '2026-06-30'), fill_value=0)
+da = dau.groupby(dau.index.to_period('M')).mean().round(1)
+mau = r.groupby(r['date'].dt.to_period('M'))['guest_id'].nunique()
+st = (da / mau * 100).round(1)
+m = need('monthly', _pd.DataFrame)
+for c in ('dau', 'mau', 'sticky'):
+    assert c in m.columns, f'В monthly нет столбца {c}.'
+assert len(m) == 6, f'Строк {len(m)}, а месяцев 6.'
+sum_dau = dau.groupby(dau.index.to_period('M')).sum()
+if all(int(x) == int(y) for x, y in zip(m['mau'], sum_dau)):
+    raise AssertionError('mau — это сумма DAU. Нужны разные гости за месяц по исходным заказам: groupby(месяц)["guest_id"].nunique().')
+assert [int(x) for x in m['mau']] == [int(x) for x in mau], f'mau = {list(m["mau"])}, а нужно {list(mau)}.'
+assert all(close(x, y, 0.051) for x, y in zip(m['dau'], da)), f'dau = {list(m["dau"])}: средний DAU за дни месяца.'
+assert all(close(x, y, 0.15) for x, y in zip(m['sticky'], st)), f'sticky = {list(m["sticky"])}, а нужно {list(st)}.'
+assert str(need('best_month'))[:7] == str(st.idxmax()), f'best_month = {need("best_month")!r}.'
+
+==== ch04/05c-dau-mau/wau-full ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+week = o["date"].dt.to_period("W")
+g = o.groupby(week)
+calendar = pd.date_range("2026-01-01", "2026-06-30")
+days = pd.Series(1, index=calendar).groupby(calendar.to_period("W")).sum()
+weekly = pd.DataFrame({"wau": g["guest_id"].nunique().reindex(days.index, fill_value=0), "days": days})
+full = weekly[weekly["days"] == 7]
+n_full = len(full)
+min_wau = full["wau"].min()
+print(n_full, min_wau)
+weekly.head(3)
+SETUP
+
+CHECK
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date'])
+g = r.groupby(r['date'].dt.to_period('W'))
+_calendar = _pd.date_range('2026-01-01', '2026-06-30')
+_days = _pd.Series(1, index=_calendar).groupby(_calendar.to_period('W')).sum()
+w = _pd.DataFrame({'wau': g['guest_id'].nunique().reindex(_days.index, fill_value=0), 'days': _days})
+wf = w[w['days'] == 7]
+wk = need('weekly', _pd.DataFrame)
+for c in ('wau', 'days'):
+    assert c in wk.columns, f'В weekly нет столбца {c}.'
+assert len(wk) == len(w), f'В weekly {len(wk)} строк, а недель в выгрузке {len(w)}: группируйте по to_period("W").'
+if len(g) == len(wk) and [int(x) for x in wk['days']] == [int(x) for x in g.size()]:
+    raise AssertionError('days — это число заказов в неделе. Нужно число разных дат: g["date"].nunique().')
+assert [int(x) for x in wk['days']] == [int(x) for x in w['days']], f'days = {[int(x) for x in wk["days"]][:3]}…, а нужно {[int(x) for x in w["days"]][:3]}…: разные даты в неделе — nunique() по date.'
+assert [int(x) for x in wk['wau']] == [int(x) for x in w['wau']], 'wau — разные гости за неделю: nunique() по guest_id.'
+fu = need('full', _pd.DataFrame)
+assert len(fu) == len(wf), f'В full {len(fu)} строк, а полных недель {len(wf)}: оставьте days == 7.'
+assert int(need('n_full')) == len(wf), f'n_full = {need("n_full")}, а полных недель {len(wf)}.'
+assert int(need('min_wau')) == int(wf['wau'].min()), f'min_wau = {need("min_wau")}: наименьший wau среди полных недель.'
+
+==== ch04/05c-dau-mau/sticky-city ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+o = pd.read_csv("preorders.csv", parse_dates=["date"])
+guests = pd.read_csv("preorder_guests.csv")
+j = o.merge(guests, on="guest_id")
+j = j[j["date"].dt.to_period("M") == "2026-06"]
+dau = j.pivot_table(index="date", columns="city", values="guest_id", aggfunc="nunique")
+mau = j.groupby("city")["guest_id"].nunique()
+city_sticky = (dau.mean() / mau * 100).round(1)
+best_city = city_sticky.idxmax()
+print(mau)
+city_sticky
+SETUP
+
+CHECK
+import pandas as _pd
+r = _pd.read_csv('preorders.csv', parse_dates=['date']).merge(_pd.read_csv('preorder_guests.csv'), on='guest_id')
+j = r[r['date'].dt.to_period('M') == _pd.Period('2026-06', 'M')]
+t = j.pivot_table(index='date', columns='city', values='guest_id', aggfunc='nunique')
+mau = j.groupby('city')['guest_id'].nunique()
+w = (t.mean() / mau * 100).round(1)
+s = need('city_sticky', _pd.Series)
+got = {str(k): float(v) for k, v in s.items()}
+assert set(got) == set(w.index), f'Города в city_sticky: {sorted(got)}, а нужно {sorted(w.index)}.'
+dau_all = j.groupby('date')['guest_id'].nunique().mean()
+if all(close(got[c], dau_all / mau[c] * 100, 0.06) for c in got):
+    raise AssertionError('Средний DAU взят по всей сети. Нужен DAU гостей своего города: nunique по паре (дата, город).')
+for c in w.index:
+    assert close(got[c], float(w[c]), 0.051), f'У {c} получилось {got[c]}, ожидалось {float(w[c])}: средний за дни июня DAU города / MAU города × 100.'
+assert str(need('best_city')) == str(w.idxmax()), f'best_city = {need("best_city")!r}.'
+
+==== ch04/06-correlation/scatter ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+fig, ax = plt.subplots(figsize=(6, 4))
+ax.scatter(ok["distance_km"], ok["actual_min"], s=8, alpha=0.4)
+ax.set_xlabel("км")
+ax.set_ylabel("мин")
+SETUP
+
+CHECK
+import numpy as _np
+import pandas as _pd
+from matplotlib.collections import PathCollection as _PathCollection
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1,299)]
+ax = ax_of()
+clouds = [collection for collection in ax.collections if isinstance(collection, _PathCollection)]
+assert clouds, 'Нет точек: ax.scatter(...).'
+points = []
+for cloud in clouds:
+    offsets = cloud.get_offsets()
+    assert not _np.ma.getmaskarray(offsets).any(), 'Все допустимые пары должны быть видимыми точками.'
+    points.extend(_np.asarray(offsets, dtype=float).tolist())
+    assert _np.allclose(cloud.get_sizes(),8), 'Размер точек — s=8.'
+    alpha = cloud.get_alpha()
+    if alpha is None:
+        colors = cloud.get_facecolors()
+        assert len(colors), 'Точки должны иметь прозрачность 0.4.'
+        alpha = colors[:,3]
+    assert _np.allclose(alpha,.4), 'Прозрачность точек — alpha=0.4.'
+expected = ok[['distance_km','actual_min']].to_numpy(dtype=float)
+actual = _np.asarray(points,dtype=float)
+assert actual.shape == expected.shape, f'Точек {len(actual)}, а доставок с временем 1–299 — {len(expected)}.'
+# Keep duplicate observations and allow any permutation of the same (x,y) pairs.
+actual = actual[_np.lexsort((actual[:,1],actual[:,0]))]
+expected = expected[_np.lexsort((expected[:,1],expected[:,0]))]
+assert _np.allclose(actual,expected,rtol=1e-9,atol=1e-7), 'Каждая точка: X = distance_km в км, Y = actual_min в минутах. Проверьте оси и сохранение пар одной доставки.'
+assert ax.get_xlabel() == 'км' and ax.get_ylabel() == 'мин', f'Подписи осей: {ax.get_xlabel()!r}, {ax.get_ylabel()!r}.'
+
+==== ch04/06-correlation/r ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+r = round(ok["distance_km"].corr(ok["actual_min"]), 2)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+want = round(ok['distance_km'].corr(ok['actual_min']), 2)
+got = need('r')
+if close(got, round(d['distance_km'].corr(d['actual_min']), 2)) and not close(got, want):
+    raise AssertionError(f'r = {got} — посчитано вместе с аномалиями. Оставьте время 1–299 минут.')
+assert close(got, want), f'r = {got}, а нужно {want}.'
+
+==== ch04/06-correlation/p-corr ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["delay"] = ok["actual_min"] - ok["promised_min"]
+print(round(ok["delay"].corr(ok["rating"]), 2))
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+want = round((ok['actual_min'] - ok['promised_min']).corr(ok['rating']), 2)
+assert _lines == [str(want)], f'Должно вывестись {want}. Сейчас: {_lines}'
+
+==== ch04/06-correlation/matrix ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+cols = ["distance_km", "items", "amount", "actual_min", "rating"]
+cm = ok[cols].corr()
+best = 0
+for i in range(len(cols)):
+    for j in range(i + 1, len(cols)):
+        if abs(cm.iloc[i, j]) > best:
+            best = abs(cm.iloc[i, j])
+            strongest = (cols[i], cols[j])
+cm.round(2)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+cols = ['distance_km', 'items', 'amount', 'actual_min', 'rating']
+want = ok[cols].corr()
+c = need('cm', _pd.DataFrame)
+assert c.shape == (5, 5) and all(close(a, b, 1e-9) for a, b in zip(c.values.ravel(), want.values.ravel())), 'cm — ok[cols].corr().'
+assert tuple(need('strongest')) == ('items', 'amount'), f'strongest = {need("strongest")}.'
+
+==== ch04/06-correlation/spearman ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv").dropna(subset=["actual_min"])
+r_pearson = round(d["distance_km"].corr(d["actual_min"]), 2)
+r_spearman = round(d["distance_km"].rank().corr(d["actual_min"].rank()), 2)
+diff = round(d["distance_km"].rank().corr(d["actual_min"].rank()) - d["distance_km"].corr(d["actual_min"]), 2)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv').dropna(subset=['actual_min'])
+p = round(d['distance_km'].corr(d['actual_min']), 2)
+s = round(d['distance_km'].rank().corr(d['actual_min'].rank()), 2)
+assert close(need('r_pearson'), p) and close(need('r_spearman'), s), f'r_pearson, r_spearman = {need("r_pearson")}, {need("r_spearman")}, а нужно {p}, {s}.'
+assert close(need('diff'), round(d['distance_km'].rank().corr(d['actual_min'].rank()) - d['distance_km'].corr(d['actual_min']), 2)), f'diff = {need("diff")}.'
+
+==== ch04/06-correlation/by-group ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+r_by = {}
+for c, t in ok.groupby("courier"):
+    r_by[c] = round(t["distance_km"].corr(t["actual_min"]), 2)
+r_all = round(ok["distance_km"].corr(ok["actual_min"]), 2)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+want = {c: round(t['distance_km'].corr(t['actual_min']), 2) for c, t in ok.groupby('courier')}
+got = dict(need('r_by'))
+assert set(got) == set(want) and all(close(got[k], want[k]) for k in want), f'r_by = {got}, а нужно {want}.'
+assert close(need('r_all'), round(ok['distance_km'].corr(ok['actual_min']), 2)), f'r_all = {need("r_all")}.'
+
+==== ch04/06-correlation/colored ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+fig, ax = plt.subplots(figsize=(6, 4))
+for c in ["пеший", "вело", "авто"]:
+    t = ok[ok["courier"] == c]
+    ax.scatter(t["distance_km"], t["actual_min"], s=8, alpha=0.4, label=c)
+ax.legend()
+ax.set_xlabel("км")
+ax.set_ylabel("мин")
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+ax = ax_of()
+assert len(ax.collections) == 3, f'Наборов точек {len(ax.collections)}, а нужно 3 — по одному scatter на тип курьера.'
+assert sorted(len(c.get_offsets()) for c in ax.collections) == sorted(ok['courier'].value_counts().values), 'В каждом наборе — точки своего типа курьера.'
+labels = sorted(t.get_text().split(':')[0] for t in ax.get_legend().get_texts()) if ax.get_legend() else []
+assert labels == sorted(['пеший', 'вело', 'авто']), f'Легенда: {labels}.'
+
+==== ch04/06-correlation/hexbin ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+fig, ax = plt.subplots(figsize=(7, 4))
+hb = ax.hexbin(ok["distance_km"], ok["actual_min"], gridsize=15, mincnt=1, cmap="Blues")
+fig.colorbar(hb, ax=ax, label="доставок")
+ax.set_xlabel("расстояние, км")
+ax.set_ylabel("время, мин")
+max_cell = int(hb.get_array().max())
+max_cell
+SETUP
+
+CHECK
+import pandas as _pd
+import numpy as _np
+from matplotlib.figure import Figure as _Fig
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)]
+ref = _Fig().subplots().hexbin(o['distance_km'], o['actual_min'], gridsize=15, mincnt=1).get_array()
+ax = ax_of()
+hb = [c for c in ax.collections if c.get_array() is not None]
+assert hb, 'Не вижу сот: нарисуйте ax.hexbin(x, y, gridsize=15, mincnt=1).'
+arr = _np.asarray(hb[0].get_array())
+assert int(arr.sum()) == len(o), f'В сотах {int(arr.sum())} доставок, а после очистки {len(o)}.'
+assert arr.min() >= 1, 'Пустые соты закрашены — добавьте mincnt=1.'
+assert sorted(arr.tolist()) == sorted(ref.tolist()), 'Соты не совпадают с эталоном: X — distance_km, Y — actual_min, gridsize=15.'
+assert len(figs[0].axes) == 2, 'Добавьте шкалу цветов: fig.colorbar(hb, ax=ax).'
+assert ax.get_xlabel() == 'расстояние, км' and ax.get_ylabel() == 'время, мин', 'Подпишите оси.'
+assert int(need('max_cell')) == int(ref.max()), f'max_cell = {need("max_cell")}: максимум счётчиков сот — hb.get_array().max().'
+
+==== ch04/06-correlation/pairs ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+cols = ["distance_km", "items", "amount", "actual_min", "delay"]
+ok["delay"] = ok["actual_min"] - ok["promised_min"]
+axes = pd.plotting.scatter_matrix(ok[cols], figsize=(8, 8), alpha=0.3, diagonal="hist")
+
+s = ok[cols].corr().abs().stack()
+s = s[[a != b for a, b in s.index]].sort_values(ascending=False)
+top_pair = s.index[0]
+second_pair = s.index[2]
+s.head(6)
+SETUP
+
+CHECK
+import pandas as _pd
+import numpy as _np
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)].copy()
+o['delay'] = o['actual_min'] - o['promised_min']
+cols = ['distance_km', 'items', 'amount', 'actual_min', 'delay']
+c = o[cols].corr().abs()
+pairs = sorted(((c.iloc[i, j], cols[i], cols[j]) for i in range(5) for j in range(i + 1, 5)), reverse=True)
+assert figs and len(figs[-1].axes) >= 25, f'На полотне {len(figs[-1].axes) if figs else 0} графиков, а нужно 5 × 5: pd.plotting.scatter_matrix(ok[cols], diagonal="hist").'
+tp = need('top_pair')
+assert len(tp) == 2 and tp[0] != tp[1], 'top_pair — два разных столбца: диагональ (корреляция признака с собой = 1) не считается.'
+assert set(tp) == {pairs[0][1], pairs[0][2]}, f'top_pair = {tuple(tp)}.'
+sp = need('second_pair')
+assert set(sp) == {pairs[1][1], pairs[1][2]}, f'second_pair = {tuple(sp)}: следующая по модулю корреляции пара (знак не важен).'
+
+==== ch04/06-correlation/confounder ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+r_all = round(ok["amount"].corr(ok["actual_min"]), 2)
+r_within = {}
+for n, t in ok.groupby("items"):
+    r_within[n] = round(t["amount"].corr(t["actual_min"]), 2)
+max_within = max(r_within.values(), key=abs)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+assert close(need('r_all'), round(ok['amount'].corr(ok['actual_min']), 2)), f'r_all = {need("r_all")}.'
+want = {int(k): round(t['amount'].corr(t['actual_min']), 2) for k, t in ok.groupby('items')}
+got = {int(k): v for k, v in dict(need('r_within')).items()}
+assert set(got) == set(want) and all(close(got[k], want[k]) for k in want), f'r_within = {got}.'
+m = max(want.values(), key=abs)
+assert close(abs(need('max_within')), abs(m)), f'max_within = {need("max_within")}.'
+
+==== ch04/06-correlation/binned ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+b = pd.cut(ok["distance_km"], bins=range(0, 9))
+bins_t = ok.groupby(b, observed=False)["actual_min"].agg(median_min="median", n="size")
+
+fig, ax = plt.subplots(figsize=(6, 3.5))
+ax.plot([i + 0.5 for i in range(8)], bins_t["median_min"], marker="o")
+ax.set_xlabel("расстояние, км")
+ax.set_ylabel("медиана времени, мин")
+bins_t
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+b = _pd.cut(ok['distance_km'], bins=range(0, 9))
+want = ok.groupby(b, observed=False)['actual_min'].agg(['median', 'size'])
+t = need('bins_t', _pd.DataFrame)
+assert list(t.columns) == ['median_min', 'n'], f'Столбцы: {list(t.columns)}.'
+assert len(t) == 8, f'Корзин {len(t)}, а нужно 8 (0–1, 1–2, …, 7–8).'
+assert all(close(a, b) for a, b in zip(t['median_min'], want['median'])), 'median_min не совпадает.'
+assert [int(x) for x in t['n']] == [int(x) for x in want['size']], 'n не совпадает.'
+ax = ax_of()
+assert ax.lines, 'Нарисуйте линию медиан.'
+xs = [round(float(x), 6) for x in ax.lines[0].get_xdata()]
+assert xs == [i + 0.5 for i in range(8)], f'По оси X — середины корзин: {xs}.'
+
+==== ch04/07-readable/sort-zero ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv")
+avg = df.groupby("shop_id")["amount"].mean().sort_values(ascending=False)
+fig, ax = plt.subplots(figsize=(6, 3))
+ax.bar(avg.index, avg.values)
+ax.set_ylim(0, avg.max() * 1.1)
+ax.set_ylabel("средний чек, ₽")
+SETUP
+
+CHECK
+ax = ax_of()
+h = [p.get_height() for p in ax.patches]
+assert h == sorted(h, reverse=True), 'Столбцы должны идти по убыванию.'
+assert ax.get_ylim()[0] == 0, f'Ось Y начинается с {ax.get_ylim()[0]}, а должна с нуля.'
+
+==== ch04/07-readable/labels ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+t = (ok.groupby("courier")["late"].mean() * 100).sort_values(ascending=False)
+fig, ax = plt.subplots(figsize=(5, 3))
+bars = ax.bar(t.index, t.values)
+ax.set_ylabel("опозданий, %")
+ax.bar_label(bars, fmt="%.1f")
+ax.spines[["top", "right"]].set_visible(False)
+SETUP
+
+CHECK
+ax = ax_of()
+texts = [t.get_text() for t in ax.texts]
+assert len(texts) == 3, f'Подписей {len(texts)}, а нужно 3: ax.bar_label(bars, fmt="%.1f").'
+assert all(len(x.split('.')[-1]) == 1 for x in texts), f'Подписи: {texts} — нужен один знак после запятой.'
+assert not ax.spines['top'].get_visible() and not ax.spines['right'].get_visible(), 'Уберите верхнюю и правую рамки.'
+
+==== ch04/07-readable/p-accent ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+df = pd.read_csv("orders_3m.csv")
+vc = df["channel"].value_counts()
+colors = ["tab:red" if v == vc.max() else "lightgray" for v in vc.values]
+fig, ax = plt.subplots(figsize=(5, 3))
+ax.bar(vc.index, vc.values, color=colors)
+SETUP
+
+CHECK
+from matplotlib.colors import to_hex as _hex
+ax = ax_of()
+cols = [_hex(p.get_facecolor()) for p in ax.patches]
+assert len(cols) == 3, f'Столбцов {len(cols)}, а каналов продаж 3: ax.bar(vc.index, vc.values, color=colors).'
+if cols[0] == _hex('lightgray') and _hex('tab:red') in cols[1:]:
+    raise AssertionError('Красный достался не самому большому столбцу. Первый (самый большой) должен быть tab:red, остальные — lightgray. Проверьте генератор списка: "tab:red" — при условии v == vc.max(), "lightgray" — после else.')
+assert cols[0] == _hex('tab:red') and all(c == _hex('lightgray') for c in cols[1:]), f'Цвета столбцов: {cols}. Первый (самый большой) должен быть tab:red, остальные — lightgray. Проверьте условие в генераторе списка: v == vc.max(), и что colors передан в ax.bar через color=.'
+
+==== ch04/07-readable/no-pie ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv")
+rev = df.groupby("drink")["amount"].sum()
+share = (rev / rev.sum() * 100).sort_values()
+fig, ax = plt.subplots(figsize=(6, 4))
+bars = ax.barh(share.index, share.values)
+ax.bar_label(bars, fmt="%.1f")
+ax.set_xlabel("доля выручки, %")
+ax.set_title(f"{share.index[-1]} — лидер по выручке")
+ax.spines[["top", "right"]].set_visible(False)
+SETUP
+
+CHECK
+import pandas as _pd
+from matplotlib.patches import Wedge as _W
+r = _pd.read_csv('orders_3m.csv').groupby('drink')['amount'].sum()
+share = (r / r.sum() * 100).sort_values()
+ax = ax_of()
+assert not any(isinstance(p, _W) for p in ax.patches), 'На графике остался круг — уберите ax.pie.'
+w = [p.get_width() for p in ax.patches]
+assert len(w) == len(share), f'Столбцов {len(w)}, а напитков {len(share)}: нужен ax.barh по всем напиткам.'
+if all(close(a, b) for a, b in zip(w, share.values[::-1])):
+    raise AssertionError('Самый большой столбец оказался внизу: у barh первый элемент рисуется внизу. Чтобы лидер был наверху, сортируйте по возрастанию — .sort_values() без ascending=False.')
+if sorted(round(x, 3) for x in w) != sorted(round(x, 3) for x in share.values) and close(max(w), r.max()):
+    raise AssertionError('Длины столбцов — выручка в рублях, а нужна доля в процентах: rev / rev.sum() * 100.')
+assert all(close(a, b) for a, b in zip(w, share.values)), 'Длины столбцов — доля выручки в процентах по возрастанию снизу вверх (лидер наверху): rev / rev.sum() * 100, затем .sort_values().'
+assert ax.get_xlabel() == 'доля выручки, %', f'Подпись оси X: {ax.get_xlabel()!r}.'
+assert ax.get_title().strip(), 'Добавьте заголовок-вывод.'
+
+==== ch04/07-readable/title ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+m = ok.groupby("courier")["actual_min"].median().sort_values(ascending=False)
+fig, ax = plt.subplots(figsize=(5, 3))
+ax.bar(m.index, m.values)
+ax.set_ylabel("минут")
+ax.set_title(f"{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин")
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+m = ok.groupby('courier')['actual_min'].median().sort_values(ascending=False)
+ax = ax_of()
+want = f'{m.index[0]} — самые медленные: медиана {int(m.iloc[0])} мин'
+assert ax.get_title() == want, f'Заголовок: {ax.get_title()!r}, а нужно {want!r}.'
+assert uses_fstring(), 'Соберите заголовок f-строкой из данных, а не впишите руками.'
+h = [p.get_height() for p in ax.patches]
+_labels = [t.get_text() for t in ax.get_xticklabels()]
+assert len(h) == len(m) == len(_labels), 'Нужен столбец для каждого типа курьера.'
+assert len(set(_labels)) == len(m) and set(_labels) == set(m.index), 'Подпишите каждый тип курьера ровно один раз.'
+for _label, _height in zip(_labels, h):
+    assert close(_height, m.loc[_label]), f'{_label}: медиана {_height}, а нужно {m.loc[_label]} минут.'
+assert ax.get_ylabel() == 'минут'
+
+==== ch04/07-readable/top5 ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("orders_3m.csv")
+rev = df.groupby("drink")["amount"].sum().sort_values(ascending=False)
+top = rev.head(5).copy()
+top["прочее"] = rev.iloc[5:].sum()
+top = top / 1000
+fig, ax = plt.subplots(figsize=(6, 3))
+ax.barh(top.index[::-1], top.values[::-1])
+ax.set_xlabel("выручка, тыс. ₽")
+SETUP
+
+CHECK
+import pandas as _pd
+r = _pd.read_csv('orders_3m.csv').groupby('drink')['amount'].sum().sort_values(ascending=False)
+t = need('top', _pd.Series)
+assert list(t.index) == list(r.index[:5]) + ['прочее'], f'Индекс top: {list(t.index)}.'
+assert close(t['прочее'], r.iloc[5:].sum() / 1000) and close(t.iloc[0], r.iloc[0] / 1000), 'Значения — в тысячах рублей.'
+ax = ax_of()
+labels = [x.get_text() for x in ax.get_yticklabels()]
+assert labels[-1] == r.index[0] and labels[0] == 'прочее', f'Порядок по оси Y снизу вверх: {labels}. Наверху — лидер, внизу — «прочее».'
+assert ax.get_xlabel() == 'выручка, тыс. ₽'
+
+==== ch04/07-readable/honest ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["on_time"] = ok["actual_min"] <= ok["promised_min"]
+ok["city"] = ok["shop_id"].str[:3]
+t = (ok.groupby("city")["on_time"].mean() * 100).sort_values(ascending=False)
+
+fig, axes = plt.subplots(1, 2, figsize=(9, 3))
+for ax, lim, title in zip(axes, [(70, 85), (0, 100)], ["Как на слайде", "С нуля"]):
+    ax.bar(t.index, t.values)
+    ax.set_ylim(*lim)
+    ax.set_title(title)
+fig.tight_layout()
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)].copy()
+v = ((o['actual_min'] <= o['promised_min']).groupby(o['shop_id'].str[:3]).mean() * 100)
+assert len(figs) == 1 and len(figs[0].axes) == 2, 'Нужны два графика рядом: plt.subplots(1, 2).'
+a, b = figs[0].axes
+for ax in (a, b):
+    h = sorted(p.get_height() for p in ax.patches)
+    assert len(h) == len(v) and all(close(x, y) for x, y in zip(h, sorted(v.values))), 'Высоты — доля вовремя в процентах по городам.'
+assert a.get_ylim() == (70.0, 85.0) and a.get_title() == 'Как на слайде', f'Левый: ось {a.get_ylim()}, заголовок {a.get_title()!r}.'
+assert b.get_ylim() == (0.0, 100.0) and b.get_title() == 'С нуля', f'Правый: ось {b.get_ylim()}, заголовок {b.get_title()!r}.'
+
+==== ch04/07-readable/small-multiples ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+w = ok.pivot_table(index=pd.Grouper(key="created", freq="W"), columns="shop_id",
+                   values="late", aggfunc="mean").iloc[1:-1] * 100
+
+fig, axes = plt.subplots(2, 3, figsize=(10, 5), sharex=True, sharey=True)
+for ax, shop in zip(axes.flat, w.columns):
+    ax.plot(w.index, w[shop])
+    ax.set_title(shop)
+    ax.tick_params(axis="x", labelrotation=45)
+fig.suptitle("Доля опозданий по неделям, %")
+fig.tight_layout()
+top_avg_shop = w.mean().idxmax()
+print(w.mean().round(1).sort_values())
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv', parse_dates=['created'])
+o = d[d['actual_min'].between(1, 299)].copy()
+o['late'] = o['actual_min'] > o['promised_min']
+w = o.pivot_table(index=_pd.Grouper(key='created', freq='W'), columns='shop_id', values='late', aggfunc='mean').iloc[1:-1] * 100
+assert len(figs) == 1 and len(figs[0].axes) == 6, 'Нужна сетка 2 × 3: plt.subplots(2, 3, ...).'
+axs = figs[0].axes
+assert sorted(a.get_title() for a in axs) == sorted(w.columns), 'Заголовки графиков — коды кофеен.'
+assert len({a.get_ylim() for a in axs}) == 1, 'Шкала Y должна быть общей: sharey=True.'
+for a in axs:
+    s = w[a.get_title()]
+    assert a.lines and all(close(x, y) for x, y in zip(a.lines[0].get_ydata(), s.values)), f'Линия {a.get_title()} не совпадает с долей опозданий по полным неделям.'
+assert figs[0]._suptitle is not None and figs[0]._suptitle.get_text().strip(), 'Добавьте общий заголовок: fig.suptitle(...).'
+assert need('top_avg_shop') == w.mean().idxmax(), f'top_avg_shop = {need("top_avg_shop")!r}: среднее по неделям у каждой кофейни — w.mean(), затем idxmax().'
+
+==== ch04/07-readable/percent-axis ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+df = pd.read_csv("orders_3m.csv")
+shares = (df["channel"].value_counts(normalize=True) * 100).round(1)
+s = shares.sort_values()
+fig, ax = plt.subplots(figsize=(6, 2.8))
+ax.barh(s.index, s.values)
+ax.set_xlim(0, 100)
+ax.set_xlabel("доля заказов, %")
+ax.set_title("Почти половина заказов — в зале")
+SETUP
+
+CHECK
+# Shared by chapter 4 chart checks through include-check; no student-code execution here.
+def _check_category_bars(ax, expected, *, horizontal=False):
+    import numpy as _np
+
+    ax.figure.canvas.draw()
+    patches = list(ax.patches)
+    ticks = ax.get_yticks() if horizontal else ax.get_xticks()
+    texts = ax.get_yticklabels() if horizontal else ax.get_xticklabels()
+    labels = [(float(position), text.get_text()) for position, text in zip(ticks, texts) if text.get_visible()]
+    assert len(patches) == len(expected), f'Столбцов {len(patches)}, а категорий {len(expected)}: нужен столбец для каждой категории.'
+    assert len(labels) == len(expected) and {name for _, name in labels} == set(expected), 'Подпишите каждую категорию ровно один раз; названия должны соответствовать данным.'
+    result = []
+    seen = set()
+    for patch in patches:
+        position = (patch.get_y() + patch.get_height() / 2 if horizontal
+                    else patch.get_x() + patch.get_width() / 2)
+        matching = [name for tick, name in labels if _np.isclose(tick, position, rtol=0, atol=1e-7)]
+        assert len(matching) == 1, 'Подпись категории должна стоять напротив своего столбца.'
+        name = matching[0]
+        assert name not in seen, f'Для категории «{name}» нарисовано несколько столбцов.'
+        seen.add(name)
+        origin = patch.get_x() if horizontal else patch.get_y()
+        assert _np.isclose(origin, 0, rtol=0, atol=1e-7), f'«{name}»: количественный столбец должен начинаться от 0, а не от {origin:g}.'
+        value = patch.get_width() if horizontal else patch.get_height()
+        assert _np.isfinite(value) and _np.isclose(value, expected[name], rtol=1e-9, atol=1e-6), f'«{name}»: на графике {value:g}, а по данным нужно {expected[name]:g}. Проверьте пару «подпись — значение».'
+        screen = ax.transData.transform((0, position) if horizontal else (position, 0))
+        # Read the chart as the viewer sees it: top to bottom, or left to right.
+        visual_position = -float(screen[1]) if horizontal else float(screen[0])
+        result.append((visual_position, name, float(value)))
+    return [(name, value) for _, name, value in sorted(result)]
+import pandas as _pd
+want = (_pd.read_csv('orders_3m.csv')['channel'].value_counts(normalize=True)*100).round(1)
+shares = need('shares',_pd.Series)
+assert shares.index.is_unique and set(shares.index)==set(want.index), 'shares должна содержать каждый канал ровно один раз.'
+assert all(close(shares[name],value) for name,value in want.items()), f'shares = {shares.to_dict()}, а нужно {want.to_dict()}.'
+ax = ax_of(0)
+visible = _check_category_bars(ax,want.to_dict(),horizontal=True)
+assert close(visible[0][1],float(want.max())), 'Наверху должен быть канал с максимальной долей. Допустим и обратный порядок данных с invert_yaxis().'
+assert close(ax.get_xlim()[0],0) and close(ax.get_xlim()[1],100), f'Ось X: {ax.get_xlim()}, нужна от 0 до 100.'
+assert ax.get_xlabel() == 'доля заказов, %', 'Подпись оси X должна быть «доля заказов, %».'
+
+==== ch04/07c-metrics/whose-mean ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+o = pd.read_csv("preorders.csv")
+per_order = round(o["amount"].mean(), 1)
+per_guest = round(o.groupby("guest_id")["amount"].mean().mean(), 1)
+per_shop = round(o.groupby("shop_id")["amount"].mean().mean(), 1)
+n = o.groupby("guest_id")["amount"].transform("size")
+heavy_share = round((n >= 21).mean() * 100, 1)
+print(per_order, per_guest, per_shop, heavy_share)
+SETUP
+
+CHECK
+import pandas as _pd
+o = _pd.read_csv('preorders.csv')
+po = round(o['amount'].mean(), 1)
+pg = round(o.groupby('guest_id')['amount'].mean().mean(), 1)
+ps = round(o.groupby('shop_id')['amount'].mean().mean(), 1)
+got = {k: need(k) for k in ('per_order', 'per_guest', 'per_shop')}
+if close(got['per_guest'], round(o['amount'].sum() / o['guest_id'].nunique(), 1), 0.051):
+    raise AssertionError('per_guest — это выручка на гостя (сумма / число гостей), а нужен средний чек гостя: groupby("guest_id")["amount"].mean().mean().')
+assert close(got['per_order'], po, 0.051), f'per_order = {got["per_order"]}, а нужно {po}.'
+assert close(got['per_guest'], pg, 0.051), f'per_guest = {got["per_guest"]}: сначала средний чек каждого гостя, потом среднее из них.'
+assert close(got['per_shop'], ps, 0.051), f'per_shop = {got["per_shop"]}: то же по shop_id.'
+n = o.groupby('guest_id')['amount'].transform('size')
+hs = round((n >= 21).mean() * 100, 1)
+assert close(need('heavy_share'), hs, 0.051), f'heavy_share = {need("heavy_share")}, а нужно {hs}: доля заказов (строк), чьи гости сделали 21+ заказ.'
+
+==== ch04/07c-metrics/per-guest-rev ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+o = pd.read_csv("preorders.csv")
+guests = o["guest_id"].nunique()
+rev_per_guest = round(o["amount"].sum() / guests, 1)
+orders_per_guest = round(len(o) / guests, 2)
+per_order = o["amount"].mean()
+print(rev_per_guest, orders_per_guest, round(per_order * len(o) / guests, 1))
+SETUP
+
+CHECK
+import pandas as _pd
+o = _pd.read_csv('preorders.csv')
+g = o['guest_id'].nunique()
+rv = round(o['amount'].sum() / g, 1)
+if close(need('rev_per_guest'), round(o.groupby('guest_id')['amount'].mean().mean(), 1), 0.051):
+    raise AssertionError('rev_per_guest — это средний чек гостя. Нужна выручка на гостя: o["amount"].sum() / o["guest_id"].nunique().')
+assert close(need('rev_per_guest'), rv, 0.051), f'rev_per_guest = {need("rev_per_guest")}, а нужно {rv}: сумма amount / число разных гостей.'
+assert close(need('orders_per_guest'), round(len(o) / g, 2), 0.0051), f'orders_per_guest = {need("orders_per_guest")}: число строк / число разных гостей.'
+assert close(need('per_order'), o['amount'].mean(), 1e-6), 'per_order — o["amount"].mean() без округления.'
+
+==== ch04/07c-metrics/funnel ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+f = pd.read_csv("app_funnel.csv", parse_dates=["ts"])
+steps = ["открыл", "меню", "корзина", "оплата", "заказ"]
+s = f.groupby("step")["session_id"].nunique().reindex(steps)
+funnel = pd.DataFrame({"sessions": s})
+funnel["from_start"] = (funnel["sessions"] / funnel["sessions"].iloc[0] * 100).round(1)
+funnel["from_prev"] = (funnel["sessions"] / funnel["sessions"].shift() * 100).round(1)
+worst = funnel["from_prev"].idxmin()
+funnel
+SETUP
+
+CHECK
+import pandas as _pd
+f = _pd.read_csv('app_funnel.csv')
+steps = ['открыл', 'меню', 'корзина', 'оплата', 'заказ']
+s = f.groupby('step')['session_id'].nunique().reindex(steps)
+fs = (s / s.iloc[0] * 100).round(1)
+fp = (s / s.shift() * 100).round(1)
+t = need('funnel', _pd.DataFrame)
+assert list(t.index) == steps, f'Порядок шагов: {list(t.index)}. Нужен порядок пути — reindex(steps).'
+for c in ('sessions', 'from_start', 'from_prev'):
+    assert c in t.columns, f'В funnel нет столбца {c}.'
+rows = f['step'].value_counts().reindex(steps)
+if [int(x) for x in t['sessions']] == [int(x) for x in rows]:
+    raise AssertionError('sessions — это число строк-событий. Одна сессия может пройти шаг дважды: считайте nunique по session_id.')
+assert [int(x) for x in t['sessions']] == [int(x) for x in s], f'sessions = {list(t["sessions"])}, а нужно {list(s)}.'
+assert all(close(a, b, 0.051) for a, b in zip(t['from_start'], fs)), 'from_start — шаг / первый шаг × 100.'
+assert _pd.isna(t['from_prev'].iloc[0]) and all(close(a, b, 0.051) for a, b in zip(t['from_prev'].iloc[1:], fp.iloc[1:])), 'from_prev — шаг / предыдущий шаг × 100 (shift()); у первого шага NaN.'
+assert need('worst') == fp.iloc[1:].idxmin(), f'worst = {need("worst")!r}.'
+
+==== ch04/07c-metrics/funnel-rows ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+f = pd.read_csv("app_funnel.csv", parse_dates=["ts"])
+steps = ["открыл", "меню", "корзина", "оплата", "заказ"]
+rows = f["step"].value_counts().reindex(steps)
+sessions = f.groupby("step")["session_id"].nunique().reindex(steps)
+gap = ((rows / rows.shift() - sessions / sessions.shift()) * 100).round(1)
+inflated = gap.idxmax()
+hidden = gap.idxmin()
+gap
+SETUP
+
+CHECK
+import pandas as _pd
+f = _pd.read_csv('app_funnel.csv', parse_dates=['ts'])
+st = ['открыл', 'меню', 'корзина', 'оплата', 'заказ']
+r = f['step'].value_counts().reindex(st)
+s = f.groupby('step')['session_id'].nunique().reindex(st)
+w = ((r / r.shift() - s / s.shift()) * 100).round(1)
+g = need('gap', _pd.Series)
+assert list(g.index) == st, f'Индекс gap: {list(g.index)} — шаги в порядке пути (reindex(steps)).'
+assert _pd.isna(g.iloc[0]), 'У первого шага предыдущего нет — там должен быть NaN.'
+assert all(close(a, b, 0.051) for a, b in zip(g.iloc[1:], w.iloc[1:])), f'gap = {[float(x) for x in g.iloc[1:]]}, а нужно {[float(x) for x in w.iloc[1:]]}: (строки / строки.shift() − сессии / сессии.shift()) × 100.'
+assert need('inflated') == w.idxmax(), f'inflated = {need("inflated")!r}: шаг с наибольшим gap.'
+assert need('hidden') == w.idxmin(), f'hidden = {need("hidden")!r}: шаг с наименьшим (самым отрицательным) gap.'
+
+==== ch04/07c-metrics/funnel-platform ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+f = pd.read_csv("app_funnel.csv", parse_dates=["ts"])
+steps = ["открыл", "меню", "корзина", "оплата", "заказ"]
+f["period"] = (f["ts"] >= "2026-06-15").map({True: "после 15.06", False: "до 15.06"})
+pv = f.pivot_table(index=["platform", "period"], columns="step", values="session_id", aggfunc="nunique")[steps]
+conv = pv["заказ"] / pv["оплата"]
+pay_conv = (conv * 100).round(1)
+before, after = conv[("android", "до 15.06")], conv[("android", "после 15.06")]
+lost = round(pv.loc[("android", "после 15.06"), "оплата"] * (before - after))
+print(pay_conv)
+print(lost)
+SETUP
+
+CHECK
+import pandas as _pd
+f = _pd.read_csv('app_funnel.csv', parse_dates=['ts'])
+f['p'] = (f['ts'] >= '2026-06-15').map({True: 'после 15.06', False: 'до 15.06'})
+pv = f.pivot_table(index=['platform', 'p'], columns='step', values='session_id', aggfunc='nunique')
+c = pv['заказ'] / pv['оплата']
+pc = need('pay_conv', _pd.Series)
+assert len(pc) == 4, f'В pay_conv {len(pc)} значений, а нужно 4: две платформы × два периода.'
+assert pc.index.is_unique and set(pc.index) == set(c.index), 'Индекс pay_conv — четыре разные пары (платформа, период). Сохраняйте подписи срезов.'
+if all(float(v) < 1.5 for v in pc.values):
+    raise AssertionError('pay_conv — в процентах: умножьте долю на 100.')
+for key in c.index:
+    want = round(float(c.loc[key]) * 100, 1)
+    assert close(pc.loc[key], want, 0.051), f'Срез {key}: pay_conv = {pc.loc[key]}, нужно {want} %: заказ / оплата × 100 по разным сессиям.'
+a_b, a_a = c[('android', 'до 15.06')], c[('android', 'после 15.06')]
+lw = round(pv.loc[('android', 'после 15.06'), 'оплата'] * (a_b - a_a))
+assert int(need('lost')) == int(lw), f'lost = {need("lost")}, а нужно {int(lw)}: сессии Android на оплате после 15.06 × (конверсия до − конверсия после).'
+
+==== ch04/08-eda/slice-fn ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+
+def slice_table(df, by, col):
+    t = df.groupby(by)[col].agg(n="size", mean="mean")
+    return t.sort_values("mean", ascending=False)
+
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+slice_table(ok, "weather", "late")
+SETUP
+
+CHECK
+import pandas as _pd
+f = need('slice_table')
+t = _pd.DataFrame({'g': ['a', 'a', 'b', 'c', 'c', 'c'], 'v': [1, 3, 10, 0, 0, 3]})
+r = f(t, 'g', 'v')
+assert list(r.columns) == ['n', 'mean'], f'Столбцы: {list(r.columns)}.'
+assert list(r.index) == ['b', 'a', 'c'], f'Порядок групп: {list(r.index)} — по убыванию mean.'
+assert r.loc['a', 'n'] == 2 and r.loc['c', 'mean'] == 1, 'n — размер группы, mean — среднее.'
+
+==== ch04/08-eda/rating-dist ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)]
+rating_pct = (ok["rating"].value_counts(normalize=True).sort_index() * 100).round(1)
+rated_pct = round(ok["rating"].notna().mean() * 100, 1)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+ok = d[d['actual_min'].between(1, 299)]
+want = (ok['rating'].value_counts(normalize=True).sort_index() * 100).round(1)
+got = need('rating_pct', _pd.Series)
+assert [float(i) for i in got.index] == [float(i) for i in want.index], 'Порядок — по оценкам 1, 2, 3, 4, 5: sort_index().'
+assert all(close(a, b) for a, b in zip(got.values, want.values)), 'Доли не совпадают.'
+assert close(need('rated_pct'), round(ok['rating'].notna().mean() * 100, 1)), f'rated_pct = {need("rated_pct")}.'
+
+==== ch04/08-eda/p-plan ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+t = ok.groupby("courier")["late"].mean().sort_values(ascending=False)
+print(f"Чаще всего опаздывают: {t.index[0]} ({t.iloc[0]:.0%})")
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)]
+t = (o['actual_min'] > o['promised_min']).groupby(o['courier']).mean().sort_values(ascending=False)
+want = f'Чаще всего опаздывают: {t.index[0]} ({t.iloc[0]:.0%})'
+assert _lines == [want], f'Должно вывестись {want!r}. Сейчас: {_lines}'
+
+==== ch04/08-eda/rating-late ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+m = ok.groupby("late")["rating"].mean()
+avg_on_time = round(m[False], 2)
+avg_late = round(m[True], 2)
+gap = round(m[False] - m[True], 2)
+cover = ok.groupby("late")["rating"].apply(lambda s: s.notna().mean() * 100)
+rated_on_time = round(cover[False], 1)
+rated_late = round(cover[True], 1)
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)].copy()
+o['late'] = o['actual_min'] > o['promised_min']
+m = o.groupby('late')['rating'].mean()
+c = o.groupby('late')['rating'].apply(lambda s: s.notna().mean() * 100)
+assert close(need('avg_on_time'), round(m[False], 2)) and close(need('avg_late'), round(m[True], 2)), f'avg_on_time, avg_late = {need("avg_on_time")}, {need("avg_late")}.'
+assert close(need('gap'), round(m[False] - m[True], 2)), f'gap = {need("gap")}.'
+assert close(need('rated_on_time'), round(c[False], 1)) and close(need('rated_late'), round(c[True], 1)), 'Доли доставок с оценкой не совпадают.'
+
+==== ch04/08-eda/delay-bins ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["delay"] = ok["actual_min"] - ok["promised_min"]
+b = pd.cut(ok["delay"], [-60, -10, 0, 10, 20, 60])
+by_delay = ok.groupby(b, observed=False)["rating"].agg(rating="mean", n="count")
+by_delay["rating"] = by_delay["rating"].round(2)
+by_delay
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)].copy()
+o['delay'] = o['actual_min'] - o['promised_min']
+b = _pd.cut(o['delay'], [-60, -10, 0, 10, 20, 60])
+w = o.groupby(b, observed=False)['rating'].agg(['mean', 'count'])
+t = need('by_delay', _pd.DataFrame)
+assert list(t.columns) == ['rating', 'n'], f'Столбцы: {list(t.columns)}.'
+assert len(t) == 5 and all(close(a, round(b2, 2)) for a, b2 in zip(t['rating'], w['mean'])), 'rating — средняя оценка по корзине, 2 знака.'
+assert [int(x) for x in t['n']] == [int(x) for x in w['count']], 'n — число поставленных оценок (count, без пропусков).'
+
+==== ch04/08-eda/ranking ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+ok["hour"] = ok["created"].dt.hour
+spread = {}
+for by in ["courier", "weather", "shop_id", "items", "hour"]:
+    g = ok.groupby(by)["late"].agg(["mean", "size"])
+    g = g[g["size"] >= 50]
+    spread[by] = round((g["mean"].max() - g["mean"].min()) * 100, 1)
+ranking = pd.Series(spread).sort_values(ascending=False)
+ranking
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv', parse_dates=['created'])
+o = d[d['actual_min'].between(1, 299)].copy()
+o['late'] = o['actual_min'] > o['promised_min']
+o['hour'] = o['created'].dt.hour
+w = {}
+for by in ['courier', 'weather', 'shop_id', 'items', 'hour']:
+    g = o.groupby(by)['late'].agg(['mean', 'size'])
+    g = g[g['size'] >= 50]
+    w[by] = round((g['mean'].max() - g['mean'].min()) * 100, 1)
+w = _pd.Series(w).sort_values(ascending=False)
+r = need('ranking', _pd.Series)
+assert set(r.index) == set(w.index), f'Признаки: {sorted(r.index)}.'
+assert all(close(r[k], w[k]) for k in w.index), f'Разбросы: {r.to_dict()}, а нужно {w.to_dict()}. Группы меньше 50 доставок исключены? Значения — в процентных пунктах.'
+assert list(r.values) == sorted(r.values, reverse=True), 'Отсортируйте по убыванию.'
+
+==== ch04/08-eda/simpson ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+t = pd.DataFrame({
+    "shop":  ["A", "A", "B", "B"],
+    "route": ["короткие", "длинные", "короткие", "длинные"],
+    "n":     [30, 70, 90, 10],
+    "late":  [3, 28, 18, 5],
+})
+t["pct"] = t["late"] / t["n"]
+by_route = t.pivot(index="route", columns="shop", values="pct")
+a_better_everywhere = bool((by_route["A"] < by_route["B"]).all())
+s = t.groupby("shop")[["late", "n"]].sum()
+total = s["late"] / s["n"]
+a_better_total = bool(total["A"] < total["B"])
+SETUP
+
+CHECK
+assert need('a_better_everywhere') is True or need('a_better_everywhere') == True, 'a_better_everywhere неверно. Посчитайте долю опозданий в каждой строке (late / n), разверните таблицу: строки — route, столбцы — shop, и сравните A и B в каждой строке. Все ли A < B?'
+assert need('a_better_total') == False, 'a_better_total неверно. Суммарная доля — это все опоздания кофейни на все её доставки: сначала сложите late и n по кофейне, потом делите. Среднее из долей маршрутов не подходит — оно не учитывает, сколько доставок в каждом маршруте.'
+assert 'groupby' in _code or 'pivot' in _code, 'Посчитайте через pandas, а не вписывайте ответ.'
+
+==== ch04/08-eda/snow-within ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+ok["snow"] = ok["weather"] == "снег"
+m = ok.pivot_table(index="courier", columns="snow", values="late", aggfunc="mean")
+n = ok.pivot_table(index="courier", columns="snow", values="late", aggfunc="size")
+eff = ((m[True] - m[False]) * 100).round(1)
+snow_effect = eff.to_dict()
+ratio = (m[True] / m[False]).round(2)
+snow_ratio = ratio.to_dict()
+c = ratio.idxmax()
+conclusion = (f"В снег {c} опаздывают в {round(m.loc[c, True] * 100)} % доставок "
+              f"против {round(m.loc[c, False] * 100)} % в другую погоду "
+              f"({n.loc[c, True]} и {n.loc[c, False]} доставок)")
+conclusion
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv')
+o = d[d['actual_min'].between(1, 299)].copy()
+o['late'] = o['actual_min'] > o['promised_min']
+o['snow'] = o['weather'] == 'снег'
+m = o.pivot_table(index='courier', columns='snow', values='late', aggfunc='mean')
+n = o.pivot_table(index='courier', columns='snow', values='late', aggfunc='size')
+eff = ((m[True] - m[False]) * 100).round(1)
+rat = (m[True] / m[False]).round(2)
+got = dict(need('snow_effect'))
+assert set(got) == set(eff.index), f'Ключи snow_effect: {sorted(got)} — нужны все типы курьера.'
+assert all(close(got[k], eff[k], 0.051) for k in eff.index), f'snow_effect = {got}. Нужна разница долей «снег минус другая погода» в процентных пунктах (× 100), 1 знак.'
+gr = dict(need('snow_ratio'))
+assert set(gr) == set(rat.index), f'Ключи snow_ratio: {sorted(gr)} — нужны все типы курьера.'
+assert all(close(gr[k], rat[k], 0.006) for k in rat.index), f'snow_ratio = {gr}. Нужно отношение долей: снег / другая погода, 2 знака (не разница).'
+c = rat.idxmax()
+want = f'В снег {c} опаздывают в {round(m.loc[c, True] * 100)} % доставок против {round(m.loc[c, False] * 100)} % в другую погоду ({n.loc[c, True]} и {n.loc[c, False]} доставок)'
+assert need('conclusion') == want, f'conclusion = {need("conclusion")!r}. Сверьте с шаблоном: тип с наибольшим snow_ratio, доли — целые проценты, сначала доставки в снег, потом в другую погоду.'
+assert uses_fstring(), 'Соберите вывод f-строкой из рассчитанных чисел.'
+
+==== ch04/08-eda/min-size ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv")
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+t = ok.groupby("items")["late"].agg(n="size", late_pct="mean")
+t["late_pct"] = (t["late_pct"] * 100).round(1)
+by_items = t[t["n"] >= 100].sort_values("late_pct", ascending=False)
+worst_items = by_items.index[0]
+by_items
+SETUP
+
+CHECK
+import pandas as _pd
+d0 = _pd.read_csv('deliveries.csv'); o = d0[d0['actual_min'].between(1, 299)].copy(); o['late'] = o['actual_min'] > o['promised_min']
+g0 = o.groupby('items')['late'].agg(n='size', late_pct='mean'); g0['late_pct'] = (g0['late_pct'] * 100).round(1)
+g = g0[g0['n'] >= 100].sort_values('late_pct', ascending=False)
+t = need('by_items', _pd.DataFrame)
+for c in ('n', 'late_pct'):
+    assert c in t.columns, f'В by_items нет столбца {c}.'
+small = [k for k in g0.index if g0.loc[k, 'n'] < 100]
+left = [k for k in small if k in list(t.index)]
+assert not left, f'В таблице осталась группа items = {left[0]}: в ней {g0.loc[left[0], "n"]} доставок. Фильтр n >= 100 должен её убрать — фильтруйте по столбцу n после groupby.'
+assert sorted(t.index) == sorted(g.index), f'Группы в by_items: {sorted(t.index)}. Нужны все группы, где не меньше 100 доставок.'
+assert all(close(t.loc[k, 'late_pct'], g.loc[k, 'late_pct']) for k in g.index), 'late_pct не совпадает: доля опозданий × 100, 1 знак.'
+assert list(t.index) == list(g.index), 'Группы на месте, но порядок не тот: sort_values("late_pct", ascending=False).'
+assert need('worst_items') == g.index[0], f'worst_items = {need("worst_items")!r} — возьмите первую строку отсортированной таблицы.'
+
+==== ch04/09-project/clean ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+d = pd.read_csv("deliveries.csv", parse_dates=["created"])
+ok = d[d["actual_min"].between(1, 299)].copy()
+ok["late"] = ok["actual_min"] > ok["promised_min"]
+ok["delay"] = ok["actual_min"] - ok["promised_min"]
+ok["hour"] = ok["created"].dt.hour
+log = {
+    "всего": len(d),
+    "без времени": d["actual_min"].isna().sum(),
+    "невозможное время": (d["actual_min"].notna() & ~d["actual_min"].between(1, 299)).sum(),
+    "осталось": len(ok),
+}
+log
+SETUP
+
+CHECK
+import pandas as _pd
+d = _pd.read_csv('deliveries.csv', parse_dates=['created'])
+o = need('ok', _pd.DataFrame)
+assert len(o) == d['actual_min'].between(1, 299).sum(), f'В ok {len(o)} строк — оставьте время 1–299.'
+for c in ('late', 'delay', 'hour'):
+    assert c in o.columns, f'В ok нет столбца {c}.'
+assert (o['late'] == (o['actual_min'] > o['promised_min'])).all(), 'late — actual_min > promised_min.'
+assert (o['hour'] == o['created'].dt.hour).all(), 'hour — час из created (created должен быть датой).'
+want = {'всего': len(d), 'без времени': int(d['actual_min'].isna().sum()),
+        'невозможное время': int((d['actual_min'].notna() & ~d['actual_min'].between(1, 299)).sum()),
+        'осталось': int(d['actual_min'].between(1, 299).sum())}
+got = {k: int(v) for k, v in dict(need('log')).items()}
+assert got == want, f'log = {got}, а нужно {want}.'
+assert (o['delay'] == o['actual_min'] - o['promised_min']).all(), 'delay = actual_min - promised_min: положительное значение — опоздание.'
+
+==== ch04/09-project/scale ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+late_pct = round(ok["late"].mean() * 100, 1)
+late_delay = ok.loc[ok["late"], "delay"]
+late_median = late_delay.median()
+p90_late = late_delay.quantile(0.9)
+
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.hist(ok["delay"], bins=16, range=(-40, 40), color="lightgray")
+ax.axvline(0, color="tab:red")
+ax.set_title(f"Опаздывает {late_pct} % доставок, обычно на {late_median:.0f} мин")
+ax.set_xlabel("опоздание, мин")
+SETUP
+import pandas as _pd0
+import math as _m0
+def _ref_ok(raw=None):
+    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()
+    o = d[d['actual_min'].between(1, 299)].copy()
+    o['late'] = o['actual_min'] > o['promised_min']
+    o['delay'] = o['actual_min'] - o['promised_min']
+    o['hour'] = o['created'].dt.hour
+    return o
+ok = _ref_ok()
+CHECK
+import pandas as _pd
+o = _ref_ok()
+assert close(need('late_pct'), round(o['late'].mean() * 100, 1)), f'late_pct = {need("late_pct")}.'
+lt = o.loc[o['late'], 'delay']
+assert close(need('late_median'), lt.median()), f'late_median = {need("late_median")}, а нужно {lt.median()} (только опоздавшие).'
+assert close(need('p90_late'), lt.quantile(0.9)), f'p90_late = {need("p90_late")}.'
+ax = ax_of()
+assert len(ax.patches) == 16, 'Гистограмма: bins=16, range=(-40, 40).'
+assert any(len(set(l.get_xdata())) == 1 and float(l.get_xdata()[0]) == 0 for l in ax.lines), 'Отметьте ноль: ax.axvline(0).'
+import numpy as _np
+_counts, _edges = _np.histogram(o['delay'], bins=16, range=(-40, 40))
+assert all(close(p.get_x(), x) and close(p.get_width(), w) and close(p.get_height(), n) for p, x, w, n in zip(ax.patches, _edges[:-1], _np.diff(_edges), _counts)), 'Гистограмма должна показывать распределение actual_min - promised_min с bins=16, range=(-40,40).'
+
+==== ch04/09-project/factors ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+spread = {}
+for by in ["courier", "weather", "shop_id", "items", "hour"]:
+    g = ok.groupby(by)["late"].agg(["mean", "size"])
+    g = g[g["size"] >= 50]
+    spread[by] = round((g["mean"].max() - g["mean"].min()) * 100, 1)
+ranking = pd.Series(spread).sort_values(ascending=False)
+top_factor = ranking.index[0]
+
+t = (ok.groupby(top_factor)["late"].mean() * 100).sort_values(ascending=False)
+fig, ax = plt.subplots(figsize=(5, 3))
+bars = ax.bar(t.index, t.values, color=["tab:red"] + ["lightgray"] * (len(t) - 1))
+ax.bar_label(bars, fmt="%.1f")
+ax.set_ylabel("опозданий, %")
+ax.set_title(f"Главный фактор — {top_factor}")
+ranking
+SETUP
+import pandas as _pd0
+import math as _m0
+def _ref_ok(raw=None):
+    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()
+    o = d[d['actual_min'].between(1, 299)].copy()
+    o['late'] = o['actual_min'] > o['promised_min']
+    o['delay'] = o['actual_min'] - o['promised_min']
+    o['hour'] = o['created'].dt.hour
+    return o
+ok = _ref_ok()
+CHECK
+import pandas as _pd
+o = _ref_ok()
+w = {}
+for by in ['courier', 'weather', 'shop_id', 'items', 'hour']:
+    g = o.groupby(by)['late'].agg(['mean', 'size'])
+    g = g[g['size'] >= 50]
+    w[by] = round((g['mean'].max() - g['mean'].min()) * 100, 1)
+w = _pd.Series(w).sort_values(ascending=False)
+r = need('ranking', _pd.Series)
+assert all(close(r[k], w[k]) for k in w.index), f'ranking = {r.to_dict()}, а нужно {w.to_dict()}.'
+assert need('top_factor') == w.index[0], f'top_factor = {need("top_factor")!r}.'
+ax = ax_of()
+h = [p.get_height() for p in ax.patches]
+want = (o.groupby(w.index[0])['late'].mean() * 100).sort_values(ascending=False)
+assert len(h) == len(want) and all(close(a, b) for a, b in zip(h, want.values)), 'Столбцы — доля опозданий (%) по главному признаку, по убыванию.'
+assert len(ax.texts) == len(h), 'Подпишите значения: ax.bar_label(bars, fmt="%.1f").'
+
+==== ch04/09-project/walkers ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import math
+pv = ok.pivot_table(index="promised_min", columns="courier", values="late", aggfunc="mean") * 100
+group = ok.groupby("courier", sort=True)["late"].mean().idxmax()
+walk30 = ok[(ok["courier"] == group) & (ok["promised_min"] == 30)]
+walk_p80 = walk30["actual_min"].quantile(0.8)
+fair_promise = math.ceil(walk_p80 / 5) * 5
+walk45 = ok[(ok["courier"] == group) & (ok["promised_min"] == 45)]
+walk45_km = walk45["distance_km"].median()
+walk45_min = walk45["actual_min"].median()
+print(walk_p80, fair_promise, walk45_km, walk45_min)
+pv.round(1)
+SETUP
+import pandas as _pd0
+import math as _m0
+def _ref_ok(raw=None):
+    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()
+    o = d[d['actual_min'].between(1, 299)].copy()
+    o['late'] = o['actual_min'] > o['promised_min']
+    o['delay'] = o['actual_min'] - o['promised_min']
+    o['hour'] = o['created'].dt.hour
+    return o
+ok = _ref_ok()
+CHECK
+import pandas as _pd
+o = _ref_ok()
+pv = o.pivot_table(index='promised_min', columns='courier', values='late', aggfunc='mean') * 100
+p = need('pv', _pd.DataFrame)
+assert p.shape == pv.shape, f'Форма pv {p.shape}, а нужно {pv.shape}: строки — promised_min (30, 45, 60), столбцы — courier.'
+assert p.index.is_unique and p.columns.is_unique and set(p.index) == set(pv.index) and set(p.columns) == set(pv.columns), 'Проверьте подписи строк (обещания) и столбцов (типы курьеров).'
+_a = p.loc[pv.index, pv.columns].fillna(-1).values.ravel()
+_b = pv.fillna(-1).values.ravel()
+if any(b > 0 for b in _b) and all(close(a * 100, b, 0.051) for a, b in zip(_a, _b) if b >= 0):
+    raise AssertionError('В pv доли от 0 до 1, а нужны проценты: умножьте на 100.')
+assert all(close(a, b, 0.051) for a, b in zip(_a, _b)), 'Значения pv не совпадают. Нужна доля опозданий (aggfunc="mean" по late) × 100; строки — promised_min, столбцы — courier.'
+group = o.groupby('courier', sort=True)['late'].mean().idxmax()
+w = o[(o['courier'] == group) & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)
+assert close(need('walk_p80'), w), f'walk_p80 = {need("walk_p80")}, а нужно {w}.'
+assert need('fair_promise') == int(_m0.ceil(w / 5) * 5), f'fair_promise = {need("fair_promise")}, а нужно {int(_m0.ceil(w / 5) * 5)}.'
+w45 = o[(o['courier'] == group) & (o['promised_min'] == 45)]
+assert close(need('walk45_km'), w45['distance_km'].median()), f'walk45_km = {need("walk45_km")}: медиана distance_km для {group} с обещанием 45 минут.'
+assert close(need('walk45_min'), w45['actual_min'].median()), f'walk45_min = {need("walk45_min")}: медиана actual_min для {group} с обещанием 45 минут.'
+
+==== ch04/09-project/kzn2 ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+ok["kzn2"] = ok["shop_id"] == "KZN-2"
+m = ok.pivot_table(index="courier", columns="kzn2", values="actual_min", aggfunc="median")
+k = ok.pivot_table(index="courier", columns="kzn2", values="distance_km", aggfunc="median")
+kzn2_gap = (m[True] - m[False]).to_dict()
+same_distance = (k[True] - k[False]).round(1).to_dict()
+kzn2_gap
+SETUP
+import pandas as _pd0
+import math as _m0
+def _ref_ok(raw=None):
+    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()
+    o = d[d['actual_min'].between(1, 299)].copy()
+    o['late'] = o['actual_min'] > o['promised_min']
+    o['delay'] = o['actual_min'] - o['promised_min']
+    o['hour'] = o['created'].dt.hour
+    return o
+ok = _ref_ok()
+CHECK
+import pandas as _pd
+o = _ref_ok()
+o['kzn2'] = o['shop_id'] == 'KZN-2'
+m = o.pivot_table(index='courier', columns='kzn2', values='actual_min', aggfunc='median')
+k = o.pivot_table(index='courier', columns='kzn2', values='distance_km', aggfunc='median')
+want = (m[True] - m[False]).to_dict()
+wd = (k[True] - k[False]).round(1).to_dict()
+got = dict(need('kzn2_gap'))
+assert set(got) == set(want) and all(close(got[c], want[c]) for c in want), f'kzn2_gap = {got}, а нужно {want}.'
+gd = dict(need('same_distance'))
+assert set(gd) == set(wd) and all(close(gd[c], wd[c]) for c in wd), f'same_distance = {gd}, а нужно {wd}.'
+
+==== ch04/09-project/weekly ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import matplotlib.pyplot as plt
+ok["snow"] = ok["weather"] == "снег"
+weeks = ok.set_index("created").resample("W")[["late", "snow"]].mean().iloc[1:-1] * 100
+weeks.columns = ["late_pct", "snow_pct"]
+r_weeks = round(weeks["late_pct"].corr(weeks["snow_pct"]), 2)
+
+fig, ax = plt.subplots(figsize=(9, 3.5))
+weeks.plot(ax=ax, marker="o")
+ax.set_ylabel("%")
+ax.set_title(f"Опоздания и снег по неделям, r = {r_weeks}")
+SETUP
+import pandas as _pd0
+import math as _m0
+def _ref_ok(raw=None):
+    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()
+    o = d[d['actual_min'].between(1, 299)].copy()
+    o['late'] = o['actual_min'] > o['promised_min']
+    o['delay'] = o['actual_min'] - o['promised_min']
+    o['hour'] = o['created'].dt.hour
+    return o
+ok = _ref_ok()
+CHECK
+import pandas as _pd
+o = _ref_ok()
+o['snow'] = o['weather'] == 'снег'
+w = o.set_index('created').resample('W')[['late', 'snow']].mean().iloc[1:-1] * 100
+t = need('weeks', _pd.DataFrame)
+assert list(t.columns) == ['late_pct', 'snow_pct'], f'Столбцы: {list(t.columns)}.'
+assert len(t) == len(w), f'Недель {len(t)}, а полных — {len(w)}: отбросьте первую и последнюю неделю (.iloc[1:-1]).'
+if all(close(a * 100, b, 0.051) for a, b in zip(t['late_pct'], w['late'])):
+    raise AssertionError('В weeks доли от 0 до 1, а нужны проценты: умножьте на 100.')
+assert all(close(a, b, 0.051) for a, b in zip(t['late_pct'], w['late'])), 'late_pct не совпадает: доля опозданий за неделю × 100. Неделя — resample("W") по created.'
+assert all(close(a, b, 0.051) for a, b in zip(t['snow_pct'], w['snow'])), 'snow_pct не совпадает: доля доставок в снег за неделю × 100.'
+assert close(need('r_weeks'), round(w['late'].corr(w['snow']), 2)), f'r_weeks = {need("r_weeks")}.'
+ax = ax_of()
+assert t.index.equals(w.index), 'Проверьте даты полных недель в индексе weeks.'
+assert ax.get_legend() is not None, 'Добавьте легенду с долями опозданий и снега.'
+_series = [line for line in ax.lines if len(line.get_ydata()) == len(w)]
+for _label, _column in [('опоздания', 'late'), ('снег', 'snow')]:
+    assert any(all(close(a, b, 0.051) for a, b in zip(line.get_ydata(), w[_column])) for line in _series), f'На графике отсутствует недельный ряд «{_label}». Проверьте порядок дат и высоту точек.'
+
+==== ch04/09-project/ratings ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+rating_on_time = round(ok.loc[~ok["late"], "rating"].mean(), 2)
+r10 = ok.loc[ok["delay"] > 10, "rating"]
+rating_late10 = round(r10.mean(), 2)
+low_share_late10 = round((r10.dropna() <= 3).mean() * 100, 1)
+SETUP
+import pandas as _pd0
+import math as _m0
+def _ref_ok(raw=None):
+    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()
+    o = d[d['actual_min'].between(1, 299)].copy()
+    o['late'] = o['actual_min'] > o['promised_min']
+    o['delay'] = o['actual_min'] - o['promised_min']
+    o['hour'] = o['created'].dt.hour
+    return o
+ok = _ref_ok()
+CHECK
+import pandas as _pd
+o = _ref_ok()
+a = o.loc[~o['late'], 'rating'].mean()
+b = o.loc[o['delay'] > 10, 'rating']
+assert close(need('rating_on_time'), round(a, 2)), f'rating_on_time = {need("rating_on_time")}.'
+assert close(need('rating_late10'), round(b.mean(), 2)), f'rating_late10 = {need("rating_late10")}.'
+assert close(need('low_share_late10'), round((b.dropna() <= 3).mean() * 100, 1)), f'low_share_late10 = {need("low_share_late10")} — доля среди поставленных оценок (без пропусков).'
+
+==== ch04/09-project/own ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+
+def describe(q):
+    a = ok.query(q)
+    rest = ok.drop(a.index)
+    return len(a), round(a["late"].mean() * 100, 1), round(rest["late"].mean() * 100, 1)
+
+findings = []
+for q, about, limit in [
+    ("created.dt.dayofweek == 5", "в субботу доставки",
+     "Ограничение: суббот за осень 13, а день выбран после просмотра всех семи — разница может быть случайной, проверить на зиме."),
+    ("items >= 5", "большие заказы (5–6 позиций)",
+     "Ограничение: только осень; причину (сборка или дорога) данные не различают; amount >= 1000 даёт почти ту же группу."),
+]:
+    n, lp, rp = describe(q)
+    findings.append({
+        "группа": q, "n": n, "late_pct": lp, "остальные_pct": rp,
+        "вывод": (f"{about.capitalize()} опаздывают в {lp} % случаев против {rp} % у остальных "
+                  f"({n} и {len(ok) - n} доставок). Разница держится внутри каждого типа курьера. {limit}"),
+    })
+
+for f in findings:
+    print(f["группа"], "→", f["вывод"])
+SETUP
+import pandas as _pd0
+import math as _m0
+def _ref_ok(raw=None):
+    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()
+    o = d[d['actual_min'].between(1, 299)].copy()
+    o['late'] = o['actual_min'] > o['promised_min']
+    o['delay'] = o['actual_min'] - o['promised_min']
+    o['hour'] = o['created'].dt.hour
+    return o
+ok = _ref_ok()
+CHECK
+import re as _re
+o = _ref_ok()
+F = need('findings', list)
+assert len(F) == 2, f'Находок {len(F)}, а нужно ровно две.'
+allowed = {'distance_km', 'items', 'amount', 'hour', 'created'}
+same = {'amount': 'items'}   # сумма и число позиций — один признак «размер заказа» (корреляция 0.95)
+banned = {'actual_min', 'delay', 'late', 'rating'}
+used, _raw = [], []
+for i, f in enumerate(F, 1):
+    for k in ('группа', 'n', 'late_pct', 'остальные_pct', 'вывод'):
+        assert k in f, f'В находке {i} нет ключа «{k}».'
+    q = str(f['группа'])
+    words = set(_re.findall(r'[A-Za-z_]+', q))
+    assert not (words & banned), f'Находка {i}: в условии {sorted(words & banned)} — из них считается сама метрика или её следствие. Ищите причины среди distance_km, items, amount, hour, created.'
+    feats = words & allowed
+    assert feats, f'Находка {i}: в условии нет нового признака — нужен хотя бы один из distance_km, items, amount, hour, created.'
+    try:
+        a = o.query(q)
+    except Exception as e:
+        raise AssertionError(f'Находка {i}: ok.query({q!r}) падает с ошибкой {type(e).__name__}. Проверьте условие в своём коде.')
+    rest = o.drop(a.index)
+    assert len(a) >= 50 and len(rest) >= 50, f'Находка {i}: в группе {len(a)} доставок, вне её {len(rest)} — нужно не меньше 50 и там, и там.'
+    assert int(f['n']) == len(a), f'Находка {i}: n = {f["n"]}, а по условию {len(a)} доставок.'
+    lp, rp = a['late'].mean() * 100, rest['late'].mean() * 100
+    assert close(f['late_pct'], round(lp, 1), 0.051), f'Находка {i}: late_pct = {f["late_pct"]}, а по условию {lp:.1f}.'
+    assert close(f['остальные_pct'], round(rp, 1), 0.051), f'Находка {i}: остальные_pct = {f["остальные_pct"]}, а вне группы {rp:.1f}.'
+    assert abs(lp - rp) >= 5, f'Находка {i}: разница {abs(lp - rp):.1f} п.п. — меньше 5, это ещё не закономерность.'
+    text = str(f['вывод'])
+    assert len(text) >= 60 and _re.search(r'\d', text), f'Находка {i}: вывод слишком короткий или без цифр. Нужны наблюдение, цифра, размер группы и ограничение.'
+    _raw.append(feats)
+    used.append({same.get(x, x) for x in feats})
+assert not (_raw[0] & _raw[1]), f'Обе находки используют {sorted(_raw[0] & _raw[1])}: возьмите для второй другой признак.'
+assert not (used[0] & used[1]), 'Обе находки — про размер заказа: amount и items почти один признак (корреляция 0.95, большие заказы дороже). Для второй находки возьмите другой признак: distance_km, hour или created.'
+
+==== ch04/09-project/report ====
+PROMPT
+
+SOLUTION
+import pandas as pd
+import math
+
+def delivery_report(raw):
+    ok = raw[raw["actual_min"].between(1, 299)].copy()
+    ok["late"] = ok["actual_min"] > ok["promised_min"]
+    ok["hour"] = ok["created"].dt.hour
+    h = ok.groupby("hour")["late"].agg(["mean", "size"])
+    walk30 = ok[(ok["courier"] == "пеший") & (ok["promised_min"] == 30)]
+    return {
+        "late_pct": round(ok["late"].mean() * 100, 1) if len(ok) else None,
+        "worst_courier": ok.groupby("courier")["late"].mean().idxmax() if len(ok) else None,
+        "worst_shop": ok.groupby("shop_id")["late"].mean().idxmax() if len(ok) else None,
+        "peak_hours": sorted(h[(h["size"] >= 50) & (h["mean"] > 0.25)].index),
+        "fair_promise": math.ceil(walk30["actual_min"].quantile(0.8) / 5) * 5 if len(walk30) else None,
+    }
+
+raw = pd.read_csv("deliveries.csv", parse_dates=["created"])
+delivery_report(raw)
+SETUP
+import pandas as _pd0
+import math as _m0
+def _ref_ok(raw=None):
+    d = _pd0.read_csv('deliveries.csv', parse_dates=['created']) if raw is None else raw.copy()
+    o = d[d['actual_min'].between(1, 299)].copy()
+    o['late'] = o['actual_min'] > o['promised_min']
+    o['delay'] = o['actual_min'] - o['promised_min']
+    o['hour'] = o['created'].dt.hour
+    return o
+CHECK
+import pandas as _pd
+raw = _pd.read_csv('deliveries.csv', parse_dates=['created'])
+f = need('delivery_report')
+for part, name in ((raw, 'вся осень'), (raw[raw['created'].dt.month == 11], 'ноябрь'), (raw[raw['created'].dt.date == _pd.Timestamp('2026-10-07').date()], '7 октября'), (raw.iloc[:0], 'пустой период')):
+    o = _ref_ok(part)
+    h = o.groupby('hour')['late'].agg(['mean', 'size'])
+    w = o[(o['courier'] == 'пеший') & (o['promised_min'] == 30)]['actual_min'].quantile(0.8)
+    want = {'late_pct': round(o['late'].mean() * 100, 1) if len(o) else None,
+            'worst_courier': o.groupby('courier')['late'].mean().idxmax() if len(o) else None,
+            'worst_shop': o.groupby('shop_id')['late'].mean().idxmax() if len(o) else None,
+            'peak_hours': [int(x) for x in h[(h['size'] >= 50) & (h['mean'] > 0.25)].index],
+            'fair_promise': int(_m0.ceil(w / 5) * 5) if _pd.notna(w) else None}
+    got = f(part.copy())
+    assert isinstance(got, dict) and set(got) == set(want), 'delivery_report должна возвращать словарь с пятью показателями.'
+    for key, value in want.items():
+        actual = got[key]
+        assert (actual is None if value is None else list(actual) == value if key == 'peak_hours' else close(actual, value, 0.051) if key == 'late_pct' else actual == value), f'{name}, {key}: у вас {actual!r}, нужно {value!r}.'

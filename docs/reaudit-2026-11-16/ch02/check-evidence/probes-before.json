@@ -1,0 +1,999 @@
+[
+  {
+    "lesson": "09-project",
+    "task": "shops",
+    "case": "alternative-map-and-key-sort",
+    "expected": true,
+    "code": "import pandas as pd\nrev = full.groupby('shop_id')['amount'].sum()\nmeta = full.drop_duplicates('shop_id').set_index('shop_id')\nby_shop = pd.DataFrame({'city': rev.index.map(meta.city), 'revenue': rev, 'seats': rev.index.map(meta.seats)}, index=rev.index)\nby_shop['per_seat'] = (by_shop.revenue/by_shop.seats).round()\nby_shop = by_shop.sort_values(['per_seat','revenue'],ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = rev.nlargest(1).index[0]",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\nb = need('by_shop', _pd.DataFrame)\nassert list(b.columns) == ['city', 'revenue', 'seats', 'per_seat'], f'Столбцы: {list(b.columns)}.'\n\ng = _f.groupby('shop_id').agg(city=('city','first'), revenue=('amount','sum'), seats=('seats','first'))\ng['per_seat'] = (g['revenue'] / g['seats']).round()\nassert b.index.is_unique and set(b.index) == set(g.index), 'Проверьте множество shop_id.'\nfor _id in g.index:\n    for _col in g.columns:\n        _v = b.loc[_id, _col]; _want = g.loc[_id, _col]\n        assert (_v == _want if _col == 'city' else close(_v, _want, 0.051)), f'{_id}, {_col}: неверное значение.'\nassert b['per_seat'].is_monotonic_decreasing, 'Сортировка по per_seat должна быть по убыванию.'\nassert need('leader') in set(g.index[g['per_seat'] == g['per_seat'].max()]), 'leader должен быть одним из лидеров по выручке на место.'\nassert need('leader_by_revenue') in set(g.index[g['revenue'] == g['revenue'].max()]), 'leader_by_revenue должен быть одним из лидеров по выручке.'",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "shops",
+    "case": "wrong-per-seat-plus-1000",
+    "expected": false,
+    "code": "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nby_shop['per_seat'] += 1000",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\nb = need('by_shop', _pd.DataFrame)\nassert list(b.columns) == ['city', 'revenue', 'seats', 'per_seat'], f'Столбцы: {list(b.columns)}.'\n\ng = _f.groupby('shop_id').agg(city=('city','first'), revenue=('amount','sum'), seats=('seats','first'))\ng['per_seat'] = (g['revenue'] / g['seats']).round()\nassert b.index.is_unique and set(b.index) == set(g.index), 'Проверьте множество shop_id.'\nfor _id in g.index:\n    for _col in g.columns:\n        _v = b.loc[_id, _col]; _want = g.loc[_id, _col]\n        assert (_v == _want if _col == 'city' else close(_v, _want, 0.051)), f'{_id}, {_col}: неверное значение.'\nassert b['per_seat'].is_monotonic_decreasing, 'Сортировка по per_seat должна быть по убыванию.'\nassert need('leader') in set(g.index[g['per_seat'] == g['per_seat'].max()]), 'leader должен быть одним из лидеров по выручке на место.'\nassert need('leader_by_revenue') in set(g.index[g['revenue'] == g['revenue'].max()]), 'leader_by_revenue должен быть одним из лидеров по выручке.'",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "shops",
+    "case": "wrong-shop-labels",
+    "expected": false,
+    "code": "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nby_shop.index = list(reversed(by_shop.index))",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\nb = need('by_shop', _pd.DataFrame)\nassert list(b.columns) == ['city', 'revenue', 'seats', 'per_seat'], f'Столбцы: {list(b.columns)}.'\n\ng = _f.groupby('shop_id').agg(city=('city','first'), revenue=('amount','sum'), seats=('seats','first'))\ng['per_seat'] = (g['revenue'] / g['seats']).round()\nassert b.index.is_unique and set(b.index) == set(g.index), 'Проверьте множество shop_id.'\nfor _id in g.index:\n    for _col in g.columns:\n        _v = b.loc[_id, _col]; _want = g.loc[_id, _col]\n        assert (_v == _want if _col == 'city' else close(_v, _want, 0.051)), f'{_id}, {_col}: неверное значение.'\nassert b['per_seat'].is_monotonic_decreasing, 'Сортировка по per_seat должна быть по убыванию.'\nassert need('leader') in set(g.index[g['per_seat'] == g['per_seat'].max()]), 'leader должен быть одним из лидеров по выручке на место.'\nassert need('leader_by_revenue') in set(g.index[g['revenue'] == g['revenue'].max()]), 'leader_by_revenue должен быть одним из лидеров по выручке.'",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "shops",
+    "case": "wrong-unsorted",
+    "expected": false,
+    "code": "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nby_shop = by_shop.sort_values('per_seat')",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\nb = need('by_shop', _pd.DataFrame)\nassert list(b.columns) == ['city', 'revenue', 'seats', 'per_seat'], f'Столбцы: {list(b.columns)}.'\n\ng = _f.groupby('shop_id').agg(city=('city','first'), revenue=('amount','sum'), seats=('seats','first'))\ng['per_seat'] = (g['revenue'] / g['seats']).round()\nassert b.index.is_unique and set(b.index) == set(g.index), 'Проверьте множество shop_id.'\nfor _id in g.index:\n    for _col in g.columns:\n        _v = b.loc[_id, _col]; _want = g.loc[_id, _col]\n        assert (_v == _want if _col == 'city' else close(_v, _want, 0.051)), f'{_id}, {_col}: неверное значение.'\nassert b['per_seat'].is_monotonic_decreasing, 'Сортировка по per_seat должна быть по убыванию.'\nassert need('leader') in set(g.index[g['per_seat'] == g['per_seat'].max()]), 'leader должен быть одним из лидеров по выручке на место.'\nassert need('leader_by_revenue') in set(g.index[g['revenue'] == g['revenue'].max()]), 'leader_by_revenue должен быть одним из лидеров по выручке.'",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "shops",
+    "case": "reordered-shops",
+    "expected": true,
+    "code": "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\n",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\nb = need('by_shop', _pd.DataFrame)\nassert list(b.columns) == ['city', 'revenue', 'seats', 'per_seat'], f'Столбцы: {list(b.columns)}.'\n\ng = _f.groupby('shop_id').agg(city=('city','first'), revenue=('amount','sum'), seats=('seats','first'))\ng['per_seat'] = (g['revenue'] / g['seats']).round()\nassert b.index.is_unique and set(b.index) == set(g.index), 'Проверьте множество shop_id.'\nfor _id in g.index:\n    for _col in g.columns:\n        _v = b.loc[_id, _col]; _want = g.loc[_id, _col]\n        assert (_v == _want if _col == 'city' else close(_v, _want, 0.051)), f'{_id}, {_col}: неверное значение.'\nassert b['per_seat'].is_monotonic_decreasing, 'Сортировка по per_seat должна быть по убыванию.'\nassert need('leader') in set(g.index[g['per_seat'] == g['per_seat'].max()]), 'leader должен быть одним из лидеров по выручке на место.'\nassert need('leader_by_revenue') in set(g.index[g['revenue'] == g['revenue'].max()]), 'leader_by_revenue должен быть одним из лидеров по выручке.'",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": "import pandas as pd\ns=pd.read_csv('shops.csv');s.iloc[::-1].to_csv('shops.csv',index=False)"
+  },
+  {
+    "lesson": "09-project",
+    "task": "shops",
+    "case": "tie-revenue-any-leader",
+    "expected": true,
+    "code": "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nleader_by_revenue='KZN-1'",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\nb = need('by_shop', _pd.DataFrame)\nassert list(b.columns) == ['city', 'revenue', 'seats', 'per_seat'], f'Столбцы: {list(b.columns)}.'\n\ng = _f.groupby('shop_id').agg(city=('city','first'), revenue=('amount','sum'), seats=('seats','first'))\ng['per_seat'] = (g['revenue'] / g['seats']).round()\nassert b.index.is_unique and set(b.index) == set(g.index), 'Проверьте множество shop_id.'\nfor _id in g.index:\n    for _col in g.columns:\n        _v = b.loc[_id, _col]; _want = g.loc[_id, _col]\n        assert (_v == _want if _col == 'city' else close(_v, _want, 0.051)), f'{_id}, {_col}: неверное значение.'\nassert b['per_seat'].is_monotonic_decreasing, 'Сортировка по per_seat должна быть по убыванию.'\nassert need('leader') in set(g.index[g['per_seat'] == g['per_seat'].max()]), 'leader должен быть одним из лидеров по выручке на место.'\nassert need('leader_by_revenue') in set(g.index[g['revenue'] == g['revenue'].max()]), 'leader_by_revenue должен быть одним из лидеров по выручке.'",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": "import pandas as pd\ns=pd.read_csv('shops.csv'); s.loc[s.shop_id=='PRM-1','seats']=10; s.loc[s.shop_id=='KZN-1','seats']=30;s.iloc[::-1].to_csv('shops.csv',index=False)\nd=pd.read_csv('orders_3m.csv').iloc[:3].copy(); d['shop_id']=['PRM-1','KZN-1','KZN-1'];d['amount']=[900,600,300];d['qty']=[3,2,1];d['order_id']=[1,2,3];d.to_csv('orders_3m.csv',index=False)"
+  },
+  {
+    "lesson": "09-project",
+    "task": "shops",
+    "case": "tie-wrong-revenue-leader",
+    "expected": false,
+    "code": "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nleader_by_revenue='UFA-1'",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\nb = need('by_shop', _pd.DataFrame)\nassert list(b.columns) == ['city', 'revenue', 'seats', 'per_seat'], f'Столбцы: {list(b.columns)}.'\n\ng = _f.groupby('shop_id').agg(city=('city','first'), revenue=('amount','sum'), seats=('seats','first'))\ng['per_seat'] = (g['revenue'] / g['seats']).round()\nassert b.index.is_unique and set(b.index) == set(g.index), 'Проверьте множество shop_id.'\nfor _id in g.index:\n    for _col in g.columns:\n        _v = b.loc[_id, _col]; _want = g.loc[_id, _col]\n        assert (_v == _want if _col == 'city' else close(_v, _want, 0.051)), f'{_id}, {_col}: неверное значение.'\nassert b['per_seat'].is_monotonic_decreasing, 'Сортировка по per_seat должна быть по убыванию.'\nassert need('leader') in set(g.index[g['per_seat'] == g['per_seat'].max()]), 'leader должен быть одним из лидеров по выручке на место.'\nassert need('leader_by_revenue') in set(g.index[g['revenue'] == g['revenue'].max()]), 'leader_by_revenue должен быть одним из лидеров по выручке.'",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": "import pandas as pd\ns=pd.read_csv('shops.csv'); s.loc[s.shop_id=='PRM-1','seats']=10; s.loc[s.shop_id=='KZN-1','seats']=30;s.iloc[::-1].to_csv('shops.csv',index=False)\nd=pd.read_csv('orders_3m.csv').iloc[:3].copy(); d['shop_id']=['PRM-1','KZN-1','KZN-1'];d['amount']=[900,600,300];d['qty']=[3,2,1];d['order_id']=[1,2,3];d.to_csv('orders_3m.csv',index=False)"
+  },
+  {
+    "lesson": "09-project",
+    "task": "shops",
+    "case": "tie-wrong-denominator",
+    "expected": false,
+    "code": "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nby_shop['per_seat']=(by_shop['revenue']/by_shop['revenue'].sum()).round()",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\nb = need('by_shop', _pd.DataFrame)\nassert list(b.columns) == ['city', 'revenue', 'seats', 'per_seat'], f'Столбцы: {list(b.columns)}.'\n\ng = _f.groupby('shop_id').agg(city=('city','first'), revenue=('amount','sum'), seats=('seats','first'))\ng['per_seat'] = (g['revenue'] / g['seats']).round()\nassert b.index.is_unique and set(b.index) == set(g.index), 'Проверьте множество shop_id.'\nfor _id in g.index:\n    for _col in g.columns:\n        _v = b.loc[_id, _col]; _want = g.loc[_id, _col]\n        assert (_v == _want if _col == 'city' else close(_v, _want, 0.051)), f'{_id}, {_col}: неверное значение.'\nassert b['per_seat'].is_monotonic_decreasing, 'Сортировка по per_seat должна быть по убыванию.'\nassert need('leader') in set(g.index[g['per_seat'] == g['per_seat'].max()]), 'leader должен быть одним из лидеров по выручке на место.'\nassert need('leader_by_revenue') in set(g.index[g['revenue'] == g['revenue'].max()]), 'leader_by_revenue должен быть одним из лидеров по выручке.'",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": "import pandas as pd\ns=pd.read_csv('shops.csv'); s.loc[s.shop_id=='PRM-1','seats']=10; s.loc[s.shop_id=='KZN-1','seats']=30;s.iloc[::-1].to_csv('shops.csv',index=False)\nd=pd.read_csv('orders_3m.csv').iloc[:3].copy(); d['shop_id']=['PRM-1','KZN-1','KZN-1'];d['amount']=[900,600,300];d['qty']=[3,2,1];d['order_id']=[1,2,3];d.to_csv('orders_3m.csv',index=False)"
+  },
+  {
+    "lesson": "09-project",
+    "task": "margin",
+    "case": "alternative-weighted-formula",
+    "expected": true,
+    "code": "import pandas as pd\nx=full.assign(total_cost=full.cost_s*full['size'].map({'S':1,'M':1.25,'L':1.5})*full.qty)\ng=x.groupby('category').agg(revenue=('amount','sum'),cost=('total_cost','sum'))\nmargin=(100-100*g.cost/g.revenue).round(1).sort_index(ascending=False)",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\n_f['cost'] = _f['cost_s'] * _f['size'].map({'S': 1.0, 'M': 1.25, 'L': 1.5}) * _f['qty']\ng = _f.groupby('category')[['amount', 'cost']].sum()\nwant = ((g['amount'] - g['cost']) / g['amount'] * 100).round(1)\nm = need('margin')\nassert {k: round(float(v), 1) for k, v in dict(m).items()} == want.to_dict(), f'margin = {dict(m)}, а нужно {want.to_dict()}.' ",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "margin",
+    "case": "wrong-ignore-qty",
+    "expected": false,
+    "code": "full['cost']=full.cost_s*full['size'].map({'S':1,'M':1.25,'L':1.5})\ng=full.groupby('category')[['amount','cost']].sum()\nmargin=(100*(g.amount-g.cost)/g.amount).round(1)",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\n_f['cost'] = _f['cost_s'] * _f['size'].map({'S': 1.0, 'M': 1.25, 'L': 1.5}) * _f['qty']\ng = _f.groupby('category')[['amount', 'cost']].sum()\nwant = ((g['amount'] - g['cost']) / g['amount'] * 100).round(1)\nm = need('margin')\nassert {k: round(float(v), 1) for k, v in dict(m).items()} == want.to_dict(), f'margin = {dict(m)}, а нужно {want.to_dict()}.' ",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "margin",
+    "case": "wrong-denominator-cost",
+    "expected": false,
+    "code": "full['cost']=full.cost_s*full['size'].map({'S':1,'M':1.25,'L':1.5})*full.qty\ng=full.groupby('category')[['amount','cost']].sum()\nmargin=(100*(g.amount-g.cost)/g.cost).round(1)",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\n_f['cost'] = _f['cost_s'] * _f['size'].map({'S': 1.0, 'M': 1.25, 'L': 1.5}) * _f['qty']\ng = _f.groupby('category')[['amount', 'cost']].sum()\nwant = ((g['amount'] - g['cost']) / g['amount'] * 100).round(1)\nm = need('margin')\nassert {k: round(float(v), 1) for k, v in dict(m).items()} == want.to_dict(), f'margin = {dict(m)}, а нужно {want.to_dict()}.' ",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "margin",
+    "case": "wrong-category-labels",
+    "expected": false,
+    "code": "import pandas as pd\nSIZE_K = {\"S\": 1.0, \"M\": 1.25, \"L\": 1.5}\nfull[\"cost\"] = full[\"cost_s\"] * full[\"size\"].map(SIZE_K) * full[\"qty\"]\ng = full.groupby(\"category\")[[\"amount\", \"cost\"]].sum()\nmargin = ((g[\"amount\"] - g[\"cost\"]) / g[\"amount\"] * 100).round(1)\nmargin\nmargin.index=list(reversed(margin.index))",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\n_f['cost'] = _f['cost_s'] * _f['size'].map({'S': 1.0, 'M': 1.25, 'L': 1.5}) * _f['qty']\ng = _f.groupby('category')[['amount', 'cost']].sum()\nwant = ((g['amount'] - g['cost']) / g['amount'] * 100).round(1)\nm = need('margin')\nassert {k: round(float(v), 1) for k, v in dict(m).items()} == want.to_dict(), f'margin = {dict(m)}, а нужно {want.to_dict()}.' ",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "margin",
+    "case": "alternative-map",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv'); m=pd.read_csv('menu.csv').set_index('drink')\ndf['cost']=df.drink.map(m.cost_s)*df['size'].map({'S':1,'M':1.25,'L':1.5})*df.qty\ng=df.groupby('drink')[['amount','cost']].sum();best_margin=(1-g.cost/g.amount).idxmax()",
+    "check": "import pandas as _pd\nf = _pd.read_csv('orders_3m.csv').merge(_pd.read_csv('menu.csv'), on='drink')\nf['cost'] = f['cost_s'] * f['size'].map({'S': 1.0, 'M': 1.25, 'L': 1.5}) * f['qty']\ng = f.groupby('drink')[['amount', 'cost']].sum()\nwant = ((g['amount'] - g['cost']) / g['amount']).idxmax()\nassert need('best_margin') == want, f'best_margin = {need(\"best_margin\")!r}, а нужно {want!r}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "margin",
+    "case": "wrong-ignore-qty",
+    "expected": false,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');menu=pd.read_csv('menu.csv')\nfull=df.merge(menu,on='drink')\nfull['cost']=full.cost_s*full['size'].map({'S':1,'M':1.25,'L':1.5})\ng=full.groupby('drink')[['amount','cost']].sum()\nbest_margin=(100*(g.amount-g.cost)/g.amount).idxmax()",
+    "check": "import pandas as _pd\nf = _pd.read_csv('orders_3m.csv').merge(_pd.read_csv('menu.csv'), on='drink')\nf['cost'] = f['cost_s'] * f['size'].map({'S': 1.0, 'M': 1.25, 'L': 1.5}) * f['qty']\ng = f.groupby('drink')[['amount', 'cost']].sum()\nwant = ((g['amount'] - g['cost']) / g['amount']).idxmax()\nassert need('best_margin') == want, f'best_margin = {need(\"best_margin\")!r}, а нужно {want!r}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "margin",
+    "case": "wrong-profit-rubles",
+    "expected": false,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');menu=pd.read_csv('menu.csv')\nfull=df.merge(menu,on='drink');full['cost']=full.cost_s*full['size'].map({'S':1,'M':1.25,'L':1.5})*full.qty\ng=full.groupby('drink')[['amount','cost']].sum();best_margin=(g.amount-g.cost).idxmax()",
+    "check": "import pandas as _pd\nf = _pd.read_csv('orders_3m.csv').merge(_pd.read_csv('menu.csv'), on='drink')\nf['cost'] = f['cost_s'] * f['size'].map({'S': 1.0, 'M': 1.25, 'L': 1.5}) * f['qty']\ng = f.groupby('drink')[['amount', 'cost']].sum()\nwant = ((g['amount'] - g['cost']) / g['amount']).idxmax()\nassert need('best_margin') == want, f'best_margin = {need(\"best_margin\")!r}, а нужно {want!r}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "per-seat",
+    "case": "wrong-revenue-only",
+    "expected": false,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv'); best_per_seat=df.groupby('shop_id').amount.sum().idxmax()",
+    "check": "import pandas as _pd\ns = _pd.read_csv('shops.csv').set_index('shop_id')\nrev = _pd.read_csv('orders_3m.csv').groupby('shop_id')['amount'].sum()\nimport numbers as _num\nwant = (rev / s.loc[rev.index, 'seats']).idxmax()\n_b = need('best_per_seat')\nassert not isinstance(_b, (_pd.Series, _pd.DataFrame)), f'В best_per_seat лежит {type(_b).__name__}, а нужен один код кофейни — строка вида \"KZN-1\".'\nassert not isinstance(_b, _num.Integral), f'best_per_seat = {_b} — это номер строки, а нужен код кофейни. После merge индекс таблицы — номера 0, 1, 2…, и idxmax возвращает номер. Возьмите по нему shop_id: t.loc[номер, \"shop_id\"] — или отсортируйте таблицу.'\nassert _b == want, f'best_per_seat = {_b!r}, а нужна другая кофейня. Делите выручку кофейни на её seats и ищите максимум.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "city",
+    "case": "wrong-merge-assign-first-city",
+    "expected": false,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');shops=pd.read_csv('shops.csv')\nfull=df.assign(city=shops.city.iloc[0],seats=shops.seats.iloc[0])",
+    "check": "import pandas as _pd\nf = need('full', _pd.DataFrame)\nassert 'city' in f.columns and 'seats' in f.columns, 'В full должны появиться столбцы справочника: city, seats…'\nassert len(f) == len(df), f'Строк стало {len(f)}, а было {len(df)}. Для LEFT JOIN со справочником число строк не меняется.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "all-shops",
+    "case": "wrong-other-shop-revenue",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\nrev = df.groupby(\"shop_id\", as_index=False).agg(revenue=(\"amount\", \"sum\"))\nreport = pd.merge(shops, rev, on=\"shop_id\", how=\"left\")[[\"shop_id\", \"city\", \"revenue\"]]\nreport[\"revenue\"] = report[\"revenue\"].fillna(0)\nreport.loc[report.shop_id=='KZN-1','revenue']=0",
+    "check": "import pandas as _pd\nr = need('report', _pd.DataFrame)\nassert len(r) == 7, f'Строк {len(r)}, а кофеен в справочнике 7.'\nassert list(r.columns) == ['shop_id', 'city', 'revenue'], f'Столбцы: {list(r.columns)}.'\nassert r['revenue'].notna().all(), 'В revenue есть NaN — замените на 0 через fillna(0).'\nassert r.set_index('shop_id').loc['EKB-1', 'revenue'] == 0, 'У EKB-1 выручка должна быть 0.'\nwant = _pd.read_csv('orders_3m.csv').groupby('shop_id')['amount'].sum()\nassert r.set_index('shop_id').loc['PRM-1', 'revenue'] == want['PRM-1'], 'Выручка PRM-1 не совпадает.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04-groupby",
+    "task": "shares",
+    "case": "alternative-crosstab",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');r=df.pivot_table(index='drink',values='amount',aggfunc='sum')['amount']\nshare=(100*r/r.sum()).round(1).sort_values(ascending=False);top3=share.index[:3].tolist()",
+    "check": "import pandas as _pd\nb = _pd.read_csv('orders_3m.csv').groupby('drink')['amount'].sum()\nwant = (b / b.sum() * 100).round(1).sort_values(ascending=False)\nassert need('top3') == list(want.index[:3]), f'top3 = {need(\"top3\")}, а нужно {list(want.index[:3])}.'\ns = need('share')\nassert abs(float(s.iloc[0]) - want.iloc[0]) < 1e-9, f'Первое значение share = {s.iloc[0]}, а нужно {want.iloc[0]}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04-groupby",
+    "task": "shares",
+    "case": "wrong-nonleader-all-zero",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nby_drink = df.groupby(\"drink\")[\"amount\"].sum()\nshare = (by_drink / by_drink.sum() * 100).round(1).sort_values(ascending=False)\ntop3 = list(share.index[:3])\nshare.iloc[1:]=0",
+    "check": "import pandas as _pd\nb = _pd.read_csv('orders_3m.csv').groupby('drink')['amount'].sum()\nwant = (b / b.sum() * 100).round(1).sort_values(ascending=False)\nassert need('top3') == list(want.index[:3]), f'top3 = {need(\"top3\")}, а нужно {list(want.index[:3])}.'\ns = need('share')\nassert abs(float(s.iloc[0]) - want.iloc[0]) < 1e-9, f'Первое значение share = {s.iloc[0]}, а нужно {want.iloc[0]}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04-groupby",
+    "task": "two-keys",
+    "case": "wrong-only-delivery-groups",
+    "expected": false,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');by_pair=df[df.channel=='доставка'].groupby(['shop_id','channel']).amount.sum();kzn1_delivery=by_pair[('KZN-1','доставка')]",
+    "check": "import pandas as _pd\nd = _pd.read_csv('orders_3m.csv')\nimport numbers as _num\nwant = d[(d['shop_id'] == 'KZN-1') & (d['channel'] == 'доставка')]['amount'].sum()\n_k = need('kzn1_delivery')\nif isinstance(_k, _pd.DataFrame):\n    assert False, 'В kzn1_delivery лежит таблица (DataFrame), а нужно одно число. Возьмите значение по паре ключей: by_pair[(\"KZN-1\", \"доставка\")]; из строки таблицы — столбец и .iloc[0].'\nif isinstance(_k, _pd.Series):\n    assert len(_k) == 1, f'В kzn1_delivery лежит Series из {len(_k)} значений, а нужно одно число — выручка доставки KZN-1.'\n    assert False, 'В kzn1_delivery лежит Series из одной строки, а нужно само число. Возьмите его через .iloc[0] — или сразу by_pair[(\"KZN-1\", \"доставка\")].'\nassert isinstance(_k, _num.Number), f'В kzn1_delivery лежит {type(_k).__name__} ({_k!r}), а нужно число.'\nassert _k == want, f'kzn1_delivery = {_k}, а нужно {want}.'\nassert 'groupby' in _code, 'Посчитайте через groupby по двум столбцам.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07a-sql-python",
+    "task": "sqlite-read",
+    "case": "correct-single-quote-cat",
+    "expected": true,
+    "code": "import pandas as pd, sqlite3\ncon=sqlite3.connect('zerno.db');cat='еда'\nfood=pd.read_sql_query('SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC',con,params=(cat,));con.close()",
+    "check": "import pandas as _pd, sqlite3 as _sq\n_c = _sq.connect('zerno.db')\n_w = _pd.read_sql_query(\"SELECT name, price FROM menu WHERE category = 'еда' ORDER BY price DESC\", _c)\n_c.close()\nb = need('food', _pd.DataFrame)\nassert list(b.columns) == ['name', 'price'], f'Столбцы: {list(b.columns)}, а нужны name и price.'\nassert b['name'].tolist() == _w['name'].tolist(), f'Позиции: {b[\"name\"].tolist()}. Нужны все позиции категории, по убыванию цены.'\nassert 'params' in _code, 'Передайте категорию через params= — так запрос не сломается ни на каком значении.'\nassert \"'еда'\" not in _code and '\"еда\"' in _code, 'Категория не должна быть вписана в SQL: оставьте в запросе ? или :cat, а значение — переменная cat.'\nassert calls('close') >= 1, 'Закройте подключение: con.close().'",
+    "setup": "",
+    "files": [
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07a-sql-python",
+    "task": "sqlite-read",
+    "case": "wrong-zero-price",
+    "expected": false,
+    "code": "import sqlite3\nimport pandas as pd\n\ncat = \"еда\"\ncon = sqlite3.connect(\"zerno.db\")\nfood = pd.read_sql_query(\n    \"SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC\",\n    con, params=(cat,),\n)\ncon.close()\nfood\nfood['price']=0",
+    "check": "import pandas as _pd, sqlite3 as _sq\n_c = _sq.connect('zerno.db')\n_w = _pd.read_sql_query(\"SELECT name, price FROM menu WHERE category = 'еда' ORDER BY price DESC\", _c)\n_c.close()\nb = need('food', _pd.DataFrame)\nassert list(b.columns) == ['name', 'price'], f'Столбцы: {list(b.columns)}, а нужны name и price.'\nassert b['name'].tolist() == _w['name'].tolist(), f'Позиции: {b[\"name\"].tolist()}. Нужны все позиции категории, по убыванию цены.'\nassert 'params' in _code, 'Передайте категорию через params= — так запрос не сломается ни на каком значении.'\nassert \"'еда'\" not in _code and '\"еда\"' in _code, 'Категория не должна быть вписана в SQL: оставьте в запросе ? или :cat, а значение — переменная cat.'\nassert calls('close') >= 1, 'Закройте подключение: con.close().'",
+    "setup": "",
+    "files": [
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "06-dates",
+    "task": "mom-net",
+    "case": "wrong-calendar-index",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\nmonthly = df.resample(\"ME\", on=\"datetime\")[\"amount\"].sum()\ngrowth = (monthly.pct_change() * 100).round(1)\nnov_growth = growth.iloc[-1]\nmonthly.index=monthly.index+pd.DateOffset(months=1)",
+    "check": "import pandas as _pd\nimport numbers as _num\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_m = _d.resample('ME', on='datetime')['amount'].sum()\n_g = (_m.pct_change() * 100).round(1)\nm_ = need('monthly')\nassert isinstance(m_, _pd.Series) and len(m_) == 3, f'monthly должна быть Series из трёх месяцев, а сейчас {type(m_).__name__} длиной {len(m_) if hasattr(m_, \"__len__\") else \"—\"}.'\nassert list(m_) == list(_m), f'monthly = {list(m_)}, а нужно {list(_m)}: сумма amount по месяцам.'\ng_ = need('growth', _pd.Series)\nassert calls('pct_change'), 'Посчитайте изменение методом pct_change().'\nassert _pd.isna(g_.iloc[0]), 'Первое значение growth должно быть NaN: сентябрь не с чем сравнить.'\nassert close(g_.iloc[1], _g.iloc[1], 0.05) or not close(g_.iloc[1], _g.iloc[1] / 100, 0.001), 'В growth доли, а нужны проценты: умножьте на 100.'\nassert close(g_.iloc[1], _g.iloc[1], 0.05), f'Рост октября в growth — {g_.iloc[1]}, а нужно {_g.iloc[1]}.'\n_n = need('nov_growth')\nassert not isinstance(_n, (_pd.Series, _pd.DataFrame)), f'В nov_growth лежит {type(_n).__name__}, а нужно одно число. Последнее значение growth — .iloc[-1] (или .iloc[2]).'\nassert isinstance(_n, _num.Number) and close(_n, _g.iloc[2], 0.05), f'nov_growth = {_n!r}, а нужно {_g.iloc[2]}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "06-dates",
+    "task": "mom-net",
+    "case": "wrong-last-growth",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\nmonthly = df.resample(\"ME\", on=\"datetime\")[\"amount\"].sum()\ngrowth = (monthly.pct_change() * 100).round(1)\nnov_growth = growth.iloc[-1]\ngrowth.iloc[-1]=0",
+    "check": "import pandas as _pd\nimport numbers as _num\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_m = _d.resample('ME', on='datetime')['amount'].sum()\n_g = (_m.pct_change() * 100).round(1)\nm_ = need('monthly')\nassert isinstance(m_, _pd.Series) and len(m_) == 3, f'monthly должна быть Series из трёх месяцев, а сейчас {type(m_).__name__} длиной {len(m_) if hasattr(m_, \"__len__\") else \"—\"}.'\nassert list(m_) == list(_m), f'monthly = {list(m_)}, а нужно {list(_m)}: сумма amount по месяцам.'\ng_ = need('growth', _pd.Series)\nassert calls('pct_change'), 'Посчитайте изменение методом pct_change().'\nassert _pd.isna(g_.iloc[0]), 'Первое значение growth должно быть NaN: сентябрь не с чем сравнить.'\nassert close(g_.iloc[1], _g.iloc[1], 0.05) or not close(g_.iloc[1], _g.iloc[1] / 100, 0.001), 'В growth доли, а нужны проценты: умножьте на 100.'\nassert close(g_.iloc[1], _g.iloc[1], 0.05), f'Рост октября в growth — {g_.iloc[1]}, а нужно {_g.iloc[1]}.'\n_n = need('nov_growth')\nassert not isinstance(_n, (_pd.Series, _pd.DataFrame)), f'В nov_growth лежит {type(_n).__name__}, а нужно одно число. Последнее значение growth — .iloc[-1] (или .iloc[2]).'\nassert isinstance(_n, _num.Number) and close(_n, _g.iloc[2], 0.05), f'nov_growth = {_n!r}, а нужно {_g.iloc[2]}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "city",
+    "case": "alternative-join-reversed-result",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');shops=pd.read_csv('shops.csv')\nfull=df.join(shops.set_index('shop_id'),on='shop_id').iloc[::-1]",
+    "check": "import pandas as _pd\nf = need('full', _pd.DataFrame)\nassert 'city' in f.columns and 'seats' in f.columns, 'В full должны появиться столбцы справочника: city, seats…'\nassert len(f) == len(df), f'Строк стало {len(f)}, а было {len(df)}. Для LEFT JOIN со справочником число строк не меняется.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "all-shops",
+    "case": "alternative-map-reversed-shops",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');shops=pd.read_csv('shops.csv')\nrev=df.groupby('shop_id').amount.sum()\nreport=shops[['shop_id','city']].iloc[::-1].copy();report['revenue']=report.shop_id.map(rev).fillna(0)",
+    "check": "import pandas as _pd\nr = need('report', _pd.DataFrame)\nassert len(r) == 7, f'Строк {len(r)}, а кофеен в справочнике 7.'\nassert list(r.columns) == ['shop_id', 'city', 'revenue'], f'Столбцы: {list(r.columns)}.'\nassert r['revenue'].notna().all(), 'В revenue есть NaN — замените на 0 через fillna(0).'\nassert r.set_index('shop_id').loc['EKB-1', 'revenue'] == 0, 'У EKB-1 выручка должна быть 0.'\nwant = _pd.read_csv('orders_3m.csv').groupby('shop_id')['amount'].sum()\nassert r.set_index('shop_id').loc['PRM-1', 'revenue'] == want['PRM-1'], 'Выручка PRM-1 не совпадает.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "per-seat",
+    "case": "alternative-map-reversed-shops",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');shops=pd.read_csv('shops.csv').iloc[::-1]\nrev=df.groupby('shop_id').amount.sum();rates=rev/rev.index.map(shops.set_index('shop_id').seats)\nbest_per_seat=rates.idxmax()",
+    "check": "import pandas as _pd\ns = _pd.read_csv('shops.csv').set_index('shop_id')\nrev = _pd.read_csv('orders_3m.csv').groupby('shop_id')['amount'].sum()\nimport numbers as _num\nwant = (rev / s.loc[rev.index, 'seats']).idxmax()\n_b = need('best_per_seat')\nassert not isinstance(_b, (_pd.Series, _pd.DataFrame)), f'В best_per_seat лежит {type(_b).__name__}, а нужен один код кофейни — строка вида \"KZN-1\".'\nassert not isinstance(_b, _num.Integral), f'best_per_seat = {_b} — это номер строки, а нужен код кофейни. После merge индекс таблицы — номера 0, 1, 2…, и idxmax возвращает номер. Возьмите по нему shop_id: t.loc[номер, \"shop_id\"] — или отсортируйте таблицу.'\nassert _b == want, f'best_per_seat = {_b!r}, а нужна другая кофейня. Делите выручку кофейни на её seats и ищите максимум.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04-groupby",
+    "task": "two-keys",
+    "case": "alternative-dataframe-groupby",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');by_pair=df.groupby(['shop_id','channel'],as_index=False).agg(revenue=('amount','sum'))\nkzn1_delivery=by_pair.loc[(by_pair.shop_id=='KZN-1')&(by_pair.channel=='доставка'),'revenue'].iloc[0]",
+    "check": "import pandas as _pd\nd = _pd.read_csv('orders_3m.csv')\nimport numbers as _num\nwant = d[(d['shop_id'] == 'KZN-1') & (d['channel'] == 'доставка')]['amount'].sum()\n_k = need('kzn1_delivery')\nif isinstance(_k, _pd.DataFrame):\n    assert False, 'В kzn1_delivery лежит таблица (DataFrame), а нужно одно число. Возьмите значение по паре ключей: by_pair[(\"KZN-1\", \"доставка\")]; из строки таблицы — столбец и .iloc[0].'\nif isinstance(_k, _pd.Series):\n    assert len(_k) == 1, f'В kzn1_delivery лежит Series из {len(_k)} значений, а нужно одно число — выручка доставки KZN-1.'\n    assert False, 'В kzn1_delivery лежит Series из одной строки, а нужно само число. Возьмите его через .iloc[0] — или сразу by_pair[(\"KZN-1\", \"доставка\")].'\nassert isinstance(_k, _num.Number), f'В kzn1_delivery лежит {type(_k).__name__} ({_k!r}), а нужно число.'\nassert _k == want, f'kzn1_delivery = {_k}, а нужно {want}.'\nassert 'groupby' in _code, 'Посчитайте через groupby по двум столбцам.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04-groupby",
+    "task": "shares",
+    "case": "wrong-share-labels",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nby_drink = df.groupby(\"drink\")[\"amount\"].sum()\nshare = (by_drink / by_drink.sum() * 100).round(1).sort_values(ascending=False)\ntop3 = list(share.index[:3])\nshare.index=list(reversed(share.index))",
+    "check": "import pandas as _pd\nb = _pd.read_csv('orders_3m.csv').groupby('drink')['amount'].sum()\nwant = (b / b.sum() * 100).round(1).sort_values(ascending=False)\nassert need('top3') == list(want.index[:3]), f'top3 = {need(\"top3\")}, а нужно {list(want.index[:3])}.'\ns = need('share')\nassert abs(float(s.iloc[0]) - want.iloc[0]) < 1e-9, f'Первое значение share = {s.iloc[0]}, а нужно {want.iloc[0]}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04-groupby",
+    "task": "two-keys",
+    "case": "wrong-pair-labels",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nby_pair = df.groupby([\"shop_id\", \"channel\"])[\"amount\"].sum()\nkzn1_delivery = by_pair[(\"KZN-1\", \"доставка\")]\nby_pair.index=by_pair.index[::-1]",
+    "check": "import pandas as _pd\nd = _pd.read_csv('orders_3m.csv')\nimport numbers as _num\nwant = d[(d['shop_id'] == 'KZN-1') & (d['channel'] == 'доставка')]['amount'].sum()\n_k = need('kzn1_delivery')\nif isinstance(_k, _pd.DataFrame):\n    assert False, 'В kzn1_delivery лежит таблица (DataFrame), а нужно одно число. Возьмите значение по паре ключей: by_pair[(\"KZN-1\", \"доставка\")]; из строки таблицы — столбец и .iloc[0].'\nif isinstance(_k, _pd.Series):\n    assert len(_k) == 1, f'В kzn1_delivery лежит Series из {len(_k)} значений, а нужно одно число — выручка доставки KZN-1.'\n    assert False, 'В kzn1_delivery лежит Series из одной строки, а нужно само число. Возьмите его через .iloc[0] — или сразу by_pair[(\"KZN-1\", \"доставка\")].'\nassert isinstance(_k, _num.Number), f'В kzn1_delivery лежит {type(_k).__name__} ({_k!r}), а нужно число.'\nassert _k == want, f'kzn1_delivery = {_k}, а нужно {want}.'\nassert 'groupby' in _code, 'Посчитайте через groupby по двум столбцам.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07a-sql-python",
+    "task": "sqlite-read",
+    "case": "alternative-named-param",
+    "expected": true,
+    "code": "import sqlite3 as sql, pandas as pd\ncat='еда'\ncon=sql.connect('zerno.db')\nfood=pd.read_sql_query('SELECT name, price FROM menu WHERE category = :kind ORDER BY price DESC',con,params={'kind':cat});con.close()",
+    "check": "import pandas as _pd, sqlite3 as _sq\n_c = _sq.connect('zerno.db')\n_w = _pd.read_sql_query(\"SELECT name, price FROM menu WHERE category = 'еда' ORDER BY price DESC\", _c)\n_c.close()\nb = need('food', _pd.DataFrame)\nassert list(b.columns) == ['name', 'price'], f'Столбцы: {list(b.columns)}, а нужны name и price.'\nassert b['name'].tolist() == _w['name'].tolist(), f'Позиции: {b[\"name\"].tolist()}. Нужны все позиции категории, по убыванию цены.'\nassert 'params' in _code, 'Передайте категорию через params= — так запрос не сломается ни на каком значении.'\nassert \"'еда'\" not in _code and '\"еда\"' in _code, 'Категория не должна быть вписана в SQL: оставьте в запросе ? или :cat, а значение — переменная cat.'\nassert calls('close') >= 1, 'Закройте подключение: con.close().'",
+    "setup": "",
+    "files": [
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07a-sql-python",
+    "task": "sqlite-read",
+    "case": "correct-another-category",
+    "expected": true,
+    "code": "import sqlite3, pandas as pd\ncat='не кофе'\ncon=sqlite3.connect('zerno.db')\nfood=pd.read_sql_query('SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC',con,params=(cat,));con.close()",
+    "check": "import pandas as _pd, sqlite3 as _sq\n_c = _sq.connect('zerno.db')\n_w = _pd.read_sql_query(\"SELECT name, price FROM menu WHERE category = 'еда' ORDER BY price DESC\", _c)\n_c.close()\nb = need('food', _pd.DataFrame)\nassert list(b.columns) == ['name', 'price'], f'Столбцы: {list(b.columns)}, а нужны name и price.'\nassert b['name'].tolist() == _w['name'].tolist(), f'Позиции: {b[\"name\"].tolist()}. Нужны все позиции категории, по убыванию цены.'\nassert 'params' in _code, 'Передайте категорию через params= — так запрос не сломается ни на каком значении.'\nassert \"'еда'\" not in _code and '\"еда\"' in _code, 'Категория не должна быть вписана в SQL: оставьте в запросе ? или :cat, а значение — переменная cat.'\nassert calls('close') >= 1, 'Закройте подключение: con.close().'",
+    "setup": "",
+    "files": [
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "06-dates",
+    "task": "mom-net",
+    "case": "alternative-indexed-resample",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv',parse_dates=['datetime'])\nmonthly=df.set_index('datetime').amount.resample('ME').sum();growth=monthly.pct_change().mul(100).round(1);nov_growth=growth.loc['2026-11-30']",
+    "check": "import pandas as _pd\nimport numbers as _num\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_m = _d.resample('ME', on='datetime')['amount'].sum()\n_g = (_m.pct_change() * 100).round(1)\nm_ = need('monthly')\nassert isinstance(m_, _pd.Series) and len(m_) == 3, f'monthly должна быть Series из трёх месяцев, а сейчас {type(m_).__name__} длиной {len(m_) if hasattr(m_, \"__len__\") else \"—\"}.'\nassert list(m_) == list(_m), f'monthly = {list(m_)}, а нужно {list(_m)}: сумма amount по месяцам.'\ng_ = need('growth', _pd.Series)\nassert calls('pct_change'), 'Посчитайте изменение методом pct_change().'\nassert _pd.isna(g_.iloc[0]), 'Первое значение growth должно быть NaN: сентябрь не с чем сравнить.'\nassert close(g_.iloc[1], _g.iloc[1], 0.05) or not close(g_.iloc[1], _g.iloc[1] / 100, 0.001), 'В growth доли, а нужны проценты: умножьте на 100.'\nassert close(g_.iloc[1], _g.iloc[1], 0.05), f'Рост октября в growth — {g_.iloc[1]}, а нужно {_g.iloc[1]}.'\n_n = need('nov_growth')\nassert not isinstance(_n, (_pd.Series, _pd.DataFrame)), f'В nov_growth лежит {type(_n).__name__}, а нужно одно число. Последнее значение growth — .iloc[-1] (или .iloc[2]).'\nassert isinstance(_n, _num.Number) and close(_n, _g.iloc[2], 0.05), f'nov_growth = {_n!r}, а нужно {_g.iloc[2]}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "09-project",
+    "task": "shops",
+    "case": "different-revenue-and-seat-leaders",
+    "expected": true,
+    "code": "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\n",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\nb = need('by_shop', _pd.DataFrame)\nassert list(b.columns) == ['city', 'revenue', 'seats', 'per_seat'], f'Столбцы: {list(b.columns)}.'\n\ng = _f.groupby('shop_id').agg(city=('city','first'), revenue=('amount','sum'), seats=('seats','first'))\ng['per_seat'] = (g['revenue'] / g['seats']).round()\nassert b.index.is_unique and set(b.index) == set(g.index), 'Проверьте множество shop_id.'\nfor _id in g.index:\n    for _col in g.columns:\n        _v = b.loc[_id, _col]; _want = g.loc[_id, _col]\n        assert (_v == _want if _col == 'city' else close(_v, _want, 0.051)), f'{_id}, {_col}: неверное значение.'\nassert b['per_seat'].is_monotonic_decreasing, 'Сортировка по per_seat должна быть по убыванию.'\nassert need('leader') in set(g.index[g['per_seat'] == g['per_seat'].max()]), 'leader должен быть одним из лидеров по выручке на место.'\nassert need('leader_by_revenue') in set(g.index[g['revenue'] == g['revenue'].max()]), 'leader_by_revenue должен быть одним из лидеров по выручке.'",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": "import pandas as pd\ns=pd.read_csv('shops.csv'); s.loc[s.shop_id=='PRM-1','seats']=10; s.loc[s.shop_id=='KZN-1','seats']=30;s.iloc[::-1].to_csv('shops.csv',index=False)\nd=pd.read_csv('orders_3m.csv').iloc[:3].copy(); d['shop_id']=['PRM-1','KZN-1','KZN-1'];d['amount']=[900,600,300];d['qty']=[3,2,1];d['order_id']=[1,2,3];d.to_csv('orders_3m.csv',index=False)\nd=pd.read_csv('orders_3m.csv');d['amount']=[900,400,200];d.to_csv('orders_3m.csv',index=False)\ns=pd.read_csv('shops.csv');s.loc[s.shop_id=='PRM-1','seats']=30;s.loc[s.shop_id=='KZN-1','seats']=10;s.to_csv('shops.csv',index=False)"
+  },
+  {
+    "lesson": "09-project",
+    "task": "shops",
+    "case": "wrong-same-leader-for-different-metrics",
+    "expected": false,
+    "code": "import pandas as pd\nby_shop = full.groupby(\"shop_id\").agg(\n    city=(\"city\", \"first\"),\n    revenue=(\"amount\", \"sum\"),\n    seats=(\"seats\", \"first\"),\n)\nby_shop[\"per_seat\"] = (by_shop[\"revenue\"] / by_shop[\"seats\"]).round()\nby_shop = by_shop.sort_values(\"per_seat\", ascending=False)\nleader = by_shop.index[0]\nleader_by_revenue = by_shop[\"revenue\"].idxmax()\nby_shop\nleader_by_revenue=leader",
+    "check": "import pandas as _pd\n_f = (_pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n        .merge(_pd.read_csv(\"shops.csv\"), on=\"shop_id\").merge(_pd.read_csv(\"menu.csv\"), on=\"drink\"))\nb = need('by_shop', _pd.DataFrame)\nassert list(b.columns) == ['city', 'revenue', 'seats', 'per_seat'], f'Столбцы: {list(b.columns)}.'\n\ng = _f.groupby('shop_id').agg(city=('city','first'), revenue=('amount','sum'), seats=('seats','first'))\ng['per_seat'] = (g['revenue'] / g['seats']).round()\nassert b.index.is_unique and set(b.index) == set(g.index), 'Проверьте множество shop_id.'\nfor _id in g.index:\n    for _col in g.columns:\n        _v = b.loc[_id, _col]; _want = g.loc[_id, _col]\n        assert (_v == _want if _col == 'city' else close(_v, _want, 0.051)), f'{_id}, {_col}: неверное значение.'\nassert b['per_seat'].is_monotonic_decreasing, 'Сортировка по per_seat должна быть по убыванию.'\nassert need('leader') in set(g.index[g['per_seat'] == g['per_seat'].max()]), 'leader должен быть одним из лидеров по выручке на место.'\nassert need('leader_by_revenue') in set(g.index[g['revenue'] == g['revenue'].max()]), 'leader_by_revenue должен быть одним из лидеров по выручке.'",
+    "setup": "import pandas as _pd0\nfull = (_pd0.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n          .merge(_pd0.read_csv(\"shops.csv\"), on=\"shop_id\", how=\"left\", validate=\"many_to_one\")\n          .merge(_pd0.read_csv(\"menu.csv\"), on=\"drink\", how=\"left\", validate=\"many_to_one\"))",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": "import pandas as pd\ns=pd.read_csv('shops.csv'); s.loc[s.shop_id=='PRM-1','seats']=10; s.loc[s.shop_id=='KZN-1','seats']=30;s.iloc[::-1].to_csv('shops.csv',index=False)\nd=pd.read_csv('orders_3m.csv').iloc[:3].copy(); d['shop_id']=['PRM-1','KZN-1','KZN-1'];d['amount']=[900,600,300];d['qty']=[3,2,1];d['order_id']=[1,2,3];d.to_csv('orders_3m.csv',index=False)\nd=pd.read_csv('orders_3m.csv');d['amount']=[900,400,200];d.to_csv('orders_3m.csv',index=False)\ns=pd.read_csv('shops.csv');s.loc[s.shop_id=='PRM-1','seats']=30;s.loc[s.shop_id=='KZN-1','seats']=10;s.to_csv('shops.csv',index=False)"
+  },
+  {
+    "lesson": "03-columns",
+    "task": "map",
+    "case": "alternative-replace-channels",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv')\ndf['channel_en']=df.channel.replace({'зал':'dine-in','с собой':'takeaway','доставка':'delivery'})\nn_takeaway=df.channel_en.eq('takeaway').sum()",
+    "check": "import pandas as _pd\nassert 'channel_en' in df.columns, 'Нет столбца channel_en.'\nassert df['channel_en'].notna().all(), 'В channel_en есть пустые значения — проверьте написание ключей словаря.'\nassert set(df['channel_en']) == {'dine-in', 'takeaway', 'delivery'}, f'Значения: {sorted(set(df[\"channel_en\"]))}.'\nassert need('n_takeaway') == (df['channel'] == 'с собой').sum(), f'n_takeaway = {need(\"n_takeaway\")}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "03-columns",
+    "task": "map",
+    "case": "wrong-swapped-dine-and-delivery",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\ndf[\"channel_en\"] = df[\"channel\"].map({\"зал\": \"dine-in\", \"с собой\": \"takeaway\", \"доставка\": \"delivery\"})\nn_takeaway = (df[\"channel_en\"] == \"takeaway\").sum()\ndf['channel_en']=df.channel_en.replace({'dine-in':'delivery','delivery':'dine-in'})",
+    "check": "import pandas as _pd\nassert 'channel_en' in df.columns, 'Нет столбца channel_en.'\nassert df['channel_en'].notna().all(), 'В channel_en есть пустые значения — проверьте написание ключей словаря.'\nassert set(df['channel_en']) == {'dine-in', 'takeaway', 'delivery'}, f'Значения: {sorted(set(df[\"channel_en\"]))}.'\nassert need('n_takeaway') == (df['channel'] == 'с собой').sum(), f'n_takeaway = {need(\"n_takeaway\")}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04b-pivot",
+    "task": "wide",
+    "case": "alternative-unstack-manual-totals",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv');df['month']=df.datetime.str[:7]\nreport=df.groupby(['shop_id','month']).amount.sum().unstack()\nreport['Итого']=report.sum(axis=1);report.loc['Итого']=report.sum(axis=0)\nreport=report.iloc[::-1,::-1];oct_total=report.loc['Итого','2026-10']",
+    "check": "import pandas as _pd\nr = need('report', _pd.DataFrame)\nassert r.shape == (7, 4), f'Форма report — {r.shape}, а нужна (7, 4): 6 кофеен + строка итогов, 3 месяца + столбец итогов. Не забыли margins=True?'\nassert 'Итого' in r.index and 'Итого' in r.columns, 'Итоги должны называться «Итого»: параметр margins_name.'\n_d = _pd.read_csv('orders_3m.csv')\n_want = int(_d.loc[_d['datetime'].str.startswith('2026-10'), 'amount'].sum())\nassert int(r.loc['KZN-1', '2026-10']) == 55012, f'В ячейке KZN-1 × 2026-10 — {r.loc[\"KZN-1\", \"2026-10\"]}. В ячейках нужна сумма amount.'\nassert need('oct_total') == _want, f'oct_total = {need(\"oct_total\")}, а нужно {_want}. Это ячейка на пересечении строки «Итого» и столбца октября.'\nassert not has_literal(_want), 'Возьмите итог из таблицы через loc, а не вписывайте число.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04b-pivot",
+    "task": "wide",
+    "case": "wrong-nonchecked-million",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\ndf[\"month\"] = df[\"datetime\"].str[:7]\nreport = pd.pivot_table(df, index=\"shop_id\", columns=\"month\", values=\"amount\",\n                        aggfunc=\"sum\", margins=True, margins_name=\"Итого\")\noct_total = report.loc[\"Итого\", \"2026-10\"]\nreport.loc['PRM-2','2026-11']+=1000000",
+    "check": "import pandas as _pd\nr = need('report', _pd.DataFrame)\nassert r.shape == (7, 4), f'Форма report — {r.shape}, а нужна (7, 4): 6 кофеен + строка итогов, 3 месяца + столбец итогов. Не забыли margins=True?'\nassert 'Итого' in r.index and 'Итого' in r.columns, 'Итоги должны называться «Итого»: параметр margins_name.'\n_d = _pd.read_csv('orders_3m.csv')\n_want = int(_d.loc[_d['datetime'].str.startswith('2026-10'), 'amount'].sum())\nassert int(r.loc['KZN-1', '2026-10']) == 55012, f'В ячейке KZN-1 × 2026-10 — {r.loc[\"KZN-1\", \"2026-10\"]}. В ячейках нужна сумма amount.'\nassert need('oct_total') == _want, f'oct_total = {need(\"oct_total\")}, а нужно {_want}. Это ячейка на пересечении строки «Итого» и столбца октября.'\nassert not has_literal(_want), 'Возьмите итог из таблицы через loc, а не вписывайте число.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07b-sql-windows",
+    "task": "w-lag",
+    "case": "alternative-window-file-sql",
+    "expected": true,
+    "code": "import duckdb\nmom_shop=duckdb.sql(\"\"\"SELECT shop_id,month,revenue,round(100*(revenue/lag(revenue) OVER w-1),1) AS growth_pct FROM (SELECT shop_id,date_trunc('month',datetime) AS month,sum(amount) AS revenue FROM read_csv('orders_3m.csv') GROUP BY 1,2) WINDOW w AS (PARTITION BY shop_id ORDER BY month) ORDER BY shop_id,month\"\"\").df()\nfalls=mom_shop.query('growth_pct<0').copy()",
+    "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_m = _d.groupby(['shop_id', _d['datetime'].dt.to_period('M')])['amount'].sum().rename('revenue').reset_index()\n_m['g'] = (100 * (_m['revenue'] / _m.groupby('shop_id')['revenue'].shift(1) - 1)).round(1)\nb = need('mom_shop', _pd.DataFrame)\nassert list(b.columns) == ['shop_id', 'month', 'revenue', 'growth_pct'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_m), f'Строк {len(b)}, а пар «кофейня × месяц» {len(_m)}.'\nassert b['shop_id'].tolist() == _m['shop_id'].tolist(), 'Порядок строк: по shop_id, затем по month.'\n_g = b['growth_pct'].tolist()\n_firsts = [i for i in range(len(_m)) if i == 0 or _m['shop_id'][i] != _m['shop_id'][i - 1]]\nassert all(_pd.isna(_g[i]) for i in _firsts), 'У первого месяца каждой кофейни рост должен быть пустым. Похоже, в окне нет PARTITION BY shop_id.'\nassert all(_pd.isna(x) and _pd.isna(y) or abs(float(x) - y) < 0.051 for x, y in zip(_g, _m['g'])), 'growth_pct не совпадает с ожидаемым.'\nf = need('falls', _pd.DataFrame)\nassert sorted(f['shop_id'].tolist()) == sorted(_m.loc[_m['g'] < 0, 'shop_id'].tolist()), f'В falls кофейни {sorted(f[\"shop_id\"].tolist())}. Нужны все строки с отрицательным ростом.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07b-sql-windows",
+    "task": "w-lag",
+    "case": "wrong-shifted-months",
+    "expected": false,
+    "code": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nmom_shop = duckdb.sql(\"\"\"\n    WITH m AS (\n        SELECT shop_id, date_trunc('month', datetime) AS month, SUM(amount) AS revenue\n        FROM df\n        GROUP BY shop_id, month\n    )\n    SELECT shop_id, month, revenue,\n           ROUND(100 * (revenue / LAG(revenue) OVER (PARTITION BY shop_id ORDER BY month) - 1), 1) AS growth_pct\n    FROM m\n    ORDER BY shop_id, month\n\"\"\").df()\nfalls = mom_shop[mom_shop[\"growth_pct\"] < 0]\nfalls\nmom_shop['month']+=pd.DateOffset(months=1);falls['month']+=pd.DateOffset(months=1)",
+    "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_m = _d.groupby(['shop_id', _d['datetime'].dt.to_period('M')])['amount'].sum().rename('revenue').reset_index()\n_m['g'] = (100 * (_m['revenue'] / _m.groupby('shop_id')['revenue'].shift(1) - 1)).round(1)\nb = need('mom_shop', _pd.DataFrame)\nassert list(b.columns) == ['shop_id', 'month', 'revenue', 'growth_pct'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_m), f'Строк {len(b)}, а пар «кофейня × месяц» {len(_m)}.'\nassert b['shop_id'].tolist() == _m['shop_id'].tolist(), 'Порядок строк: по shop_id, затем по month.'\n_g = b['growth_pct'].tolist()\n_firsts = [i for i in range(len(_m)) if i == 0 or _m['shop_id'][i] != _m['shop_id'][i - 1]]\nassert all(_pd.isna(_g[i]) for i in _firsts), 'У первого месяца каждой кофейни рост должен быть пустым. Похоже, в окне нет PARTITION BY shop_id.'\nassert all(_pd.isna(x) and _pd.isna(y) or abs(float(x) - y) < 0.051 for x, y in zip(_g, _m['g'])), 'growth_pct не совпадает с ожидаемым.'\nf = need('falls', _pd.DataFrame)\nassert sorted(f['shop_id'].tolist()) == sorted(_m.loc[_m['g'] < 0, 'shop_id'].tolist()), f'В falls кофейни {sorted(f[\"shop_id\"].tolist())}. Нужны все строки с отрицательным ростом.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07b-sql-windows",
+    "task": "w-lag",
+    "case": "wrong-zero-revenues",
+    "expected": false,
+    "code": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nmom_shop = duckdb.sql(\"\"\"\n    WITH m AS (\n        SELECT shop_id, date_trunc('month', datetime) AS month, SUM(amount) AS revenue\n        FROM df\n        GROUP BY shop_id, month\n    )\n    SELECT shop_id, month, revenue,\n           ROUND(100 * (revenue / LAG(revenue) OVER (PARTITION BY shop_id ORDER BY month) - 1), 1) AS growth_pct\n    FROM m\n    ORDER BY shop_id, month\n\"\"\").df()\nfalls = mom_shop[mom_shop[\"growth_pct\"] < 0]\nfalls\nmom_shop['revenue']=0;falls['revenue']=0",
+    "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_m = _d.groupby(['shop_id', _d['datetime'].dt.to_period('M')])['amount'].sum().rename('revenue').reset_index()\n_m['g'] = (100 * (_m['revenue'] / _m.groupby('shop_id')['revenue'].shift(1) - 1)).round(1)\nb = need('mom_shop', _pd.DataFrame)\nassert list(b.columns) == ['shop_id', 'month', 'revenue', 'growth_pct'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_m), f'Строк {len(b)}, а пар «кофейня × месяц» {len(_m)}.'\nassert b['shop_id'].tolist() == _m['shop_id'].tolist(), 'Порядок строк: по shop_id, затем по month.'\n_g = b['growth_pct'].tolist()\n_firsts = [i for i in range(len(_m)) if i == 0 or _m['shop_id'][i] != _m['shop_id'][i - 1]]\nassert all(_pd.isna(_g[i]) for i in _firsts), 'У первого месяца каждой кофейни рост должен быть пустым. Похоже, в окне нет PARTITION BY shop_id.'\nassert all(_pd.isna(x) and _pd.isna(y) or abs(float(x) - y) < 0.051 for x, y in zip(_g, _m['g'])), 'growth_pct не совпадает с ожидаемым.'\nf = need('falls', _pd.DataFrame)\nassert sorted(f['shop_id'].tolist()) == sorted(_m.loc[_m['g'] < 0, 'shop_id'].tolist()), f'В falls кофейни {sorted(f[\"shop_id\"].tolist())}. Нужны все строки с отрицательным ростом.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07c-sql-frames",
+    "task": "w-running",
+    "case": "alternative-explicit-frame-file-sql",
+    "expected": true,
+    "code": "import duckdb\ncum=duckdb.sql(\"\"\"SELECT day,revenue,sum(revenue) OVER (ORDER BY day ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running FROM (SELECT CAST(datetime AS DATE) AS day,sum(amount) AS revenue FROM read_csv('orders_3m.csv') GROUP BY 1) ORDER BY day\"\"\").df()\nhalf_day=cum.loc[cum.running.ge(cum.revenue.sum()/2),'day'].min()",
+    "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_r = _d.groupby(_d['datetime'].dt.normalize())['amount'].sum().cumsum()\nb = need('cum', _pd.DataFrame)\nassert list(b.columns) == ['day', 'revenue', 'running'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_r), f'Строк {len(b)}, а дней с заказами {len(_r)}.'\nassert all(abs(float(a) - y) < 1e-6 for a, y in zip(b['running'], _r.values)), 'running не совпадает с накопительным итогом. Окно: SUM(revenue) OVER (ORDER BY day).'\n_h = _r[_r >= _r.iloc[-1] / 2].index[0]\nassert str(need('half_day'))[:10] == str(_h.date()), f'half_day = {need(\"half_day\")}, а половина выручки набрана в другой день.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "daily_sales.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07c-sql-frames",
+    "task": "w-running",
+    "case": "wrong-shifted-days",
+    "expected": false,
+    "code": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\ncum = duckdb.sql(\"\"\"\n    WITH d AS (\n        SELECT CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        GROUP BY day\n    )\n    SELECT day, revenue, SUM(revenue) OVER (ORDER BY day) AS running\n    FROM d\n    ORDER BY day\n\"\"\").df()\nhalf_day = cum.loc[cum[\"running\"] >= cum[\"revenue\"].sum() / 2, \"day\"].iloc[0]\nprint(half_day)\ncum['day']+=pd.Timedelta(days=1)",
+    "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_r = _d.groupby(_d['datetime'].dt.normalize())['amount'].sum().cumsum()\nb = need('cum', _pd.DataFrame)\nassert list(b.columns) == ['day', 'revenue', 'running'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_r), f'Строк {len(b)}, а дней с заказами {len(_r)}.'\nassert all(abs(float(a) - y) < 1e-6 for a, y in zip(b['running'], _r.values)), 'running не совпадает с накопительным итогом. Окно: SUM(revenue) OVER (ORDER BY day).'\n_h = _r[_r >= _r.iloc[-1] / 2].index[0]\nassert str(need('half_day'))[:10] == str(_h.date()), f'half_day = {need(\"half_day\")}, а половина выручки набрана в другой день.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "daily_sales.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07c-sql-frames",
+    "task": "w-running",
+    "case": "wrong-zero-daily-revenue",
+    "expected": false,
+    "code": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\ncum = duckdb.sql(\"\"\"\n    WITH d AS (\n        SELECT CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        GROUP BY day\n    )\n    SELECT day, revenue, SUM(revenue) OVER (ORDER BY day) AS running\n    FROM d\n    ORDER BY day\n\"\"\").df()\nhalf_day = cum.loc[cum[\"running\"] >= cum[\"revenue\"].sum() / 2, \"day\"].iloc[0]\nprint(half_day)\ncum['revenue']=0",
+    "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_r = _d.groupby(_d['datetime'].dt.normalize())['amount'].sum().cumsum()\nb = need('cum', _pd.DataFrame)\nassert list(b.columns) == ['day', 'revenue', 'running'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_r), f'Строк {len(b)}, а дней с заказами {len(_r)}.'\nassert all(abs(float(a) - y) < 1e-6 for a, y in zip(b['running'], _r.values)), 'running не совпадает с накопительным итогом. Окно: SUM(revenue) OVER (ORDER BY day).'\n_h = _r[_r >= _r.iloc[-1] / 2].index[0]\nassert str(need('half_day'))[:10] == str(_h.date()), f'half_day = {need(\"half_day\")}, а половина выручки набрана в другой день.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "daily_sales.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07a-sql-python",
+    "task": "sqlite-read",
+    "case": "alternative-read-sql-keyword-api",
+    "expected": true,
+    "code": "import sqlite3, pandas as pd\ncat=\"еда\"\ncon=sqlite3.connect('zerno.db')\nfood=pd.read_sql(sql='SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC',con=con,params=[cat]);con.close()",
+    "check": "import pandas as _pd, sqlite3 as _sq\n_c = _sq.connect('zerno.db')\n_w = _pd.read_sql_query(\"SELECT name, price FROM menu WHERE category = 'еда' ORDER BY price DESC\", _c)\n_c.close()\nb = need('food', _pd.DataFrame)\nassert list(b.columns) == ['name', 'price'], f'Столбцы: {list(b.columns)}, а нужны name и price.'\nassert b['name'].tolist() == _w['name'].tolist(), f'Позиции: {b[\"name\"].tolist()}. Нужны все позиции категории, по убыванию цены.'\nassert 'params' in _code, 'Передайте категорию через params= — так запрос не сломается ни на каком значении.'\nassert \"'еда'\" not in _code and '\"еда\"' in _code, 'Категория не должна быть вписана в SQL: оставьте в запросе ? или :cat, а значение — переменная cat.'\nassert calls('close') >= 1, 'Закройте подключение: con.close().'",
+    "setup": "",
+    "files": [
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "city",
+    "case": "review-missing_city_nullable",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\nfull = pd.merge(df, shops, on=\"shop_id\", how=\"left\")\nfull['city']=full['city'].astype('string'); full.loc[full.index[0], 'city'] = pd.NA",
+    "check": "import pandas as _pd\nf = need('full', _pd.DataFrame)\nassert 'city' in f.columns and 'seats' in f.columns, 'В full должны появиться столбцы справочника: city, seats…'\nassert len(f) == len(df), f'Строк стало {len(f)}, а было {len(df)}. Для LEFT JOIN со справочником число строк не меняется.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "all-shops",
+    "case": "review-missing_city_nullable",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nshops = pd.read_csv(\"shops.csv\")\nrev = df.groupby(\"shop_id\", as_index=False).agg(revenue=(\"amount\", \"sum\"))\nreport = pd.merge(shops, rev, on=\"shop_id\", how=\"left\")[[\"shop_id\", \"city\", \"revenue\"]]\nreport[\"revenue\"] = report[\"revenue\"].fillna(0)\nreport['city']=report['city'].astype('string'); report.loc[report.index[0], 'city'] = pd.NA",
+    "check": "import pandas as _pd\nr = need('report', _pd.DataFrame)\nassert len(r) == 7, f'Строк {len(r)}, а кофеен в справочнике 7.'\nassert list(r.columns) == ['shop_id', 'city', 'revenue'], f'Столбцы: {list(r.columns)}.'\nassert r['revenue'].notna().all(), 'В revenue есть NaN — замените на 0 через fillna(0).'\nassert r.set_index('shop_id').loc['EKB-1', 'revenue'] == 0, 'У EKB-1 выручка должна быть 0.'\nwant = _pd.read_csv('orders_3m.csv').groupby('shop_id')['amount'].sum()\nassert r.set_index('shop_id').loc['PRM-1', 'revenue'] == want['PRM-1'], 'Выручка PRM-1 не совпадает.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "margin",
+    "case": "review-ignores_size",
+    "expected": false,
+    "code": "import pandas as pd\nf=pd.read_csv('orders_3m.csv').merge(pd.read_csv('menu.csv'),on='drink')\nf['cost']=f.cost_s*f.qty\ng=f.groupby('drink')[['amount','cost']].sum()\nbest_margin=(1-g.cost/g.amount).idxmax()\n",
+    "check": "import pandas as _pd\nf = _pd.read_csv('orders_3m.csv').merge(_pd.read_csv('menu.csv'), on='drink')\nf['cost'] = f['cost_s'] * f['size'].map({'S': 1.0, 'M': 1.25, 'L': 1.5}) * f['qty']\ng = f.groupby('drink')[['amount', 'cost']].sum()\nwant = ((g['amount'] - g['cost']) / g['amount']).idxmax()\nassert need('best_margin') == want, f'best_margin = {need(\"best_margin\")!r}, а нужно {want!r}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04-groupby",
+    "task": "two-keys",
+    "case": "review-named_aggregation",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv')\nby_pair=df.groupby(['shop_id','channel']).agg(total_amount=('amount', 'sum'))\nkzn1_delivery=by_pair.at[('KZN-1','доставка'), 'total_amount']\n",
+    "check": "import pandas as _pd\nd = _pd.read_csv('orders_3m.csv')\nimport numbers as _num\nwant = d[(d['shop_id'] == 'KZN-1') & (d['channel'] == 'доставка')]['amount'].sum()\n_k = need('kzn1_delivery')\nif isinstance(_k, _pd.DataFrame):\n    assert False, 'В kzn1_delivery лежит таблица (DataFrame), а нужно одно число. Возьмите значение по паре ключей: by_pair[(\"KZN-1\", \"доставка\")]; из строки таблицы — столбец и .iloc[0].'\nif isinstance(_k, _pd.Series):\n    assert len(_k) == 1, f'В kzn1_delivery лежит Series из {len(_k)} значений, а нужно одно число — выручка доставки KZN-1.'\n    assert False, 'В kzn1_delivery лежит Series из одной строки, а нужно само число. Возьмите его через .iloc[0] — или сразу by_pair[(\"KZN-1\", \"доставка\")].'\nassert isinstance(_k, _num.Number), f'В kzn1_delivery лежит {type(_k).__name__} ({_k!r}), а нужно число.'\nassert _k == want, f'kzn1_delivery = {_k}, а нужно {want}.'\nassert 'groupby' in _code, 'Посчитайте через groupby по двум столбцам.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04-groupby",
+    "task": "two-keys",
+    "case": "review-reversed_key_fields",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv')\nby_pair=df.groupby(['channel','shop_id']).amount.sum()\nkzn1_delivery=by_pair.loc[('доставка','KZN-1')]\n",
+    "check": "import pandas as _pd\nd = _pd.read_csv('orders_3m.csv')\nimport numbers as _num\nwant = d[(d['shop_id'] == 'KZN-1') & (d['channel'] == 'доставка')]['amount'].sum()\n_k = need('kzn1_delivery')\nif isinstance(_k, _pd.DataFrame):\n    assert False, 'В kzn1_delivery лежит таблица (DataFrame), а нужно одно число. Возьмите значение по паре ключей: by_pair[(\"KZN-1\", \"доставка\")]; из строки таблицы — столбец и .iloc[0].'\nif isinstance(_k, _pd.Series):\n    assert len(_k) == 1, f'В kzn1_delivery лежит Series из {len(_k)} значений, а нужно одно число — выручка доставки KZN-1.'\n    assert False, 'В kzn1_delivery лежит Series из одной строки, а нужно само число. Возьмите его через .iloc[0] — или сразу by_pair[(\"KZN-1\", \"доставка\")].'\nassert isinstance(_k, _num.Number), f'В kzn1_delivery лежит {type(_k).__name__} ({_k!r}), а нужно число.'\nassert _k == want, f'kzn1_delivery = {_k}, а нужно {want}.'\nassert 'groupby' in _code, 'Посчитайте через groupby по двум столбцам.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "06-dates",
+    "task": "mom-net",
+    "case": "review-unrounded_growth",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\nmonthly = df.resample(\"ME\", on=\"datetime\")[\"amount\"].sum()\ngrowth = (monthly.pct_change() * 100).round(1)\nnov_growth = growth.iloc[-1]\ngrowth=monthly.pct_change()*100; nov_growth=growth.iloc[-1]",
+    "check": "import pandas as _pd\nimport numbers as _num\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_m = _d.resample('ME', on='datetime')['amount'].sum()\n_g = (_m.pct_change() * 100).round(1)\nm_ = need('monthly')\nassert isinstance(m_, _pd.Series) and len(m_) == 3, f'monthly должна быть Series из трёх месяцев, а сейчас {type(m_).__name__} длиной {len(m_) if hasattr(m_, \"__len__\") else \"—\"}.'\nassert list(m_) == list(_m), f'monthly = {list(m_)}, а нужно {list(_m)}: сумма amount по месяцам.'\ng_ = need('growth', _pd.Series)\nassert calls('pct_change'), 'Посчитайте изменение методом pct_change().'\nassert _pd.isna(g_.iloc[0]), 'Первое значение growth должно быть NaN: сентябрь не с чем сравнить.'\nassert close(g_.iloc[1], _g.iloc[1], 0.05) or not close(g_.iloc[1], _g.iloc[1] / 100, 0.001), 'В growth доли, а нужны проценты: умножьте на 100.'\nassert close(g_.iloc[1], _g.iloc[1], 0.05), f'Рост октября в growth — {g_.iloc[1]}, а нужно {_g.iloc[1]}.'\n_n = need('nov_growth')\nassert not isinstance(_n, (_pd.Series, _pd.DataFrame)), f'В nov_growth лежит {type(_n).__name__}, а нужно одно число. Последнее значение growth — .iloc[-1] (или .iloc[2]).'\nassert isinstance(_n, _num.Number) and close(_n, _g.iloc[2], 0.05), f'nov_growth = {_n!r}, а нужно {_g.iloc[2]}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07b-sql-windows",
+    "task": "w-lag",
+    "case": "review-unrounded_growth",
+    "expected": false,
+    "code": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\nmom_shop = duckdb.sql(\"\"\"\n    WITH m AS (\n        SELECT shop_id, date_trunc('month', datetime) AS month, SUM(amount) AS revenue\n        FROM df\n        GROUP BY shop_id, month\n    )\n    SELECT shop_id, month, revenue,\n           ROUND(100 * (revenue / LAG(revenue) OVER (PARTITION BY shop_id ORDER BY month) - 1), 1) AS growth_pct\n    FROM m\n    ORDER BY shop_id, month\n\"\"\").df()\nfalls = mom_shop[mom_shop[\"growth_pct\"] < 0]\nfalls\nmom_shop['growth_pct']=mom_shop.groupby('shop_id')['revenue'].pct_change()*100\nfalls=mom_shop[mom_shop.growth_pct<0]",
+    "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_m = _d.groupby(['shop_id', _d['datetime'].dt.to_period('M')])['amount'].sum().rename('revenue').reset_index()\n_m['g'] = (100 * (_m['revenue'] / _m.groupby('shop_id')['revenue'].shift(1) - 1)).round(1)\nb = need('mom_shop', _pd.DataFrame)\nassert list(b.columns) == ['shop_id', 'month', 'revenue', 'growth_pct'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_m), f'Строк {len(b)}, а пар «кофейня × месяц» {len(_m)}.'\nassert b['shop_id'].tolist() == _m['shop_id'].tolist(), 'Порядок строк: по shop_id, затем по month.'\n_g = b['growth_pct'].tolist()\n_firsts = [i for i in range(len(_m)) if i == 0 or _m['shop_id'][i] != _m['shop_id'][i - 1]]\nassert all(_pd.isna(_g[i]) for i in _firsts), 'У первого месяца каждой кофейни рост должен быть пустым. Похоже, в окне нет PARTITION BY shop_id.'\nassert all(_pd.isna(x) and _pd.isna(y) or abs(float(x) - y) < 0.051 for x, y in zip(_g, _m['g'])), 'growth_pct не совпадает с ожидаемым.'\nf = need('falls', _pd.DataFrame)\nassert sorted(f['shop_id'].tolist()) == sorted(_m.loc[_m['g'] < 0, 'shop_id'].tolist()), f'В falls кофейни {sorted(f[\"shop_id\"].tolist())}. Нужны все строки с отрицательным ростом.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07a-sql-python",
+    "task": "sqlite-read",
+    "case": "review-contextlib_closing",
+    "expected": true,
+    "code": "from contextlib import closing\nimport pandas as pd, sqlite3\ncat=\"еда\"\nwith closing(sqlite3.connect('zerno.db')) as con:\n    food=pd.read_sql_query('SELECT name, price FROM menu WHERE category = ? ORDER BY price DESC',con,params=(cat,))\n",
+    "check": "import pandas as _pd, sqlite3 as _sq\n_c = _sq.connect('zerno.db')\n_w = _pd.read_sql_query(\"SELECT name, price FROM menu WHERE category = 'еда' ORDER BY price DESC\", _c)\n_c.close()\nb = need('food', _pd.DataFrame)\nassert list(b.columns) == ['name', 'price'], f'Столбцы: {list(b.columns)}, а нужны name и price.'\nassert b['name'].tolist() == _w['name'].tolist(), f'Позиции: {b[\"name\"].tolist()}. Нужны все позиции категории, по убыванию цены.'\nassert 'params' in _code, 'Передайте категорию через params= — так запрос не сломается ни на каком значении.'\nassert \"'еда'\" not in _code and '\"еда\"' in _code, 'Категория не должна быть вписана в SQL: оставьте в запросе ? или :cat, а значение — переменная cat.'\nassert calls('close') >= 1, 'Закройте подключение: con.close().'",
+    "setup": "",
+    "files": [
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "03-columns",
+    "task": "map",
+    "case": "review-only_uppercase_translation",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\ndf[\"channel_en\"] = df[\"channel\"].map({\"зал\": \"dine-in\", \"с собой\": \"takeaway\", \"доставка\": \"delivery\"})\nn_takeaway = (df[\"channel_en\"] == \"takeaway\").sum()\ndf.loc[df.index[-1], 'channel_en']=df['channel_en'].iloc[-1].upper()",
+    "check": "import pandas as _pd\nassert 'channel_en' in df.columns, 'Нет столбца channel_en.'\nassert df['channel_en'].notna().all(), 'В channel_en есть пустые значения — проверьте написание ключей словаря.'\nassert set(df['channel_en']) == {'dine-in', 'takeaway', 'delivery'}, f'Значения: {sorted(set(df[\"channel_en\"]))}.'\nassert need('n_takeaway') == (df['channel'] == 'с собой').sum(), f'n_takeaway = {need(\"n_takeaway\")}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04b-pivot",
+    "task": "wide",
+    "case": "review-wrong_grand_total",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\ndf[\"month\"] = df[\"datetime\"].str[:7]\nreport = pd.pivot_table(df, index=\"shop_id\", columns=\"month\", values=\"amount\",\n                        aggfunc=\"sum\", margins=True, margins_name=\"Итого\")\noct_total = report.loc[\"Итого\", \"2026-10\"]\nreport.at['Итого','Итого']+=1",
+    "check": "import pandas as _pd\nr = need('report', _pd.DataFrame)\nassert r.shape == (7, 4), f'Форма report — {r.shape}, а нужна (7, 4): 6 кофеен + строка итогов, 3 месяца + столбец итогов. Не забыли margins=True?'\nassert 'Итого' in r.index and 'Итого' in r.columns, 'Итоги должны называться «Итого»: параметр margins_name.'\n_d = _pd.read_csv('orders_3m.csv')\n_want = int(_d.loc[_d['datetime'].str.startswith('2026-10'), 'amount'].sum())\nassert int(r.loc['KZN-1', '2026-10']) == 55012, f'В ячейке KZN-1 × 2026-10 — {r.loc[\"KZN-1\", \"2026-10\"]}. В ячейках нужна сумма amount.'\nassert need('oct_total') == _want, f'oct_total = {need(\"oct_total\")}, а нужно {_want}. Это ячейка на пересечении строки «Итого» и столбца октября.'\nassert not has_literal(_want), 'Возьмите итог из таблицы через loc, а не вписывайте число.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07c-sql-frames",
+    "task": "w-running",
+    "case": "review-wrong_final_running",
+    "expected": false,
+    "code": "import duckdb\nimport pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\", parse_dates=[\"datetime\"])\n\ncum = duckdb.sql(\"\"\"\n    WITH d AS (\n        SELECT CAST(datetime AS DATE) AS day, SUM(amount) AS revenue\n        FROM df\n        GROUP BY day\n    )\n    SELECT day, revenue, SUM(revenue) OVER (ORDER BY day) AS running\n    FROM d\n    ORDER BY day\n\"\"\").df()\nhalf_day = cum.loc[cum[\"running\"] >= cum[\"revenue\"].sum() / 2, \"day\"].iloc[0]\nprint(half_day)\ncum.loc[cum.index[-1], 'running']+=1",
+    "check": "import pandas as _pd\n_d = _pd.read_csv('orders_3m.csv', parse_dates=['datetime'])\n_r = _d.groupby(_d['datetime'].dt.normalize())['amount'].sum().cumsum()\nb = need('cum', _pd.DataFrame)\nassert list(b.columns) == ['day', 'revenue', 'running'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_r), f'Строк {len(b)}, а дней с заказами {len(_r)}.'\nassert all(abs(float(a) - y) < 1e-6 for a, y in zip(b['running'], _r.values)), 'running не совпадает с накопительным итогом. Окно: SUM(revenue) OVER (ORDER BY day).'\n_h = _r[_r >= _r.iloc[-1] / 2].index[0]\nassert str(need('half_day'))[:10] == str(_h.date()), f'half_day = {need(\"half_day\")}, а половина выручки набрана в другой день.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "daily_sales.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "04-groupby",
+    "task": "shares",
+    "case": "review-correct_share_bad_top3",
+    "expected": false,
+    "code": "import pandas as pd\ndf = pd.read_csv(\"orders_3m.csv\")\nby_drink = df.groupby(\"drink\")[\"amount\"].sum()\nshare = (by_drink / by_drink.sum() * 100).round(1).sort_values(ascending=False)\ntop3 = list(share.index[:3])\ntop3[2]=top3[0]",
+    "check": "import pandas as _pd\nb = _pd.read_csv('orders_3m.csv').groupby('drink')['amount'].sum()\nwant = (b / b.sum() * 100).round(1).sort_values(ascending=False)\nassert need('top3') == list(want.index[:3]), f'top3 = {need(\"top3\")}, а нужно {list(want.index[:3])}.'\ns = need('share')\nassert abs(float(s.iloc[0]) - want.iloc[0]) < 1e-9, f'Первое значение share = {s.iloc[0]}, а нужно {want.iloc[0]}.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "05-merge",
+    "task": "per-seat",
+    "case": "review-sorted_aggregation",
+    "expected": true,
+    "code": "import pandas as pd\ndf=pd.read_csv('orders_3m.csv'); shops=pd.read_csv('shops.csv')\njoined=df.merge(shops,on='shop_id')\nm=joined.groupby('shop_id').agg(rev=('amount','sum'),n=('seats','first'))\nbest_per_seat=m.eval('rev/n').sort_values(ascending=False).index[0]\n",
+    "check": "import pandas as _pd\ns = _pd.read_csv('shops.csv').set_index('shop_id')\nrev = _pd.read_csv('orders_3m.csv').groupby('shop_id')['amount'].sum()\nimport numbers as _num\nwant = (rev / s.loc[rev.index, 'seats']).idxmax()\n_b = need('best_per_seat')\nassert not isinstance(_b, (_pd.Series, _pd.DataFrame)), f'В best_per_seat лежит {type(_b).__name__}, а нужен один код кофейни — строка вида \"KZN-1\".'\nassert not isinstance(_b, _num.Integral), f'best_per_seat = {_b} — это номер строки, а нужен код кофейни. После merge индекс таблицы — номера 0, 1, 2…, и idxmax возвращает номер. Возьмите по нему shop_id: t.loc[номер, \"shop_id\"] — или отсортируйте таблицу.'\nassert _b == want, f'best_per_seat = {_b!r}, а нужна другая кофейня. Делите выручку кофейни на её seats и ищите максимум.'",
+    "setup": "",
+    "files": [
+      "orders_3m.csv",
+      "shops.csv",
+      "menu.csv"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07a-sql-python",
+    "task": "sqlite-read",
+    "case": "review-positional-params",
+    "expected": true,
+    "code": "import sqlite3,pandas as pd\ncat='еда'\ncon=sqlite3.connect('zerno.db')\nfood=pd.read_sql_query('SELECT name,price FROM menu WHERE category=? ORDER BY price DESC',con,None,True,(cat,));con.close()",
+    "check": "import pandas as _pd, sqlite3 as _sq\n_c = _sq.connect('zerno.db')\n_w = _pd.read_sql_query(\"SELECT name, price FROM menu WHERE category = 'еда' ORDER BY price DESC\", _c)\n_c.close()\nb = need('food', _pd.DataFrame)\nassert list(b.columns) == ['name', 'price'], f'Столбцы: {list(b.columns)}, а нужны name и price.'\nassert b['name'].tolist() == _w['name'].tolist(), f'Позиции: {b[\"name\"].tolist()}. Нужны все позиции категории, по убыванию цены.'\nassert 'params' in _code, 'Передайте категорию через params= — так запрос не сломается ни на каком значении.'\nassert \"'еда'\" not in _code and '\"еда\"' in _code, 'Категория не должна быть вписана в SQL: оставьте в запросе ? или :cat, а значение — переменная cat.'\nassert calls('close') >= 1, 'Закройте подключение: con.close().'",
+    "setup": "",
+    "files": [
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "07a-sql-python",
+    "task": "sqlite-read",
+    "case": "review-unclosed-connection",
+    "expected": false,
+    "code": "import sqlite3,pandas as pd\ncat='еда'\ncon=sqlite3.connect('zerno.db')\nfood=pd.read_sql_query('SELECT name,price FROM menu WHERE category=? ORDER BY price DESC',con,params=(cat,))",
+    "check": "import pandas as _pd, sqlite3 as _sq\n_c = _sq.connect('zerno.db')\n_w = _pd.read_sql_query(\"SELECT name, price FROM menu WHERE category = 'еда' ORDER BY price DESC\", _c)\n_c.close()\nb = need('food', _pd.DataFrame)\nassert list(b.columns) == ['name', 'price'], f'Столбцы: {list(b.columns)}, а нужны name и price.'\nassert b['name'].tolist() == _w['name'].tolist(), f'Позиции: {b[\"name\"].tolist()}. Нужны все позиции категории, по убыванию цены.'\nassert 'params' in _code, 'Передайте категорию через params= — так запрос не сломается ни на каком значении.'\nassert \"'еда'\" not in _code and '\"еда\"' in _code, 'Категория не должна быть вписана в SQL: оставьте в запросе ? или :cat, а значение — переменная cat.'\nassert calls('close') >= 1, 'Закройте подключение: con.close().'",
+    "setup": "",
+    "files": [
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "11-sql-project",
+    "task": "p-promo",
+    "case": "promo-extra-period-label",
+    "expected": true,
+    "code": "import duckdb\n\npromo_items = duckdb.sql(\"\"\"\n    WITH c AS (\n        SELECT m.name, date_trunc('month', o.ordered_at) AS month, SUM(i.qty) AS cups\n        FROM orders AS o\n        JOIN items AS i USING (order_id)\n        JOIN menu AS m USING (item_id)\n        WHERE m.name IN ('Раф', 'Лимонад')\n        GROUP BY m.name, month\n    )\n    SELECT name, month, cups,\n           ROUND(100 * (cups / LAG(cups) OVER (PARTITION BY name ORDER BY month) - 1), 1) AS growth_pct\n    FROM c\n    ORDER BY name, month\n\"\"\").df()\npromo_items\npromo_items['Акция']='вне акции';promo_items.loc[(promo_items.name=='Раф') & (promo_items.month.dt.month==4),'Акция']='Весенний раф';promo_items.loc[(promo_items.name=='Лимонад') & (promo_items.month.dt.month==7),'Акция']='Летний лимонад'",
+    "check": "import pandas as _pd\n_m = _pd.read_csv('zdb_menu.csv')\n_f = (_pd.read_csv('zdb_items.csv').merge(_pd.read_csv('zdb_orders.csv', parse_dates=['ordered_at']), on='order_id')\n        .merge(_m[['item_id', 'name']], on='item_id'))\n_f = _f[_f['name'].isin(['Раф', 'Лимонад'])]\n_w = _f.groupby(['name', _f['ordered_at'].dt.to_period('M')])['qty'].sum().rename('cups').reset_index()\n_w['g'] = (100 * (_w['cups'] / _w.groupby('name')['cups'].shift(1) - 1)).round(1)\nb = need('promo_items', _pd.DataFrame)\nassert list(b.columns) == ['name', 'month', 'cups', 'growth_pct'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_w), f'Строк {len(b)}, а нужно {len(_w)}: раф — 6 месяцев, лимонад — с мая.'\n_keys = _pd.PeriodIndex(b['month'], freq='M')\nassert _keys.tolist() == _w['ordered_at'].tolist(), 'Неверные календарные ключи month: проверьте год и месяц в каждой строке.'\nassert b['name'].tolist() == _w['name'].tolist(), 'Порядок строк: по name, затем по month.'\nassert [int(x) for x in b['cups']] == _w['cups'].tolist(), 'cups не совпадает: сумма qty, а не число строк.'\n_g = b['growth_pct'].tolist()\nassert all((_pd.isna(x) and _pd.isna(y)) or (not _pd.isna(x) and not _pd.isna(y) and abs(float(x) - y) < 0.051) for x, y in zip(_g, _w['g'])), 'growth_pct не совпадает. У первого месяца каждой позиции — пусто: LAG с PARTITION BY name.'",
+    "setup": "import duckdb as _dk\nimport pandas as _pd\n_dates = {\"orders\": [\"ordered_at\"], \"guests\": [\"reg_date\"], \"promos\": [\"start_date\", \"end_date\"]}\nfor _t in (\"shops\", \"menu\", \"guests\", \"promos\", \"orders\", \"items\"):\n    _df = _pd.read_csv(f\"zdb_{_t}.csv\", parse_dates=_dates.get(_t, []))\n    _dk.sql(f\"CREATE OR REPLACE TABLE {_t} AS SELECT * FROM _df\")\ndel _df",
+    "files": [
+      "zdb_shops.csv",
+      "zdb_menu.csv",
+      "zdb_guests.csv",
+      "zdb_promos.csv",
+      "zdb_orders.csv",
+      "zdb_items.csv",
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "11-sql-project",
+    "task": "p-promo",
+    "case": "promo-reordered-columns-extra-label",
+    "expected": true,
+    "code": "import duckdb\n\npromo_items = duckdb.sql(\"\"\"\n    WITH c AS (\n        SELECT m.name, date_trunc('month', o.ordered_at) AS month, SUM(i.qty) AS cups\n        FROM orders AS o\n        JOIN items AS i USING (order_id)\n        JOIN menu AS m USING (item_id)\n        WHERE m.name IN ('Раф', 'Лимонад')\n        GROUP BY m.name, month\n    )\n    SELECT name, month, cups,\n           ROUND(100 * (cups / LAG(cups) OVER (PARTITION BY name ORDER BY month) - 1), 1) AS growth_pct\n    FROM c\n    ORDER BY name, month\n\"\"\").df()\npromo_items\npromo_items['Акция']='подпись периода';promo_items=promo_items[['Акция','growth_pct','cups','month','name']]",
+    "check": "import pandas as _pd\n_m = _pd.read_csv('zdb_menu.csv')\n_f = (_pd.read_csv('zdb_items.csv').merge(_pd.read_csv('zdb_orders.csv', parse_dates=['ordered_at']), on='order_id')\n        .merge(_m[['item_id', 'name']], on='item_id'))\n_f = _f[_f['name'].isin(['Раф', 'Лимонад'])]\n_w = _f.groupby(['name', _f['ordered_at'].dt.to_period('M')])['qty'].sum().rename('cups').reset_index()\n_w['g'] = (100 * (_w['cups'] / _w.groupby('name')['cups'].shift(1) - 1)).round(1)\nb = need('promo_items', _pd.DataFrame)\nassert list(b.columns) == ['name', 'month', 'cups', 'growth_pct'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_w), f'Строк {len(b)}, а нужно {len(_w)}: раф — 6 месяцев, лимонад — с мая.'\n_keys = _pd.PeriodIndex(b['month'], freq='M')\nassert _keys.tolist() == _w['ordered_at'].tolist(), 'Неверные календарные ключи month: проверьте год и месяц в каждой строке.'\nassert b['name'].tolist() == _w['name'].tolist(), 'Порядок строк: по name, затем по month.'\nassert [int(x) for x in b['cups']] == _w['cups'].tolist(), 'cups не совпадает: сумма qty, а не число строк.'\n_g = b['growth_pct'].tolist()\nassert all((_pd.isna(x) and _pd.isna(y)) or (not _pd.isna(x) and not _pd.isna(y) and abs(float(x) - y) < 0.051) for x, y in zip(_g, _w['g'])), 'growth_pct не совпадает. У первого месяца каждой позиции — пусто: LAG с PARTITION BY name.'",
+    "setup": "import duckdb as _dk\nimport pandas as _pd\n_dates = {\"orders\": [\"ordered_at\"], \"guests\": [\"reg_date\"], \"promos\": [\"start_date\", \"end_date\"]}\nfor _t in (\"shops\", \"menu\", \"guests\", \"promos\", \"orders\", \"items\"):\n    _df = _pd.read_csv(f\"zdb_{_t}.csv\", parse_dates=_dates.get(_t, []))\n    _dk.sql(f\"CREATE OR REPLACE TABLE {_t} AS SELECT * FROM _df\")\ndel _df",
+    "files": [
+      "zdb_shops.csv",
+      "zdb_menu.csv",
+      "zdb_guests.csv",
+      "zdb_promos.csv",
+      "zdb_orders.csv",
+      "zdb_items.csv",
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "11-sql-project",
+    "task": "p-promo",
+    "case": "promo-wrong-cups-extra-label",
+    "expected": false,
+    "code": "import duckdb\n\npromo_items = duckdb.sql(\"\"\"\n    WITH c AS (\n        SELECT m.name, date_trunc('month', o.ordered_at) AS month, SUM(i.qty) AS cups\n        FROM orders AS o\n        JOIN items AS i USING (order_id)\n        JOIN menu AS m USING (item_id)\n        WHERE m.name IN ('Раф', 'Лимонад')\n        GROUP BY m.name, month\n    )\n    SELECT name, month, cups,\n           ROUND(100 * (cups / LAG(cups) OVER (PARTITION BY name ORDER BY month) - 1), 1) AS growth_pct\n    FROM c\n    ORDER BY name, month\n\"\"\").df()\npromo_items\npromo_items['Акция']='подпись периода';promo_items.loc[promo_items.index[-1],'cups']+=100",
+    "check": "import pandas as _pd\n_m = _pd.read_csv('zdb_menu.csv')\n_f = (_pd.read_csv('zdb_items.csv').merge(_pd.read_csv('zdb_orders.csv', parse_dates=['ordered_at']), on='order_id')\n        .merge(_m[['item_id', 'name']], on='item_id'))\n_f = _f[_f['name'].isin(['Раф', 'Лимонад'])]\n_w = _f.groupby(['name', _f['ordered_at'].dt.to_period('M')])['qty'].sum().rename('cups').reset_index()\n_w['g'] = (100 * (_w['cups'] / _w.groupby('name')['cups'].shift(1) - 1)).round(1)\nb = need('promo_items', _pd.DataFrame)\nassert list(b.columns) == ['name', 'month', 'cups', 'growth_pct'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_w), f'Строк {len(b)}, а нужно {len(_w)}: раф — 6 месяцев, лимонад — с мая.'\n_keys = _pd.PeriodIndex(b['month'], freq='M')\nassert _keys.tolist() == _w['ordered_at'].tolist(), 'Неверные календарные ключи month: проверьте год и месяц в каждой строке.'\nassert b['name'].tolist() == _w['name'].tolist(), 'Порядок строк: по name, затем по month.'\nassert [int(x) for x in b['cups']] == _w['cups'].tolist(), 'cups не совпадает: сумма qty, а не число строк.'\n_g = b['growth_pct'].tolist()\nassert all((_pd.isna(x) and _pd.isna(y)) or (not _pd.isna(x) and not _pd.isna(y) and abs(float(x) - y) < 0.051) for x, y in zip(_g, _w['g'])), 'growth_pct не совпадает. У первого месяца каждой позиции — пусто: LAG с PARTITION BY name.'",
+    "setup": "import duckdb as _dk\nimport pandas as _pd\n_dates = {\"orders\": [\"ordered_at\"], \"guests\": [\"reg_date\"], \"promos\": [\"start_date\", \"end_date\"]}\nfor _t in (\"shops\", \"menu\", \"guests\", \"promos\", \"orders\", \"items\"):\n    _df = _pd.read_csv(f\"zdb_{_t}.csv\", parse_dates=_dates.get(_t, []))\n    _dk.sql(f\"CREATE OR REPLACE TABLE {_t} AS SELECT * FROM _df\")\ndel _df",
+    "files": [
+      "zdb_shops.csv",
+      "zdb_menu.csv",
+      "zdb_guests.csv",
+      "zdb_promos.csv",
+      "zdb_orders.csv",
+      "zdb_items.csv",
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "11-sql-project",
+    "task": "p-promo",
+    "case": "promo-wrong-growth-extra-label",
+    "expected": false,
+    "code": "import duckdb\n\npromo_items = duckdb.sql(\"\"\"\n    WITH c AS (\n        SELECT m.name, date_trunc('month', o.ordered_at) AS month, SUM(i.qty) AS cups\n        FROM orders AS o\n        JOIN items AS i USING (order_id)\n        JOIN menu AS m USING (item_id)\n        WHERE m.name IN ('Раф', 'Лимонад')\n        GROUP BY m.name, month\n    )\n    SELECT name, month, cups,\n           ROUND(100 * (cups / LAG(cups) OVER (PARTITION BY name ORDER BY month) - 1), 1) AS growth_pct\n    FROM c\n    ORDER BY name, month\n\"\"\").df()\npromo_items\npromo_items['Акция']='подпись периода';promo_items.loc[promo_items.index[-1],'growth_pct']+=10",
+    "check": "import pandas as _pd\n_m = _pd.read_csv('zdb_menu.csv')\n_f = (_pd.read_csv('zdb_items.csv').merge(_pd.read_csv('zdb_orders.csv', parse_dates=['ordered_at']), on='order_id')\n        .merge(_m[['item_id', 'name']], on='item_id'))\n_f = _f[_f['name'].isin(['Раф', 'Лимонад'])]\n_w = _f.groupby(['name', _f['ordered_at'].dt.to_period('M')])['qty'].sum().rename('cups').reset_index()\n_w['g'] = (100 * (_w['cups'] / _w.groupby('name')['cups'].shift(1) - 1)).round(1)\nb = need('promo_items', _pd.DataFrame)\nassert list(b.columns) == ['name', 'month', 'cups', 'growth_pct'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_w), f'Строк {len(b)}, а нужно {len(_w)}: раф — 6 месяцев, лимонад — с мая.'\n_keys = _pd.PeriodIndex(b['month'], freq='M')\nassert _keys.tolist() == _w['ordered_at'].tolist(), 'Неверные календарные ключи month: проверьте год и месяц в каждой строке.'\nassert b['name'].tolist() == _w['name'].tolist(), 'Порядок строк: по name, затем по month.'\nassert [int(x) for x in b['cups']] == _w['cups'].tolist(), 'cups не совпадает: сумма qty, а не число строк.'\n_g = b['growth_pct'].tolist()\nassert all((_pd.isna(x) and _pd.isna(y)) or (not _pd.isna(x) and not _pd.isna(y) and abs(float(x) - y) < 0.051) for x, y in zip(_g, _w['g'])), 'growth_pct не совпадает. У первого месяца каждой позиции — пусто: LAG с PARTITION BY name.'",
+    "setup": "import duckdb as _dk\nimport pandas as _pd\n_dates = {\"orders\": [\"ordered_at\"], \"guests\": [\"reg_date\"], \"promos\": [\"start_date\", \"end_date\"]}\nfor _t in (\"shops\", \"menu\", \"guests\", \"promos\", \"orders\", \"items\"):\n    _df = _pd.read_csv(f\"zdb_{_t}.csv\", parse_dates=_dates.get(_t, []))\n    _dk.sql(f\"CREATE OR REPLACE TABLE {_t} AS SELECT * FROM _df\")\ndel _df",
+    "files": [
+      "zdb_shops.csv",
+      "zdb_menu.csv",
+      "zdb_guests.csv",
+      "zdb_promos.csv",
+      "zdb_orders.csv",
+      "zdb_items.csv",
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "11-sql-project",
+    "task": "p-promo",
+    "case": "promo-duplicate-required-field",
+    "expected": false,
+    "code": "import duckdb\n\npromo_items = duckdb.sql(\"\"\"\n    WITH c AS (\n        SELECT m.name, date_trunc('month', o.ordered_at) AS month, SUM(i.qty) AS cups\n        FROM orders AS o\n        JOIN items AS i USING (order_id)\n        JOIN menu AS m USING (item_id)\n        WHERE m.name IN ('Раф', 'Лимонад')\n        GROUP BY m.name, month\n    )\n    SELECT name, month, cups,\n           ROUND(100 * (cups / LAG(cups) OVER (PARTITION BY name ORDER BY month) - 1), 1) AS growth_pct\n    FROM c\n    ORDER BY name, month\n\"\"\").df()\npromo_items\npromo_items=promo_items[['name','month','cups','growth_pct','cups']]",
+    "check": "import pandas as _pd\n_m = _pd.read_csv('zdb_menu.csv')\n_f = (_pd.read_csv('zdb_items.csv').merge(_pd.read_csv('zdb_orders.csv', parse_dates=['ordered_at']), on='order_id')\n        .merge(_m[['item_id', 'name']], on='item_id'))\n_f = _f[_f['name'].isin(['Раф', 'Лимонад'])]\n_w = _f.groupby(['name', _f['ordered_at'].dt.to_period('M')])['qty'].sum().rename('cups').reset_index()\n_w['g'] = (100 * (_w['cups'] / _w.groupby('name')['cups'].shift(1) - 1)).round(1)\nb = need('promo_items', _pd.DataFrame)\nassert list(b.columns) == ['name', 'month', 'cups', 'growth_pct'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_w), f'Строк {len(b)}, а нужно {len(_w)}: раф — 6 месяцев, лимонад — с мая.'\n_keys = _pd.PeriodIndex(b['month'], freq='M')\nassert _keys.tolist() == _w['ordered_at'].tolist(), 'Неверные календарные ключи month: проверьте год и месяц в каждой строке.'\nassert b['name'].tolist() == _w['name'].tolist(), 'Порядок строк: по name, затем по month.'\nassert [int(x) for x in b['cups']] == _w['cups'].tolist(), 'cups не совпадает: сумма qty, а не число строк.'\n_g = b['growth_pct'].tolist()\nassert all((_pd.isna(x) and _pd.isna(y)) or (not _pd.isna(x) and not _pd.isna(y) and abs(float(x) - y) < 0.051) for x, y in zip(_g, _w['g'])), 'growth_pct не совпадает. У первого месяца каждой позиции — пусто: LAG с PARTITION BY name.'",
+    "setup": "import duckdb as _dk\nimport pandas as _pd\n_dates = {\"orders\": [\"ordered_at\"], \"guests\": [\"reg_date\"], \"promos\": [\"start_date\", \"end_date\"]}\nfor _t in (\"shops\", \"menu\", \"guests\", \"promos\", \"orders\", \"items\"):\n    _df = _pd.read_csv(f\"zdb_{_t}.csv\", parse_dates=_dates.get(_t, []))\n    _dk.sql(f\"CREATE OR REPLACE TABLE {_t} AS SELECT * FROM _df\")\ndel _df",
+    "files": [
+      "zdb_shops.csv",
+      "zdb_menu.csv",
+      "zdb_guests.csv",
+      "zdb_promos.csv",
+      "zdb_orders.csv",
+      "zdb_items.csv",
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "11-sql-project",
+    "task": "p-promo",
+    "case": "promo-fractional-cups",
+    "expected": false,
+    "code": "import duckdb\n\npromo_items = duckdb.sql(\"\"\"\n    WITH c AS (\n        SELECT m.name, date_trunc('month', o.ordered_at) AS month, SUM(i.qty) AS cups\n        FROM orders AS o\n        JOIN items AS i USING (order_id)\n        JOIN menu AS m USING (item_id)\n        WHERE m.name IN ('Раф', 'Лимонад')\n        GROUP BY m.name, month\n    )\n    SELECT name, month, cups,\n           ROUND(100 * (cups / LAG(cups) OVER (PARTITION BY name ORDER BY month) - 1), 1) AS growth_pct\n    FROM c\n    ORDER BY name, month\n\"\"\").df()\npromo_items\npromo_items['cups']+=0.25",
+    "check": "import pandas as _pd\n_m = _pd.read_csv('zdb_menu.csv')\n_f = (_pd.read_csv('zdb_items.csv').merge(_pd.read_csv('zdb_orders.csv', parse_dates=['ordered_at']), on='order_id')\n        .merge(_m[['item_id', 'name']], on='item_id'))\n_f = _f[_f['name'].isin(['Раф', 'Лимонад'])]\n_w = _f.groupby(['name', _f['ordered_at'].dt.to_period('M')])['qty'].sum().rename('cups').reset_index()\n_w['g'] = (100 * (_w['cups'] / _w.groupby('name')['cups'].shift(1) - 1)).round(1)\nb = need('promo_items', _pd.DataFrame)\nassert list(b.columns) == ['name', 'month', 'cups', 'growth_pct'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_w), f'Строк {len(b)}, а нужно {len(_w)}: раф — 6 месяцев, лимонад — с мая.'\n_keys = _pd.PeriodIndex(b['month'], freq='M')\nassert _keys.tolist() == _w['ordered_at'].tolist(), 'Неверные календарные ключи month: проверьте год и месяц в каждой строке.'\nassert b['name'].tolist() == _w['name'].tolist(), 'Порядок строк: по name, затем по month.'\nassert [int(x) for x in b['cups']] == _w['cups'].tolist(), 'cups не совпадает: сумма qty, а не число строк.'\n_g = b['growth_pct'].tolist()\nassert all((_pd.isna(x) and _pd.isna(y)) or (not _pd.isna(x) and not _pd.isna(y) and abs(float(x) - y) < 0.051) for x, y in zip(_g, _w['g'])), 'growth_pct не совпадает. У первого месяца каждой позиции — пусто: LAG с PARTITION BY name.'",
+    "setup": "import duckdb as _dk\nimport pandas as _pd\n_dates = {\"orders\": [\"ordered_at\"], \"guests\": [\"reg_date\"], \"promos\": [\"start_date\", \"end_date\"]}\nfor _t in (\"shops\", \"menu\", \"guests\", \"promos\", \"orders\", \"items\"):\n    _df = _pd.read_csv(f\"zdb_{_t}.csv\", parse_dates=_dates.get(_t, []))\n    _dk.sql(f\"CREATE OR REPLACE TABLE {_t} AS SELECT * FROM _df\")\ndel _df",
+    "files": [
+      "zdb_shops.csv",
+      "zdb_menu.csv",
+      "zdb_guests.csv",
+      "zdb_promos.csv",
+      "zdb_orders.csv",
+      "zdb_items.csv",
+      "zerno.db"
+    ],
+    "prepare": ""
+  },
+  {
+    "lesson": "11-sql-project",
+    "task": "p-promo",
+    "case": "promo-unrounded-growth",
+    "expected": false,
+    "code": "import duckdb\n\npromo_items = duckdb.sql(\"\"\"\n    WITH c AS (\n        SELECT m.name, date_trunc('month', o.ordered_at) AS month, SUM(i.qty) AS cups\n        FROM orders AS o\n        JOIN items AS i USING (order_id)\n        JOIN menu AS m USING (item_id)\n        WHERE m.name IN ('Раф', 'Лимонад')\n        GROUP BY m.name, month\n    )\n    SELECT name, month, cups,\n           ROUND(100 * (cups / LAG(cups) OVER (PARTITION BY name ORDER BY month) - 1), 1) AS growth_pct\n    FROM c\n    ORDER BY name, month\n\"\"\").df()\npromo_items\npromo_items['growth_pct']=promo_items.groupby('name')['cups'].pct_change()*100",
+    "check": "import pandas as _pd\n_m = _pd.read_csv('zdb_menu.csv')\n_f = (_pd.read_csv('zdb_items.csv').merge(_pd.read_csv('zdb_orders.csv', parse_dates=['ordered_at']), on='order_id')\n        .merge(_m[['item_id', 'name']], on='item_id'))\n_f = _f[_f['name'].isin(['Раф', 'Лимонад'])]\n_w = _f.groupby(['name', _f['ordered_at'].dt.to_period('M')])['qty'].sum().rename('cups').reset_index()\n_w['g'] = (100 * (_w['cups'] / _w.groupby('name')['cups'].shift(1) - 1)).round(1)\nb = need('promo_items', _pd.DataFrame)\nassert list(b.columns) == ['name', 'month', 'cups', 'growth_pct'], f'Столбцы: {list(b.columns)}.'\nassert len(b) == len(_w), f'Строк {len(b)}, а нужно {len(_w)}: раф — 6 месяцев, лимонад — с мая.'\n_keys = _pd.PeriodIndex(b['month'], freq='M')\nassert _keys.tolist() == _w['ordered_at'].tolist(), 'Неверные календарные ключи month: проверьте год и месяц в каждой строке.'\nassert b['name'].tolist() == _w['name'].tolist(), 'Порядок строк: по name, затем по month.'\nassert [int(x) for x in b['cups']] == _w['cups'].tolist(), 'cups не совпадает: сумма qty, а не число строк.'\n_g = b['growth_pct'].tolist()\nassert all((_pd.isna(x) and _pd.isna(y)) or (not _pd.isna(x) and not _pd.isna(y) and abs(float(x) - y) < 0.051) for x, y in zip(_g, _w['g'])), 'growth_pct не совпадает. У первого месяца каждой позиции — пусто: LAG с PARTITION BY name.'",
+    "setup": "import duckdb as _dk\nimport pandas as _pd\n_dates = {\"orders\": [\"ordered_at\"], \"guests\": [\"reg_date\"], \"promos\": [\"start_date\", \"end_date\"]}\nfor _t in (\"shops\", \"menu\", \"guests\", \"promos\", \"orders\", \"items\"):\n    _df = _pd.read_csv(f\"zdb_{_t}.csv\", parse_dates=_dates.get(_t, []))\n    _dk.sql(f\"CREATE OR REPLACE TABLE {_t} AS SELECT * FROM _df\")\ndel _df",
+    "files": [
+      "zdb_shops.csv",
+      "zdb_menu.csv",
+      "zdb_guests.csv",
+      "zdb_promos.csv",
+      "zdb_orders.csv",
+      "zdb_items.csv",
+      "zerno.db"
+    ],
+    "prepare": ""
+  }
+]

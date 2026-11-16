@@ -415,40 +415,69 @@ text = "Пермь;412;205\nКазань;538;198\n\nТюмень;297;214\n"
 ### check
 ```python
 f = need('parse_line')
-assert f('Уфа;10;200') == ['Уфа', 10, 200], f'parse_line("Уфа;10;200") = {f("Уфа;10;200")!r}.'
+def _check_row(_line, _row):
+    _parts = _line.split(';')
+    assert isinstance(_row, list) and len(_row) == 3, 'parse_line должна возвращать список из города, числа чашек и цены.'
+    assert type(_row[1]) is int and type(_row[2]) is int, f'Чашки и цена должны иметь тип int; сейчас получены {type(_row[1]).__name__} и {type(_row[2]).__name__}.'
+    assert _row == [_parts[0], int(_parts[1]), int(_parts[2])], f'parse_line({_line!r}) = {_row!r}. Сохраните город и преобразуйте оба числовых поля в int.'
+for _line in ['Уфа;10;200', 'Омск;3;127']:
+    _check_row(_line, f(_line))
 assert need('total') == 412 * 205 + 538 * 198 + 297 * 214, f'total = {need("total")}. Пустые строки нужно пропускать.'
 import ast as _ast
-_sample = 'Уфа;7;113\n\nОмск;11;127\nСамара;3;149\n'
 _seen = []
 def _record(_fn):
+    if _fn is not _env.get('parse_line'):
+        return _fn
     def _wrapped(*args, **kwargs):
-        _seen.append(args[0] if args else next(iter(kwargs.values())))
-        return _fn(*args, **kwargs)
+        _line = args[0] if args else next(iter(kwargs.values()))
+        _row = _fn(*args, **kwargs)
+        _check_row(_line, _row)
+        _seen.append(_line)
+        return _row
     return _wrapped
 class _Probe(_ast.NodeTransformer):
+    _local_depth = 0
+    def _visit_local(self, node):
+        self._local_depth += 1
+        self.generic_visit(node)
+        self._local_depth -= 1
+        return node
+    visit_FunctionDef = _visit_local
+    visit_AsyncFunctionDef = _visit_local
+    visit_Lambda = _visit_local
+    visit_ClassDef = _visit_local
     def visit_Name(self, node):
         if node.id == 'parse_line' and isinstance(node.ctx, _ast.Load):
             return _ast.copy_location(_ast.Call(func=_ast.Name(id='_record', ctx=_ast.Load()), args=[node], keywords=[]), node)
         return node
+    def _override(self, node, targets):
+        if self._local_depth:
+            return node
+        _names = {n.id for target in targets for n in _ast.walk(target)
+                  if isinstance(n, _ast.Name) and isinstance(n.ctx, _ast.Store)}
+        _reads = {n.id for n in _ast.walk(node.value) if isinstance(n, _ast.Name)} if node.value is not None else set()
+        if 'text' in _names and 'text' not in _reads and node.value is not None:
+            override = _ast.parse('text = _probe_inputs.pop("text", text)').body[0]
+            return [node, _ast.copy_location(override, node)]
+        return node
     def visit_Assign(self, node):
         self.generic_visit(node)
-        if any(isinstance(t, _ast.Name) and t.id == 'text' for t in node.targets) and not any(isinstance(n, _ast.Name) and n.id == 'text' for n in _ast.walk(node.value)):
-            override = _ast.parse('text = _probe_inputs.pop("text", text)').body[0]
-            return [node, _ast.copy_location(override, node)]
-        return node
+        return self._override(node, node.targets)
     def visit_AnnAssign(self, node):
         self.generic_visit(node)
-        if isinstance(node.target, _ast.Name) and node.target.id == 'text' and node.value is not None and not any(isinstance(n, _ast.Name) and n.id == 'text' for n in _ast.walk(node.value)):
-            override = _ast.parse('text = _probe_inputs.pop("text", text)').body[0]
-            return [node, _ast.copy_location(override, node)]
-        return node
-_env = {'__name__': '__main__', '_record': _record, 'text': _sample, '_probe_inputs': {'text': _sample}}
-try:
-    exec(compile(_ast.fix_missing_locations(_Probe().visit(_ast.parse(_code))), '<parse-probe>', 'exec'), _env)
-except Exception as _e:
-    raise AssertionError(f'На новой выгрузке с пустой строкой код не завершился: {_e}') from None
-assert _env.get('total') == 7 * 113 + 11 * 127 + 3 * 149, 'На новой выгрузке total неверен: обработайте все непустые строки, не вписывайте сумму.'
-assert all(line in _seen for line in _sample.splitlines() if line.strip()), 'Используйте parse_line для обработки каждой непустой строки. Подойдут цикл, map и генератор.'
+        return self._override(node, [node.target])
+for _sample in ['Уфа;7;113\n\nОмск;11;127\nСамара;3;149\n', '\nКазань;2;199\nТюмень;5;211\n\nПермь;4;173\n']:
+    _seen.clear()
+    _env = {'__name__': '__main__', '_record': _record, 'text': _sample, '_probe_inputs': {'text': _sample}}
+    try:
+        exec(compile(_ast.fix_missing_locations(_Probe().visit(_ast.parse(_code))), '<parse-probe>', 'exec'), _env)
+    except AssertionError:
+        raise
+    except Exception as _e:
+        raise AssertionError(f'На новой выгрузке с пустой строкой код не завершился: {_e}') from None
+    _expected = sum(int(_line.split(';')[1]) * int(_line.split(';')[2]) for _line in _sample.splitlines() if _line.strip())
+    assert _env.get('total') == _expected, 'На новой выгрузке total неверен: обработайте все непустые строки, не вписывайте сумму.'
+    assert all(line in _seen for line in _sample.splitlines() if line.strip()), 'Используйте parse_line для обработки каждой непустой строки. Подойдут цикл, map и генератор.'
 ```
 
 ### hint

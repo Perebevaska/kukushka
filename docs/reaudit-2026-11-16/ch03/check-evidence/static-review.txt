@@ -1,0 +1,2041 @@
+
+===== ch03/05-strings/city-lower =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+print("до:", df["city"].nunique())
+n_after = df["city"].str.strip().str.lower().nunique()
+CHECK
+import pandas as _pd
+c = _pd.read_csv('clients_raw.csv')['city']
+want = c.str.strip().str.lower().nunique()
+assert need('n_after') == want, f'n_after = {need("n_after")}, а нужно {want}.'
+
+===== ch03/05-strings/cold =====
+
+SOLUTION
+import pandas as pd
+reviews = pd.read_csv("reviews.csv")
+n_cold = reviews["text"].str.contains("холодн|остыл", case=False, na=False).sum()
+CHECK
+import pandas as _pd
+t = _pd.read_csv('reviews.csv')['text']
+want = t.str.contains('холодн|остыл', case=False, na=False).sum()
+only = t.str.contains('холодн', case=False, na=False).sum()
+got = need('n_cold')
+assert not (got == only and only != want), f'n_cold = {got} — это только «холодн». Добавьте «или остыл»: шаблон "холодн|остыл".'
+assert got == want, f'n_cold = {got}, а нужно {want}. Регистр учли (case=False)?'
+
+===== ch03/05-strings/p-phone =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+digits = df["phone"].str.replace(r"\D", "", regex=True)
+valid = digits.str.fullmatch(r"[78]?\d{10}", na=False)
+phone10 = digits.where(valid).str[-10:]
+print(phone10[0])
+CHECK
+import pandas as _pd
+want = _pd.read_csv('clients_raw.csv')['phone'].str.replace(r'\D', '', regex=True).str[-10:][0]
+assert _lines == [str(want)], f'Должно вывестись {want}. Сейчас: {_lines}'
+
+===== ch03/05-strings/city-clean =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+df["city"] = (df["city"]
+              .str.strip()
+              .str.lower()
+              .str.removeprefix("г.")
+              .str.strip()
+              .replace({"екб": "екатеринбург"})
+              .str.capitalize())
+df["city"].value_counts(dropna=False)
+CHECK
+import pandas as _pd
+c0 = _pd.read_csv('clients_raw.csv')['city']
+want = c0.str.strip().str.lower().str.removeprefix('г.').str.strip().replace({'екб': 'екатеринбург'}).str.capitalize()
+got = need('df', _pd.DataFrame)['city']
+extra = sorted(set(got.dropna()) - {'Пермь', 'Казань', 'Тюмень', 'Уфа', 'Екатеринбург', 'Москва'})
+assert not extra, f'Остались неканонические значения: {extra}.'
+assert got.isna().sum() == c0.isna().sum(), 'Число пропусков изменилось — пустые города заполнять не нужно.'
+assert (got.fillna('-') == want.fillna('-')).all(), 'Значения не совпадают с ожидаемыми.'
+
+===== ch03/05-strings/phone10 =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+digits = df["phone"].str.replace(r"\D", "", regex=True)
+df["phone10"] = digits.where(digits.str.fullmatch(r"[78]?\d{10}")).str[-10:]
+n_bad = (df["phone10"].dropna().str.len() != 10).sum()
+CHECK
+import pandas as _pd
+p0 = _pd.read_csv('clients_raw.csv')['phone']
+want = p0.str.replace(r'\D', '', regex=True).where(p0.str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
+d = need('df', _pd.DataFrame)
+assert 'phone10' in d.columns, 'Нет столбца phone10.'
+got = d['phone10']
+assert got.isna().sum() == want.isna().sum(), 'Неизвестные или невалидные номера должны остаться пропусками.'
+assert (got.fillna('-') == want.fillna('-')).all(), f'phone10 не совпадает с ожидаемым. Например, {p0[got.fillna("-") != want.fillna("-")].iloc[0]!r} → {got[got.fillna("-") != want.fillna("-")].iloc[0]!r}.'
+assert need('n_bad') == (want.dropna().str.len() != 10).sum(), f'n_bad = {need("n_bad")}.'
+
+===== ch03/05-strings/drinks =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+menu = pd.read_csv("menu.csv")
+typos = {"Каппучино": "Капучино", "Флет уайт": "Флэт уайт", "Амерекано": "Американо"}
+pos["drink"] = pos["drink"].str.strip().str.capitalize().replace(typos)
+unknown = set(pos["drink"]) - set(menu["drink"])
+CHECK
+import pandas as _pd
+p0 = _pd.read_csv('pos_december.csv', sep=';')
+m = set(_pd.read_csv('menu.csv')['drink'])
+p = need('pos', _pd.DataFrame)
+left = set(p['drink']) - m
+assert not left, f'Не нашлись в меню: {sorted(left)}.'
+assert need('unknown') == set(), f'unknown = {need("unknown")} — должно быть пустое множество.'
+want = p0['drink'].str.strip().str.capitalize().replace({'Каппучино': 'Капучино', 'Флет уайт': 'Флэт уайт', 'Амерекано': 'Американо'})
+assert (p['drink'] == want).all(), 'Названия не совпадают с ожидаемыми.'
+
+===== ch03/05-strings/shop-code =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+pos["shop"] = pos["shop"].str.strip().str.upper().str.replace(" ", "-")
+n_shops = pos["shop"].nunique()
+CHECK
+import pandas as _pd
+s0 = _pd.read_csv('pos_december.csv', sep=';')['shop']
+want = s0.str.strip().str.upper().str.replace(' ', '-')
+p = need('pos', _pd.DataFrame)
+assert (p['shop'] == want).all(), f'Остались значения: {sorted(set(p["shop"]) - set(want))}.'
+assert need('n_shops') == want.nunique(), f'n_shops = {need("n_shops")}, а нужно {want.nunique()}.'
+
+===== ch03/05-strings/themes =====
+
+SOLUTION
+import pandas as pd
+reviews = pd.read_csv("reviews.csv")
+patterns = {"холодно": "холодн|остыл", "долго": "долг|очеред|ждал", "дорого": "дорог"}
+themes = {}
+for theme, pattern in patterns.items():
+    themes[theme] = int(reviews["text"].str.contains(pattern, case=False, na=False).sum())
+CHECK
+import pandas as _pd
+t = _pd.read_csv('reviews.csv')['text']
+c = lambda p: int(t.str.contains(p, case=False, na=False).sum())
+want = {'холодно': c('холодн|остыл'), 'долго': c('долг|очеред|ждал'), 'дорого': c('дорог')}
+got = {k: int(v) for k, v in dict(need('themes')).items()}
+assert set(got) == set(want), f'Ключи: {sorted(got)}, а нужны {sorted(want)}.'
+for k in want:
+    assert got[k] == want[k], f'Тема «{k}»: {got[k]}, а нужно {want[k]}.'
+
+===== ch03/05-strings/shared-phone =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+df["client_id"] = df["client_id"].str.strip().str.upper()
+digits = df["phone"].str.replace(r"\D", "", regex=True)
+df["phone10"] = digits.where(digits.str.fullmatch(r"[78]?\d{10}")).str[-10:]
+cards = df.groupby("phone10")["client_id"].nunique()
+shared = sorted(cards[cards > 1].index)
+CHECK
+import pandas as _pd
+d = _pd.read_csv('clients_raw.csv')
+d['client_id'] = d['client_id'].str.strip().str.upper()
+d['p'] = d['phone'].str.replace(r'\D', '', regex=True).where(d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
+n = d.dropna(subset=['p']).groupby('p')['client_id'].nunique()
+want = sorted(n[n > 1].index)
+got = need('shared')
+assert isinstance(got, list), 'shared должен быть списком.'
+assert got == want, f'shared = {got[:5]}…, а нужно {len(want)} телефонов. Дубли анкет одного гостя (одна карта) не считаются — нужны разные карты.'
+
+===== ch03/03b-excel/xl-skip =====
+
+SOLUTION
+import pandas as pd
+book = pd.read_excel("zerno_finance.xlsx", sheet_name=None)
+sheets = list(book)
+plan = pd.read_excel("zerno_finance.xlsx", sheet_name="План", skiprows=3)
+n_shops = len(plan[plan["Код"] != "Итого"])
+CHECK
+import pandas as _pd
+want_sheets = list(_pd.read_excel('zerno_finance.xlsx', sheet_name=None))
+s = need('sheets', list)
+assert s == want_sheets, f'sheets = {s}. Нужны имена всех листов по порядку: прочитайте книгу с sheet_name=None и возьмите list(...) от результата.'
+assert not has_literal('Описание'), 'Имена листов нужно получить кодом из книги, а не вписать руками.'
+p = need('plan', _pd.DataFrame)
+assert calls('read_excel') >= 1, 'Читайте саму книгу: pd.read_excel("zerno_finance.xlsx", ...).'
+assert p.columns[0] == 'Код', f'Первый столбец называется {p.columns[0]!r}, а нужен «Код». Проверьте, тот ли лист прочитан (sheet_name) и пропущены ли строки шапки над таблицей.'
+assert _pd.api.types.is_float_dtype(p['Янв']), f'Янв — {p["Янв"].dtype}, а нужны числа. Похоже, в столбец попала строка шапки — пропустите все строки над «Код».'
+assert len(p) == 8, f'В plan {len(p)} строк, а должно быть 8: семь кофеен и «Итого». Пропущено слишком много или слишком мало строк?'
+assert need('n_shops') == 7, f'n_shops = {need("n_shops")}. Строку «Итого» не считайте.'
+assert not has_literal(7), 'Посчитайте число кофеен кодом, а не впишите его.'
+
+===== ch03/03b-excel/year-check =====
+
+SOLUTION
+import pandas as pd
+months = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
+plan = pd.read_excel("zerno_finance.xlsx", sheet_name="План", header=3)
+body = plan[plan["Код"] != "Итого"].set_index("Код")
+year_sum = body[months].sum(axis=1).round(1)
+max_gap = round((year_sum - body["Год"]).abs().max(), 1)
+top = year_sum.idxmax()
+CHECK
+import pandas as _pd
+m = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
+p0 = _pd.read_excel('zerno_finance.xlsx', sheet_name='План', header=3)
+b = p0[p0['Код'] != 'Итого'].set_index('Код')
+want = b[m].sum(axis=1).round(1)
+assert 'header' in _code and 'skiprows' not in _code, 'Прочитайте лист через header= — номер строки с названиями столбцов, считая с нуля. skiprows здесь не используйте.'
+ys = need('year_sum', _pd.Series)
+assert 'Итого' not in ys.index, 'В year_sum попала строка «Итого» — уберите её до расчёта.'
+assert set(ys.index) == set(want.index), f'Индекс year_sum: {sorted(map(str, ys.index))}. Нужны коды кофеен: set_index("Код").'
+bad = [k for k in want.index if not close(ys[k], want[k], 0.051)]
+assert not bad, f'У {bad[0]} year_sum = {float(ys[bad[0]])}, ожидалось {float(want[bad[0]])}. Складывайте 12 месяцев по строке: sum(axis=1).'
+assert close(need('max_gap'), round((b[m].sum(axis=1) - b['Год']).abs().max(), 1), 0.051), f'max_gap = {need("max_gap")}. Это максимум abs() от разности year_sum и столбца «Год».'
+assert need('top') == want.idxmax(), f'top = {need("top")!r}. Ищите код с наибольшей суммой: idxmax().'
+
+===== ch03/03b-excel/xl-total =====
+
+SOLUTION
+import pandas as pd
+q = ["Янв", "Фев", "Мар"]
+fact = pd.read_excel("zerno_finance.xlsx", sheet_name="Факт", skiprows=4, usecols="A,D:F")
+body = fact[fact["Код"] != "Итого"]
+total = fact[fact["Код"] == "Итого"]
+q1 = round(body[q].sum().sum(), 1)
+q1_check = round(total[q].sum().sum(), 1)
+CHECK
+import pandas as _pd
+f0 = _pd.read_excel('zerno_finance.xlsx', sheet_name='Факт', skiprows=4)
+q = ['Янв', 'Фев', 'Мар']
+body = f0[f0['Код'] != 'Итого']
+want = round(body[q].sum().sum(), 1)
+want_check = round(f0.loc[f0['Код'] == 'Итого', q].sum().sum(), 1)
+f = need('fact', _pd.DataFrame)
+assert calls('read_excel') >= 1, 'Читайте лист из книги: pd.read_excel("zerno_finance.xlsx", sheet_name="Факт", ...).'
+assert 'Код' in f.columns, f'Столбцы fact: {list(f.columns)[:4]}… Пропустите четыре строки шапки.'
+assert list(f.columns) == ['Код'] + q, f'Столбцы fact: {list(f.columns)}. Нужны только «Код», «Янв», «Фев», «Мар» — задайте usecols.'
+got = need('q1')
+assert not close(got, round(want + want_check, 1), 0.05), f'q1 = {got} — это вдвое больше нужного: в сумму попала строка «Итого».'
+assert close(got, want, 0.05), f'q1 = {got} — не сходится с суммой января–марта по строкам кофеен. Проверьте, что «Итого» убрана, а округление — до одного знака.'
+assert close(need('q1_check'), want_check, 0.05), f'q1_check = {need("q1_check")}. Возьмите три месяца из строки, где Код == «Итого».'
+
+===== ch03/03b-excel/p-plan-csv =====
+
+SOLUTION
+import pandas as pd
+plan = pd.read_csv("finance_plan.csv", sep=";", decimal=",", skiprows=3)
+plan = plan[plan["Код"] != "Итого"]
+jan = round(plan["Янв"].sum(), 1)
+print(jan)
+CHECK
+import pandas as _pd
+p = need('plan', _pd.DataFrame)
+assert 'Код' in p.columns, f'Столбцы plan: {list(p.columns)[:3]}… Сначала нужно прочитать файл с пропуском шапки.'
+assert _pd.api.types.is_float_dtype(p['Янв']), 'Янв — не число: прочитайте с decimal=",".'
+assert 'Итого' not in set(p['Код']), 'Строка «Итого» осталась в plan — фильтр должен идти до суммы.'
+assert close(need('jan'), 5733.1, 0.05), f'jan = {need("jan")}, а по кофейням январь — 5733.1.'
+
+===== ch03/03b-excel/plan-fact =====
+
+SOLUTION
+import pandas as pd
+months = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен"]
+plan = pd.read_excel("zerno_finance.xlsx", sheet_name="План", skiprows=3)
+fact = pd.read_csv("finance_fact.csv", sep=";", decimal=",", skiprows=4)
+p = plan[plan["Код"] != "Итого"].set_index("Код")[months].sum(axis=1)
+f = fact[fact["Код"] != "Итого"].set_index("Код")[months].sum(axis=1)
+done = (f / p * 100).round(1)
+done = done[p > 0]
+worst = done.idxmin()
+CHECK
+import pandas as _pd
+m = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен']
+p0 = _pd.read_excel('zerno_finance.xlsx', sheet_name='План', skiprows=3)
+f0 = _pd.read_csv('finance_fact.csv', sep=';', decimal=',', skiprows=4)
+p = p0[p0['Код'] != 'Итого'].set_index('Код')[m].sum(axis=1)
+f = f0[f0['Код'] != 'Итого'].set_index('Код')[m].sum(axis=1)
+want = (f / p * 100).round(1).dropna()
+want = want[p[want.index] > 0]
+d = need('done', _pd.Series)
+assert 'zerno_finance.xlsx' in _code and 'finance_fact.csv' in _code, 'План читайте из книги zerno_finance.xlsx, а факт — из finance_fact.csv: в работе источники часто разные.'
+assert 'Итого' not in d.index, 'В done попала строка «Итого» — уберите её до расчёта.'
+assert d.notna().all() and _pd.Series(d).abs().max() != float('inf'), 'В done есть NaN или бесконечность: кофейню без плана нужно исключить.'
+assert set(d.index) == set(want.index), f'В done коды {sorted(d.index)}, а нужны {sorted(want.index)}. Индекс — коды кофеен; кофейня без плана не нужна.'
+diff = (d[want.index] - want).abs().max()
+assert diff < 0.051, f'Проценты не совпадают с ожидаемыми, например {want.index[0]}: {d[want.index[0]]} вместо {want.iloc[0]}. План и факт — суммы девяти месяцев, сопоставленные по коду.'
+assert need('worst') == want.idxmin(), f'worst = {need("worst")!r}. Ищите код с наименьшим значением в done.'
+assert not has_literal(want.idxmin()), 'Найдите код кодом (idxmin), а не впишите его.'
+
+===== ch03/03b-excel/auto-header =====
+
+SOLUTION
+import pandas as pd
+months = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен"]
+book = pd.read_excel("zerno_finance.xlsx", sheet_name=["План", "Факт"], header=None)
+heads = {}
+sums = {}
+for name, sheet in book.items():
+    row = sheet[sheet[0] == "Код"].index[0]
+    heads[name] = int(row)
+    t = pd.read_excel("zerno_finance.xlsx", sheet_name=name, skiprows=row)
+    t = t[t["Код"] != "Итого"].set_index("Код")
+    sums[name] = t[months].sum(axis=1)
+pf = pd.DataFrame({"план": sums["План"], "факт": sums["Факт"]}).round(1)
+CHECK
+import pandas as _pd
+from pathlib import Path as _Path
+from io import BytesIO as _BytesIO
+import openpyxl as _xl
+_m = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен']
+def _validate(_h, _pf):
+    assert isinstance(_h, dict) and set(_h) == {'План', 'Факт'}, 'heads — словарь с ключами «План» и «Факт».'
+    _sheets = _pd.read_excel('zerno_finance.xlsx', sheet_name=['План', 'Факт'], header=None)
+    _heads = {n: int(t.index[t[0] == 'Код'][0]) for n, t in _sheets.items()}
+    assert _h == _heads, f'heads={_h}, по содержимому книги нужно {_heads}. Ищите «Код» отдельно на каждом листе.'
+    assert isinstance(_pf, _pd.DataFrame) and list(_pf.columns) == ['план', 'факт'], 'pf — таблица с колонками план и факт.'
+    for _col, _name in [('план', 'План'), ('факт', 'Факт')]:
+        _t = _pd.read_excel('zerno_finance.xlsx', sheet_name=_name, skiprows=_heads[_name])
+        _want = _t[_t['Код'] != 'Итого'].set_index('Код')[_m].sum(axis=1).round(1)
+        assert _pf.index.is_unique and set(_pf.index) == set(_want.index), 'Индекс pf — коды кофеен без «Итого».'
+        for _key in _want.index:
+            assert close(_pf.loc[_key, _col], _want[_key], .051), f'{_col} у {_key}: ожидалось {_want[_key]}.'
+_validate(need('heads'), need('pf'))
+_path = _Path('zerno_finance.xlsx')
+_original = _path.read_bytes()
+try:
+    _book = _xl.load_workbook(_BytesIO(_original))
+    for _name, _n in [('План', 2), ('Факт', 1)]:
+        _book[_name].insert_rows(1, _n)
+        _book[_name].cell(1, 1, 'Предварительные данные')
+    _buf = _BytesIO()
+    _book.save(_buf)
+    _path.write_bytes(_buf.getvalue())
+    _env = {'__name__': '__main__'}
+    try:
+        exec(compile(_code, '<header-probe>', 'exec'), _env)
+    except Exception as _e:
+        raise AssertionError(f'После добавления служебных строк код не завершился: {_e}. Ищите заголовок на каждом листе.') from None
+    _validate(_env.get('heads'), _env.get('pf'))
+finally:
+    _path.write_bytes(_original)
+
+===== ch03/04-duplicates/n-exact =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+n_exact = df.duplicated().sum()
+CHECK
+import pandas as _pd
+want = _pd.read_csv('clients_raw.csv').duplicated().sum()
+got = need('n_exact')
+assert got != 2 * want, f'n_exact = {got} — похоже, посчитаны и оригиналы (keep=False). Нужно число лишних копий.'
+assert got == want, f'n_exact = {got}, а нужно {want}.'
+
+===== ch03/04-duplicates/drop-exact =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+clean = df.drop_duplicates().reset_index(drop=True)
+CHECK
+import pandas as _pd
+d = _pd.read_csv('clients_raw.csv')
+c = need('clean', _pd.DataFrame)
+assert len(c) == len(d.drop_duplicates()), f'В clean {len(c)} строк, а нужно {len(d.drop_duplicates())}.'
+assert list(c.index) == list(range(len(c))), 'Индекс должен идти 0, 1, 2, … — добавьте reset_index(drop=True).'
+
+===== ch03/04-duplicates/p-pos =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+pos = pos.drop_duplicates(subset=["id"])
+print(len(pos))
+CHECK
+import pandas as _pd
+want = _pd.read_csv('pos_december.csv', sep=';')['id'].nunique()
+assert _lines == [str(want)], f'Должно вывестись {want}. Сейчас: {_lines}'
+
+===== ch03/04-duplicates/norm-id =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv").drop_duplicates()
+df["client_id"] = df["client_id"].str.strip().str.upper()
+n_id_dups = df.duplicated(subset=["client_id"]).sum()
+CHECK
+import pandas as _pd
+d0 = _pd.read_csv('clients_raw.csv').drop_duplicates()
+ids = d0['client_id'].str.strip().str.upper()
+d = need('df', _pd.DataFrame)
+assert len(d) == len(d0), f'В df {len(d)} строк — уберите только полные дубли, их должно остаться {len(d0)}.'
+assert (d['client_id'].str.strip().str.upper() == d['client_id']).all(), 'В client_id остались пробелы по краям или строчные буквы.'
+assert need('n_id_dups') == ids.duplicated().sum(), f'n_id_dups = {need("n_id_dups")}, а нужно {ids.duplicated().sum()}.'
+
+===== ch03/04-duplicates/keep-last =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv").drop_duplicates()
+df["client_id"] = df["client_id"].str.strip().str.upper()
+clients = (df.sort_values("signup_date")
+             .drop_duplicates(subset=["client_id"], keep="last")
+             .reset_index(drop=True))
+CHECK
+import pandas as _pd
+d0 = _pd.read_csv('clients_raw.csv').drop_duplicates()
+d0['client_id'] = d0['client_id'].str.strip().str.upper()
+want = d0.sort_values('signup_date').drop_duplicates('client_id', keep='last')
+c = need('clients', _pd.DataFrame)
+assert c['client_id'].is_unique, 'Номера карт в clients должны быть уникальны.'
+assert len(c) == len(want), f'В clients {len(c)} строк, а нужно {len(want)}. Номер нормализовали?'
+w = want.set_index('client_id')['signup_date']
+g = c.set_index('client_id')['signup_date']
+bad = [k for k in w.index if g.get(k) != w[k]]
+assert not bad, f'Для {bad[0]} осталась анкета от {g.get(bad[0])}, а нужна самая свежая — {w[bad[0]]}.'
+assert list(c.index) == list(range(len(c))), 'Индекс должен идти по порядку — reset_index(drop=True).'
+
+===== ch03/04-duplicates/dup-ids =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+vc = pos["id"].value_counts()
+dup_ids = sorted(vc[vc > 1].index)
+CHECK
+import pandas as _pd
+p = _pd.read_csv('pos_december.csv', sep=';')
+want = sorted(p.loc[p['id'].duplicated(), 'id'].unique())
+assert need('dup_ids') == want, f'dup_ids = {need("dup_ids")}, а нужно {want}.'
+
+===== ch03/04-duplicates/price-list =====
+
+SOLUTION
+import pandas as pd
+orders = pd.read_csv("orders_3m.csv")
+orders["price"] = orders["amount"] / orders["qty"]
+prices = orders[["drink", "size", "price"]].drop_duplicates()
+ok = not prices.duplicated(subset=["drink", "size"]).any()
+CHECK
+import pandas as _pd
+o = _pd.read_csv('orders_3m.csv')
+o['price'] = o['amount'] / o['qty']
+want = o[['drink', 'size', 'price']].drop_duplicates()
+pr = need('prices', _pd.DataFrame)
+assert list(pr.columns) == ['drink', 'size', 'price'], f'Столбцы prices: {list(pr.columns)}. Нужны drink, size, price — в этом порядке.'
+assert len(pr) != len(o), f'В prices {len(pr)} строк — столько же, сколько заказов. Уберите повторы.'
+assert len(pr) == len(want), f'В prices {len(pr)} строк, а разных пар «напиток + размер» — {len(want)}.'
+m = pr.merge(want, on=['drink', 'size'], suffixes=('', '_w'))
+assert len(m) == len(want) and (m['price'] - m['price_w']).abs().max() < 1e-9, 'Цены не совпадают с amount / qty.'
+assert bool(need('ok')) is True, 'ok должен получиться True: проверьте, что пары drink + size не повторяются.'
+import ast as _ast
+_lit = [n for n in _ast.walk(_ast.parse(_code)) if isinstance(n, _ast.Assign) and isinstance(n.value, _ast.Constant)
+        and any(isinstance(t, _ast.Name) and t.id == 'ok' for t in n.targets)]
+assert not _lit, 'Получите ok проверкой (duplicated или is_unique), а не вписывайте True.'
+
+===== ch03/04-duplicates/overcount =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+raw_rev = (pos["price"] * pos["qty"]).sum()
+uniq = pos.drop_duplicates(subset=["id"])
+overcount = round(raw_rev - (uniq["price"] * uniq["qty"]).sum(), 2)
+CHECK
+import pandas as _pd
+p = _pd.read_csv('pos_december.csv', sep=';', decimal=',')
+r = lambda t: (t['price'] * t['qty']).sum()
+want = round(r(p) - r(p.drop_duplicates(subset=['id'])), 2)
+assert close(need('overcount'), want), f'overcount = {need("overcount")}, а нужно {want}.'
+
+===== ch03/04-duplicates/dedupe-fn =====
+
+SOLUTION
+import pandas as pd
+
+def dedupe(df, key, by):
+    return (df.sort_values(by)
+              .drop_duplicates(subset=[key], keep="last")
+              .reset_index(drop=True))
+
+t = pd.DataFrame({"id": ["A", "B", "A"], "d": ["2026-01-05", "2026-02-01", "2026-03-10"], "v": [1, 2, 3]})
+dedupe(t, "id", "d")
+CHECK
+import pandas as _pd
+f = need('dedupe')
+t = _pd.DataFrame({'id': ['A', 'B', 'A', 'C', 'B'], 'd': ['2026-01-05', '2026-02-01', '2026-03-10', '2026-01-01', '2025-12-31'], 'v': [1, 2, 3, 4, 5]})
+before = t.copy()
+r = f(t, 'id', 'd')
+assert isinstance(r, _pd.DataFrame), 'dedupe должна возвращать DataFrame.'
+assert t.equals(before), 'Исходная таблица изменилась — функция должна возвращать новую.'
+assert sorted(r['id']) == ['A', 'B', 'C'], f'Ключи в результате: {sorted(r["id"])}.'
+assert dict(zip(r['id'], r['v'])) == {'A': 3, 'B': 2, 'C': 4}, f'Оставлены не те строки: {dict(zip(r["id"], r["v"]))}. Нужна строка с наибольшим by.'
+assert list(r.index) == list(range(len(r))), 'Индекс — по порядку от 0.'
+r2 = f(_pd.DataFrame({'k': [1, 1, 2], 'amount': [500, 900, 100]}), 'k', 'amount')
+assert dict(zip(r2['k'], r2['amount'])) == {1: 900, 2: 100}, 'Функция должна работать с любыми названиями столбцов.'
+
+===== ch03/04-duplicates/shops-ref =====
+
+SOLUTION
+import pandas as pd
+flat = pd.read_csv("delivery_flat.csv")
+cols = ["shop_id", "shop_address", "city", "manager"]
+flat["city"] = flat["city"].str.strip().str.capitalize()
+versions = flat[cols].drop_duplicates()
+n_changed = (versions["shop_id"].value_counts() > 1).sum()
+shops = (flat.sort_values("date")
+             .drop_duplicates(subset=["shop_id"], keep="last")[cols]
+             .reset_index(drop=True))
+CHECK
+import pandas as _pd
+f = _pd.read_csv('delivery_flat.csv')
+cols = ['shop_id', 'shop_address', 'city', 'manager']
+f['city'] = f['city'].str.strip().str.capitalize()
+want = f.sort_values('date').drop_duplicates('shop_id', keep='last')[cols].set_index('shop_id').sort_index()
+v = f[cols].drop_duplicates()
+want_changed = int(v['shop_id'].duplicated().groupby(v['shop_id']).any().sum())
+s = need('shops', _pd.DataFrame)
+assert set(cols) <= set(s.columns), f'В shops нужны столбцы {cols}, сейчас {list(s.columns)}.'
+assert len(s.columns) == 4, f'В shops лишние столбцы: {[c for c in s.columns if c not in cols]}. Атрибуты заказа в справочник не идут.'
+assert s['shop_id'].is_unique, f'shop_id повторяется: {sorted(s.loc[s["shop_id"].duplicated(), "shop_id"].unique())}. Нормализуйте город и оставьте самую свежую версию.'
+g = s.set_index('shop_id').sort_index()[want.columns]
+assert list(g.index) == list(want.index), f'Коды в shops: {list(g.index)}, а нужны {list(want.index)}.'
+bad_city = g.index[g['city'] != want['city']].tolist()
+assert not bad_city, f'Город не совпадает у {bad_city}: уберите пробелы по краям и сделайте первую букву заглавной.'
+bad_mgr = g.index[g['manager'] != want['manager']].tolist()
+assert not bad_mgr, f'Управляющий у {bad_mgr} не самый свежий. Отсортируйте по date перед drop_duplicates(keep="last").'
+assert need('n_changed') == want_changed, f'n_changed = {need("n_changed")}. Посчитайте кофейни, у которых после нормализации города больше одной версии.'
+
+===== ch03/04-duplicates/versions =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv").drop_duplicates()
+df["client_id"] = df["client_id"].str.strip().str.upper()
+versions = (df[df.duplicated(subset=["client_id"], keep=False)]
+              .sort_values(["client_id", "signup_date"]))
+n_guests = versions["client_id"].nunique()
+CHECK
+import pandas as _pd
+d0 = _pd.read_csv('clients_raw.csv').drop_duplicates()
+d0['client_id'] = d0['client_id'].str.strip().str.upper()
+want = d0[d0.duplicated('client_id', keep=False)].sort_values(['client_id', 'signup_date'])
+v = need('versions', _pd.DataFrame)
+assert len(v) == len(want), f'В versions {len(v)} строк, а нужно {len(want)} — по две и больше на гостя, включая первую анкету.'
+assert list(v['client_id']) == list(want['client_id']) and list(v['signup_date']) == list(want['signup_date']), 'Порядок строк не тот: сначала по номеру, внутри — по дате.'
+assert need('n_guests') == want['client_id'].nunique(), f'n_guests = {need("n_guests")}.'
+
+===== ch03/03-types/read-pos =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+gross = (pos["price"] * pos["qty"]).sum()
+CHECK
+import pandas as _pd
+p0 = _pd.read_csv('pos_december.csv', sep=';', decimal=',')
+p = need('pos', _pd.DataFrame)
+assert p.shape[1] == 8, f'В pos {p.shape[1]} столбцов. Разделитель в файле — точка с запятой.'
+assert _pd.api.types.is_float_dtype(p['price']), f'price — {p["price"].dtype}. Дробная часть отделена запятой: decimal=",".'
+assert close(need('gross'), (p0['price'] * p0['qty']).sum()), f'gross = {need("gross")}.'
+
+===== ch03/03-types/stars =====
+
+SOLUTION
+import pandas as pd
+reviews = pd.read_csv("reviews.csv")
+stars = pd.to_numeric(reviews["rating"].str[0])
+avg_stars = round(stars.mean(), 2)
+CHECK
+import pandas as _pd
+r = _pd.read_csv('reviews.csv')
+want = round(_pd.to_numeric(r['rating'].str[0]).mean(), 2)
+assert close(need('avg_stars'), want), f'avg_stars = {need("avg_stars")}, а нужно {want}.'
+
+===== ch03/03-types/p-days =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+pos["time"] = pd.to_datetime(pos["time"], format="%d.%m.%Y %H:%M")
+by_day = pos.groupby(pos["time"].dt.date).size()
+print(by_day.idxmax())
+CHECK
+import pandas as _pd
+p = _pd.read_csv('pos_december.csv', sep=';', decimal=',')
+t = _pd.to_datetime(p['time'], format='%d.%m.%Y %H:%M')
+want = str(p.groupby(t.dt.date).size().idxmax())
+assert _lines == [want], f'Должно вывестись {want}. Сейчас: {_lines}'
+
+===== ch03/03-types/discount =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+pos["disc"] = pd.to_numeric(pos["discount"].str.replace("%", "")).fillna(0) / 100
+net = round((pos["price"] * pos["qty"] * (1 - pos["disc"])).sum(), 2)
+CHECK
+import pandas as _pd
+p = _pd.read_csv('pos_december.csv', sep=';', decimal=',')
+dd = _pd.to_numeric(p['discount'].str.replace('%', '')).fillna(0) / 100
+pp = need('pos', _pd.DataFrame)
+assert 'disc' in pp.columns, 'Нет столбца disc.'
+assert pp['disc'].notna().all(), 'В disc остались пропуски — пустая скидка значит 0.'
+assert pp['disc'].max() < 1, 'disc — доля: 10% → 0.1, а не 10.'
+assert (pp['disc'] - dd).abs().max() < 1e-9, 'disc не совпадает с ожидаемым.'
+assert close(need('net'), round((p['price'] * p['qty'] * (1 - dd)).sum(), 2)), f'net = {need("net")}.'
+
+===== ch03/03-types/bonus-num =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+bonus = pd.to_numeric(df["bonus"].str.replace(" ", ""), errors="coerce")
+lost = list(df["bonus"][bonus.isna() & df["bonus"].notna()].unique())
+CHECK
+import pandas as _pd
+raw = _pd.read_csv('clients_raw.csv')['bonus']
+want = _pd.to_numeric(raw.str.replace(' ', ''), errors='coerce')
+got = need('bonus', _pd.Series)
+assert got.isna().sum() == want.isna().sum(), f'В bonus {got.isna().sum()} пропусков, а должно быть {want.isna().sum()}. Числа с пробелом («1 250») потерялись?'
+assert (got.fillna(-1) == want.fillna(-1)).all(), 'Значения bonus не совпадают с ожидаемыми.'
+assert sorted(need('lost')) == ['—'], f'lost = {need("lost")}. Должен остаться только прочерк.'
+
+===== ch03/03-types/int64 =====
+
+SOLUTION
+import pandas as pd
+reviews = pd.read_csv("reviews.csv")
+reviews["stars"] = pd.to_numeric(reviews["rating"].str[0]).astype("Int64")
+n_no_stars = reviews["stars"].isna().sum()
+CHECK
+import pandas as _pd
+r = need('reviews', _pd.DataFrame)
+assert 'stars' in r.columns, 'Нет столбца stars.'
+assert str(r['stars'].dtype) == 'Int64', f'Тип stars — {r["stars"].dtype}, а нужен Int64 (с большой буквы).'
+r0 = _pd.read_csv('reviews.csv')
+assert (r['stars'].fillna(0) == _pd.to_numeric(r0['rating'].str[0]).fillna(0)).all(), 'Значения stars не совпадают с первой цифрой rating.'
+assert need('n_no_stars') == r0['rating'].isna().sum(), f'n_no_stars = {need("n_no_stars")}.'
+
+===== ch03/03-types/shop-hours =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+pos["time"] = pd.to_datetime(pos["time"], format="%d.%m.%Y %H:%M")
+last_hour = pos["time"].dt.hour.max()
+CHECK
+import pandas as _pd
+p = _pd.read_csv('pos_december.csv', sep=';', decimal=',')
+want = _pd.to_datetime(p['time'], format='%d.%m.%Y %H:%M').dt.hour.max()
+assert need('last_hour') == want, f'last_hour = {need("last_hour")}, а нужно {want}.'
+assert 'format' in _code, 'Укажите формат даты явно — format="%d.%m.%Y %H:%M".'
+
+===== ch03/03-types/born =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+iso = pd.to_datetime(df["birth_date"], format="%Y-%m-%d", errors="coerce")
+ru = pd.to_datetime(df["birth_date"], format="%d.%m.%Y", errors="coerce")
+born = iso.fillna(ru)
+n_born = born.notna().sum()
+CHECK
+import pandas as _pd
+b = _pd.read_csv('clients_raw.csv')['birth_date']
+want = _pd.to_datetime(b, format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(b, format='%d.%m.%Y', errors='coerce'))
+got = need('born', _pd.Series)
+assert _pd.api.types.is_datetime64_any_dtype(got), f'born — {got.dtype}, а нужны даты.'
+same = (got.fillna(_pd.Timestamp(0)) == want.fillna(_pd.Timestamp(0)))
+assert same.all(), f'Не совпадает {(~same).sum()} дат. Например, исходное {b[~same].iloc[0]!r} → {got[~same].iloc[0]}. Формат mixed путает день и месяц — разберите два формата отдельно.'
+assert need('n_born') == want.notna().sum(), f'n_born = {need("n_born")}.'
+
+===== ch03/03-types/age =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+iso = pd.to_datetime(df["birth_date"], format="%Y-%m-%d", errors="coerce")
+ru = pd.to_datetime(df["birth_date"], format="%d.%m.%Y", errors="coerce")
+born = iso.fillna(ru)
+age = 2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")
+median_age = age[age.between(14, 100)].median()
+CHECK
+import pandas as _pd
+b = _pd.read_csv('clients_raw.csv')['birth_date']
+born = _pd.to_datetime(b, format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(b, format='%d.%m.%Y', errors='coerce'))
+age = (2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201'))
+want = age[age.between(14, 100)].median()
+assert close(need('median_age'), want), f'median_age = {need("median_age")}, а нужно {want}. Отфильтровали возрасты вне 14–100?'
+_got = need('born', _pd.Series)
+_same = (_got == born) | (_got.isna() & born.isna())
+assert _same.all(), f'Дата рождения разобрана неверно: исходная строка {b[~_same].iloc[0]!r}. Разберите ISO и ДД.ММ.ГГГГ отдельно.'
+
+===== ch03/08-pipeline/fn-city =====
+
+SOLUTION
+import pandas as pd
+
+def clean_city(s):
+    return (s.str.strip().str.lower()
+             .str.removeprefix("г.").str.strip()
+             .replace({"екб": "екатеринбург"})
+             .str.capitalize())
+
+clean_city(pd.Series([" г. Пермь", "ЕКБ", "казань ", None]))
+CHECK
+import pandas as _pd
+f = need('clean_city')
+t = _pd.Series([' г. Пермь', 'ЕКБ', 'казань ', None, 'г.Уфа', 'Екб', 'Тюмень'])
+got = f(t)
+assert isinstance(got, _pd.Series), 'clean_city должна возвращать Series.'
+want = ['Пермь', 'Екатеринбург', 'Казань', None, 'Уфа', 'Екатеринбург', 'Тюмень']
+g = [None if _pd.isna(x) else x for x in got]
+assert g == want, f'clean_city({t.tolist()}) = {g}, а нужно {want}.'
+
+===== ch03/08-pipeline/fn-gender =====
+
+SOLUTION
+import pandas as pd
+
+def clean_gender(s):
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
+
+clean_gender(pd.Series(["М", "муж", "ж", None, "жен "]))
+CHECK
+import pandas as _pd
+f = need('clean_gender')
+t = _pd.Series(['М', 'муж', 'ж', None, 'жен ', 'Ж', 'м', 'x', 'море', 'желаю пропустить'])
+g = [None if _pd.isna(x) else x for x in f(t)]
+want = ['М', 'М', 'Ж', None, 'Ж', 'Ж', 'М', None, None, None]
+assert g == want, f'clean_gender({t.tolist()}) = {g}, а нужно {want}.'
+
+===== ch03/08-pipeline/p-pipe =====
+
+SOLUTION
+import pandas as pd
+def fix_ids(df):
+    return df.assign(client_id=df["client_id"].str.strip().str.upper())
+def keep_latest(df):
+    return df.sort_values("signup_date").drop_duplicates(subset=["client_id"], keep="last")
+raw = pd.read_csv("clients_raw.csv")
+clients = raw.drop_duplicates().pipe(fix_ids).pipe(keep_latest)
+print(len(clients))
+CHECK
+import pandas as _pd
+d = _pd.read_csv('clients_raw.csv').drop_duplicates()
+want = d['client_id'].str.strip().str.upper().nunique()
+assert _lines == [str(want)], f'Должно вывестись {want}. Сейчас: {_lines}'
+
+===== ch03/08-pipeline/fn-bonus =====
+
+SOLUTION
+import pandas as pd
+
+def clean_bonus(s):
+    b = pd.to_numeric(s.str.replace(" ", ""), errors="coerce")
+    return b.mask((b < 0) | (b > 10_000))
+
+clean_bonus(pd.Series(["1 250", "—", "-50", "99999", "320", None]))
+CHECK
+import pandas as _pd
+f = need('clean_bonus')
+t = _pd.Series(['1 250', '—', '-50', '99999', '320', None, '0', '10 000'])
+g = [None if _pd.isna(x) else float(x) for x in f(t)]
+want = [1250.0, None, None, None, 320.0, None, 0.0, 10000.0]
+assert g == want, f'clean_bonus({t.tolist()}) = {g}, а нужно {want}.'
+
+===== ch03/08-pipeline/fix-chain =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+df["bonus"] = pd.to_numeric(df["bonus"].str.replace(" ", ""), errors="coerce")
+
+n_fixed = ((df["bonus"] < 0) | (df["bonus"] > 10_000)).sum()
+df.loc[df["bonus"] < 0, "bonus"] = 0
+df.loc[df["bonus"] > 10_000, "bonus"] = None
+CHECK
+import pandas as _pd
+b = _pd.to_numeric(_pd.read_csv('clients_raw.csv')['bonus'].str.replace(' ', ''), errors='coerce')
+want = b.copy()
+want[b < 0] = 0
+want[b > 10_000] = float('nan')
+d = need('df', _pd.DataFrame)
+assert (d['bonus'] < 0).sum() == 0, f'В df ещё {(d["bonus"] < 0).sum()} отрицательных бонусов — присваивание через цепочку скобок не меняет таблицу. Используйте .loc[условие, "bonus"].'
+assert (d['bonus'] > 10_000).sum() == 0, 'В df остались бонусы больше 10 000.'
+assert len(d) == len(b), f'В df {len(d)} строк, а было {len(b)}: строки удалять не нужно, меняйте значения.'
+assert d['bonus'].isna().sum() == want.isna().sum(), f'Пропусков в bonus {d["bonus"].isna().sum()}, а должно быть {want.isna().sum()}: заглушки — в NaN, отрицательные — в 0.'
+assert (d['bonus'].fillna(-1) == want.fillna(-1)).all(), 'Значения bonus не совпадают с ожидаемыми: отрицательные → 0, больше 10 000 → NaN, остальные без изменений.'
+assert need('n_fixed') == ((b < 0) | (b > 10_000)).sum(), f'n_fixed = {need("n_fixed")}. Посчитайте строки, попавшие под любое из двух условий, до исправления.'
+assert not has_literal(int(((b < 0) | (b > 10_000)).sum())), 'Посчитайте n_fixed кодом, а не впишите.'
+
+===== ch03/08-pipeline/save =====
+
+SOLUTION
+import pandas as pd
+clients.to_csv("clients_clean.csv", index=False)
+back = pd.read_csv("clients_clean.csv", parse_dates=["signup_date"])
+CHECK
+import pandas as _pd
+b = need('back', _pd.DataFrame)
+assert list(b.columns) == ['client_id', 'city', 'signup_date'], f'Столбцы back: {list(b.columns)}. Лишний «Unnamed: 0» — значит, индекс записался в файл: нужно index=False.'
+assert _pd.api.types.is_datetime64_any_dtype(b['signup_date']), f'signup_date прочитался как {b["signup_date"].dtype}. Добавьте parse_dates=["signup_date"].'
+f = _pd.read_csv('clients_clean.csv')
+assert len(f) == 3, 'В файле clients_clean.csv должно быть 3 строки.'
+
+===== ch03/08-pipeline/log =====
+
+SOLUTION
+import pandas as pd
+
+def clean_with_log(raw):
+    log = [("загрузка", len(raw))]
+    df = raw.drop_duplicates()
+    log.append(("полные дубли", len(df)))
+    df = df.assign(client_id=df["client_id"].str.strip().str.upper())
+    log.append(("нормализация номера", len(df)))
+    df = (df.sort_values("signup_date")
+            .drop_duplicates(subset=["client_id"], keep="last")
+            .reset_index(drop=True))
+    log.append(("повторные анкеты", len(df)))
+    return df, log
+
+df, log = clean_with_log(pd.read_csv("clients_raw.csv"))
+log
+CHECK
+import pandas as _pd
+raw = _pd.read_csv('clients_raw.csv')
+before = raw.copy()
+res = need('clean_with_log')(raw)
+assert isinstance(res, tuple) and len(res) == 2, 'Функция должна возвращать пару: return df, log.'
+df, log = res
+assert raw.equals(before), 'Функция изменила исходную таблицу — работайте с копией.'
+d1 = raw.drop_duplicates()
+d2 = d1.assign(client_id=d1['client_id'].str.strip().str.upper())
+d3 = d2.sort_values('signup_date').drop_duplicates('client_id', keep='last')
+want = [len(raw), len(d1), len(d2), len(d3)]
+assert len(log) == 4, f'В журнале {len(log)} записей, а нужно 4.'
+assert [n for _, n in log] == want, f'Числа в журнале: {[n for _, n in log]}, а нужно {want}.'
+assert log[0][0] == 'загрузка', 'Первая запись — ("загрузка", len(raw)).'
+assert df['client_id'].is_unique and len(df) == len(d3), 'В df должны остаться уникальные анкеты.'
+
+===== ch03/08-pipeline/contract =====
+
+SOLUTION
+import pandas as pd
+
+CITIES = ["Пермь", "Казань", "Тюмень", "Уфа", "Екатеринбург", "Москва"]
+
+def check_clients(df):
+    assert df["client_id"].notna().all(), "есть анкеты без номера карты"
+    assert df["client_id"].is_unique, "номера карт повторяются"
+    assert df["gender"].dropna().isin(["М", "Ж"]).all(), "неизвестные значения пола"
+    assert df["city"].dropna().isin(CITIES).all(), "неизвестный город"
+    assert df["bonus"].dropna().between(0, 10_000).all(), "бонусы вне границ"
+
+ok = pd.DataFrame({"client_id": ["C1", "C2"], "gender": ["М", None],
+                   "city": ["Пермь", None], "bonus": [100.0, None]})
+check_clients(ok)
+print("контракт выполнен")
+CHECK
+import pandas as _pd
+f = need('check_clients')
+base = dict(client_id=['C1', 'C2'], gender=['М', None], city=['Пермь', None], bonus=[100.0, None])
+f(_pd.DataFrame(base))
+bads = {
+    'повтор номера': dict(base, client_id=['C1', 'C1']),
+    'пустой номер': dict(base, client_id=['C1', None]),
+    'пол «муж»': dict(base, gender=['муж', None]),
+    'город «пермь»': dict(base, city=['пермь', None]),
+    'бонус −5': dict(base, bonus=[-5.0, None]),
+    'бонус 20000': dict(base, bonus=[20000.0, None]),
+}
+for name, data in bads.items():
+    try:
+        f(_pd.DataFrame(data))
+    except AssertionError:
+        continue
+    raise AssertionError(f'check_clients не заметила проблему: {name}.')
+
+===== ch03/08-pipeline/full =====
+
+SOLUTION
+import pandas as pd
+
+SYNONYMS = {"соц. сети": "соцсети", "от друзей": "друзья", "проходил мимо": "мимо",
+            "2гис": "карты", "яндекс карты": "карты"}
+
+def clean_city(s):
+    return (s.str.strip().str.lower().str.removeprefix("г.").str.strip()
+             .replace({"екб": "екатеринбург"}).str.capitalize())
+
+def clean_phone(s):
+    digits = s.str.replace(r"\D", "", regex=True)
+    ok = digits.str.fullmatch(r"[78]?\d{10}")      # 10 цифр или 11 с кодом 7/8
+    return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
+
+def clean_gender(s):
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
+
+def parse_birth(s):
+    iso = pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
+    ru = pd.to_datetime(s, format="%d.%m.%Y", errors="coerce")
+    born = iso.fillna(ru)
+    return born.where((2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')).between(14, 100))
+
+def clean_bonus(s):
+    b = pd.to_numeric(s.str.replace(" ", ""), errors="coerce")
+    return b.mask((b < 0) | (b > 10_000))
+
+def clean_clients(raw):
+    df = raw.drop_duplicates().copy()
+    df["client_id"] = df["client_id"].str.strip().str.upper()
+    df["name"] = df["name"].str.strip().str.capitalize()
+    df["gender"] = clean_gender(df["gender"])
+    df["birth_date"] = parse_birth(df["birth_date"])
+    df["city"] = clean_city(df["city"])
+    df["phone"] = clean_phone(df["phone"])
+    df["signup_date"] = pd.to_datetime(df["signup_date"])
+    df["bonus"] = clean_bonus(df["bonus"])
+    df["source"] = df["source"].str.strip().str.lower().replace(SYNONYMS)
+    return (df.sort_values("signup_date")
+              .drop_duplicates(subset=["client_id"], keep="last")
+              .reset_index(drop=True))
+
+clients = clean_clients(pd.read_csv("clients_raw.csv"))
+clients.head()
+CHECK
+import pandas as _pd
+_r = _pd.read_csv('clients_raw.csv')
+_d = _r.drop_duplicates().copy()
+_d['client_id'] = _d['client_id'].str.strip().str.upper()
+_d['name'] = _d['name'].str.strip().str.capitalize()
+_d['gender'] = _d['gender'].str.strip().str.lower().map({'м': 'М', 'муж': 'М', 'ж': 'Ж', 'жен': 'Ж'})
+_b = _pd.to_datetime(_d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(_d['birth_date'], format='%d.%m.%Y', errors='coerce'))
+_d['birth_date'] = _b.where((2026 - _b.dt.year - (_b.dt.strftime('%m%d') > '1201')).between(14, 100))
+_d['city'] = _d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip().replace({'екб': 'екатеринбург'}).str.capitalize()
+_d['phone'] = _d['phone'].str.replace(r'\D', '', regex=True).where(_d['phone'].str.replace(r'\D', '', regex=True).str.fullmatch(r'[78]?\d{10}')).str[-10:]
+_d['signup_date'] = _pd.to_datetime(_d['signup_date'])
+_n = _pd.to_numeric(_d['bonus'].str.replace(' ', ''), errors='coerce')
+_d['bonus'] = _n.mask((_n < 0) | (_n > 10_000))
+_d['source'] = _d['source'].str.strip().str.lower().replace({'соц. сети': 'соцсети', 'от друзей': 'друзья', 'проходил мимо': 'мимо', '2гис': 'карты', 'яндекс карты': 'карты'})
+want = _d.sort_values('signup_date').drop_duplicates('client_id', keep='last').set_index('client_id').sort_index()
+c = need('clients', _pd.DataFrame)
+assert c['client_id'].is_unique, 'Номера карт в clients повторяются.'
+assert len(c) == len(want), f'В clients {len(c)} строк, а нужно {len(want)}.'
+assert list(c.index) == list(range(len(c))), 'Индекс — по порядку: reset_index(drop=True).'
+assert _r.equals(_pd.read_csv('clients_raw.csv')), 'Файл изменился?'
+g = c.set_index('client_id').sort_index()
+for col in ['name', 'gender', 'birth_date', 'city', 'phone', 'signup_date', 'bonus', 'source']:
+    a, w = g[col], want[col]
+    same = (a.isna() == w.isna()) & ((a == w) | w.isna())
+    assert same.all(), f'Столбец {col} не совпадает, например у {g.index[~same][0]}: {a[~same].iloc[0]!r}, а нужно {w[~same].iloc[0]!r}.'
+_fn = need('clean_clients')
+_raw = _pd.read_csv('clients_raw.csv').iloc[:6].copy()
+_raw['client_id'] = ['BOUND'+str(i) for i in range(6)]
+_raw['birth_date'] = ['2012-12-01', '1926-05-01', '1925-12-01', '2012-12-02', '1927-12-01', '1925-12-02']
+_raw['gender'] = ['море', 'желаю пропустить', 'муж', 'жен', 'М', 'Ж']
+_raw['phone'] = ['+7 912 345-67-89 доб.12', '9123456789', '29123456789', '89123456789', None, '12']
+_out = _fn(_raw.copy()).set_index('client_id').reindex(_raw['client_id'])
+assert _out.index.is_unique and len(_out) == 6, 'Очистка должна сохранять по одной анкете на карту.'
+assert _out['phone'].isna().tolist() == [True, False, True, False, True, True], 'Телефон с добавочным/неверным префиксом нельзя обрезать до похожего номера.'
+assert _out['gender'].isna().tolist() == [True, True, False, False, False, False], 'Пол: только значения из словаря, а не первая буква произвольного слова.'
+assert _out['birth_date'].notna().tolist() == [True, True, False, False, True, True], 'На 01.12.2026 сохраняем 14–100 полных лет включительно.'
+
+===== ch03/08-pipeline/january =====
+
+SOLUTION
+import pandas as pd
+
+def clean_city(s):
+    return (s.str.strip().str.lower()
+             .str.split(",").str[0]
+             .str.removeprefix("гор.").str.removeprefix("г.").str.strip()
+             .replace({"екб": "екатеринбург"}).str.capitalize())
+
+jan = pd.read_csv("clients_raw_jan.csv")
+jan_cities = set(clean_city(jan["city"]).dropna())
+jan_cities
+CHECK
+import pandas as _pd
+f = need('clean_city')
+old = _pd.Series([' г. Пермь', 'ЕКБ', 'казань ', 'г.Уфа', 'Екб', 'Тюмень'])
+assert [x for x in f(old)] == ['Пермь', 'Екатеринбург', 'Казань', 'Уфа', 'Екатеринбург', 'Тюмень'], f'Старые варианты сломались: {f(old).tolist()}.'
+new = _pd.Series(['гор. Уфа', 'Пермь, Россия', 'Гор. Пермь', 'Казань, Россия'])
+assert f(new).tolist() == ['Уфа', 'Пермь', 'Пермь', 'Казань'], f'Новые варианты: {f(new).tolist()}.'
+assert need('jan_cities') == {'Уфа', 'Пермь', 'Казань', 'Екатеринбург', 'Тюмень', 'Москва'}, f'jan_cities = {need("jan_cities")}.'
+
+===== ch03/02-missing/no-city =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+n_no_city = df["city"].isna().sum()
+CHECK
+import pandas as _pd
+want = _pd.read_csv('clients_raw.csv')['city'].isna().sum()
+assert need('n_no_city') == want, f'n_no_city = {need("n_no_city")}, а нужно {want}.'
+assert not has_literal(int(want)), 'Посчитайте, а не впишите число.'
+
+===== ch03/02-missing/na-values =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv", na_values=["не указано"])
+n_no_birth = df["birth_date"].isna().sum()
+CHECK
+import pandas as _pd
+want = _pd.read_csv('clients_raw.csv', na_values=['не указано'])['birth_date'].isna().sum()
+naive = _pd.read_csv('clients_raw.csv')['birth_date'].isna().sum()
+got = need('n_no_birth')
+assert got != naive, f'n_no_birth = {got} — это только пустые ячейки. «не указано» тоже пропуск.'
+assert got == want, f'n_no_birth = {got}, а нужно {want}.'
+
+===== ch03/02-missing/p-fill =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+df["source"] = df["source"].fillna("не указано")
+n = (df["source"] == "не указано").sum()
+print(n)
+CHECK
+import pandas as _pd
+want = _pd.read_csv('clients_raw.csv')['source'].isna().sum()
+assert _lines == [str(want)], f'Должно вывестись {want}. Сейчас: {_lines}'
+
+===== ch03/02-missing/card-share =====
+
+SOLUTION
+import pandas as pd
+orders = pd.read_csv("orders_3m.csv")
+card_pct = round(orders["client_id"].notna().mean() * 100, 1)
+CHECK
+import pandas as _pd
+want = round(_pd.read_csv('orders_3m.csv')['client_id'].notna().mean() * 100, 1)
+got = need('card_pct')
+assert not close(got, round(100 - want, 1)), f'card_pct = {got} — это доля заказов без карты.'
+assert close(got, want), f'card_pct = {got}, а нужно {want}.'
+
+===== ch03/02-missing/sms =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+sms = df.dropna(subset=["phone"])
+n_lost = len(df) - len(sms)
+CHECK
+import pandas as _pd
+d = _pd.read_csv('clients_raw.csv')
+s = need('sms', _pd.DataFrame)
+assert len(s) != len(d.dropna()), 'Похоже, удалены строки с любым пропуском. Проверяйте только телефон: subset=["phone"].'
+assert len(s) == d['phone'].notna().sum() and s['phone'].notna().all(), f'В sms {len(s)} строк — должны остаться все анкеты с телефоном.'
+assert list(s.columns) == list(d.columns), 'Столбцы удалять не нужно.'
+assert need('n_lost') == d['phone'].isna().sum(), f'n_lost = {need("n_lost")}.'
+
+===== ch03/02-missing/bonus-mean =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv", na_values=["—"], thousands=" ")
+mean_known = round(df["bonus"].mean(), 1)
+mean_zero = round(df["bonus"].fillna(0).mean(), 1)
+CHECK
+import pandas as _pd
+b = _pd.read_csv('clients_raw.csv', na_values=['—'], thousands=' ')['bonus']
+assert close(need('mean_known'), round(b.mean(), 1)), f'mean_known = {need("mean_known")}, а нужно {round(b.mean(), 1)}. Проверьте na_values и thousands.'
+assert close(need('mean_zero'), round(b.fillna(0).mean(), 1)), f'mean_zero = {need("mean_zero")}.'
+
+===== ch03/02-missing/reconcile =====
+
+SOLUTION
+import pandas as pd
+orders = pd.read_csv("orders_3m.csv")
+by_client = orders.groupby("client_id", dropna=False)["amount"].sum()
+no_card = by_client[by_client.index.isna()].sum()
+ok = by_client.sum() == orders["amount"].sum()
+CHECK
+import pandas as _pd
+o = _pd.read_csv('orders_3m.csv')
+total = o['amount'].sum()
+want_nc = o.loc[o['client_id'].isna(), 'amount'].sum()
+b = need('by_client', _pd.Series)
+assert b.sum() != total - want_nc, f'Сумма by_client — {b.sum()}, а всего выручки {total}. Заказы без карты выпали из группировки: у groupby есть параметр dropna.'
+assert b.sum() == total, f'Сумма by_client — {b.sum()}, а должна совпасть с общей выручкой {total}.'
+assert b.index.isna().any(), 'В индексе by_client нет группы-пропуска.'
+nc = need('no_card')
+if isinstance(nc, (_pd.Series, _pd.DataFrame)):
+    raise AssertionError(f'no_card — это {type(nc).__name__} (значений внутри: {len(nc)}), а нужно одно число. Достаньте его из Series: .sum() или .iloc[0].')
+assert nc == want_nc, f'no_card = {nc}. Нужна сумма в группе, где client_id пустой.'
+assert bool(need('ok')) is True, 'ok должен получиться True — сравните сумму by_client с суммой amount.'
+import ast as _ast
+_lit = [n for n in _ast.walk(_ast.parse(_code)) if isinstance(n, _ast.Assign) and isinstance(n.value, _ast.Constant)
+        and any(isinstance(t, _ast.Name) and t.id == 'ok' for t in n.targets)]
+assert not _lit, 'Получите ok сравнением двух сумм, а не вписывайте True.'
+
+===== ch03/02-missing/mechanism =====
+
+SOLUTION
+import pandas as pd
+guests = pd.read_csv("guests_churn.csv")
+miss_by_app = guests["avg_check"].isna().groupby(guests["app"]).mean()
+no_visits = guests.loc[guests["avg_check"].isna(), "visits_90d"].eq(0).all()
+assert no_visits
+mechanism = "not_applicable"
+CHECK
+import pandas as _pd
+g = _pd.read_csv('guests_churn.csv')
+want = g['avg_check'].isna().groupby(g['app']).mean()
+m = need('miss_by_app', _pd.Series)
+assert set(m.index) == {0, 1}, f'Индекс miss_by_app — {list(m.index)}, а нужен 0/1: группируйте маску пропусков по столбцу app.'
+assert close(m[1], want[1]) and close(m[0], want[0]), f'miss_by_app: без приложения {float(m[0]):.3f}, с приложением {float(m[1]):.3f}. Нужна доля пропусков, а не их число: mean() от isna().'
+assert (g.loc[g['avg_check'].isna(), 'visits_90d'] == 0).all(), 'Проверьте визиты гостей без среднего чека.'
+assert need('mechanism', str).strip().lower() == 'not_applicable', 'При нуле покупок средний чек не определён: это не потерянная сумма. Сначала проверьте visits_90d.'
+
+===== ch03/02-missing/flag =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv", na_values=["—"], thousands=" ")
+df["bonus_missing"] = df["bonus"].isna()
+df["bonus"] = df["bonus"].fillna(0)
+CHECK
+import pandas as _pd
+b = _pd.read_csv('clients_raw.csv', na_values=['—'], thousands=' ')['bonus']
+d = need('df', _pd.DataFrame)
+assert 'bonus_missing' in d.columns, 'Нет столбца bonus_missing.'
+assert d['bonus_missing'].sum() == b.isna().sum(), f'В bonus_missing {d["bonus_missing"].sum()} отметок, а пропусков было {b.isna().sum()}. Флаг нужно поставить до fillna.'
+assert d['bonus'].notna().all(), 'В bonus остались пропуски.'
+assert (d.loc[d['bonus_missing'], 'bonus'] == 0).all(), 'Пропуски должны стать нулями.'
+
+===== ch03/02-missing/group-fill =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv", na_values=["—"], thousands=" ")
+m = df.groupby("city")["bonus"].transform("median")
+df["bonus_filled"] = df["bonus"].fillna(m)
+n_left = df["bonus_filled"].isna().sum()
+CHECK
+import pandas as _pd
+d0 = _pd.read_csv('clients_raw.csv', na_values=['—'], thousands=' ')
+want = d0['bonus'].fillna(d0.groupby('city')['bonus'].transform('median'))
+d = need('df', _pd.DataFrame)
+assert 'bonus_filled' in d.columns, 'Нет столбца bonus_filled.'
+got = d['bonus_filled']
+assert got.isna().sum() == want.isna().sum() and (got.fillna(-1) == want.fillna(-1)).all(), 'bonus_filled не совпадает с ожидаемым. Медиана — по группе city через transform.'
+assert need('n_left') == want.isna().sum(), f'n_left = {need("n_left")}.'
+
+===== ch03/02-missing/two-plus =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv", na_values=["не указано", "—"])
+per_row = df.isna().sum(axis=1)
+n_sparse = (per_row >= 2).sum()
+CHECK
+import pandas as _pd
+d = _pd.read_csv('clients_raw.csv', na_values=['не указано', '—'])
+want = (d.isna().sum(axis=1) >= 2).sum()
+assert need('n_sparse') == want, f'n_sparse = {need("n_sparse")}, а нужно {want}. Скрытые пропуски учли?'
+
+===== ch03/06-categories/check-size =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+
+def check_size(amount):
+    if amount < 300:
+        return "малый"
+    elif amount < 600:
+        return "средний"
+    else:
+        return "крупный"
+
+df["check"] = df["amount"].apply(check_size)
+sizes = dict(df["check"].value_counts())
+CHECK
+import pandas as _pd
+f = need('check_size')
+for v, w in [(299, 'малый'), (300, 'средний'), (599, 'средний'), (600, 'крупный'), (2000, 'крупный')]:
+    assert f(v) == w, f'check_size({v}) = {f(v)!r}, а нужно {w!r}. Проверьте границы: 300 и 600 уже относятся к следующей категории.'
+a = _pd.read_csv('orders_3m.csv')['amount']
+want = {k: int(v) for k, v in a.apply(lambda x: 'малый' if x < 300 else 'средний' if x < 600 else 'крупный').value_counts().items()}
+got = {k: int(v) for k, v in dict(need('sizes')).items()}
+assert got == want, f'sizes = {got}.'
+
+===== ch03/06-categories/parts =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+df["datetime"] = pd.to_datetime(df["datetime"])
+df["part"] = pd.cut(df["datetime"].dt.hour, bins=[0, 12, 17, 24],
+                    labels=["утро", "день", "вечер"], right=False)
+evening = (df["part"] == "вечер").sum()
+CHECK
+import pandas as _pd
+h = _pd.to_datetime(_pd.read_csv('orders_3m.csv')['datetime']).dt.hour
+want = int((h >= 17).sum())
+got = need('evening')
+if got != want and got == int((h > 17).sum()):
+    raise AssertionError(f'evening = {got} — заказы в 17 часов не попали в вечер. Нужно right=False.')
+assert got == want, f'evening = {got}, а нужно {want}.'
+
+===== ch03/06-categories/p-cut =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+bins = [0, 400, float("inf")]
+df["band"] = pd.cut(df["amount"], bins=bins, labels=["до 400", "400+"], right=False)
+print((df["band"] == "400+").sum())
+CHECK
+import pandas as _pd
+want = int((_pd.read_csv('orders_3m.csv')['amount'] >= 400).sum())
+assert _lines == [str(want)], f'Должно вывестись {want}. Сейчас: {_lines}'
+
+===== ch03/06-categories/freq =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+n = df.groupby("client_id").size()
+seg = pd.cut(n, bins=[1, 4, 7, float("inf")], labels=["редкие", "обычные", "частые"], right=False)
+segments = dict(seg.value_counts())
+CHECK
+import pandas as _pd
+n = _pd.read_csv('orders_3m.csv').groupby('client_id').size()
+want = {'редкие': int((n <= 3).sum()), 'обычные': int(n.between(4, 6).sum()), 'частые': int((n >= 7).sum())}
+got = {str(k): int(v) for k, v in dict(need('segments')).items()}
+assert set(got) == set(want), f'Ключи: {sorted(got)}.'
+assert got == want, f'segments = {got}, а нужно {want}. Проверьте границы интервалов.'
+
+===== ch03/06-categories/quartiles =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+spend = df.groupby("client_id")["amount"].sum()
+q = pd.qcut(spend, 4, labels=["Q1", "Q2", "Q3", "Q4"])
+top_share = round(spend[q == "Q4"].sum() / spend.sum() * 100, 1)
+CHECK
+import pandas as _pd
+sp = _pd.read_csv('orders_3m.csv').groupby('client_id')['amount'].sum()
+q = _pd.qcut(sp, 4, labels=[1, 2, 3, 4])
+want = round(sp[q == 4].sum() / sp.sum() * 100, 1)
+assert close(need('top_share'), want), f'top_share = {need("top_share")}, а нужно {want}.'
+
+===== ch03/06-categories/online =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+synonyms = {"соц. сети": "соцсети", "от друзей": "друзья", "проходил мимо": "мимо",
+            "2гис": "карты", "яндекс карты": "карты"}
+groups = {"соцсети": "онлайн", "карты": "онлайн", "реклама": "онлайн",
+          "друзья": "офлайн", "мимо": "офлайн"}
+src = df["source"].str.strip().str.lower().replace(synonyms)
+df["channel"] = src.map(groups).fillna("другое")
+channels = dict(df["channel"].value_counts())
+CHECK
+import pandas as _pd
+syn = {'соц. сети': 'соцсети', 'от друзей': 'друзья', 'проходил мимо': 'мимо', '2гис': 'карты', 'яндекс карты': 'карты'}
+s = _pd.read_csv('clients_raw.csv')['source'].str.strip().str.lower().replace(syn)
+grp = {'соцсети': 'онлайн', 'карты': 'онлайн', 'реклама': 'онлайн', 'друзья': 'офлайн', 'мимо': 'офлайн'}
+want = s.map(grp).fillna('другое')
+d = need('df', _pd.DataFrame)
+assert 'channel' in d.columns, 'Нет столбца channel.'
+assert d['channel'].isna().sum() == 0, 'В channel остались пропуски — они тоже «другое».'
+assert (d['channel'] == want).all(), f'channel не совпадает. Например, {s[d["channel"] != want].iloc[0]!r} → {d["channel"][d["channel"] != want].iloc[0]!r}.'
+got = {k: int(v) for k, v in dict(need('channels')).items()}
+assert got == {k: int(v) for k, v in want.value_counts().items()}, f'channels = {got}.'
+
+===== ch03/06-categories/rare =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+synonyms = {"соц. сети": "соцсети", "от друзей": "друзья", "проходил мимо": "мимо",
+            "2гис": "карты", "яндекс карты": "карты"}
+
+def lump(s, min_count):
+    counts = s.value_counts()
+    frequent = counts[counts >= min_count].index
+    return s.where(s.isin(frequent) | s.isna(), "прочее")
+
+src = lump(df["source"].str.strip().str.lower().replace(synonyms), 10)
+src.value_counts(dropna=False)
+CHECK
+import pandas as _pd
+f = need('lump')
+t = _pd.Series(['a', 'a', 'b', None, 'c', 'a'])
+r = f(t, 2)
+assert r.tolist()[:3] == ['a', 'a', 'прочее'] and _pd.isna(r[3]) and r[4] == 'прочее', f'lump(["a","a","b",None,"c","a"], 2) = {r.tolist()}. Пропуск должен остаться пропуском.'
+assert f(t, 1).tolist()[:3] == ['a', 'a', 'b'], 'При min_count=1 ничего заменять не нужно.'
+syn = {'соц. сети': 'соцсети', 'от друзей': 'друзья', 'проходил мимо': 'мимо', '2гис': 'карты', 'яндекс карты': 'карты'}
+s = _pd.read_csv('clients_raw.csv')['source'].str.strip().str.lower().replace(syn)
+vc = s.value_counts()
+want = s.where(s.isin(vc[vc >= 10].index) | s.isna(), 'прочее')
+got = need('src', _pd.Series)
+assert (got.fillna('-') == want.fillna('-')).all(), 'src не совпадает с ожидаемым.'
+
+===== ch03/06-categories/age-groups =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+iso = pd.to_datetime(df["birth_date"], format="%Y-%m-%d", errors="coerce")
+ru = pd.to_datetime(df["birth_date"], format="%d.%m.%Y", errors="coerce")
+born = iso.fillna(ru)
+age = 2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")
+df["age_group"] = pd.cut(age, bins=[14, 25, 35, 45, 60, 101],
+                         labels=["14–24", "25–34", "35–44", "45–59", "60–100"], right=False)
+groups = dict(df["age_group"].value_counts())
+CHECK
+import pandas as _pd
+b = _pd.read_csv('clients_raw.csv')['birth_date']
+born = _pd.to_datetime(b, format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(b, format='%d.%m.%Y', errors='coerce'))
+age = 2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')
+labels = ['14–24', '25–34', '35–44', '45–59', '60–100']
+g = _pd.cut(age, bins=[14, 25, 35, 45, 60, 101], labels=labels, right=False)
+want = {k: int(v) for k, v in g.value_counts().items()}
+got = {str(k).replace('-', '–'): int(v) for k, v in dict(need('groups')).items()}
+assert set(got) == set(labels), f'Ключи: {sorted(got)}, а нужны {labels}.'
+assert got == want, f'groups = {got}, а нужно {want}.'
+
+===== ch03/06-categories/vip =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+guests = df.groupby("client_id").agg(orders=("order_id", "count"), avg_check=("amount", "mean"))
+med = guests["avg_check"].median()
+
+def segment(row):
+    frequent = row["orders"] >= 7
+    generous = row["avg_check"] >= med
+    if frequent and generous:
+        return "VIP"
+    if frequent:
+        return "частый"
+    if generous:
+        return "щедрый"
+    return "обычный"
+
+guests["segment"] = guests.apply(segment, axis=1)
+n_vip = (guests["segment"] == "VIP").sum()
+CHECK
+import pandas as _pd
+g = _pd.read_csv('orders_3m.csv').groupby('client_id').agg(orders=('order_id', 'count'), avg_check=('amount', 'mean'))
+m = g['avg_check'].median()
+f, h = g['orders'] >= 7, g['avg_check'] >= m
+want = _pd.Series('обычный', index=g.index)
+want[f & h] = 'VIP'
+want[f & ~h] = 'частый'
+want[~f & h] = 'щедрый'
+gg = need('guests', _pd.DataFrame)
+if 'client_id' in gg.columns:
+    gg = gg.set_index('client_id')
+assert 'segment' in gg.columns, 'Нет столбца segment.'
+got = gg['segment'].reindex(want.index)
+assert (got == want).all(), f'Сегменты не совпадают, например у {want.index[got != want][0]}: {got[got != want].iloc[0]!r}, а нужно {want[got != want].iloc[0]!r}.'
+assert need('n_vip') == int((want == 'VIP').sum()), f'n_vip = {need("n_vip")}.'
+
+===== ch03/09-project/clean =====
+
+SOLUTION
+import pandas as pd
+
+SYNONYMS = {"соц. сети": "соцсети", "от друзей": "друзья", "проходил мимо": "мимо",
+            "2гис": "карты", "яндекс карты": "карты"}
+
+def clean_city(s):
+    return (s.str.strip().str.lower().str.removeprefix("г.").str.strip()
+             .replace({"екб": "екатеринбург"}).str.capitalize())
+
+def clean_phone(s):
+    digits = s.str.replace(r"\D", "", regex=True)
+    ok = digits.str.fullmatch(r"[78]?\d{10}")      # 10 цифр или 11 с кодом 7/8
+    return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
+
+def clean_gender(s):
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
+
+def parse_birth(s):
+    iso = pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
+    ru = pd.to_datetime(s, format="%d.%m.%Y", errors="coerce")
+    born = iso.fillna(ru)
+    return born.where((2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')).between(14, 100))
+
+def clean_bonus(s):
+    b = pd.to_numeric(s.str.replace(" ", ""), errors="coerce")
+    return b.mask((b < 0) | (b > 10_000))
+
+def clean_clients(raw):
+    df = raw.drop_duplicates().copy()
+    df["client_id"] = df["client_id"].str.strip().str.upper()
+    df["name"] = df["name"].str.strip().str.capitalize()
+    df["gender"] = clean_gender(df["gender"])
+    df["birth_date"] = parse_birth(df["birth_date"])
+    df["city"] = clean_city(df["city"])
+    df["phone"] = clean_phone(df["phone"])
+    df["signup_date"] = pd.to_datetime(df["signup_date"])
+    df["bonus"] = clean_bonus(df["bonus"])
+    df["source"] = df["source"].str.strip().str.lower().replace(SYNONYMS)
+    return (df.sort_values("signup_date")
+              .drop_duplicates(subset=["client_id"], keep="last")
+              .reset_index(drop=True))
+
+raw = pd.read_csv("clients_raw.csv")
+clients = clean_clients(raw)
+log = {"выгрузка": len(raw), "без полных дублей": len(raw.drop_duplicates()), "анкет": len(clients)}
+log
+CHECK
+import pandas as _pd
+want = _ref_clients().set_index('client_id').sort_index()
+c = need('clients', _pd.DataFrame)
+assert c['client_id'].is_unique and len(c) == len(want), f'В clients {len(c)} строк, а нужно {len(want)} уникальных анкет.'
+g = c.set_index('client_id').sort_index()
+for col in ['gender', 'birth_date', 'city', 'phone', 'signup_date', 'bonus', 'source']:
+    a, w = g[col], want[col]
+    same = (a.isna() == w.isna()) & ((a == w) | w.isna())
+    assert same.all(), f'Столбец {col} не совпадает, например у {g.index[~same][0]}: {a[~same].iloc[0]!r}, а нужно {w[~same].iloc[0]!r}.'
+r = _pd.read_csv('clients_raw.csv')
+wl = {'выгрузка': len(r), 'без полных дублей': len(r.drop_duplicates()), 'анкет': len(want)}
+got = {k: int(v) for k, v in dict(need('log')).items()}
+assert got == wl, f'log = {got}, а нужно {wl}.'
+_fn = need('clean_clients')
+_raw = _pd.read_csv('clients_raw.csv').iloc[:6].copy()
+_raw['client_id'] = ['BOUND'+str(i) for i in range(6)]
+_raw['birth_date'] = ['2012-12-01', '1926-05-01', '1925-12-01', '2012-12-02', '1927-12-01', '1925-12-02']
+_raw['gender'] = ['море', 'желаю пропустить', 'муж', 'жен', 'М', 'Ж']
+_raw['phone'] = ['+7 912 345-67-89 доб.12', '9123456789', '29123456789', '89123456789', None, '12']
+_out = _fn(_raw.copy()).set_index('client_id').reindex(_raw['client_id'])
+assert _out.index.is_unique and len(_out) == 6, 'Очистка должна сохранять по одной анкете на карту.'
+assert _out['phone'].isna().tolist() == [True, False, True, False, True, True], 'Телефон с добавочным/неверным префиксом нельзя обрезать до похожего номера.'
+assert _out['gender'].isna().tolist() == [True, True, False, False, False, False], 'Пол: только значения из словаря, а не первая буква произвольного слова.'
+assert _out['birth_date'].notna().tolist() == [True, True, False, False, True, True], 'На 01.12.2026 сохраняем 14–100 полных лет включительно.'
+
+===== ch03/09-project/quality =====
+
+SOLUTION
+import pandas as pd
+missing_pct = (clients.isna().mean() * 100).round(1).sort_values(ascending=False)
+usable_age = round(clients["birth_date"].notna().mean() * 100, 1)
+missing_pct
+CHECK
+import pandas as _pd
+c = _ref_clients()
+want = (c.isna().mean() * 100).round(1).sort_values(ascending=False)
+got = need('missing_pct', _pd.Series)
+assert got.to_dict() == want.to_dict(), f'missing_pct = {got.head(3).to_dict()}…'
+assert list(got.values) == sorted(got.values, reverse=True), 'Отсортируйте по убыванию.'
+assert close(need('usable_age'), round(c['birth_date'].notna().mean() * 100, 1)), f'usable_age = {need("usable_age")}.'
+
+===== ch03/09-project/age =====
+
+SOLUTION
+import pandas as pd
+clients["age"] = 2026 - clients["birth_date"].dt.year - (clients["birth_date"].dt.strftime("%m%d") > "1201")
+clients["age_group"] = pd.cut(clients["age"], bins=[14, 25, 35, 45, 60, 101],
+                              labels=["14–24", "25–34", "35–44", "45–59", "60–100"], right=False)
+median_age = clients["age"].median()
+age_counts = dict(clients["age_group"].value_counts())
+by_city = dict(clients["city"].value_counts())
+age_counts
+CHECK
+import pandas as _pd
+c = _ref_clients()
+a, g = _ref_age(c)
+cc = need('clients', _pd.DataFrame)
+assert 'age' in cc.columns and 'age_group' in cc.columns, 'Добавьте в clients столбцы age и age_group.'
+assert close(need('median_age'), a.median()), f'median_age = {need("median_age")}, а нужно {a.median()}.'
+got = {str(k): int(v) for k, v in dict(need('age_counts')).items()}
+assert got == {k: int(v) for k, v in g.value_counts().items()}, f'age_counts = {got}.'
+gc = {k: int(v) for k, v in dict(need('by_city')).items()}
+assert gc == {k: int(v) for k, v in c['city'].value_counts().items()}, f'by_city = {gc}.'
+assert cc['client_id'].is_unique and set(cc['client_id']) == set(c['client_id']), 'Возраст должен быть привязан к каждому client_id.'
+_z = cc.set_index('client_id').reindex(c['client_id'])
+for _col, _expected in [('age', a), ('age_group', g.astype(object))]:
+    _actual = _z[_col].reset_index(drop=True).astype(object)
+    _expected = _expected.reset_index(drop=True).astype(object)
+    assert ((_actual == _expected) | (_actual.isna() & _expected.isna())).all(), f'{_col}: проверьте значения по client_id, а не только медиану и размеры групп.'
+
+===== ch03/09-project/guests =====
+
+SOLUTION
+import pandas as pd
+stats = orders.groupby("client_id").agg(orders=("order_id", "count"), revenue=("amount", "sum"))
+guests = clients.merge(stats, on="client_id", how="left")
+guests[["orders", "revenue"]] = guests[["orders", "revenue"]].fillna(0)
+active_pct = round((guests["orders"] > 0).mean() * 100, 1)
+n_orphans = len(set(orders["client_id"].dropna()) - set(clients["client_id"]))
+guests.head()
+CHECK
+import pandas as _pd
+w = _ref_guests()
+g = need('guests', _pd.DataFrame)
+assert len(g) == len(w), f'В guests {len(g)} строк, а анкет {len(w)}. LEFT JOIN не должен ни терять, ни размножать строки.'
+assert {'orders', 'revenue'} <= set(g.columns), 'В guests нужны столбцы orders и revenue.'
+assert g['orders'].notna().all() and g['revenue'].notna().all(), 'У гостей без заказов orders и revenue должны быть 0, а не NaN.'
+gg = g.set_index('client_id')
+ww = w.set_index('client_id')
+assert (gg['revenue'].reindex(ww.index) == ww['revenue']).all(), 'revenue не совпадает с суммой заказов гостя.'
+assert close(need('active_pct'), round((w['orders'] > 0).mean() * 100, 1)), f'active_pct = {need("active_pct")}.'
+o = _ref_orders()
+assert need('n_orphans') == len(set(o['client_id'].dropna()) - set(w['client_id'])), f'n_orphans = {need("n_orphans")}.'
+assert gg.index.is_unique and set(gg.index) == set(ww.index), 'Проверьте ключ client_id.'
+assert (gg['orders'].reindex(ww.index) == ww['orders']).all(), 'orders — число заказов гостя, а не сумма qty.'
+
+===== ch03/09-project/sources =====
+
+SOLUTION
+import pandas as pd
+
+def lump(s, min_count):
+    counts = s.value_counts()
+    frequent = counts[counts >= min_count].index
+    return s.where(s.isin(frequent) | s.isna(), "прочее")
+
+guests["source"] = lump(guests["source"].fillna("не указано"), 10)
+guests["active"] = guests["orders"] > 0
+by_source = guests.groupby("source").agg(
+    clients=("client_id", "count"),
+    active_pct=("active", "mean"),
+    avg_revenue=("revenue", "mean"),
+)
+by_source["active_pct"] = (by_source["active_pct"] * 100).round(1)
+by_source["avg_revenue"] = by_source["avg_revenue"].round(0)
+by_source = by_source.sort_values("clients", ascending=False)
+big = by_source[by_source["clients"] >= 20]
+best_source = big["avg_revenue"].idxmax()
+by_source
+CHECK
+import pandas as _pd
+w = _ref_guests()
+t = w.groupby('source').agg(clients=('client_id', 'count'), act=('orders', lambda x: (x > 0).mean() * 100), avg=('revenue', 'mean'))
+b = need('by_source', _pd.DataFrame)
+if 'source' in b.columns:
+    b = b.set_index('source')
+assert list(b.columns) == ['clients', 'active_pct', 'avg_revenue'], f'Столбцы: {list(b.columns)}.'
+assert set(b.index) == set(t.index), f'Источники: {sorted(b.index)}, а нужны {sorted(t.index)}. Пропуски → «не указано», редкие → «прочее».'
+assert b['clients'].to_dict() == t['clients'].to_dict(), 'clients не совпадает.'
+assert (b['active_pct'] - t['act'].round(1)).abs().max() < 1e-9, 'active_pct не совпадает.'
+assert (b['avg_revenue'] - t['avg'].round(0)).abs().max() < 1e-9, 'avg_revenue не совпадает — среднее по всем гостям источника, с нулями.'
+assert list(b['clients']) == sorted(b['clients'], reverse=True), 'Отсортируйте по clients по убыванию.'
+assert need('best_source') == t.loc[t['clients'] >= 20, 'avg'].idxmax(), f'best_source = {need("best_source")!r}.'
+assert b[['clients', 'active_pct', 'avg_revenue']].notna().all().all(), 'Расчётные сегментные величины не должны быть NaN: проверьте все группы.'
+
+===== ch03/09-project/age-money =====
+
+SOLUTION
+import pandas as pd
+active = guests[guests["orders"] > 0]
+by_age = active.groupby("age_group", observed=True).agg(
+    guests_n=("client_id", "count"),
+    avg_orders=("orders", "mean"),
+    avg_revenue=("revenue", "mean"),
+).round(1)
+best_group = by_age["avg_revenue"].idxmax()
+by_age
+CHECK
+import pandas as _pd
+w = _ref_guests()
+a = w[w['orders'] > 0]
+t = a.groupby('age_group', observed=True).agg(n=('client_id', 'count'), o=('orders', 'mean'), r=('revenue', 'mean'))
+b = need('by_age', _pd.DataFrame)
+if 'age_group' in b.columns:
+    b = b.set_index('age_group')
+assert list(b.columns) == ['guests_n', 'avg_orders', 'avg_revenue'], f'Столбцы: {list(b.columns)}.'
+b.index = b.index.astype(str)
+t.index = t.index.astype(str)
+assert set(b.index) == set(t.index), f'Группы: {sorted(b.index)}. Пустые категории уберите: observed=True.'
+assert b['guests_n'].to_dict() == t['n'].to_dict(), f'guests_n = {b["guests_n"].to_dict()}. Только активные гости!'
+assert (b['avg_orders'] - t['o'].round(1).reindex(b.index)).abs().max() < 1e-9, 'avg_orders не совпадает.'
+assert (b['avg_revenue'] - t['r'].round(1).reindex(b.index)).abs().max() < 1e-9, 'avg_revenue не совпадает.'
+assert str(need('best_group')) == t['r'].idxmax(), f'best_group = {need("best_group")!r}.'
+assert b[['guests_n', 'avg_orders', 'avg_revenue']].notna().all().all(), 'Расчётные сегментные величины не должны быть NaN: проверьте все группы.'
+
+===== ch03/09-project/home =====
+
+SOLUTION
+import pandas as pd
+shops = pd.read_csv("shops.csv")
+shop_city = shops[["shop_id", "city"]].rename(columns={"city": "shop_city"})
+home_city = clients[["client_id", "city"]].rename(columns={"city": "home_city"})
+t = (orders.dropna(subset=["client_id"])
+           .merge(shop_city, on="shop_id", how="left")
+           .merge(home_city, on="client_id", how="left"))
+known = t.dropna(subset=["shop_city", "home_city"])
+home_pct = round((known["shop_city"] == known["home_city"]).mean() * 100, 1)
+cities = t.groupby("client_id")["shop_city"].nunique()
+travelers = (cities >= 2).sum()
+home_pct
+CHECK
+import pandas as _pd
+o = _ref_orders()
+s = _pd.read_csv('shops.csv')[['shop_id', 'city']].rename(columns={'city': 'shop_city'})
+c = _ref_clients()[['client_id', 'city']].rename(columns={'city': 'home_city'})
+t = o.dropna(subset=['client_id']).merge(s, on='shop_id', how='left').merge(c, on='client_id', how='left')
+k = t.dropna(subset=['shop_city', 'home_city'])
+assert close(need('home_pct'), round((k['shop_city'] == k['home_city']).mean() * 100, 1)), f'home_pct = {need("home_pct")}, а нужно {round((k["shop_city"] == k["home_city"]).mean() * 100, 1)}.'
+n = t.groupby('client_id')['shop_city'].nunique()
+assert need('travelers') == int((n >= 2).sum()), f'travelers = {need("travelers")}, а нужно {int((n >= 2).sum())}.'
+
+===== ch03/09-project/report =====
+
+SOLUTION
+import pandas as pd
+
+SYNONYMS = {"соц. сети": "соцсети", "от друзей": "друзья", "проходил мимо": "мимо",
+            "2гис": "карты", "яндекс карты": "карты"}
+
+def clean_city(s):
+    return (s.str.strip().str.lower().str.removeprefix("г.").str.strip()
+             .replace({"екб": "екатеринбург"}).str.capitalize())
+
+def clean_phone(s):
+    digits = s.str.replace(r"\D", "", regex=True)
+    ok = digits.str.fullmatch(r"[78]?\d{10}")      # 10 цифр или 11 с кодом 7/8
+    return digits.where(ok).str[-10:]               # другие длины — пропуск, а не «похожий» номер
+
+def clean_gender(s):
+    return s.str.strip().str.lower().map({"м": "М", "муж": "М", "ж": "Ж", "жен": "Ж"})
+
+def parse_birth(s):
+    iso = pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
+    ru = pd.to_datetime(s, format="%d.%m.%Y", errors="coerce")
+    born = iso.fillna(ru)
+    return born.where((2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')).between(14, 100))
+
+def clean_bonus(s):
+    b = pd.to_numeric(s.str.replace(" ", ""), errors="coerce")
+    return b.mask((b < 0) | (b > 10_000))
+
+def clean_clients(raw):
+    df = raw.drop_duplicates().copy()
+    df["client_id"] = df["client_id"].str.strip().str.upper()
+    df["name"] = df["name"].str.strip().str.capitalize()
+    df["gender"] = clean_gender(df["gender"])
+    df["birth_date"] = parse_birth(df["birth_date"])
+    df["city"] = clean_city(df["city"])
+    df["phone"] = clean_phone(df["phone"])
+    df["signup_date"] = pd.to_datetime(df["signup_date"])
+    df["bonus"] = clean_bonus(df["bonus"])
+    df["source"] = df["source"].str.strip().str.lower().replace(SYNONYMS)
+    return (df.sort_values("signup_date")
+              .drop_duplicates(subset=["client_id"], keep="last")
+              .reset_index(drop=True))
+
+def report(raw, orders):
+    clients = clean_clients(raw)
+    stats = orders.groupby("client_id").agg(orders=("order_id", "count"), revenue=("amount", "sum"))
+    guests = clients.merge(stats, on="client_id", how="left")
+    guests[["orders", "revenue"]] = guests[["orders", "revenue"]].fillna(0)
+    age = 2026 - guests["birth_date"].dt.year - (guests["birth_date"].dt.strftime("%m%d") > "1201")
+    active = guests[guests["orders"] > 0]
+    return {
+        "clients": len(guests),
+        "active_pct": round((guests["orders"] > 0).mean() * 100, 1),
+        "median_age": age.median(),
+        "avg_revenue_active": round(active["revenue"].mean(), 1),
+    }
+
+raw = pd.read_csv("clients_raw.csv")
+orders = pd.read_csv("orders_3m.csv", parse_dates=["datetime"])
+report(raw, orders)
+CHECK
+import pandas as _pd
+raw = _pd.read_csv('clients_raw.csv')
+o = _ref_orders()
+f = need('report')
+_extra = raw.iloc[[0]].copy()
+_extra['client_id'] = 'C-NEW-ACCEPTANCE'
+_extra['birth_date'] = '1980-04-03'
+_extra['signup_date'] = '2026-11-30'
+_new = _pd.concat([raw, _extra, _extra], ignore_index=True)
+for _raw, part, name in ((raw, o, 'вся осень'), (raw, o[o['datetime'].dt.month == 11], 'только ноябрь'), (_new, o, 'новая CRM с гостем без заказов')):
+    g = _ref_guests(c=_ref_clean(_raw), o=part)
+    act = g[g['orders'] > 0]
+    want = {'clients': len(g), 'active_pct': round((g['orders'] > 0).mean() * 100, 1),
+            'median_age': float(g['age'].median()), 'avg_revenue_active': round(act['revenue'].mean(), 1)}
+    got = f(_raw.copy(), part.copy())
+    assert isinstance(got, dict), 'report должна возвращать словарь.'
+    got = {k: round(float(v), 1) for k, v in got.items()}
+    want = {k: round(float(v), 1) for k, v in want.items()}
+    assert got == want, f'Для «{name}» report = {got}, а нужно {want}.'
+
+===== ch03/01-inspect/shape =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+n_rows, n_cols = df.shape
+CHECK
+import pandas as _pd
+d = _pd.read_csv('clients_raw.csv')
+assert need('n_rows') == d.shape[0], f'n_rows = {need("n_rows")}, а строк {d.shape[0]}.'
+assert need('n_cols') == d.shape[1], f'n_cols = {need("n_cols")}.'
+assert not has_literal(d.shape[0]), 'Не вписывайте число руками — возьмите его из df.shape.'
+
+===== ch03/01-inspect/var-kind =====
+
+SOLUTION
+import pandas as pd
+orders = pd.read_csv("orders_3m.csv")
+quantitative = ["qty", "amount"]
+categorical = ["shop_id", "drink", "size", "channel"]
+CHECK
+q = set(need('quantitative', list))
+c = set(need('categorical', list))
+assert not ({'order_id', 'client_id', 'datetime'} & (q | c)), 'Номер заказа, номер карты и дату не включайте ни в один список.'
+assert not (q & c), f'Столбцы {sorted(q & c)} попали в оба списка.'
+assert 'qty' in q, 'qty — число чашек: «сколько чашек всего» осмысленно. Мало разных значений ещё не делает столбец категорией.'
+assert q == {'qty', 'amount'}, f'quantitative = {sorted(q)}. Количество — то, что складывают и усредняют.'
+assert c == {'shop_id', 'drink', 'size', 'channel'}, f'categorical = {sorted(c)}. Нужны все признаки-группы: кофейня, напиток, размер, канал.'
+
+===== ch03/01-inspect/worst =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+missing = df.isna().sum()
+worst = missing.idxmax()
+CHECK
+import pandas as _pd
+m = _pd.read_csv('clients_raw.csv').isna().sum()
+got = need('missing', _pd.Series)
+assert got.to_dict() == m.to_dict(), f'missing = {got.to_dict()}.'
+assert need('worst') == m.idxmax(), f'worst = {need("worst")!r}, а нужно {m.idxmax()!r}.'
+
+===== ch03/01-inspect/p-share =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+share = df["city"].isna().mean() * 100
+print(round(share, 1))
+CHECK
+import pandas as _pd
+want = round(_pd.read_csv('clients_raw.csv')['city'].isna().mean() * 100, 1)
+assert _lines == [str(want)], f'Должно вывестись {want}. Сейчас: {_lines}'
+
+===== ch03/01-inspect/miss-share =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+miss_pct = (df.isna().mean() * 100).round(1).sort_values(ascending=False)
+CHECK
+import pandas as _pd
+want = (_pd.read_csv('clients_raw.csv').isna().mean() * 100).round(1).sort_values(ascending=False)
+got = need('miss_pct', _pd.Series)
+assert len(got) == len(want), f'В отчёте {len(got)} столбцов, а нужно все {len(want)}.'
+_diff = [(k, float(got[k]), float(want[k])) for k in want.index if k in got.index and got[k] != want[k]]
+assert not _diff and set(got.index) == set(want.index), (f'У {_diff[0][0]} получилось {_diff[0][1]}, ожидалось {_diff[0][2]}. Проценты = доля × 100, округление до 1 знака.' if _diff else 'Набор столбцов не совпадает с таблицей.')
+assert list(got.values) == sorted(got.values, reverse=True), 'Отсортируйте по убыванию.'
+
+===== ch03/01-inspect/variants =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+n_variants = df["city"].nunique()
+top_city = df["city"].value_counts().index[0]
+CHECK
+import pandas as _pd
+c = _pd.read_csv('clients_raw.csv')['city']
+assert need('n_variants') == c.nunique(), f'n_variants = {need("n_variants")}, а нужно {c.nunique()}.'
+assert need('top_city') == c.value_counts().index[0], f'top_city = {need("top_city")!r}.'
+
+===== ch03/01-inspect/dups =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+n_full = df.duplicated().sum()
+ids_ok = df["client_id"].is_unique
+n_extra = len(df) - df["client_id"].nunique()
+CHECK
+import pandas as _pd
+d = _pd.read_csv('clients_raw.csv')
+assert need('n_full') == d.duplicated().sum(), f'n_full = {need("n_full")}.'
+assert need('ids_ok') is bool(d['client_id'].is_unique), f'ids_ok = {need("ids_ok")}.'
+want = len(d) - d['client_id'].nunique()
+assert need('n_extra') == want, f'n_extra = {need("n_extra")}, а нужно {want}.'
+
+===== ch03/01-inspect/not-digits =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+b = df["bonus"].dropna()
+bad = b[~b.str.isdigit()]
+n_bad = len(bad)
+bad_values = sorted(bad.unique())
+CHECK
+import pandas as _pd
+b = _pd.read_csv('clients_raw.csv')['bonus'].dropna()
+bad = b[~b.str.isdigit()]
+got = need('n_bad')
+if got == len(bad) + _pd.read_csv('clients_raw.csv')['bonus'].isna().sum():
+    raise AssertionError(f'n_bad = {got} — сюда попали и пропуски. Уберите их перед проверкой: dropna().')
+assert got == len(bad), f'n_bad = {got}, а нужно {len(bad)}.'
+assert need('bad_values') == sorted(bad.unique()), f'bad_values = {need("bad_values")[:6]}…'
+
+===== ch03/01-inspect/overview =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+
+def overview(df):
+    return pd.DataFrame({
+        "missing": df.isna().sum(),
+        "missing_pct": (df.isna().mean() * 100).round(1),
+        "unique": df.nunique(),
+    })
+
+overview(df)
+CHECK
+import pandas as _pd
+f = need('overview')
+for d in (_pd.read_csv('clients_raw.csv'), _pd.DataFrame({'a': [1, None, 1], 'b': ['x', 'y', None]})):
+    got = f(d)
+    assert isinstance(got, _pd.DataFrame), 'overview должна возвращать DataFrame.'
+    assert list(got.columns) == ['missing', 'missing_pct', 'unique'], f'Столбцы: {list(got.columns)}.'
+    assert list(got.index) == list(d.columns), 'Строки — по столбцам исходной таблицы, в том же порядке.'
+    assert got['missing'].tolist() == d.isna().sum().tolist(), 'missing не совпадает.'
+    assert got['missing_pct'].tolist() == (d.isna().mean() * 100).round(1).tolist(), 'missing_pct не совпадает.'
+    assert got['unique'].tolist() == d.nunique().tolist(), 'unique не совпадает.'
+
+===== ch03/01-inspect/spaces =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+with_spaces = []
+for c in df.columns:
+    s = df[c].dropna()
+    if (s.str.strip() != s).any():
+        with_spaces.append(c)
+CHECK
+import pandas as _pd
+d = _pd.read_csv('clients_raw.csv')
+want = [c for c in d.columns if (d[c].dropna().str.strip() != d[c].dropna()).any()]
+got = need('with_spaces')
+assert got == want, f'with_spaces = {got}, а нужно {want}.'
+
+===== ch03/07-anomalies/negative =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+df["bonus"] = pd.to_numeric(df["bonus"].str.replace(" ", ""), errors="coerce")
+n_negative = (df["bonus"] < 0).sum()
+CHECK
+import pandas as _pd
+b = _pd.to_numeric(_pd.read_csv('clients_raw.csv')['bonus'].str.replace(' ', ''), errors='coerce')
+assert need('n_negative') == (b < 0).sum(), f'n_negative = {need("n_negative")}.'
+
+===== ch03/07-anomalies/zero-qty =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+zero_ids = pos.loc[pos["qty"] == 0, "id"].tolist()
+CHECK
+import pandas as _pd
+p = _pd.read_csv('pos_december.csv', sep=';')
+want = list(p.loc[p['qty'] == 0, 'id'])
+assert list(need('zero_ids')) == want, f'zero_ids = {list(need("zero_ids"))}, а нужно {want}.'
+
+===== ch03/07-anomalies/p-describe =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+lo = pos["price"].min()
+hi = pos["price"].max()
+print(lo, hi)
+CHECK
+import pandas as _pd
+p = _pd.read_csv('pos_december.csv', sep=';', decimal=',')
+want = f'{p["price"].min()} {p["price"].max()}'
+assert _lines == [want], f'Должно вывестись {want}. Сейчас: {_lines}'
+
+===== ch03/07-anomalies/placeholder =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+iso = pd.to_datetime(df["birth_date"], format="%Y-%m-%d", errors="coerce")
+ru = pd.to_datetime(df["birth_date"], format="%d.%m.%Y", errors="coerce")
+born = iso.fillna(ru)
+n_1900 = (born == "1900-01-01").sum()
+n_future = (born > "2026-12-01").sum()
+CHECK
+import pandas as _pd
+b = _pd.read_csv('clients_raw.csv')['birth_date']
+born = _pd.to_datetime(b, format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(b, format='%d.%m.%Y', errors='coerce'))
+assert need('n_1900') == (born == '1900-01-01').sum(), f'n_1900 = {need("n_1900")}.'
+assert need('n_future') == (born > '2026-12-01').sum(), f'n_future = {need("n_future")}.'
+
+===== ch03/07-anomalies/mask-bonus =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+df["bonus"] = pd.to_numeric(df["bonus"].str.replace(" ", ""), errors="coerce")
+median_before = round(df["bonus"].median(), 1)
+df["bonus"] = df["bonus"].mask((df["bonus"] < 0) | (df["bonus"] > 10_000))
+mean_after = round(df["bonus"].mean(), 1)
+CHECK
+import pandas as _pd
+b = _pd.to_numeric(_pd.read_csv('clients_raw.csv')['bonus'].str.replace(' ', ''), errors='coerce')
+clean = b.mask((b < 0) | (b > 10_000))
+d = need('df', _pd.DataFrame)
+assert d['bonus'].isna().sum() == clean.isna().sum(), f'В bonus {d["bonus"].isna().sum()} пропусков, а должно быть {clean.isna().sum()}. Строки не удаляйте — меняйте значения на NaN.'
+assert (d['bonus'].fillna(-1) == clean.fillna(-1)).all(), 'bonus не совпадает с ожидаемым.'
+assert close(need('median_before'), round(b.median(), 1)), f'median_before = {need("median_before")}.'
+assert close(need('mean_after'), round(clean.mean(), 1)), f'mean_after = {need("mean_after")}.'
+
+===== ch03/07-anomalies/bug-report =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+iso = pd.to_datetime(df["birth_date"], format="%Y-%m-%d", errors="coerce")
+ru = pd.to_datetime(df["birth_date"], format="%d.%m.%Y", errors="coerce")
+born = iso.fillna(ru)
+bad = df[born == "1900-01-01"]
+
+report = {
+    "где": "clients_raw.csv, столбец birth_date",
+    "правило": "дата рождения — настоящая дата; пустое поле не заменять на 1900-01-01",
+    "строк": len(bad),
+    "всего": len(df),
+    "доля_%": round(len(bad) / len(df) * 100, 1),
+    "примеры": bad["client_id"].head(5).tolist(),
+    "как_найти": "birth_date == 1900-01-01",
+}
+CHECK
+import pandas as _pd
+d = _pd.read_csv('clients_raw.csv')
+b = _pd.to_datetime(d['birth_date'], format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(d['birth_date'], format='%d.%m.%Y', errors='coerce'))
+bad = d[b == '1900-01-01']
+r = need('report', dict)
+keys = ['где', 'правило', 'строк', 'всего', 'доля_%', 'примеры', 'как_найти']
+miss = [k for k in keys if k not in r]
+assert not miss, f'В report нет ключей: {miss}.'
+for k in ['где', 'правило', 'как_найти']:
+    assert isinstance(r[k], str) and r[k].strip(), f'«{k}» — непустая строка с пояснением.'
+assert r['строк'] == len(bad), f'строк = {r["строк"]}, а анкет с 1900-01-01 — {len(bad)}.'
+assert r['всего'] == len(d), f'всего = {r["всего"]}. Это все анкеты выгрузки.'
+assert close(r['доля_%'], round(len(bad) / len(d) * 100, 1), 0.05), f'доля_% = {r["доля_%"]}. Доля = строк / всего × 100, один знак.'
+ex = list(r['примеры'])
+assert all(isinstance(x, str) for x in ex) and set(ex) <= set(d['client_id']), 'В примерах должны быть номера карт (client_id), без имён и телефонов.'
+assert ex == bad['client_id'].head(5).tolist(), f'примеры = {ex}. Нужны номера карт анкет с заглушкой, в порядке файла.'
+assert '1900' in r['как_найти'], 'В «как_найти» укажите условие с самой заглушкой, например дату 1900-01-01.'
+assert not has_literal(len(bad)) and not has_literal(len(d)), 'Посчитайте строк и всего кодом (len), а не впишите.'
+
+===== ch03/07-anomalies/iqr =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("orders_3m.csv")
+q1 = df["amount"].quantile(0.25)
+q3 = df["amount"].quantile(0.75)
+iqr = q3 - q1
+low = q1 - 1.5 * iqr
+high = q3 + 1.5 * iqr
+n_high = (df["amount"] > high).sum()
+CHECK
+import pandas as _pd
+a = _pd.read_csv('orders_3m.csv')['amount']
+q1, q3 = a.quantile(0.25), a.quantile(0.75)
+lo, hi = q1 - 1.5 * (q3 - q1), q3 + 1.5 * (q3 - q1)
+assert close(need('low'), lo) and close(need('high'), hi), f'low, high = {need("low")}, {need("high")}, а нужно {lo}, {hi}.'
+assert need('n_high') == (a > hi).sum(), f'n_high = {need("n_high")}.'
+
+===== ch03/07-anomalies/flag-qty =====
+
+SOLUTION
+import pandas as pd
+pos = pd.read_csv("pos_december.csv", sep=";", decimal=",")
+pos["suspicious"] = (pos["qty"] == 0) | (pos["qty"] > 10)
+total = pos["price"] * pos["qty"]
+avg_with = round(total.mean(), 2)
+avg_without = round(total[~pos["suspicious"]].mean(), 2)
+CHECK
+import pandas as _pd
+p = _pd.read_csv('pos_december.csv', sep=';', decimal=',')
+flag = (p['qty'] == 0) | (p['qty'] > 10)
+pp = need('pos', _pd.DataFrame)
+assert len(pp) == len(p), 'Строки удалять не нужно — только пометить.'
+assert 'suspicious' in pp.columns and (pp['suspicious'] == flag).all(), 'Флаг suspicious не совпадает с ожидаемым.'
+tot = p['price'] * p['qty']
+assert close(need('avg_with'), round(tot.mean(), 2)), f'avg_with = {need("avg_with")}. Нужна средняя сумма заказа price × qty по всем строкам.'
+assert close(need('avg_without'), round(tot[~flag].mean(), 2)), f'avg_without = {need("avg_without")}. Нужна средняя сумма заказа без строк, где suspicious == True.'
+
+===== ch03/07-anomalies/age-sane =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+iso = pd.to_datetime(df["birth_date"], format="%Y-%m-%d", errors="coerce")
+ru = pd.to_datetime(df["birth_date"], format="%d.%m.%Y", errors="coerce")
+born = iso.fillna(ru)
+age = 2026 - born.dt.year - (born.dt.strftime("%m%d") > "1201")
+age = age.where(age.between(14, 100))
+n_valid = age.notna().sum()
+CHECK
+import pandas as _pd
+b = _pd.read_csv('clients_raw.csv')['birth_date']
+born = _pd.to_datetime(b, format='%Y-%m-%d', errors='coerce').fillna(_pd.to_datetime(b, format='%d.%m.%Y', errors='coerce'))
+a = 2026 - born.dt.year - (born.dt.strftime('%m%d') > '1201')
+want = a.where(a.between(14, 100))
+got = need('age', _pd.Series)
+assert len(got) == len(b), 'Строки не удаляйте — заменяйте значения на NaN.'
+assert (got.fillna(-1) == want.fillna(-1)).all(), 'age не совпадает с ожидаемым.'
+assert need('n_valid') == want.notna().sum(), f'n_valid = {need("n_valid")}.'
+
+===== ch03/07-anomalies/before-open =====
+
+SOLUTION
+import pandas as pd
+df = pd.read_csv("clients_raw.csv")
+shops = pd.read_csv("shops.csv")
+df["city"] = (df["city"].str.strip().str.lower().str.removeprefix("г.").str.strip()
+              .replace({"екб": "екатеринбург"}).str.capitalize())
+first = shops.groupby("city", as_index=False)["opened"].min()
+t = df.merge(first, on="city", how="inner")
+early = t[pd.to_datetime(t["signup_date"]) < pd.to_datetime(t["opened"])]
+n_early = len(early)
+by_city = dict(early["city"].value_counts())
+CHECK
+import pandas as _pd
+d = _pd.read_csv('clients_raw.csv')
+d['city'] = d['city'].str.strip().str.lower().str.removeprefix('г.').str.strip().replace({'екб': 'екатеринбург'}).str.capitalize()
+first = _pd.read_csv('shops.csv').groupby('city', as_index=False)['opened'].min()
+t = d.merge(first, on='city', how='inner')
+early = t[_pd.to_datetime(t['signup_date']) < _pd.to_datetime(t['opened'])]
+assert need('n_early') == len(early), f'n_early = {need("n_early")}, а нужно {len(early)}.'
+got = {k: int(v) for k, v in dict(need('by_city')).items() if v}
+assert got == {k: int(v) for k, v in early['city'].value_counts().items()}, f'by_city = {got}.'

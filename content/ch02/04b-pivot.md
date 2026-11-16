@@ -428,14 +428,20 @@ df["month"] = df["datetime"].str[:7]
 ### check
 ```python
 import pandas as _pd
-r = need('report', _pd.DataFrame)
-assert r.shape == (7, 4), f'Форма report — {r.shape}, а нужна (7, 4): 6 кофеен + строка итогов, 3 месяца + столбец итогов. Не забыли margins=True?'
-assert 'Итого' in r.index and 'Итого' in r.columns, 'Итоги должны называться «Итого»: параметр margins_name.'
 _d = _pd.read_csv('orders_3m.csv')
-_want = int(_d.loc[_d['datetime'].str.startswith('2026-10'), 'amount'].sum())
-assert int(r.loc['KZN-1', '2026-10']) == 55012, f'В ячейке KZN-1 × 2026-10 — {r.loc["KZN-1", "2026-10"]}. В ячейках нужна сумма amount.'
-assert need('oct_total') == _want, f'oct_total = {need("oct_total")}, а нужно {_want}. Это ячейка на пересечении строки «Итого» и столбца октября.'
-assert not has_literal(_want), 'Возьмите итог из таблицы через loc, а не вписывайте число.'
+_d['month'] = _d['datetime'].str[:7]
+_w = _pd.pivot_table(_d, index='shop_id', columns='month', values='amount', aggfunc='sum', margins=True, margins_name='Итого')
+r = need('report', _pd.DataFrame)
+assert r.shape == _w.shape, f'Форма report — {r.shape}, а нужна {_w.shape}: кофейни и месяцы с итогами.'
+assert 'Итого' in r.index and 'Итого' in r.columns, 'Итоги должны называться «Итого».'
+assert r.index.is_unique and r.columns.is_unique and set(r.index) == set(_w.index) and set(r.columns) == set(_w.columns), 'Нужны все shop_id и три месяца 2026-09, 2026-10, 2026-11, а также строка и столбец Итого.'
+_a = r.reindex(index=_w.index, columns=_w.columns)
+for _shop in _w.index:
+    for _month in _w.columns:
+        assert close(_a.loc[_shop, _month], _w.loc[_shop, _month]), f'{_shop} × {_month}: неверная выручка или итог. В ячейках нужна сумма amount.'
+assert close(need('oct_total'), _w.loc['Итого', '2026-10']), 'oct_total — итоговая выручка октября из report.loc["Итого", "2026-10"].'
+assert not has_literal(int(_w.loc['Итого', '2026-10'])), 'Возьмите итог из таблицы через loc, а не вписывайте число.'
+
 ```
 
 ### hint

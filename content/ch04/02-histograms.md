@@ -268,7 +268,7 @@ ax.set_ylabel("заказов")
 
 ## Сравнить два распределения
 
-Две гистограммы на одной оси с прозрачностью `alpha` показывают, чем группы отличаются. Если группы разного размера, выручит `density=True`: высота столбцов станет долей, а не количеством, и формы можно сравнивать честно.
+Две гистограммы на одной оси с прозрачностью `alpha` показывают, чем группы отличаются. При `density=True` площадь всех столбцов каждой группы в показанном диапазоне равна 1. Высота — плотность в 1/мин. Если в корзине шириной 2 минуты оказались 4 из 10 показанных доставок, площадь равна 4/10 = 0.4, а высота — 0.4/2 = 0.2.
 
 ```python
 import pandas as pd
@@ -282,18 +282,20 @@ for courier in ["пеший", "авто"]:
             alpha=0.5, density=True, label=courier)
 ax.legend()
 ax.set_title("Время доставки: пешие и авто")
+ax.set_xlabel("Время, мин")
+ax.set_ylabel("Плотность, 1/мин")
 ```
 
 Пешие курьеры в среднем возят дольше, хотя ездят на короткие расстояния. Запомним это — вернёмся в проекте.
 
 ::: warn Типичная ошибка
-**Сравнение групп разного размера по высоте.** Без `density=True` группа, где доставок больше, выше почти во всех корзинах, и кажется, что «у неё больше долгих доставок», хотя форма может быть та же. Для групп разного объёма сравнивайте доли: `density=True`.
+**Сравнение групп разного размера по высоте.** Без `density=True` группа, где доставок больше, выше почти во всех корзинах, и кажется, что «у неё больше долгих доставок», хотя форма может быть та же. Задайте одинаковые границы корзин и сравнивайте площади соответствующих столбцов.
 :::
 
 ::: quiz
 После очистки доставок на авто почти в полтора раза больше, чем пеших. Зачем при сравнении их гистограмм на одной оси ставить `density=True`?
 
-- [x] Чтобы высота столбцов была долей, а не количеством: иначе большая группа выглядит выше почти везде, и формы не сравнить
+- [x] Чтобы площадь каждой гистограммы равнялась единице и можно было сравнить формы при разном числе доставок
   > Вопрос «чем распределения отличаются» — про форму: где горб, насколько длинный хвост. `density=True` приводит группы к одному масштабу.
 - [ ] Чтобы убрать выбросы из обеих групп
   > `density` не отбрасывает значения; выбросы убирают отдельно — через `between` или `range`.
@@ -305,7 +307,7 @@ ax.set_title("Время доставки: пешие и авто")
 
 {{practice: compare, delay}}
 
-Плотность измеряется в **1/мин**, а долю задаёт площадь столбика: высота × ширина. Если в корзине шириной 2 минуты 4 из 10 показанных доставок, высота 0.2, площадь 0.4. Если исходных наблюдений 11 и одно вне окна графика, доля полной группы — 4/11. Подпишите окно и число исключённых; медиану полной группы можно считать без обрезки.
+Если в примере было 11 доставок и одна оказалась за пределами показанного диапазона, площадь 0.4 относится к 10 показанным. Во всей группе в эту корзину попали 4 из 11 доставок. Подпишите окно и число исключённых; медиану полной группы можно считать без обрезки.
 
 ## Практика
 
@@ -476,17 +478,15 @@ d = pd.read_csv("deliveries.csv")
 
 ### check
 ```python
+# include-check: ch04_histograms.py
 import pandas as _pd
 a = _pd.read_csv('deliveries.csv')['actual_min']
-t = a[a.between(1, 299)]
+counts, edges = _np.histogram(a[a.between(1, 299)], bins=24, range=(0,120))
 ax = ax_of()
-assert len(ax.patches) == 24, f'Корзин {len(ax.patches)}: от 0 до 120 по 5 минут — это 24 корзины.'
-x0 = ax.patches[0].get_x()
-w = ax.patches[0].get_width()
-assert abs(x0) < 1e-9 and abs(w - 5) < 1e-9, f'Первая корзина начинается с {x0} шириной {w}. Нужно range=(0, 120).'
-total = sum(p.get_height() for p in ax.patches)
-assert total == t.between(0, 120).sum(), f'В корзинах {total} доставок — проверьте фильтр 1–299.'
-assert ax.get_xlabel() == 'минут'
+series = _histogram_series(ax, edges)
+assert len(series) == 1 and _np.allclose(series[0][1], counts), 'Каждая корзина шириной 5 минут должна показывать своё число доставок.'
+assert ax.get_xlabel() == 'минут', 'Укажите единицу времени на горизонтальной оси.'
+
 ```
 
 ### hint
@@ -659,15 +659,24 @@ ok = d[d["actual_min"].between(1, 299)]
 
 ### check
 ```python
+# include-check: ch04_histograms.py
 import pandas as _pd
 d = _pd.read_csv('deliveries.csv')
 ok = d[d['actual_min'].between(1, 299)]
 ax = ax_of()
-assert len(ax.patches) == 60, f'Столбцов {len(ax.patches)}, а нужно 60: две гистограммы по 30 корзин.'
-labels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []
-assert sorted(labels) == ['авто', 'вело'], f'Легенда: {labels}. Передайте label=... в hist и вызовите ax.legend().'
-area = sum(p.get_height() * p.get_width() for p in ax.patches[:30])
-assert area < 1.01, 'Высоты — доли (density=True), а не количества.'
+legend = ax.get_legend()
+labels = [t.get_text() for t in legend.get_texts()] if legend else []
+assert sorted(labels) == ['авто', 'вело'], 'В легенде укажите обе группы: авто и вело.'
+edges = _np.linspace(0, 90, 31)
+series = _histogram_series(ax, edges)
+assert len(series) == 2, 'На одной оси нужны два распределения по 30 интервалов.'
+for handle, label in zip(legend.legend_handles, labels):
+    expected = _np.histogram(ok.loc[ok['courier']==label, 'actual_min'], bins=edges, density=True)[0]
+    color, hatch = _histogram_style(handle)
+    matches = [artists for artists, heights in series if heights.shape==expected.shape and _np.allclose(heights, expected, atol=1e-7, rtol=0)
+               and all(_np.allclose(_histogram_style(a)[0], color) and _histogram_style(a)[1]==hatch for a in artists)]
+    assert matches, f'{label}: проверьте высоты плотности, интервалы 0–90 и соответствие легенды именно этой группе.'
+    assert all(close(a.get_alpha(), .5) for a in matches[0]), 'Полупрозрачность обеих гистограмм — alpha=0.5.'
 want = {c: ok.loc[ok['courier'] == c, 'actual_min'].median() for c in ('вело', 'авто')}
 got = dict(need('medians'))
 assert set(got) == set(want), f'Ключи medians: {sorted(got)} — нужны ровно "вело" и "авто".'
