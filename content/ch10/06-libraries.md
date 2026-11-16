@@ -3,7 +3,7 @@ title: "CatBoost и LightGBM в своём Jupyter"
 lead: "В работе бустинг чаще берут из специализированных библиотек — CatBoost и LightGBM. Внутри у них тот же бустинг, что мы собирали руками, а снаружи — интерфейс как у sklearn. Запускаем обе библиотеки в своём Jupyter на данных проекта о выручке кофеен и сравниваем модели таблицей «качество и время»."
 files: [deliveries.csv]
 recap:
-  - "CatBoost, LightGBM и XGBoost — тот же градиентный бустинг, интерфейс как у sklearn (`fit`, `predict`). В браузере их нет, работают в своём Jupyter; шпаргалка по параметрам — таблица в начале урока."
+  - "CatBoost, LightGBM и XGBoost — тот же градиентный бустинг, интерфейс как у sklearn (`fit`, `predict`). В поставке браузера нет CatBoost; LightGBM есть в версии 4.6, а показанный API 4.7+ запускаем в своём Jupyter. Браузерная карточка использует sklearn; шпаргалка по параметрам — в начале урока."
   - "Для ранней остановки нужна отдельная валидация — последний период обучающих данных, не тест: три части `fit`, `val`, `test`."
   - "Модели сравнивают одной таблицей «модель | RMSE | деревьев | fit, с | predict, мс»; время меряют `time.perf_counter()` вплотную вокруг `fit` и `predict`, в одном запуске на одном компьютере."
   - "Сравнивайте библиотеки при одной дате выпуска и одной информации о погоде. Выигрыш в RMSE и затраты времени берите из одной таблицы собственного прогона."
@@ -70,13 +70,16 @@ print(toy)
 ```python static
 from catboost import CatBoostRegressor
 
-cb = CatBoostRegressor(iterations=3000, learning_rate=0.05, depth=6,
-                       random_seed=0, verbose=0, early_stopping_rounds=100)
-cb.fit(X_dev[fit], y[fit],
-       cat_features=["shop_id", "format"],     # категории строками, без get_dummies
-       eval_set=(X_dev[val], y[val]),              # по ней выбирается число деревьев
-       use_best_model=True)                    # оставить лучшее число деревьев
-print(cb.get_best_iteration() + 1)             # сколько деревьев осталось
+cb_params = dict(learning_rate=0.05, depth=6, random_seed=0, verbose=0,
+                 thread_count=1, allow_writing_files=False)
+cats = ["shop_id", "format"]
+probe = CatBoostRegressor(iterations=3000, early_stopping_rounds=100, **cb_params)
+probe.fit(X_dev[fit], y[fit], cat_features=cats,
+          eval_set=(X_dev[val], y[val]), use_best_model=True)
+chosen = probe.get_best_iteration() + 1
+cb = CatBoostRegressor(iterations=chosen, **cb_params)
+refit = fit | val
+cb.fit(X[refit], y[refit], cat_features=cats)   # вся история до июля
 pred = cb.predict(X[test])
 ```
 
@@ -92,13 +95,19 @@ pred = cb.predict(X[test])
 ```python static
 import lightgbm as lgb
 
-X_c = X.astype({"shop_id": "category", "format": "category"})   # категории — тип category
-lg = lgb.LGBMRegressor(n_estimators=3000, learning_rate=0.05, num_leaves=7, min_child_samples=10,
-                       random_state=0, verbose=-1)
-lg.fit(dev_cat[fit], y[fit], eval_X=dev_cat[val], eval_y=y[val],
-       callbacks=[lgb.early_stopping(100, verbose=False)])
-print(lg.best_iteration_)
-pred = lg.predict(X_c[test])                   # прогноз — по лучшему числу деревьев
+cat_types = {"shop_id": "category", "format": "category"}
+dev_cat = X_dev.astype(cat_types)
+X_c = X.astype(cat_types)
+lg_params = dict(learning_rate=0.05, num_leaves=7, min_child_samples=10,
+                 random_state=0, verbose=-1, n_jobs=1)
+probe = lgb.LGBMRegressor(n_estimators=3000, **lg_params)
+probe.fit(dev_cat[fit], y[fit], eval_X=dev_cat[val], eval_y=y[val],
+          callbacks=[lgb.early_stopping(100, verbose=False)])
+chosen = probe.best_iteration_
+lg = lgb.LGBMRegressor(n_estimators=chosen, **lg_params)
+refit = fit | val
+lg.fit(X_c[refit], y[refit])                    # вся история до июля
+pred = lg.predict(X_c[test])
 ```
 
 **Что здесь происходит:**
@@ -134,7 +143,7 @@ pred = lg.predict(X_c[test])                   # прогноз — по луч�
 - [ ] Тест (второе полугодие): так модель остановится там, где лучше всего на нём
   > Тогда число деревьев подобрано по тесту, и оценка на нём получится оптимистичной. Тест смотрят один раз, в самом конце.
 - [ ] Те же данные, что в `fit`
-  > На обучающих данных ошибка падает всегда, и ранняя остановка не сработает: деревья будут добавляться до `iterations`.
+  > Те же строки не проверяют перенос на другой период. Для ранней остановки нужна отдельная валидация, которая не входит в fit.
 - [ ] Случайные 20 % всех строк
   > Для данных во времени случайная валидация подглядывает в будущее: соседние дни попадают и в обучение, и в валидацию.
 :::
@@ -156,23 +165,56 @@ pred = lg.predict(X_c[test])                   # прогноз — по луч�
 
 Соберите в браузере такую же таблицу, как в блокноте с CatBoost и LightGBM, для трёх моделей sklearn на доставках. Модели и разбиение уже в заготовке. Для каждой модели вызовите `fit_s = timed_fit(name, model, X_tr, y_tr)`, затем `pred, predict_ms = timed_predict(name, model, X_te)`. Эти готовые функции сами вызывают fit/predict и измеряют интервал через `time.perf_counter()` непосредственно вокруг вызова: `fit_s` — секунды, `predict_ms` — миллисекунды. Сохраните возвращённые интервалы без округления; посчитайте RMSE на тесте (`rmse`, 3 знака). Сохраните DataFrame `table`: индекс — названия моделей из словаря `models`, столбцы `rmse`, `fit_s`, `predict_ms`, строки отсортированы по `rmse` от лучшей. Ещё сохраните `best` — название модели с наименьшей ошибкой и `fastest_fit` — название модели, которая обучилась быстрее всех.
 
+
+
+Для замера используйте процедуры из заготовки. Допустима своя обёртка, если её fit и predict действительно вызывают соответствующие операции входящих в процедуру оценщиков. Обучение до секундомера с возвратом готовой модели внутри timed_fit не является замером обучения.
+
 ### setup
 ```python
 from time import perf_counter as _measurement_clock
 _measurements = {}
+def _timed_estimator_call(method, operation):
+    # Install and remove observers outside the measured interval. A delegating
+    # wrapper may call any of the supplied estimators; returning a cache is not fit.
+    from sklearn.linear_model import LinearRegression
+    from sklearn.ensemble import (RandomForestRegressor, GradientBoostingRegressor,
+                                  HistGradientBoostingRegressor)
+    classes = (LinearRegression, RandomForestRegressor,
+               GradientBoostingRegressor, HistGradientBoostingRegressor)
+    originals = [(cls, getattr(cls, method), method in cls.__dict__) for cls in classes]
+    calls = []
+    def observe(original):
+        def wrapped(estimator, *args, **kwargs):
+            calls.append(estimator)
+            return original(estimator, *args, **kwargs)
+        return wrapped
+    try:
+        for cls, original, _owned in originals:
+            setattr(cls, method, observe(original))
+        start = _measurement_clock()
+        result = operation()
+        elapsed = _measurement_clock() - start
+    finally:
+        for cls, original, owned in originals:
+            if owned:
+                setattr(cls, method, original)
+            else:
+                delattr(cls, method)
+    assert calls, ('Внутри timed_' + method + ' должен выполняться настоящий ' +
+                   method + ' оценщика из процедуры. Возврат заранее готового ' +
+                   'результата не измеряет эту операцию; обёртка должна делегировать вызов.')
+    return result, elapsed
+
 def timed_fit(name, model, features, target):
     """Обучить модель; вернуть длительность вызова fit в секундах."""
-    start = _measurement_clock()
-    model.fit(features, target)
-    elapsed = _measurement_clock() - start
+    _, elapsed = _timed_estimator_call('fit', lambda: model.fit(features, target))
     _measurements[name] = dict(model=model, train=features.copy(), target=target.copy(), fit_s=elapsed)
     return elapsed
 
 def timed_predict(name, model, features):
     """Вернуть (пакетный прогноз, длительность predict в миллисекундах)."""
-    start = _measurement_clock()
-    prediction = model.predict(features)
-    elapsed_ms = (_measurement_clock() - start) * 1000
+    prediction, elapsed = _timed_estimator_call('predict', lambda: model.predict(features))
+    elapsed_ms = elapsed * 1000
     record = _measurements[name]
     assert record['model'] is model, 'Передайте в timed_predict ту же модель, что в timed_fit.'
     record.update(test=features.copy(), predict_ms=elapsed_ms)
@@ -232,7 +274,7 @@ assert need('fastest_fit') == t['fit_s'].idxmin(), f'fastest_fit = {need("fastes
 ```
 
 ### hint
-В цикле по `models.items()` для каждой модели: засечь время, обучить, остановить секундомер; затем так же с прогнозом. Строки таблицы удобно копить словарями в списке.
+В цикле по `models.items()` вызовите `fit_s = timed_fit(name, model, X_tr, y_tr)` и `pred, predict_ms = timed_predict(name, model, X_te)`. Готовые функции сами вызывают модель и меряют время; сохраните их интервалы без округления. RMSE на доставках укажите в минутах. Строки удобно копить словарями в списке.
 
 ### hint
 `fit_s = timed_fit(name, model, X_tr, y_tr)`, затем `pred, predict_ms = timed_predict(name, model, X_te)`. Единицы уже преобразованы внутри функций. RMSE — `np.sqrt(mean_squared_error(y_te, pred))`.

@@ -1,0 +1,27 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+const here=path.dirname(fileURLToPath(import.meta.url));
+const chapter=path.resolve(here,'../..');
+const root=path.resolve(chapter,'../../..');
+const phase=process.argv[2];
+if(!['before','after'].includes(phase)) throw Error('Expected before or after.');
+const vendor=path.join(root,'site/assets/vendor/pyodide/');
+const {loadPyodide}=await import(pathToFileURL(vendor+'pyodide.mjs'));
+const py=await loadPyodide({indexURL:vendor});
+await py.loadPackage(['numpy','pandas','scipy','scikit-learn','matplotlib']);
+const mount=local=>{
+  const virtual='/course/'+path.relative(root,local);
+  py.FS.mkdirTree(path.posix.dirname(virtual));
+  py.FS.writeFile(virtual,fs.readFileSync(local));
+  return virtual;
+};
+mount(path.join(root,'site/assets/harness.py'));
+mount(path.join(here,'before-programs.json'));
+if(phase==='after') mount(path.join(here,'after-only-programs.json'));
+if(phase==='after' && fs.existsSync(path.join(here,'migrations.json'))) mount(path.join(here,'migrations.json'));
+mount(path.join(chapter,phase==='after' ? 'technical/chapter-export.json' : 'check-evidence/before-tasks.json'));
+for(const name of fs.readdirSync(path.join(chapter,'check-evidence/data-baseline'))) mount(path.join(chapter,'check-evidence/data-baseline',name));
+const entry=mount(path.join(here,'run.py'));
+py.runPython('import runpy,sys; sys.argv=['+JSON.stringify(entry)+','+JSON.stringify(phase)+']; runpy.run_path(sys.argv[0],run_name="__main__")');
+fs.writeFileSync(path.join(here,phase+'-pyodide.json'),py.FS.readFile(path.posix.dirname(entry)+'/'+phase+'-pyodide.json'));

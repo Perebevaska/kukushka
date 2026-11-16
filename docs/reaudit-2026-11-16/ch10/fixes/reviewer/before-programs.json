@@ -1,0 +1,171 @@
+[
+  {
+    "id": "R01",
+    "task": "ch10/01b-numeric/promise-time",
+    "note": "Минимальная допустимая целая минута на дробном наборе, 11",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\n\npromise, late_at_promise, q90 = {}, {}, {}\nfor courier, g in ok.groupby(\"courier\"):\n    a = g[\"actual_min\"].values\n    t = int(np.ceil(np.sort(a)[int(np.ceil(.90 * len(a))) - 1]))\n    promise[courier] = round(t)\n    late_at_promise[courier] = round(float(np.mean(a > promise[courier])), 3)\n    q90[courier] = float(np.quantile(a, 0.9))\nslowest = max(promise, key=promise.get)\nprint(promise, late_at_promise, q90, slowest)",
+    "fixture": {
+      "deliveries.csv": "courier,actual_min\nbike,10.1\nbike,10.2\nbike,10.4\n"
+    },
+    "code_sha256": "ab46b9801d8030a5987423329d7c1c33a8b8a6b7b5134376949a716a35da6733"
+  },
+  {
+    "id": "R02",
+    "task": "ch10/01b-numeric/promise-time",
+    "note": "Округление границы 10.4 даёт 10 и нарушает SLA",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\n\npromise, late_at_promise, q90 = {}, {}, {}\nfor courier, g in ok.groupby(\"courier\"):\n    a = g[\"actual_min\"].values\n    t = int(round(np.sort(a)[int(np.ceil(.90 * len(a))) - 1]))\n    promise[courier] = round(t)\n    late_at_promise[courier] = round(float(np.mean(a > promise[courier])), 3)\n    q90[courier] = float(np.quantile(a, 0.9))\nslowest = max(promise, key=promise.get)\nprint(promise, late_at_promise, q90, slowest)",
+    "fixture": {
+      "deliveries.csv": "courier,actual_min\nbike,10.1\nbike,10.2\nbike,10.4\n"
+    },
+    "code_sha256": "ef2132e6cce6ba650a444bf54d498592cec22bb0ab0fd62049e6af96bbead842"
+  },
+  {
+    "id": "R03",
+    "task": "ch10/01-gradient/history",
+    "note": "Те же пары номер шага/MSE, штриховая линия",
+    "expected": true,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)\n\nw, history = 0.0, []\nfor _ in range(40):\n    w = w - 0.01 * grad(w)\n    history.append(loss(w))\nsteps_to_30 = next(i + 1 for i, v in enumerate(history) if v < 30)\n\nfig, ax = plt.subplots()\nax.plot(np.arange(1, 41), np.asarray(history), linestyle=\"--\")\nax.set_xlabel(\"шаг\")\nax.set_ylabel(\"MSE\")\nplt.show()",
+    "code_sha256": "c80e3ba1b647213fa01d4acd321a78e4dd6939358c6ee97f0fc72a21f60a9f42"
+  },
+  {
+    "id": "R04",
+    "task": "ch10/01-gradient/history",
+    "note": "Две соседние ординаты переставлены, числа истории сохранены",
+    "expected": false,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)\n\nw, history = 0.0, []\nfor _ in range(40):\n    w = w - 0.01 * grad(w)\n    history.append(loss(w))\nsteps_to_30 = next(i + 1 for i, v in enumerate(history) if v < 30)\n\nfig, ax = plt.subplots()\nax.plot(np.arange(1, 41), np.r_[history[0], history[2], history[1], history[3:]], linestyle=\"--\")\nax.set_xlabel(\"шаг\")\nax.set_ylabel(\"MSE\")\nplt.show()",
+    "code_sha256": "7412282e64f665d7048c079fa59aea877528a2b5d9b83b31dffa9685fc158fd2"
+  },
+  {
+    "id": "R05",
+    "task": "ch10/01-gradient/history",
+    "note": "40 совпадающих абсцисс, вместо последовательных шагов — вертикаль",
+    "expected": false,
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)\n\nw, history = 0.0, []\nfor _ in range(40):\n    w = w - 0.01 * grad(w)\n    history.append(loss(w))\nsteps_to_30 = next(i + 1 for i, v in enumerate(history) if v < 30)\n\nfig, ax = plt.subplots()\nax.plot(np.ones(40), np.asarray(history), linestyle=\"--\")\nax.set_xlabel(\"шаг\")\nax.set_ylabel(\"MSE\")\nplt.show()",
+    "code_sha256": "2d5319f44f69bce28bf2f54a59be7ac5681419a60e5567eaf7c8d2ccb20baffb"
+  },
+  {
+    "id": "R06",
+    "task": "ch10/02-gd-many/decay",
+    "note": "Две полные последовательности, диапазон рассчитан отдельно",
+    "expected": true,
+    "code": "import numpy as np\n\ndef sgd(decay, epochs=20, lr0=0.05, size=32):\n    rng = np.random.default_rng(0)\n    w = np.zeros(X1.shape[1])\n    t = 0\n    history = []\n    for _ in range(epochs):\n        order = rng.permutation(len(y))\n        for start in range(0, len(y), size):\n            b = order[start:start + size]\n            g = 2 / len(b) * X1[b].T @ (X1[b] @ w - y[b])\n            lr = lr0 / (1 + t / 200) if decay else lr0\n            w = w - lr * g\n            t += 1\n        history.append(np.mean((X1 @ w - y) ** 2))\n    return history\n\nlast5_const = [round(float(v), 3) for v in list(reversed(list(reversed(sgd(False)))[:5]))]\nlast5_decay = [round(float(v), 3) for v in sgd(True)[-5:]]\njitter = {\"const\": round(max(last5_const) - min(last5_const), 3), \"decay\": round(max(last5_decay) - min(last5_decay), 3)}\nprint(last5_const, last5_decay, jitter)",
+    "code_sha256": "98135340060e7caaf2c9b5265f98b127141ca84039cb8e66e78e83f4b3aff5cf"
+  },
+  {
+    "id": "R07",
+    "task": "ch10/02-gd-many/decay",
+    "note": "Удалить только последнее наблюдение одного варианта",
+    "expected": false,
+    "code": "import numpy as np\n\ndef sgd(decay, epochs=20, lr0=0.05, size=32):\n    rng = np.random.default_rng(0)\n    w = np.zeros(X1.shape[1])\n    t = 0\n    history = []\n    for _ in range(epochs):\n        order = rng.permutation(len(y))\n        for start in range(0, len(y), size):\n            b = order[start:start + size]\n            g = 2 / len(b) * X1[b].T @ (X1[b] @ w - y[b])\n            lr = lr0 / (1 + t / 200) if decay else lr0\n            w = w - lr * g\n            t += 1\n        history.append(np.mean((X1 @ w - y) ** 2))\n    return history\n\nlast5_const = [round(float(v), 3) for v in sgd(False)[-5:]]\nlast5_decay = [round(float(v), 3) for v in sgd(True)[-5:]]\njitter = {\"const\": round(max(last5_const) - min(last5_const), 3), \"decay\": round(max(last5_decay) - min(last5_decay), 3)}\nprint(last5_const, last5_decay, jitter)\nlast5_const.pop()",
+    "code_sha256": "946bde195aadcb8a66aee9c7575153e6d5a1efb34548ce311c618c3b22b63843"
+  },
+  {
+    "id": "R08",
+    "task": "ch10/02-gd-many/decay",
+    "note": "Дополнительное шестое наблюдение только у decay",
+    "expected": false,
+    "code": "import numpy as np\n\ndef sgd(decay, epochs=20, lr0=0.05, size=32):\n    rng = np.random.default_rng(0)\n    w = np.zeros(X1.shape[1])\n    t = 0\n    history = []\n    for _ in range(epochs):\n        order = rng.permutation(len(y))\n        for start in range(0, len(y), size):\n            b = order[start:start + size]\n            g = 2 / len(b) * X1[b].T @ (X1[b] @ w - y[b])\n            lr = lr0 / (1 + t / 200) if decay else lr0\n            w = w - lr * g\n            t += 1\n        history.append(np.mean((X1 @ w - y) ** 2))\n    return history\n\nlast5_const = [round(float(v), 3) for v in sgd(False)[-5:]]\nlast5_decay = [round(float(v), 3) for v in sgd(True)[-5:]]\njitter = {\"const\": round(max(last5_const) - min(last5_const), 3), \"decay\": round(max(last5_decay) - min(last5_decay), 3)}\nprint(last5_const, last5_decay, jitter)\nlast5_decay.append(last5_decay[-1])",
+    "code_sha256": "d5e447755dc73b2c58e29aa8135bafd72cec2bb2650dffa0d2b7bbeb7c4dec96"
+  },
+  {
+    "id": "R09",
+    "task": "ch10/02b-optimizers/adam-step",
+    "note": "Коррекция и epsilon при g=0,+eps,-eps: [0,-.05,+.05]",
+    "expected": true,
+    "code": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 4.0]])    # столбец единиц и км\ny = np.array([18, 25, 40.0])\nn = len(y)\n\ndef adam_step(w, g, m, s, t, lr=0.1, b1=0.9, b2=0.999, eps=1e-8):\n    m = b1 * m + (1 - b1) * g\n    s = b2 * s + (1 - b2) * g ** 2\n    m_hat = m / (1 - b1 ** t)\n    s_hat = s / (1 - b2 ** t)\n    w = w - lr * m_hat / (np.sqrt(s_hat) + eps)\n    return w, m, s\n\nw, m, s = np.array([0, 5.0]), np.zeros(2), np.zeros(2)\nhistory = []\nfor t in range(1, 4):\n    g = 2 / n * X1.T @ (X1 @ w - y)\n    w_old = w\n    w, m, s = adam_step(w, g, m, s, t)\n    if t == 1:\n        first_step = (w - w_old).round(4)\n        raw_first = (-0.1 * m / (np.sqrt(s) + 1e-8)).round(4)\n    history.append(w.round(4))\nprint(history, first_step, raw_first)\nprobe_w,_,_=adam_step(np.zeros(3),np.array([0.,1e-8,-1e-8]),np.zeros(3),np.zeros(3),1)\nprint(\"epsilon probe\",probe_w)\n",
+    "oracle": "assert _np.allclose(probe_w,[0,-.05,+.05],atol=1e-12), \"Нулевой и малые градиенты: проверьте eps в знаменателе.\"",
+    "code_sha256": "685b7b005d40006a7c8726c1f6c8883a1549ab4e7597b056bf74a2577419f469"
+  },
+  {
+    "id": "R10",
+    "task": "ch10/02b-optimizers/adam-step",
+    "note": "Нулевая координата сохранена, у остальных пропущено epsilon: [0,-.1,+.1]",
+    "expected": false,
+    "code": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 4.0]])    # столбец единиц и км\ny = np.array([18, 25, 40.0])\nn = len(y)\n\ndef adam_step(w, g, m, s, t, lr=0.1, b1=0.9, b2=0.999, eps=1e-8):\n    m = b1 * m + (1 - b1) * g\n    s = b2 * s + (1 - b2) * g ** 2\n    m_hat = m / (1 - b1 ** t)\n    s_hat = s / (1 - b2 ** t)\n    w = w - lr * np.divide(m_hat, np.sqrt(s_hat), out=np.zeros_like(m_hat), where=s_hat>0)\n    return w, m, s\n\nw, m, s = np.array([0, 5.0]), np.zeros(2), np.zeros(2)\nhistory = []\nfor t in range(1, 4):\n    g = 2 / n * X1.T @ (X1 @ w - y)\n    w_old = w\n    w, m, s = adam_step(w, g, m, s, t)\n    if t == 1:\n        first_step = (w - w_old).round(4)\n        raw_first = (-0.1 * m / (np.sqrt(s) + 1e-8)).round(4)\n    history.append(w.round(4))\nprint(history, first_step, raw_first)\nprobe_w,_,_=adam_step(np.zeros(3),np.array([0.,1e-8,-1e-8]),np.zeros(3),np.zeros(3),1)\nprint(\"epsilon probe\",probe_w)\n",
+    "oracle": "assert _np.allclose(probe_w,[0,-.05,+.05],atol=1e-12), \"Нулевой и малые градиенты: проверьте eps в знаменателе.\"",
+    "code_sha256": "d1e51f839b812877ba4bb65ffe6723236fb3b827fe96b4e9996b969d58f61af3"
+  },
+  {
+    "id": "R11",
+    "task": "ch10/06-libraries/speed-table",
+    "note": "Прозрачная делегация реального fit/predict. Для обратного порядка словаря по тестовым часам самым быстрым стал RandomForest",
+    "expected": true,
+    "code": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_squared_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmodels = {\n    \"GradientBoosting\": GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(max_iter=200, max_depth=3, random_state=0),\n    \"RandomForest\": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=0),\n}\n\n\nclass FinalFit:\n    def __init__(self, estimator):\n        self.estimator = estimator\n\n    def fit(self, features, target):\n        self.estimator.fit(features, target)\n        return self\n\n    def predict(self, features):\n        return self.estimator.predict(features)\n\nrows = []\nfor name, model in reversed(list(models.items())):\n    model = FinalFit(model)\n    fit_s = timed_fit(name, model, X_tr, y_tr)\n    pred, predict_ms = timed_predict(name, model, X_te)\n\n    rmse = np.sqrt(mean_squared_error(y_te, pred))\n    rows.append({\"model\": name, \"rmse\": round(float(rmse), 3), \"fit_s\": fit_s, \"predict_ms\": predict_ms})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")\nbest = table.index[0]\nfastest_fit = table[\"fit_s\"].idxmin()\nprint(table.round(3))\nprint(\"лучший:\", best, \"| быстрее всех обучился:\", fastest_fit)",
+    "ticks": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      7,
+      8,
+      9,
+      10,
+      15,
+      16,
+      17
+    ],
+    "code_sha256": "764112aa928baeb7a0bef492c373d336e7c258ba422f80c894293387009b760c"
+  },
+  {
+    "id": "R12",
+    "task": "ch10/06-libraries/speed-table",
+    "note": "Обучение заранее; у обёртки в замере пустой fit, прогноз и ошибка настоящие",
+    "expected": false,
+    "code": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_squared_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmodels = {\n    \"GradientBoosting\": GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(max_iter=200, max_depth=3, random_state=0),\n    \"RandomForest\": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=0),\n}\n\n\nclass FinalFit:\n    def __init__(self, estimator):\n        self.estimator = estimator\n\n    def fit(self, features, target):\n        # Кэш уже рассчитан до начала таймера.\n        return self\n\n    def predict(self, features):\n        return self.estimator.predict(features)\n\nrows = []\nfor name, model in models.items():\n    model.fit(X_tr, y_tr)\n    model = FinalFit(model)\n    fit_s = timed_fit(name, model, X_tr, y_tr)\n    pred, predict_ms = timed_predict(name, model, X_te)\n\n    rmse = np.sqrt(mean_squared_error(y_te, pred))\n    rows.append({\"model\": name, \"rmse\": round(float(rmse), 3), \"fit_s\": fit_s, \"predict_ms\": predict_ms})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")\nbest = table.index[0]\nfastest_fit = table[\"fit_s\"].idxmin()\nprint(table.round(3))\nprint(\"лучший:\", best, \"| быстрее всех обучился:\", fastest_fit)",
+    "code_sha256": "35375903c2f5fa0c1e557eb0b6577ce7877aeaedc6c286f9bcc44b6622f01a84"
+  },
+  {
+    "id": "R13",
+    "task": "ch10/06-libraries/speed-table",
+    "note": "Настоящее fit, но в таблицу записано значение fit_s в миллисекундах",
+    "expected": false,
+    "code": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_squared_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmodels = {\n    \"GradientBoosting\": GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(max_iter=200, max_depth=3, random_state=0),\n    \"RandomForest\": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=0),\n}\n\nrows = []\nfor name, model in models.items():\n    fit_s = timed_fit(name, model, X_tr, y_tr)\n    pred, predict_ms = timed_predict(name, model, X_te)\n\n    rmse = np.sqrt(mean_squared_error(y_te, pred))\n    rows.append({\"model\": name, \"rmse\": round(float(rmse), 3), \"fit_s\": fit_s * 1000, \"predict_ms\": predict_ms})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")\nbest = table.index[0]\nfastest_fit = table[\"fit_s\"].idxmin()\nprint(table.round(3))\nprint(\"лучший:\", best, \"| быстрее всех обучился:\", fastest_fit)",
+    "code_sha256": "9161fbe87dc8bb4bf51ec6d84033ea7428f5b99bff066a0884119c46c0c876f9"
+  },
+  {
+    "id": "R14",
+    "task": "ch10/05-project/compare",
+    "note": "Пригодная предзаданная модель выбирается до финала; контроль на неизменённой кассе",
+    "expected": true,
+    "code": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error\n\nmodels = {\n    \"линейная\": LinearRegression(),\n    \"лес\": RandomForestRegressor(n_estimators=100, min_samples_leaf=3, random_state=0),\n    \"GradientBoosting\": GradientBoostingRegressor(random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(random_state=0),\n    \"тренд + бустинг\": TrendBoost(),\n}\n\nrows = []\nvalidation_X = prep(s, as_of='2025-04-01')\nvalidation_train = s['date'] < '2025-04-01'\nvalidation = (s['date'] >= '2025-04-01') & tr\nvalidation_scores = {}\nfor name, model in models.items():\n    vp = model.fit(validation_X[validation_train],y[validation_train]).predict(validation_X[validation])\n    validation_scores[name] = float(np.sqrt(mean_squared_error(y[validation],vp)))\nbest = min(validation_scores, key=validation_scores.get)\nfor name, model in models.items():\n    fit_s = timed_fit(name, model, X[tr], y[tr])\n    pred, predict_ms = timed_predict(name, model, X[~tr])\n\n    rows.append({\"model\": name,\n                 \"rmse\": round(float(np.sqrt(mean_squared_error(y[~tr], pred))), 2),\n                 \"mae\": round(float(mean_absolute_error(y[~tr], pred)), 2),\n                 \"fit_s\": fit_s, \"predict_ms\": predict_ms, \"val_rmse\": validation_scores[name]})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"val_rmse\")\ngain_vs_linear = round(float(table.loc[\"линейная\", \"rmse\"] - table.loc[best, \"rmse\"]), 2)\nnightly_ok = bool((table[\"fit_s\"] < 60).all())\nprint(table.round(3))\nprint(best, gain_vs_linear, nightly_ok)\nprint(\"REVIEW\", best, table.sort_index()[[\"val_rmse\",\"rmse\",\"mae\"]].round(3).to_json())",
+    "code_sha256": "f5c08cfa392de1408967070a7493765e12f6dc80a63eec71124aa46372530b7b"
+  },
+  {
+    "id": "R15",
+    "task": "ch10/05-project/compare",
+    "note": "Только послеиюньская выручка повышена на 75 тыс.; выбор/валидация сохраняются, ошибки меняются",
+    "expected": true,
+    "code": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error\n\nmodels = {\n    \"линейная\": LinearRegression(),\n    \"лес\": RandomForestRegressor(n_estimators=100, min_samples_leaf=3, random_state=0),\n    \"GradientBoosting\": GradientBoostingRegressor(random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(random_state=0),\n    \"тренд + бустинг\": TrendBoost(),\n}\n\nrows = []\nvalidation_X = prep(s, as_of='2025-04-01')\nvalidation_train = s['date'] < '2025-04-01'\nvalidation = (s['date'] >= '2025-04-01') & tr\nvalidation_scores = {}\nfor name, model in models.items():\n    vp = model.fit(validation_X[validation_train],y[validation_train]).predict(validation_X[validation])\n    validation_scores[name] = float(np.sqrt(mean_squared_error(y[validation],vp)))\nbest = min(validation_scores, key=validation_scores.get)\nfor name, model in models.items():\n    fit_s = timed_fit(name, model, X[tr], y[tr])\n    pred, predict_ms = timed_predict(name, model, X[~tr])\n\n    rows.append({\"model\": name,\n                 \"rmse\": round(float(np.sqrt(mean_squared_error(y[~tr], pred))), 2),\n                 \"mae\": round(float(mean_absolute_error(y[~tr], pred)), 2),\n                 \"fit_s\": fit_s, \"predict_ms\": predict_ms, \"val_rmse\": validation_scores[name]})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"val_rmse\")\ngain_vs_linear = round(float(table.loc[\"линейная\", \"rmse\"] - table.loc[best, \"rmse\"]), 2)\nnightly_ok = bool((table[\"fit_s\"] < 60).all())\nprint(table.round(3))\nprint(best, gain_vs_linear, nightly_ok)\nprint(\"REVIEW\", best, table.sort_index()[[\"val_rmse\",\"rmse\",\"mae\"]].round(3).to_json())",
+    "shift_final": 75,
+    "code_sha256": "f5c08cfa392de1408967070a7493765e12f6dc80a63eec71124aa46372530b7b"
+  },
+  {
+    "id": "R16",
+    "task": "ch10/05-project/compare",
+    "note": "Вместо RMSE в отчёт выбранной модели записана её MAE",
+    "expected": false,
+    "code": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error\n\nmodels = {\n    \"линейная\": LinearRegression(),\n    \"лес\": RandomForestRegressor(n_estimators=100, min_samples_leaf=3, random_state=0),\n    \"GradientBoosting\": GradientBoostingRegressor(random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(random_state=0),\n    \"тренд + бустинг\": TrendBoost(),\n}\n\nrows = []\nvalidation_X = prep(s, as_of='2025-04-01')\nvalidation_train = s['date'] < '2025-04-01'\nvalidation = (s['date'] >= '2025-04-01') & tr\nvalidation_scores = {}\nfor name, model in models.items():\n    vp = model.fit(validation_X[validation_train],y[validation_train]).predict(validation_X[validation])\n    validation_scores[name] = float(np.sqrt(mean_squared_error(y[validation],vp)))\nbest = min(validation_scores, key=validation_scores.get)\nfor name, model in models.items():\n    fit_s = timed_fit(name, model, X[tr], y[tr])\n    pred, predict_ms = timed_predict(name, model, X[~tr])\n\n    rows.append({\"model\": name,\n                 \"rmse\": round(float(np.sqrt(mean_squared_error(y[~tr], pred))), 2),\n                 \"mae\": round(float(mean_absolute_error(y[~tr], pred)), 2),\n                 \"fit_s\": fit_s, \"predict_ms\": predict_ms, \"val_rmse\": validation_scores[name]})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"val_rmse\")\ngain_vs_linear = round(float(table.loc[\"линейная\", \"rmse\"] - table.loc[best, \"rmse\"]), 2)\nnightly_ok = bool((table[\"fit_s\"] < 60).all())\nprint(table.round(3))\nprint(best, gain_vs_linear, nightly_ok)\ntable.loc[best,\"rmse\"] = table.loc[best,\"mae\"]",
+    "code_sha256": "2314a9cf4f3e5b647fd76504204ffaffbeec58fd147da6a8b2b97b3e13a1f28f"
+  },
+  {
+    "id": "R17",
+    "task": "ch10/05-project/split",
+    "note": "21 июльская строка получила фактическую будущую кассу вместо temp",
+    "expected": false,
+    "code": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])\n\ndef prep(s, as_of=\"2025-07-01\"):\n    s = s.copy()\n    history = pd.read_csv('daily_sales.csv', parse_dates=['date'])\n    history = history[history['date'] < as_of]\n    future = s['date'] >= as_of\n    for weather in ('temp','rain'):\n        s[weather] = s[weather].astype(float)\n        climate = history.groupby(history['date'].dt.month)[weather].mean()\n        s.loc[future, weather] = s.loc[future,'date'].dt.month.map(climate)\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - pd.Timestamp(\"2024-01-01\")).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    result = pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\n    schema = ['temp','rain','holiday','promo','weekday','month','weekend','day_n'] + ['shop_id_'+v for v in sorted(history.shop_id.unique())] + ['format_'+v for v in sorted(history['format'].unique())]\n    return result.reindex(columns=schema, fill_value=0)\n\nX = prep(s)\ntr = s[\"date\"] < \"2025-07-01\"\nn_train, n_test = int(tr.sum()), int((~tr).sum())\nidx = s.index[~tr][:21]\nX.loc[idx,\"temp\"] = s.loc[idx,\"revenue_k\"]",
+    "code_sha256": "db6a9b05f15649df182b02d1f61b3d651d59de53067214679cae158755cb69a5"
+  },
+  {
+    "id": "R18",
+    "task": "ch10/05-project/look",
+    "note": "EDA до апреля на изменённом финале; для исходного полного периода это другая постановка",
+    "expected": true,
+    "code": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])\ns = s.loc[s[\"date\"] < \"2025-04-01\"].copy()\ns[\"weekend\"] = (s[\"date\"].dt.weekday >= 5).astype(int)\n\npivot = s.groupby([\"format\", \"weekend\"])[\"revenue_k\"].mean().unstack().round(1)\nweekend_ratio = (pivot[1] / pivot[0]).round(2)\nmost_weekday = weekend_ratio.idxmin()",
+    "shift_final": 75,
+    "contract_change": true,
+    "code_sha256": "b5ecfeca162bf125d49e68a91d31c8c34131d0f4c32a9a98fede96fd20a61817"
+  }
+]

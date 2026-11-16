@@ -1,0 +1,58 @@
+[IPKernelApp] WARNING | Kernel is running over TCP without encryption. All communication (including code and outputs) is sent in plain text and is susceptible to eavesdropping. Use IPC transport or launch with kernel manager-provisioned CurveZMQ keys to enable transport encryption.
+Traceback (most recent call last):
+  File "/private/tmp/kuch10round/execute_student_nb.py", line 6, in <module>
+    NotebookClient(n,timeout=600,kernel_name='python3',resources={'metadata':{'path':str(p.parent)}}).execute()
+  File "/private/tmp/ku-audit/nb-env/lib/python3.12/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dmitriikormin/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/private/tmp/ku-audit/nb-env/lib/python3.12/site-packages/nbclient/client.py", line 709, in async_execute
+    await self.async_execute_cell(
+  File "/private/tmp/ku-audit/nb-env/lib/python3.12/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/private/tmp/ku-audit/nb-env/lib/python3.12/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+import os
+THREADS = 1                                     # все библиотеки на одном потоке, см. пояснение выше
+os.environ["OMP_NUM_THREADS"] = str(THREADS)    # задаём до импорта sklearn и lightgbm
+
+import time
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import sklearn
+import lightgbm as lgb
+import catboost
+from catboost import CatBoostRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+
+RANDOM_STATE = 0
+DATA = next(p for p in [Path("../../data"), Path("../data"), Path("../project/data"), Path(".")]
+            if (p / "daily_sales.csv").exists())
+
+print("pandas", pd.__version__, "| sklearn", sklearn.__version__,
+      "| lightgbm", lgb.__version__, "| catboost", catboost.__version__)
+print("данные:", DATA.resolve())
+------------------
+
+
+[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 11[39m
+[32m      7[39m 
+[32m      8[39m [38;5;28;01mimport[39;00m numpy [38;5;28;01mas[39;00m np
+[32m      9[39m [38;5;28;01mimport[39;00m pandas [38;5;28;01mas[39;00m pd
+[32m     10[39m [38;5;28;01mimport[39;00m sklearn
+[32m---> [39m[32m11[39m [38;5;28;01mimport[39;00m lightgbm [38;5;28;01mas[39;00m lgb
+[32m     12[39m [38;5;28;01mimport[39;00m catboost
+[32m     13[39m [38;5;28;01mfrom[39;00m catboost [38;5;28;01mimport[39;00m CatBoostRegressor
+[32m     14[39m [38;5;28;01mfrom[39;00m sklearn.ensemble [38;5;28;01mimport[39;00m HistGradientBoostingRegressor
+
+[31mModuleNotFoundError[39m: No module named 'lightgbm'
+

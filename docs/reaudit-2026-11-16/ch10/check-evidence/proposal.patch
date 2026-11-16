@@ -1,0 +1,26 @@
+--- content/ch10/01-gradient.md
++++ content/ch10/01-gradient.md
+@@ -513,6 +513,13 @@
+ ax = ax_of(0)
+ assert ax.get_xlabel() == 'шаг' and ax.get_ylabel() == 'MSE', 'Подпишите оси: «шаг» и «MSE».'
+ assert len(ax.lines) >= 1 and len(ax.lines[0].get_ydata()) == 40, 'Нужна одна линия из 40 точек.'
++_curve = _np.asarray(need('history'), dtype=float)
++_matching_lines = []
++for _line in ax.lines:
++    _shown = _np.asarray(_line.get_ydata(), dtype=float)
++    if _shown.shape == _curve.shape and _np.allclose(_shown, _curve, rtol=1e-7, atol=1e-7):
++        _matching_lines.append(_line)
++assert _matching_lines, 'График должен показывать значения history после каждого шага: проверьте все 40 MSE, а не только число точек.'
+ ```
+ 
+ ### hint
+--- content/ch10/02-gd-many.md
++++ content/ch10/02-gd-many.md
+@@ -721,6 +721,7 @@
+ assert all(close(a, b, 0.002) for a, b in zip(need('last5_decay'), dd)), f'last5_decay = {need("last5_decay")}, а нужно {dd}.'
+ j = need('jitter', dict)
+ assert close(j['const'], round(max(c) - min(c), 3), 0.003) and close(j['decay'], round(max(dd) - min(dd), 3), 0.003), f'jitter = {j}.'
++assert len(need('last5_const')) == 5 and len(need('last5_decay')) == 5, 'last5_const и last5_decay должны содержать ровно пять MSE — за последние пять эпох.'
+ ```
+ 
+ ### hint

@@ -482,7 +482,7 @@ diverged = [lr for lr, v in final.items() if v > loss(0.0)]
 
 ## task: history | Кривая обучения | base
 
-Запустите спуск с `lr = 0.01` из `w = 0` на 40 шагов и сохраните список `history` — MSE после каждого шага (40 чисел). Нарисуйте его линией, подпишите ось X `"шаг"`, ось Y `"MSE"`. В `steps_to_30` сохраните номер первого шага (считая с 1), после которого MSE стала меньше 30.
+Запустите спуск с `lr = 0.01` из `w = 0` на 40 шагов и сохраните список `history` — MSE после каждого шага (40 чисел). Нарисуйте его линией: по X — последовательные номера шагов (0…39 или 1…40), по Y — соответствующие MSE из history. Подпишите ось X `"шаг"`, ось Y `"MSE"`. В `steps_to_30` сохраните номер первого шага (считая с 1), после которого MSE стала меньше 30.
 
 ### starter
 ```python
@@ -513,6 +513,21 @@ assert need('steps_to_30') == first, f'steps_to_30 = {need("steps_to_30")}, а �
 ax = ax_of(0)
 assert ax.get_xlabel() == 'шаг' and ax.get_ylabel() == 'MSE', 'Подпишите оси: «шаг» и «MSE».'
 assert len(ax.lines) >= 1 and len(ax.lines[0].get_ydata()) == 40, 'Нужна одна линия из 40 точек.'
+_curve = _np.asarray(need('history'), dtype=float)
+_matching_lines = []
+for _line in ax.lines:
+    _shown = _np.asarray(_line.get_ydata(), dtype=float)
+    _steps_shown = _np.asarray(_line.get_xdata(), dtype=float)
+    if _shown.shape != _curve.shape or _steps_shown.shape != (40,):
+        continue
+    for _reverse in (False, True):
+        _ys = _shown[::-1] if _reverse else _shown
+        _xs = _steps_shown[::-1] if _reverse else _steps_shown
+        if (_np.allclose(_ys, _curve, rtol=1e-7, atol=1e-7)
+                and (_np.allclose(_xs, _np.arange(1, 41), rtol=0, atol=1e-9)
+                     or _np.allclose(_xs, _np.arange(40), rtol=0, atol=1e-9))):
+            _matching_lines.append(_line)
+assert _matching_lines, 'График должен показывать все 40 значений history: X — последовательные шаги 0–39 или 1–40, Y — MSE после каждого шага. Проверьте координаты точек, а не только их число.'
 ```
 
 ### hint

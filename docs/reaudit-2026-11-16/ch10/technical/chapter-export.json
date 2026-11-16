@@ -1,0 +1,1070 @@
+[
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "import numpy as np\nimport matplotlib.pyplot as plt\n\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * km - minutes) ** 2)\n\nws = np.linspace(0, 20, 81)\nfig, ax = plt.subplots(figsize=(6, 3.5))\nax.plot(ws, [loss(w) for w in ws])\nax.set_xlabel(\"w, минут на км\")\nax.set_ylabel(\"MSE\")\nplt.show()",
+    "expect_error": false,
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "cell",
+    "id": "cell2",
+    "code": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * km - minutes) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * km - minutes) * km)\n\nw, eps = 5.0, 1e-5\nnumeric = (loss(w + eps) - loss(w - eps)) / (2 * eps)\nprint(round(float(grad(w)), 4), round(float(numeric), 4))",
+    "expect_error": false,
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "cell",
+    "id": "cell3",
+    "code": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * km - minutes) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * km - minutes) * km)\n\nw, lr = 0.0, 0.01\nfor step in range(30):\n    w = w - lr * grad(w)\n    if step % 5 == 4:\n        print(f\"шаг {step + 1}: w = {w:.3f}, MSE = {loss(w):.2f}\")",
+    "expect_error": false,
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "cell",
+    "id": "cell5",
+    "code": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\nw, b, lr = 0.0, 0.0, 0.02\nfor step in range(3000):\n    err = w * km + b - minutes\n    dw = np.mean(2 * err * km)          # производная по w\n    db = np.mean(2 * err)               # производная по b\n    w, b = w - lr * dw, b - lr * db\nprint(round(float(w), 2), round(float(b), 2))\nprint(np.polyfit(km, minutes, 1).round(2))    # точное решение для сравнения",
+    "expect_error": false,
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "cell",
+    "id": "cell6",
+    "code": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * km - minutes) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * km - minutes) * km)\n\ndef descend(lr, tol=1e-6, max_steps=10_000):\n    w, prev = 0.0, loss(0.0)\n    for step in range(1, max_steps + 1):\n        w = w - lr * grad(w)\n        cur = loss(w)\n        if abs(prev - cur) < tol:          # потеря почти не меняется — стоп\n            return w, step\n        prev = cur\n    return w, max_steps\n\nfor lr in [0.001, 0.01, 0.03]:\n    w, steps = descend(lr)\n    print(f\"lr = {lr}: w = {w:.4f}, шагов {steps}\")\nprint(\"точный минимум:\", round(float((km * minutes).sum() / (km ** 2).sum()), 4))",
+    "expect_error": false,
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "predict",
+    "id": "q1",
+    "code": "w, lr, g = 2.0, 0.1, -5.0\nw = w - lr * g\nprint(w)",
+    "answer": "`2.5`",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "task",
+    "id": "loss-at",
+    "starter": "import numpy as np\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])",
+    "setup": "",
+    "check": "import numpy as _np\nx0 = _np.array([1.0, 2.0, 3.0, 4.5, 6.0]); y0 = _np.array([18.0, 25.0, 34.0, 44.0, 55.0])\nL = lambda w: _np.mean((w * x0 - y0) ** 2)\nassert close(need('loss')(7), L(7)), 'loss(w) должна возвращать среднее квадратов ошибок модели w * x.'\nassert close(need('l5'), L(5)) and close(need('l10'), L(10)), f'l5, l10 = {need(\"l5\")}, {need(\"l10\")}.'\nassert need('better') == (5 if L(5) < L(10) else 10), f'better = {need(\"better\")}.'",
+    "solution": "import numpy as np\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\nl5, l10 = loss(5), loss(10)\nbetter = 5 if l5 < l10 else 10",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "task",
+    "id": "numeric-grad",
+    "starter": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * km - minutes) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * km - minutes) * km)",
+    "setup": "",
+    "check": "f = need('num_grad')\nassert close(f(lambda w: w ** 3, 2), 12, 1e-3), 'Для w³ в точке 2 производная должна быть 12.'\nassert abs(f(abs, 0.0)) < 1e-6, f'Для |w| в точке 0 ваша функция дала {float(f(abs, 0.0))}, а симметричная разность даёт 0. Похоже, вы сдвигаетесь только в одну сторону: (f(w + eps) − f(w)) / eps. Нужны обе точки, w + eps и w − eps, и деление на 2·eps.'\nassert close(need('g3'), 6, 1e-4), f'g3 = {need(\"g3\")}.'\nassert close(need('g5_formula'), -138.7, 1e-6), f'g5_formula = {need(\"g5_formula\")}, а grad(5) = -138.7.'\nassert close(need('g5_numeric'), -138.7, 1e-3), f'g5_numeric = {need(\"g5_numeric\")}, а нужно около -138.7: num_grad(loss, 5).'",
+    "solution": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * km - minutes) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * km - minutes) * km)\n\ndef num_grad(f, w, eps=1e-5):\n    return (f(w + eps) - f(w - eps)) / (2 * eps)\n\ng3 = num_grad(lambda w: w ** 2, 3)\ng5_formula = grad(5)\ng5_numeric = num_grad(loss, 5)\nprint(g3, g5_formula, g5_numeric)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "task",
+    "id": "p-gd",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == ['2.0'], f'Сейчас: {_lines}. y = 2x — вес должен сойтись к 2.'",
+    "solution": "import numpy as np\nx = np.array([1.0, 2.0, 3.0])\ny = np.array([2.0, 4.0, 6.0])\nw, lr = 0.0, 0.05\nfor _ in range(100):\n    g = np.mean(2 * (w * x - y) * x)\n    w = w - lr * g\nprint(round(float(w), 3))",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "task",
+    "id": "lr-modes",
+    "starter": "import numpy as np\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)",
+    "setup": "",
+    "check": "import numpy as _np\nx0 = _np.array([1.0, 2.0, 3.0, 4.5, 6.0]); y0 = _np.array([18.0, 25.0, 34.0, 44.0, 55.0])\nL = lambda w: _np.mean((w * x0 - y0) ** 2); G = lambda w: _np.mean(2 * (w * x0 - y0) * x0)\nwant = {}\nfor lr in (0.001, 0.01, 0.1):\n    w = 0.0\n    for _ in range(30): w -= lr * G(w)\n    want[lr] = L(w)\nf = need('final', dict)\nfor lr, v in want.items():\n    assert lr in f and close(f[lr], v, max(1e-6, abs(v) * 1e-6)), f'final[{lr}] = {f.get(lr)}, а нужно {v:.4g}.'\nassert sorted(need('diverged')) == [lr for lr, v in want.items() if v > L(0)], f'diverged = {need(\"diverged\")}.'",
+    "solution": "import numpy as np\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)\n\nfinal = {}\nfor lr in (0.001, 0.01, 0.1):\n    w = 0.0\n    for _ in range(30):\n        w = w - lr * grad(w)\n    final[lr] = loss(w)\ndiverged = [lr for lr, v in final.items() if v > loss(0.0)]",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "task",
+    "id": "history",
+    "starter": "import numpy as np\nimport matplotlib.pyplot as plt\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)",
+    "setup": "",
+    "check": "import numpy as _np\nx0 = _np.array([1.0, 2.0, 3.0, 4.5, 6.0]); y0 = _np.array([18.0, 25.0, 34.0, 44.0, 55.0])\nw = 0.0; h = []\nfor _ in range(40):\n    w -= 0.01 * _np.mean(2 * (w * x0 - y0) * x0); h.append(_np.mean((w * x0 - y0) ** 2))\nhh = need('history')\nassert len(hh) == 40 and _np.allclose(hh, h), 'history — 40 значений MSE после каждого шага.'\nfirst = next(i + 1 for i, v in enumerate(h) if v < 30)\nassert need('steps_to_30') == first, f'steps_to_30 = {need(\"steps_to_30\")}, а нужно {first}.'\nax = ax_of(0)\nassert ax.get_xlabel() == 'шаг' and ax.get_ylabel() == 'MSE', 'Подпишите оси: «шаг» и «MSE».'\nassert len(ax.lines) >= 1 and len(ax.lines[0].get_ydata()) == 40, 'Нужна одна линия из 40 точек.'\n_curve = _np.asarray(need('history'), dtype=float)\n_matching_lines = []\nfor _line in ax.lines:\n    _shown = _np.asarray(_line.get_ydata(), dtype=float)\n    _steps_shown = _np.asarray(_line.get_xdata(), dtype=float)\n    if _shown.shape != _curve.shape or _steps_shown.shape != (40,):\n        continue\n    for _reverse in (False, True):\n        _ys = _shown[::-1] if _reverse else _shown\n        _xs = _steps_shown[::-1] if _reverse else _steps_shown\n        if (_np.allclose(_ys, _curve, rtol=1e-7, atol=1e-7)\n                and (_np.allclose(_xs, _np.arange(1, 41), rtol=0, atol=1e-9)\n                     or _np.allclose(_xs, _np.arange(40), rtol=0, atol=1e-9))):\n            _matching_lines.append(_line)\nassert _matching_lines, 'График должен показывать все 40 значений history: X — последовательные шаги 0–39 или 1–40, Y — MSE после каждого шага. Проверьте координаты точек, а не только их число.'",
+    "solution": "import numpy as np\nimport matplotlib.pyplot as plt\nx = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\ny = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef loss(w):\n    return np.mean((w * x - y) ** 2)\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)\n\nw, history = 0.0, []\nfor _ in range(40):\n    w = w - 0.01 * grad(w)\n    history.append(loss(w))\nsteps_to_30 = next(i + 1 for i, v in enumerate(history) if v < 30)\n\nfig, ax = plt.subplots()\nax.plot(range(1, 41), history)\nax.set_xlabel(\"шаг\")\nax.set_ylabel(\"MSE\")\nplt.show()",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "task",
+    "id": "stop-rule",
+    "starter": "def descend(lr, tol=1e-6, max_steps=10000):\n    w, prev = 0.0, loss(0.0)\n    ...",
+    "setup": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\ndef loss(w):\n    return np.mean((w * km - minutes) ** 2)\ndef grad(w):\n    return np.mean(2 * (w * km - minutes) * km)",
+    "check": "import numpy as _np\nL, G = need('loss'), need('grad')\ndef _d(lr, tol=1e-6, ms=10000):\n    w, prev = 0.0, L(0.0)\n    for st in range(1, ms + 1):\n        w = w - lr * G(w); cur = L(w)\n        if abs(prev - cur) < tol: return w, st\n        prev = cur\n    return w, ms\nw = {lr: _d(lr) for lr in [0.001, 0.01, 0.03]}\ng = {float(k): v for k, v in need('steps', dict).items()}\nassert all(g[k] == w[k][1] for k in w), f'steps = {g}, а нужно {({k: v[1] for k, v in w.items()})}.'\ngw = {float(k): v for k, v in need('w_found', dict).items()}\nassert all(close(gw[k], round(w[k][0], 4), 2e-4) for k in w), f'w_found = {gw}.'\nwith _np.errstate(all='ignore'):\n    w1 = _d(0.1)\nassert need('steps_01') == w1[1], f'steps_01 = {need(\"steps_01\")}, а нужно {w1[1]}.'\nassert not _np.isfinite(need('w_01')) or abs(need('w_01')) > 1e6, f'w_01 = {need(\"w_01\")}: при lr = 0.1 спуск расходится — вес улетает.'\n_diag = need('stop_diagnostics', dict)\nassert {'gradient', 'loss_delta', 'reason'} <= set(_diag), 'В stop_diagnostics нужны ключи gradient, loss_delta и reason.'\n_tiny, _steps = need('descend')(1e-12)\nassert close(_diag['gradient'],G(_tiny)) and close(_diag['loss_delta'],abs(L(0)-L(_tiny))), 'Диагностика: градиент и изменение MSE после малого шага.'\nassert _diag['reason']=='small_step_not_minimum' and abs(_diag['gradient'])>1, 'Малый шаг остановил спуск далеко от минимума, это не сходимость.'",
+    "solution": "def descend(lr, tol=1e-6, max_steps=10000):\n    w, prev = 0.0, loss(0.0)\n    for step in range(1, max_steps + 1):\n        w = w - lr * grad(w)\n        cur = loss(w)\n        if abs(prev - cur) < tol:\n            return w, step\n        prev = cur\n    return w, max_steps\n\nsteps, w_found = {}, {}\nfor lr in [0.001, 0.01, 0.03]:\n    w, n = descend(lr)\n    steps[lr], w_found[lr] = n, round(float(w), 4)\nwith np.errstate(all=\"ignore\"):         # переполнение при lr = 0.1 ожидаемо\n    w_01, steps_01 = descend(0.1)\nprint(steps, w_found, steps_01, w_01)\n_tiny_w, _tiny_steps = descend(1e-12)\nstop_diagnostics = dict(gradient=float(grad(_tiny_w)), loss_delta=float(abs(loss(0)-loss(_tiny_w))), reason='small_step_not_minimum' if abs(grad(_tiny_w)) > 1e-3 else 'small_gradient')",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "task",
+    "id": "two-params",
+    "starter": "import numpy as np\nx = np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0])\ny = np.array([14.0, 19.0, 22.0, 31.0, 38.0, 52.0])",
+    "setup": "",
+    "check": "import numpy as _np\nx0 = _np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0]); y0 = _np.array([14.0, 19.0, 22.0, 31.0, 38.0, 52.0])\nw = b = 0.0\nfor _ in range(3000):\n    e = w * x0 + b - y0; w, b = w - 0.02 * _np.mean(2 * e * x0), b - 0.02 * _np.mean(2 * e)\nassert close(need('w'), round(w, 2)) and close(need('b'), round(b, 2)), f'w, b = {need(\"w\")}, {need(\"b\")}, а нужно {round(w, 2)}, {round(b, 2)}.'\nex = _np.polyfit(x0, y0, 1).round(2)\nassert _np.allclose(need('exact'), ex), f'exact = {need(\"exact\")}.'\nassert need('close_enough') == bool(abs(w - ex[0]) < 0.05 and abs(b - ex[1]) < 0.05), f'close_enough = {need(\"close_enough\")}.'",
+    "solution": "import numpy as np\nx = np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0])\ny = np.array([14.0, 19.0, 22.0, 31.0, 38.0, 52.0])\n\nw = b = 0.0\nfor _ in range(3000):\n    err = w * x + b - y\n    dw = np.mean(2 * err * x)\n    db = np.mean(2 * err)\n    w, b = w - 0.02 * dw, b - 0.02 * db\nexact = np.polyfit(x, y, 1).round(2)\nclose_enough = bool(abs(w - exact[0]) < 0.05 and abs(b - exact[1]) < 0.05)\nw, b = round(w, 2), round(b, 2)",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01-gradient",
+    "kind": "task",
+    "id": "mae-gd",
+    "starter": "import numpy as np\nx = np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0, 6.0])\ny = np.array([14.0, 20.0, 24.0, 34.0, 45.0, 59.0, 120.0])   # последний заказ — сбой часов",
+    "setup": "",
+    "check": "import numpy as _np\nx0 = _np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0, 6.0]); y0 = _np.array([14.0, 20.0, 24.0, 34.0, 45.0, 59.0, 120.0])\nw = b = 0.0\nfor _ in range(5000):\n    s = _np.sign(w * x0 + b - y0); w, b = w - 0.05 * _np.mean(s * x0), b - 0.05 * _np.mean(s)\nassert close(need('w_mae'), round(w, 2), 0.011) and close(need('b_mae'), round(b, 2), 0.011), f'w_mae, b_mae = {need(\"w_mae\")}, {need(\"b_mae\")}, а нужно {round(w, 2)}, {round(b, 2)}.'\nwm = round(_np.polyfit(x0, y0, 1)[0], 2)\nassert close(need('w_mse'), wm), f'w_mse = {need(\"w_mse\")}.'\nassert need('robust') == ('MAE' if abs(w - 7) < abs(wm - 7) else 'MSE'), f'robust = {need(\"robust\")!r}.'",
+    "solution": "import numpy as np\nx = np.array([0.5, 1.5, 2.0, 3.5, 5.0, 7.0, 6.0])\ny = np.array([14.0, 20.0, 24.0, 34.0, 45.0, 59.0, 120.0])\n\nw = b = 0.0\nfor _ in range(5000):\n    s = np.sign(w * x + b - y)\n    w, b = w - 0.05 * np.mean(s * x), b - 0.05 * np.mean(s)\nw_mae, b_mae = round(w, 2), round(b, 2)\nw_mse = round(np.polyfit(x, y, 1)[0], 2)\nrobust = \"MAE\" if abs(w_mae - 7) < abs(w_mse - 7) else \"MSE\"",
+    "files": [],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01b-numeric",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "def ops_normal(n, d):\n    return n * d * d + d ** 3          # X.T @ X  +  решение системы d × d\n\ndef ops_gd(n, d, steps):\n    return 2 * n * d * steps           # прогноз и градиент на каждом шаге\n\nfor name, n, d in [(\"доставки\", 1841, 4), (\"чеки за год\", 1_000_000, 20), (\"тексты отзывов\", 100_000, 50_000)]:\n    ne, gd = ops_normal(n, d), ops_gd(n, d, 500)\n    winner = \"формула\" if ne < gd else \"спуск\"\n    print(f\"{name:15} формула {ne:.2e}, спуск {gd:.2e} → дешевле {winner}\")",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01b-numeric",
+    "kind": "cell",
+    "id": "cell2",
+    "code": "import time\nimport numpy as np\n\ndef best_time(f, repeat=3):\n    times = []\n    for _ in range(repeat):\n        t0 = time.perf_counter()\n        f()\n        times.append(time.perf_counter() - t0)\n    return min(times)\n\nrng = np.random.default_rng(0)\nn = 2000\nfor d in [50, 100, 200, 400]:\n    X = rng.normal(size=(n, d))\n    y = rng.normal(size=n)\n    w = np.zeros(d)\n    t_ne = best_time(lambda: np.linalg.solve(X.T @ X, X.T @ y))\n    t_gd = best_time(lambda: X.T @ (X @ w - y))\n    print(f\"d = {d:3}: формула {t_ne * 1000:7.2f} мс, шаг спуска {t_gd * 1000:5.2f} мс, \"\n          f\"формула = {t_ne / t_gd:4.0f} шагов\")",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01b-numeric",
+    "kind": "cell",
+    "id": "cell3",
+    "code": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n\ndef grad(w):\n    return np.mean(2 * (w * km - minutes) * km)\n\ndef bisect(f, lo, hi, tol=1e-6):\n    steps = 0\n    while hi - lo > tol:                 # пока отрезок длиннее допуска\n        mid = (lo + hi) / 2\n        if f(lo) * f(mid) > 0:           # знак в середине как слева — ноль правее\n            lo = mid\n        else:                            # иначе ноль левее (или ровно в середине)\n            hi = mid\n        steps += 1\n    return (lo + hi) / 2, steps\n\nw, steps = bisect(grad, 0, 20, tol=0.001)\nprint(round(w, 3), steps)\nprint(round(float((km * minutes).sum() / (km ** 2).sum()), 3))",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01b-numeric",
+    "kind": "cell",
+    "id": "cell4",
+    "code": "import numpy as np\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\")\nactual = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].values\n\ndef first_feasible(ok, lo, hi):\n    \"\"\"Первая допустимая целая точка; ok(hi) должно быть True.\"\"\"\n    assert lo <= hi and ok(hi)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if ok(mid):\n            hi = mid\n        else:\n            lo = mid + 1\n    return lo\n\nt = first_feasible(lambda t: np.mean(actual > t) <= 0.10, 0, 300)\nprint(f\"обещать {t} мин, опозданий будет {np.mean(actual > t):.1%}\")\nprint(f\"на минуту меньше: {t - 1} мин, опозданий {np.mean(actual > (t - 1)):.1%}\")\nprint(\"для сравнения, 90-й процентиль:\", np.quantile(actual, 0.9))",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01b-numeric",
+    "kind": "predict",
+    "id": "q1",
+    "code": "lo, hi = 0, 16\nfor _ in range(3):\n    mid = (lo + hi) / 2\n    hi = mid\nprint(hi - lo)",
+    "answer": "`2.0`",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01b-numeric",
+    "kind": "task",
+    "id": "ops-hand",
+    "starter": "n, d, k = 1000, 10, 100",
+    "setup": "",
+    "check": "assert need('normal_ops') == 1000 * 10 ** 2 + 10 ** 3, f'normal_ops = {need(\"normal_ops\")}, а нужно 101000: n·d² + d³ = 100 000 + 1000.'\nassert need('gd_ops') == 2 * 1000 * 10 * 100, f'gd_ops = {need(\"gd_ops\")}, а нужно 2000000: 2·n·d·k.'\nassert need('cheaper') == 'формула', f'cheaper = {need(\"cheaper\")!r}: сравните normal_ops и gd_ops.'\nassert need('steps_equiv') == 5, f'steps_equiv = {need(\"steps_equiv\")}, а нужно 5: один шаг стоит 2·n·d = 20 000 умножений.'",
+    "solution": "n, d, k = 1000, 10, 100\nnormal_ops = n * d * d + d ** 3\ngd_ops = 2 * n * d * k\ncheaper = \"формула\" if normal_ops < gd_ops else \"спуск\"\nsteps_equiv = normal_ops // (2 * n * d)\nprint(normal_ops, gd_ops, cheaper, steps_equiv)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01b-numeric",
+    "kind": "task",
+    "id": "ops-count",
+    "starter": "import pandas as pd\n\ntables = {\n    \"доставки\": (1841, 4),\n    \"чеки за год\": (1_000_000, 20),\n    \"тексты отзывов\": (100_000, 50_000),\n}",
+    "setup": "",
+    "check": "import pandas as _pd\nfn, fg = need('ops_normal'), need('ops_gd')\nassert fn(10, 3) == 10 * 9 + 27, f'ops_normal(10, 3) = {fn(10, 3)}, а нужно 117: n·d² + d³.'\nassert fg(10, 3, 5) == 300, f'ops_gd(10, 3, 5) = {fg(10, 3, 5)}, а нужно 300: 2·n·d·steps.'\nt0 = {'доставки': (1841, 4), 'чеки за год': (1_000_000, 20), 'тексты отзывов': (100_000, 50_000)}\nc = need('cost', _pd.DataFrame)\nassert set(t0) <= set(c.index), f'В индексе cost должны быть названия таблиц, а сейчас {list(c.index)}.'\nfor k, (n, d) in t0.items():\n    ne, gd = n * d * d + d ** 3, 2 * n * d * 500\n    assert c.loc[k, 'normal'] == ne and c.loc[k, 'gd'] == gd, f'{k}: normal, gd = {c.loc[k, \"normal\"]}, {c.loc[k, \"gd\"]}, а нужно {ne}, {gd}. Шагов — 500.'\n    assert c.loc[k, 'cheaper'] == ('формула' if ne < gd else 'спуск'), f'{k}: cheaper = {c.loc[k, \"cheaper\"]!r}.'\nassert need('ratio_text') == 75, f'ratio_text = {need(\"ratio_text\")}. Это normal / gd для текстов, целым числом.'\nassert close(need('mem_gb'), 20.0, 1e-6), f'mem_gb = {need(\"mem_gb\")}. Таблица d × d, по 8 байт на число, делим на 10**9.'\ndb = next(d for d in range(1, 5001) if 100_000 * d * d + d ** 3 > 2 * 100_000 * d * 500)\nassert need('d_break') == db, f'd_break = {need(\"d_break\")}. Перебирайте d по возрастанию и остановитесь на первом, где ops_normal > ops_gd.'",
+    "solution": "import pandas as pd\n\ntables = {\n    \"доставки\": (1841, 4),\n    \"чеки за год\": (1_000_000, 20),\n    \"тексты отзывов\": (100_000, 50_000),\n}\n\ndef ops_normal(n, d):\n    return n * d * d + d ** 3\n\ndef ops_gd(n, d, steps):\n    return 2 * n * d * steps\n\nrows = []\nfor name, (n, d) in tables.items():\n    ne, gd = ops_normal(n, d), ops_gd(n, d, 500)\n    rows.append({\"name\": name, \"normal\": ne, \"gd\": gd, \"cheaper\": \"формула\" if ne < gd else \"спуск\"})\ncost = pd.DataFrame(rows).set_index(\"name\")\n\nratio_text = int(cost.loc[\"тексты отзывов\", \"normal\"] / cost.loc[\"тексты отзывов\", \"gd\"])\nmem_gb = 50_000 * 50_000 * 8 / 10**9\nd_break = next(d for d in range(1, 5001) if ops_normal(100_000, d) > ops_gd(100_000, d, 500))\nprint(cost)\nprint(ratio_text, mem_gb, d_break)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01b-numeric",
+    "kind": "task",
+    "id": "bisect-steps",
+    "starter": "import math",
+    "setup": "",
+    "check": "import math as _m\nassert close(need('len_after_5'), 100 / 2 ** 5, 1e-9), f'len_after_5 = {need(\"len_after_5\")}, а нужно 3.125: 100 / 2⁵.'\nassert need('steps_100') == 14, f'steps_100 = {need(\"steps_100\")}, а нужно 14: 2¹³ = 8192 делений мало (100 / 8192 > 0.01), 2¹⁴ = 16 384 хватает.'\nassert need('steps_300') == 15, f'steps_300 = {need(\"steps_300\")}, а нужно 15.'",
+    "solution": "import math\nlen_after_5 = 100 / 2 ** 5\nsteps_100 = math.ceil(math.log2(100 / 0.01))\nsteps_300 = math.ceil(math.log2(300 / 0.01))\nprint(len_after_5, steps_100, steps_300)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01b-numeric",
+    "kind": "task",
+    "id": "bisect",
+    "starter": "import numpy as np\nx = np.array([0.8, 1.5, 2.5, 3.0, 5.0])\ny = np.array([10.0, 16.0, 24.0, 31.0, 47.0])\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)\n\ndef bisect(f, lo, hi, tol=1e-6):\n    ...",
+    "setup": "",
+    "check": "import numpy as _np, math as _m\nb = need('bisect')\nr = b(lambda t: t - 0.3, 0, 1)\nassert isinstance(r, tuple) and len(r) == 2, 'bisect должна возвращать пару (x, steps).'\nassert abs(r[0] - 0.3) < 1e-6, f'bisect(lambda t: t - 0.3, 0, 1) вернула {r[0]}, а ноль в 0.3. Проверьте, какой край двигаете при одинаковых знаках.'\nr2 = b(lambda t: 1 - t * t, 0, 3)\nassert abs(r2[0] - 1) < 1e-6, f'Для убывающей функции 1 - t² на [0, 3] получилось {r2[0]}, а ноль в 1. Сравнивайте знаки через f(lo) * f(mid) > 0, а не «f(mid) > 0».'\nassert r[1] == _m.ceil(_m.log2(1 / 1e-6)), f'На отрезке длины 1 с tol = 1e-6 нужно {_m.ceil(_m.log2(1e6))} шагов, а у вас {r[1]}. Считайте каждое деление.'\nassert close(need('root3'), round(2 ** (1 / 3), 6), 2e-6), f'root3 = {need(\"root3\")}, а 2^(1/3) ≈ {2 ** (1 / 3):.6f}.'\nassert need('steps3') == _m.ceil(_m.log2(2 / 1e-6)), f'steps3 = {need(\"steps3\")}.'\nx0 = _np.array([0.8, 1.5, 2.5, 3.0, 5.0]); y0 = _np.array([10.0, 16.0, 24.0, 31.0, 47.0])\nex = round(float((x0 * y0).sum() / (x0 ** 2).sum()), 3)\nassert close(need('exact'), ex, 1e-9), f'exact = {need(\"exact\")}, а нужно {ex}.'\nassert close(need('w_min'), ex, 0.0011), f'w_min = {need(\"w_min\")}, а точный ответ {ex}. Ищите ноль grad на [0, 30].'",
+    "solution": "import numpy as np\nx = np.array([0.8, 1.5, 2.5, 3.0, 5.0])\ny = np.array([10.0, 16.0, 24.0, 31.0, 47.0])\n\ndef grad(w):\n    return np.mean(2 * (w * x - y) * x)\n\ndef bisect(f, lo, hi, tol=1e-6):\n    steps = 0\n    while hi - lo > tol:\n        mid = (lo + hi) / 2\n        if f(lo) * f(mid) > 0:\n            lo = mid\n        else:\n            hi = mid\n        steps += 1\n    return (lo + hi) / 2, steps\n\nr, steps3 = bisect(lambda t: t ** 3 - 2, 0, 2)\nroot3 = round(r, 6)\nw, _ = bisect(grad, 0, 30)\nw_min = round(float(w), 3)\nexact = round(float((x * y).sum() / (x ** 2).sum()), 3)\nprint(root3, steps3, w_min, exact)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01b-numeric",
+    "kind": "task",
+    "id": "promise-levels",
+    "starter": "# уже есть: first_feasible(ok, lo, hi); прежняя bisect тоже доступна\nimport numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nactual = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].values\nlevels = [0.05, 0.10, 0.20]",
+    "setup": "def first_feasible(ok, lo, hi):\n    \"\"\"Первая допустимая целая точка; ok(hi) должно быть True.\"\"\"\n    assert lo <= hi and ok(hi)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if ok(mid):\n            hi = mid\n        else:\n            lo = mid + 1\n    return lo\n\nimport numpy as np\nimport pandas as pd\ndef bisect(f, lo, hi, tol=1e-6):\n    steps = 0\n    while hi - lo > tol:\n        mid = (lo + hi) / 2\n        if f(lo) * f(mid) > 0:\n            lo = mid\n        else:\n            hi = mid\n        steps += 1\n    return (lo + hi) / 2, steps",
+    "check": "import numpy as _np, pandas as _pd\nd0 = _pd.read_csv('deliveries.csv'); a0 = d0.loc[d0['actual_min'].between(1, 299), 'actual_min'].values\ndef _bis(f, lo, hi, tol):\n    while hi - lo > tol:\n        mid = (lo + hi) / 2\n        if f(lo) * f(mid) > 0: lo = mid\n        else: hi = mid\n    return (lo + hi) / 2\nP = {lv: next(t for t in range(301) if _np.mean(a0 > t) <= lv) for lv in (.05,.10,.20)}\npp = {float(k): v for k, v in need('promise', dict).items()}\nassert set(pp) == set(P), f'Ключи promise — уровни {sorted(P)}, а сейчас {sorted(pp)}.'\nfor lv in P:\n    assert pp[lv] == P[lv], f'promise[{lv}] = {pp[lv]}, а нужно {P[lv]}. Нужна первая целая минута t: доля при t не выше уровня, а при t−1 — выше.'\nll = {float(k): v for k, v in need('late', dict).items()}\nfor lv in P:\n    want = round(float(_np.mean(a0 > P[lv])), 3)\n    assert close(ll.get(lv), want, 0.0011), f'late[{lv}] = {ll.get(lv)}, а нужно {want}.'\nassert need('extra_for_5') == P[0.05] - P[0.10], f'extra_for_5 = {need(\"extra_for_5\")}, а нужно {P[0.05] - P[0.10]}.'\nfor _lv, _minute in pp.items():\n    assert _np.mean(a0 > _minute) <= _lv and (_minute == 0 or _np.mean(a0 > (_minute - 1)) > _lv), 'Проверьте соседние минуты t и t−1: нужен наименьший целый срок, соблюдающий лимит.'",
+    "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nactual = d.loc[d[\"actual_min\"].between(1, 299), \"actual_min\"].values\nlevels = [0.05, 0.10, 0.20]\n\npromise, late = {}, {}\nfor level in levels:\n    promise[level] = next(t for t in range(301) if np.mean(actual > t) <= level)\n    late[level] = round(float(np.mean(actual > promise[level])), 3)\nextra_for_5 = promise[0.05] - promise[0.10]\nprint(promise, late, extra_for_5)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/01b-numeric",
+    "kind": "task",
+    "id": "promise-time",
+    "starter": "# уже есть: first_feasible(ok, lo, hi); прежняя bisect тоже доступна\nimport numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]",
+    "setup": "def first_feasible(ok, lo, hi):\n    \"\"\"Первая допустимая целая точка; ok(hi) должно быть True.\"\"\"\n    assert lo <= hi and ok(hi)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if ok(mid):\n            hi = mid\n        else:\n            lo = mid + 1\n    return lo\n\nimport numpy as np\nimport pandas as pd\ndef bisect(f, lo, hi, tol=1e-6):\n    steps = 0\n    while hi - lo > tol:\n        mid = (lo + hi) / 2\n        if f(lo) * f(mid) > 0:\n            lo = mid\n        else:\n            hi = mid\n        steps += 1\n    return (lo + hi) / 2, steps",
+    "check": "import numpy as _np, pandas as _pd\nd0 = _pd.read_csv('deliveries.csv'); ok0 = d0[d0['actual_min'].between(1, 299)]\ndef _bis(f, lo, hi, tol):\n    while hi - lo > tol:\n        mid = (lo + hi) / 2\n        if f(lo) * f(mid) > 0: lo = mid\n        else: hi = mid\n    return (lo + hi) / 2, 0\nP, L, Q = {}, {}, {}\nfor c, g in ok0.groupby('courier'):\n    a = g['actual_min'].values\n    t = next(t for t in range(301) if _np.mean(a > t) <= .10)\n    P[c] = t; L[c] = round(float(_np.mean(a > t)), 3); Q[c] = float(_np.quantile(a, 0.9))\npp = need('promise', dict)\nassert set(pp) == set(P), f'Ключи promise — типы курьеров {sorted(P)}, а сейчас {sorted(pp)}.'\nfor c in P:\n    assert pp[c] == P[c], f'promise[{c!r}] = {pp[c]}, а нужно {P[c]}. Нужна первая целая минута t с долей не больше 0.10, только по курьерам этого типа; при t−1 лимит ещё превышен.'\n    assert close(need('late_at_promise', dict)[c], L[c], 0.0011), f'late_at_promise[{c!r}] = {need(\"late_at_promise\", dict)[c]}, а нужно {L[c]}.'\n    assert close(need('q90', dict)[c], Q[c], 1e-9), f'q90[{c!r}] = {need(\"q90\", dict)[c]}, а нужно {Q[c]}.'\nassert need('slowest') == max(P, key=P.get), f'slowest = {need(\"slowest\")!r}.'\nfor _courier, _group in ok0.groupby('courier'):\n    _actual = _group['actual_min'].values\n    _minute = pp[_courier]\n    assert _np.mean(_actual > _minute) <= .10 and (_minute == 0 or _np.mean(_actual > (_minute - 1)) > .10), 'Для каждого курьера сравните t и t−1: выбранный срок должен быть первым целым, соблюдающим 10 %.'",
+    "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\n\npromise, late_at_promise, q90 = {}, {}, {}\nfor courier, g in ok.groupby(\"courier\"):\n    a = g[\"actual_min\"].values\n    t = next(t for t in range(301) if np.mean(a > t) <= .10)\n    promise[courier] = t\n    late_at_promise[courier] = round(float(np.mean(a > promise[courier])), 3)\n    q90[courier] = float(np.quantile(a, 0.9))\nslowest = max(promise, key=promise.get)\nprint(promise, late_at_promise, q90, slowest)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\n\nX1 = np.column_stack([np.ones(len(X)), X])\nw = np.zeros(X1.shape[1])\nfor _ in range(500):\n    g = 2 / len(y) * X1.T @ (X1 @ w - y)\n    w = w - 0.05 * g\n\nlr = LinearRegression().fit(X, y)\nprint(\"спуск:  \", w.round(2))\nprint(\"точно:  \", np.r_[lr.intercept_, lr.coef_].round(2))",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "cell",
+    "id": "cell2",
+    "code": "import numpy as np\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\", \"amount\"]].values.astype(float)\ny = ok[\"actual_min\"].values\n\ndef gd(X, y, lr, steps):\n    X1 = np.column_stack([np.ones(len(X)), X])\n    w = np.zeros(X1.shape[1])\n    for _ in range(steps):\n        w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)\n    return np.mean((X1 @ w - y) ** 2)\n\nfor lr in [1e-6, 2e-6, 1e-5]:\n    print(\"без масштаба, шаг\", lr, \"→ MSE\", round(float(gd(X, y, lr, 500)), 1))\n\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nprint(\"с масштабом, шаг 0.1, 100 шагов → MSE\", round(float(gd(Xs, y, 0.1, 100)), 1))",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "cell",
+    "id": "cell3",
+    "code": "import numpy as np\nH = np.array([[10.0, 0.0], [0.0, 1.0]])   # крутизна ямы: 10 вдоль первого веса, 1 вдоль второго\nfor lr in [0.15, 0.25]:\n    v = np.array([1.0, 1.0])               # отклонение весов от дна\n    for _ in range(5):\n        v = v - lr * H @ v                  # градиент этой ямы — H @ v\n    print(lr, v.round(3))",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "cell",
+    "id": "cell4",
+    "code": "import numpy as np\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\", \"amount\"]].values.astype(float)\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\n\nfor name, A in [(\"без масштаба\", X), (\"с масштабом\", Xs)]:\n    X1 = np.column_stack([np.ones(len(A)), A])\n    ev = np.linalg.eigvalsh(2 / len(A) * X1.T @ X1)      # собственные числа, по возрастанию\n    print(f\"{name}: самое крутое {ev[-1]:.3g}, самое пологое {ev[0]:.3g}, \"\n          f\"предельный шаг {2 / ev[-1]:.3g}, вытянутость {ev[-1] / ev[0]:.3g}\")",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "cell",
+    "id": "cell5",
+    "code": "import numpy as np\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\nrng = np.random.default_rng(0)\nw = np.zeros(X1.shape[1])\nfor epoch in range(5):\n    order = rng.permutation(len(y))                 # перемешиваем строки каждую эпоху\n    for start in range(0, len(y), 32):\n        b = order[start:start + 32]                 # номера строк батча\n        g = 2 / len(b) * X1[b].T @ (X1[b] @ w - y[b])\n        w = w - 0.05 * g\n    print(f\"эпоха {epoch + 1}: MSE {np.mean((X1 @ w - y) ** 2):.1f}\")",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "cell",
+    "id": "cell7",
+    "code": "import pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import SGDRegressor\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]]\ny = ok[\"actual_min\"]\n\nmodel = make_pipeline(StandardScaler(), SGDRegressor(random_state=0)).fit(X, y)\nsgd = model[-1]\nprint(\"веса (на масштабированных признаках):\", sgd.coef_.round(2))\nprint(\"эпох до остановки:\", sgd.n_iter_)",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "predict",
+    "id": "q1",
+    "code": "n, batch = 1000, 50\nprint(n // batch)",
+    "answer": "`20`",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "task",
+    "id": "grad-vec",
+    "starter": "import numpy as np\nX1 = np.array([[1, 1.0], [1, 2.0], [1, 3.0]])\ny = np.array([5.0, 7.0, 9.0])\nw = np.array([0.0, 4.0])",
+    "setup": "",
+    "check": "import numpy as _np\nX0 = _np.array([[1, 1.0], [1, 2.0], [1, 3.0]]); y0 = _np.array([5.0, 7.0, 9.0]); w0 = _np.array([0.0, 4.0])\ngg = 2 / 3 * X0.T @ (X0 @ w0 - y0)\nassert _np.allclose(need('g'), gg), f'g = {need(\"g\")}, а нужно {gg.round(3)}.'\nassert list(need('direction')) == ['вверх' if v < 0 else 'вниз' for v in gg], f'direction = {need(\"direction\")}.'",
+    "solution": "import numpy as np\nX1 = np.array([[1, 1.0], [1, 2.0], [1, 3.0]])\ny = np.array([5.0, 7.0, 9.0])\nw = np.array([0.0, 4.0])\ng = 2 / len(y) * X1.T @ (X1 @ w - y)\ndirection = [\"вверх\" if v < 0 else \"вниз\" for v in g]",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "task",
+    "id": "one-step",
+    "starter": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 3]], dtype=float)\ny = np.array([3, 5, 7], dtype=float)\nw = np.zeros(2)\nlr = 0.1",
+    "setup": "",
+    "check": "import numpy as _np\nX1 = _np.array([[1, 1], [1, 2], [1, 3]], dtype=float); y = _np.array([3, 5, 7], dtype=float)\ng = 2 / 3 * X1.T @ (X1 @ _np.zeros(2) - y); wn = -0.1 * g\nassert _np.allclose(need('g'), g), f'g = {need(\"g\")}, а нужно {g.round(3)}.'\nassert _np.allclose(need('w_new'), wn), f'w_new = {need(\"w_new\")}, а нужно {wn.round(3)}.'\nassert close(need('mse_before'), ((y) ** 2).mean()) and close(need('mse_after'), ((X1 @ wn - y) ** 2).mean(), 1e-6), 'mse_before / mse_after не совпадают.'",
+    "solution": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 3]], dtype=float)\ny = np.array([3, 5, 7], dtype=float)\nw = np.zeros(2)\nlr = 0.1\nn = len(y)\ng = 2 / n * X1.T @ (X1 @ w - y)\nw_new = w - lr * g\nmse_before = ((X1 @ w - y) ** 2).mean()\nmse_after = ((X1 @ w_new - y) ** 2).mean()",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "task",
+    "id": "p-batch",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == ['[4, 4, 2]'], f'Сейчас: {_lines}.'",
+    "solution": "import numpy as np\nrng = np.random.default_rng(0)\norder = rng.permutation(10)\nsizes = []\nfor start in range(0, 10, 4):\n    batch = order[start:start + 4]\n    sizes.append(len(batch))\nprint(sizes)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "task",
+    "id": "gd-fit",
+    "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nXs0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); X10 = _np.column_stack([_np.ones(len(Xs0)), Xs0])\nw0 = _np.zeros(4)\nfor _ in range(200): w0 = w0 - 0.1 * 2 / len(y0) * X10.T @ (X10 @ w0 - y0)\nassert _np.allclose(need('w'), w0, atol=1e-6), f'w = {_np.round(need(\"w\"), 3)}, а нужно {w0.round(3)}. Столбец единиц — первым.'\nassert close(need('mse'), round(_np.mean((X10 @ w0 - y0) ** 2), 2)), f'mse = {need(\"mse\")}.'\nassert len(need('gd')(X10, y0, 0.1, 1)) == 4, 'gd должна возвращать вектор весов.'",
+    "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\n\ndef gd(X1, y, lr, steps):\n    w = np.zeros(X1.shape[1])\n    for _ in range(steps):\n        w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)\n    return w\n\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\nw = gd(X1, y, 0.1, 200)\nmse = round(np.mean((X1 @ w - y) ** 2), 2)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "task",
+    "id": "max-lr",
+    "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nXs0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); X10 = _np.column_stack([_np.ones(len(Xs0)), Xs0])\nwant = {}\nwith _np.errstate(all='ignore'):\n    for lr in [0.1, 0.3, 0.5, 0.7, 0.9, 1.1]:\n        w = _np.zeros(4)\n        for _ in range(100): w = w - lr * 2 / len(y0) * X10.T @ (X10 @ w - y0)\n        want[lr] = _np.mean((X10 @ w - y0) ** 2)\nr = need('res', dict)\nfor lr, v in want.items():\n    got = r.get(lr)\n    assert got is not None, f'Нет шага {lr} в res.'\n    assert (not _np.isfinite(v) and not _np.isfinite(got)) or (_np.isfinite(v) and close(got, v, 0.01)) or (v > 1e6 and got > 1e6), f'res[{lr}] = {got}, а ожидалось {v:.4g}.'\nok_lrs = [lr for lr, v in want.items() if _np.isfinite(v) and v < 61]\nassert need('best_lr') == max(ok_lrs), f'best_lr = {need(\"best_lr\")}, а нужно {max(ok_lrs)}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\nres = {}\nwith np.errstate(all=\"ignore\"):              # не показывать предупреждения о переполнении\n    for lr in [0.1, 0.3, 0.5, 0.7, 0.9, 1.1]:\n        w = np.zeros(X1.shape[1])\n        for _ in range(100):\n            w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)\n        res[lr] = np.mean((X1 @ w - y) ** 2)\nbest_lr = max(lr for lr, v in res.items() if np.isfinite(v) and v < 61)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "task",
+    "id": "minibatch",
+    "starter": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nXs0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); X10 = _np.column_stack([_np.ones(len(Xs0)), Xs0])\nrng = _np.random.default_rng(1); w = _np.zeros(4); em = []; st = 0\nfor _ in range(3):\n    o = rng.permutation(len(y0))\n    for s in range(0, len(y0), 64):\n        b = o[s:s + 64]; w = w - 0.05 * 2 / len(b) * X10[b].T @ (X10[b] @ w - y0[b]); st += 1\n    em.append(_np.mean((X10 @ w - y0) ** 2))\nassert _np.allclose(need('epoch_mse'), em), f'epoch_mse = {need(\"epoch_mse\")}, а нужно {_np.round(em, 2)}.'\nassert need('steps') == st, f'steps = {need(\"steps\")}, а нужно {st}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\nrng = np.random.default_rng(1)\nw = np.zeros(X1.shape[1])\nepoch_mse, steps = [], 0\nfor _ in range(3):\n    order = rng.permutation(len(y))\n    for start in range(0, len(y), 64):\n        b = order[start:start + 64]\n        w = w - 0.05 * 2 / len(b) * X1[b].T @ (X1[b] @ w - y[b])\n        steps += 1\n    epoch_mse.append(np.mean((X1 @ w - y) ** 2))",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "task",
+    "id": "to-goal",
+    "starter": "# уже есть: X — четыре признака (distance_km, items, walk, amount) без масштаба,\n# Xs — они же масштабированные, y — время доставки\nimport numpy as np\n\ndef steps_to(A, lr, goal=61, max_steps=20000):\n    X1 = np.column_stack([np.ones(len(A)), A])\n    w = np.zeros(X1.shape[1])\n    ...",
+    "setup": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\", \"amount\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)",
+    "check": "import numpy as _np\ny0, X0, Xs0 = need('y'), need('X'), need('Xs')\ndef _st(A, lr, goal=61, ms=20000):\n    X1 = _np.column_stack([_np.ones(len(A)), A]); w = _np.zeros(X1.shape[1])\n    for i in range(1, ms + 1):\n        w = w - lr * 2 / len(y0) * X1.T @ (X1 @ w - y0)\n        if _np.mean((X1 @ w - y0) ** 2) < goal: return i\n    return None\nws = {lr: _st(Xs0, lr) for lr in [0.1, 0.5]}\ng = {float(k): v for k, v in need('scaled', dict).items()}\nassert g == ws, f'scaled = {g}, а нужно {ws}.'\ngr = {float(k): v for k, v in need('raw', dict).items()}\nassert gr == {1e-6: None, 2e-6: None}, f'raw = {gr}: без масштаба за 20 000 шагов цель не достигается.'",
+    "solution": "import numpy as np\n\ndef steps_to(A, lr, goal=61, max_steps=20000):\n    X1 = np.column_stack([np.ones(len(A)), A])\n    w = np.zeros(X1.shape[1])\n    for i in range(1, max_steps + 1):\n        w = w - lr * 2 / len(y) * X1.T @ (X1 @ w - y)\n        if np.mean((X1 @ w - y) ** 2) < goal:\n            return i\n    return None\n\nscaled = {lr: steps_to(Xs, lr) for lr in [0.1, 0.5]}\nraw = {lr: steps_to(X, lr) for lr in [1e-6, 2e-6]}\nprint(scaled, raw)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "task",
+    "id": "decay",
+    "starter": "import numpy as np\n\ndef sgd(decay, epochs=20, lr0=0.05, size=32):\n    rng = np.random.default_rng(0)\n    w = np.zeros(X1.shape[1])\n    t = 0\n    history = []\n    ...\n    return history",
+    "setup": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nX1 = np.column_stack([np.ones(len(y)), (X - X.mean(axis=0)) / X.std(axis=0)])",
+    "check": "import numpy as _np\nA, y0 = need('X1'), need('y')\ndef _s(decay):\n    rng = _np.random.default_rng(0); w = _np.zeros(A.shape[1]); t = 0; h = []\n    for _ in range(20):\n        order = rng.permutation(len(y0))\n        for st in range(0, len(y0), 32):\n            b = order[st:st + 32]; g = 2 / len(b) * A[b].T @ (A[b] @ w - y0[b])\n            lr = 0.05 / (1 + t / 200) if decay else 0.05; w = w - lr * g; t += 1\n        h.append(_np.mean((A @ w - y0) ** 2))\n    return [round(float(v), 3) for v in h[-5:]]\nc, dd = _s(False), _s(True)\nassert all(close(a, b, 0.002) for a, b in zip(need('last5_const'), c)), f'last5_const = {need(\"last5_const\")}, а нужно {c}.'\nassert all(close(a, b, 0.002) for a, b in zip(need('last5_decay'), dd)), f'last5_decay = {need(\"last5_decay\")}, а нужно {dd}.'\nj = need('jitter', dict)\nassert close(j['const'], round(max(c) - min(c), 3), 0.003) and close(j['decay'], round(max(dd) - min(dd), 3), 0.003), f'jitter = {j}.'\nassert len(need('last5_const')) == 5 and len(need('last5_decay')) == 5, 'last5_const и last5_decay должны содержать ровно пять MSE — за последние пять эпох.'",
+    "solution": "import numpy as np\n\ndef sgd(decay, epochs=20, lr0=0.05, size=32):\n    rng = np.random.default_rng(0)\n    w = np.zeros(X1.shape[1])\n    t = 0\n    history = []\n    for _ in range(epochs):\n        order = rng.permutation(len(y))\n        for start in range(0, len(y), size):\n            b = order[start:start + size]\n            g = 2 / len(b) * X1[b].T @ (X1[b] @ w - y[b])\n            lr = lr0 / (1 + t / 200) if decay else lr0\n            w = w - lr * g\n            t += 1\n        history.append(np.mean((X1 @ w - y) ** 2))\n    return history\n\nlast5_const = [round(float(v), 3) for v in sgd(False)[-5:]]\nlast5_decay = [round(float(v), 3) for v in sgd(True)[-5:]]\njitter = {\"const\": round(max(last5_const) - min(last5_const), 3), \"decay\": round(max(last5_decay) - min(last5_decay), 3)}\nprint(last5_const, last5_decay, jitter)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02-gd-many",
+    "kind": "task",
+    "id": "sgd-sklearn",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import SGDRegressor, LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]]\ny = ok[\"actual_min\"]",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.pipeline import make_pipeline as _mp\nfrom sklearn.preprocessing import StandardScaler as _SS\nfrom sklearn.linear_model import SGDRegressor as _SGD, LinearRegression as _LR\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']]; y0 = ok['actual_min']\nw = [round(_mae(y0, _mp(_SS(), _SGD(random_state=r)).fit(X0, y0).predict(X0)), 3) for r in range(5)]\ngot = [round(float(v), 3) for v in need('maes')]\nassert len(got) == 5 and all(close(a, b, 0.002) for a, b in zip(got, w)), f'maes = {got}, а нужно {w}.'\nassert close(need('spread'), round(max(w) - min(w), 3), 0.003), f'spread = {need(\"spread\")}.'\nassert close(need('mae_exact'), round(_mae(y0, _LR().fit(X0, y0).predict(X0)), 3)), f'mae_exact = {need(\"mae_exact\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import SGDRegressor, LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]]\ny = ok[\"actual_min\"]\n\nmaes = []\nfor r in range(5):\n    m = make_pipeline(StandardScaler(), SGDRegressor(random_state=r)).fit(X, y)\n    maes.append(round(mean_absolute_error(y, m.predict(X)), 3))\nspread = round(max(maes) - min(maes), 3)\nmae_exact = round(mean_absolute_error(y, LinearRegression().fit(X, y).predict(X)), 3)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02b-optimizers",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "g, lr, beta = -2.0, 0.1, 0.9          # склон с постоянным наклоном\nv, w = 0.0, 0.0\nfor step in range(1, 6):\n    v = beta * v + g                  # копим скорость\n    w = w - lr * v                    # шагаем по скорости, а не по градиенту\n    print(step, round(v, 3), round(w, 3))",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02b-optimizers",
+    "kind": "cell",
+    "id": "cell2",
+    "code": "import numpy as np\nimport pandas as pd\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\", \"amount\"]].values.astype(float)   # без масштаба!\ny = ok[\"actual_min\"].values\nX1 = np.column_stack([np.ones(len(X)), X])\nn = len(y)\n\ndef mse(w):\n    return np.mean((X1 @ w - y) ** 2)\n\nw = np.zeros(5)                                  # обычный спуск с предельным шагом\nfor _ in range(2000):\n    w = w - 2e-6 * 2 / n * X1.T @ (X1 @ w - y)\nprint(\"обычный спуск:\", round(mse(w), 1))\n\nw, m, s = np.zeros(5), np.zeros(5), np.zeros(5)  # Adam\nb1, b2, eps, lr = 0.9, 0.999, 1e-8, 0.05\nfor t in range(1, 2001):\n    g = 2 / n * X1.T @ (X1 @ w - y)\n    m = b1 * m + (1 - b1) * g\n    s = b2 * s + (1 - b2) * g ** 2\n    m_hat, s_hat = m / (1 - b1 ** t), s / (1 - b2 ** t)\n    w = w - lr * m_hat / (np.sqrt(s_hat) + eps)\nprint(\"Adam:\", round(mse(w), 1), \"| веса:\", [round(float(v), 3) for v in w])\nprint(\"минимум:\", round(mse(np.linalg.lstsq(X1, y, rcond=None)[0]), 1))",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02b-optimizers",
+    "kind": "cell",
+    "id": "cell3",
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import Ridge\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\", \"amount\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\nn = len(y)\n\nfor lam in [0.05, 0.5, 2.0]:\n    w = np.zeros(5)\n    for _ in range(1000):\n        g = 2 / n * X1.T @ (X1 @ w - y)\n        penalty = 2 * lam * w\n        penalty[0] = 0                           # свободный член не штрафуем\n        w = w - 0.1 * (g + penalty)\n    ridge = Ridge(alpha=lam * n).fit(Xs, y)\n    same = np.allclose(w, np.r_[ridge.intercept_, ridge.coef_], atol=1e-6)\n    print(f\"λ = {lam}: веса {w[1:].round(2)}, MSE {np.mean((X1 @ w - y) ** 2):.2f}, как Ridge: {same}\")",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02b-optimizers",
+    "kind": "task",
+    "id": "momentum-hand",
+    "starter": "g, lr, beta = -1.0, 0.2, 0.5\nv, w = 0.0, 0.0",
+    "setup": "",
+    "check": "want = [0.2, 0.5, 0.85]\ngot = [float(x) for x in need('ws', list)]\nassert len(got) == 3, f'В ws {len(got)} чисел, а шагов три.'\nassert all(close(a, b, 1e-4) for a, b in zip(got, want)), f'ws = {got}, а нужно {want}. Сначала обновите v, потом w = w - lr * v.'\nassert close(need('plain_step'), 0.2, 1e-9), f'plain_step = {need(\"plain_step\")}, а нужно 0.2.'\nassert close(need('limit_step'), 0.4, 1e-9), f'limit_step = {need(\"limit_step\")}, а нужно 0.4.'",
+    "solution": "g, lr, beta = -1.0, 0.2, 0.5\nv, w = 0.0, 0.0\nws = []\nfor _ in range(3):\n    v = beta * v + g\n    w = w - lr * v\n    ws.append(round(w, 4))\nplain_step = lr * abs(g)\nlimit_step = lr * abs(g) / (1 - beta)\nprint(ws, plain_step, limit_step)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02b-optimizers",
+    "kind": "task",
+    "id": "momentum",
+    "starter": "# уже есть: km, minutes (пять доставок) и best_mse — MSE точного решения np.polyfit\nimport numpy as np\n\ndef run(beta, lr=0.02, steps=3000):\n    w, b, vw, vb = 0.0, 0.0, 0.0, 0.0\n    history = []\n    ...\n    return w, b, history",
+    "setup": "import numpy as np\nkm = np.array([1.0, 2.0, 3.0, 4.5, 6.0])\nminutes = np.array([18.0, 25.0, 34.0, 44.0, 55.0])\n_c = np.polyfit(km, minutes, 1)\nbest_mse = float(np.mean((_c[0] * km + _c[1] - minutes) ** 2))",
+    "check": "import numpy as _np\nkm0, m0, bm = need('km'), need('minutes'), need('best_mse')\ndef _r(beta):\n    w, b, vw, vb, h = 0.0, 0.0, 0.0, 0.0, []\n    for _ in range(3000):\n        e = w * km0 + b - m0; dw, db = _np.mean(2 * e * km0), _np.mean(2 * e)\n        vw, vb = beta * vw + dw, beta * vb + db; w, b = w - 0.02 * vw, b - 0.02 * vb\n        h.append(_np.mean((w * km0 + b - m0) ** 2))\n    return w, b, next(i + 1 for i, v in enumerate(h) if v < bm + 0.01)\nw = {bt: _r(bt) for bt in [0, 0.5, 0.9]}\ng = {float(k): v for k, v in need('steps_by_beta', dict).items()}\nassert all(g[k] == w[k][2] for k in w), f'steps_by_beta = {g}, а нужно {({k: v[2] for k, v in w.items()})}.'\nfw = need('final_wb')\nassert close(fw[0], round(w[0.9][0], 3), 0.0011) and close(fw[1], round(w[0.9][1], 3), 0.0011), f'final_wb = {fw}.'",
+    "solution": "import numpy as np\n\ndef run(beta, lr=0.02, steps=3000):\n    w, b, vw, vb = 0.0, 0.0, 0.0, 0.0\n    history = []\n    for _ in range(steps):\n        err = w * km + b - minutes\n        dw, db = np.mean(2 * err * km), np.mean(2 * err)\n        vw, vb = beta * vw + dw, beta * vb + db\n        w, b = w - lr * vw, b - lr * vb\n        history.append(np.mean((w * km + b - minutes) ** 2))\n    return w, b, history\n\nsteps_by_beta = {}\nfor beta in [0, 0.5, 0.9]:\n    w, b, h = run(beta)\n    steps_by_beta[beta] = next(i + 1 for i, v in enumerate(h) if v < best_mse + 0.01)\n    if beta == 0.9:\n        final_wb = (round(float(w), 3), round(float(b), 3))\nprint(steps_by_beta, final_wb)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02b-optimizers",
+    "kind": "task",
+    "id": "adam-step",
+    "starter": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 4.0]])    # столбец единиц и км\ny = np.array([18, 25, 40.0])\nn = len(y)\n\ndef adam_step(w, g, m, s, t, lr=0.1, b1=0.9, b2=0.999, eps=1e-8):\n    ...",
+    "setup": "",
+    "check": "import numpy as _np\nf = need('adam_step')\nr = f(_np.array([1.0, -2.0]), _np.array([4.0, -0.5]), _np.array([0.2, 0.1]), _np.array([0.5, 0.01]), 3, lr=0.01)\nassert isinstance(r, tuple) and len(r) == 3, 'adam_step возвращает тройку (w, m, s).'\n_m = 0.9 * _np.array([0.2, 0.1]) + 0.1 * _np.array([4.0, -0.5]); _s = 0.999 * _np.array([0.5, 0.01]) + 0.001 * _np.array([16.0, 0.25])\n_w = _np.array([1.0, -2.0]) - 0.01 * (_m / (1 - 0.9 ** 3)) / (_np.sqrt(_s / (1 - 0.999 ** 3)) + 1e-8)\nassert _np.allclose(r[1], _m) and _np.allclose(r[2], _s), 'm или s посчитаны не так: m = b1·m + (1 − b1)·g, s = b2·s + (1 − b2)·g².'\nassert _np.allclose(r[0], _w), 'Новые веса не сходятся. Проверьте поправку: m / (1 − b1**t), s / (1 − b2**t), и шаг lr · m̂ / (√ŝ + eps).'\nXt = _np.array([[1, 1], [1, 2], [1, 4.0]]); yt = _np.array([18, 25, 40.0])\nw, m, s, H = _np.array([0, 5.0]), _np.zeros(2), _np.zeros(2), []\nfor t in range(1, 4):\n    g = 2 / 3 * Xt.T @ (Xt @ w - yt); m = 0.9 * m + 0.1 * g; s = 0.999 * s + 0.001 * g * g\n    if t == 1: raw = -0.1 * m / (_np.sqrt(s) + 1e-8)\n    w = w - 0.1 * (m / (1 - 0.9 ** t)) / (_np.sqrt(s / (1 - 0.999 ** t)) + 1e-8); H.append(w.round(4))\nh = need('history', list)\nassert len(h) == 3, f'В history {len(h)} элементов, а шагов было 3.'\nfor i in range(3):\n    assert _np.allclose(h[i], H[i], atol=1e-4), f'После шага {i + 1} веса {_np.round(h[i], 4)}, а нужно {H[i]}. Градиент пересчитывайте на каждом шаге по новым весам.'\nassert _np.allclose(need('first_step'), (H[0] - _np.array([0, 5.0])).round(4), atol=1e-4), f'first_step = {need(\"first_step\")}.'\nassert _np.allclose(need('raw_first'), raw.round(4), atol=1e-4), f'raw_first = {need(\"raw_first\")}, а нужно {raw.round(4)}: m после первого шага делится на √s без поправок.'\nfor _eps, _lr in [(1e-8, .1), (2e-5, .2)]:\n    _g = _np.array([0., _eps, -_eps])\n    _zeros = _np.zeros(3)\n    _boundary = need('adam_step')(_zeros.copy(), _g, _zeros.copy(), _zeros.copy(), 1, lr=_lr, eps=_eps)\n    _boundary_w = _np.asarray(_boundary[0], dtype=float)\n    assert (_boundary_w.shape == (3,) and _np.isfinite(_boundary_w).all()\n            and _np.allclose(_boundary_w, [0., -_lr/2, _lr/2], rtol=1e-7, atol=1e-10)), 'adam_step: при нулевых начальных моментах и g = [0, eps, −eps] сдвиги равны [0, −lr/2, lr/2]. Сохраните eps в знаменателе и используйте переданные lr и eps.'",
+    "solution": "import numpy as np\nX1 = np.array([[1, 1], [1, 2], [1, 4.0]])    # столбец единиц и км\ny = np.array([18, 25, 40.0])\nn = len(y)\n\ndef adam_step(w, g, m, s, t, lr=0.1, b1=0.9, b2=0.999, eps=1e-8):\n    m = b1 * m + (1 - b1) * g\n    s = b2 * s + (1 - b2) * g ** 2\n    m_hat = m / (1 - b1 ** t)\n    s_hat = s / (1 - b2 ** t)\n    w = w - lr * m_hat / (np.sqrt(s_hat) + eps)\n    return w, m, s\n\nw, m, s = np.array([0, 5.0]), np.zeros(2), np.zeros(2)\nhistory = []\nfor t in range(1, 4):\n    g = 2 / n * X1.T @ (X1 @ w - y)\n    w_old = w\n    w, m, s = adam_step(w, g, m, s, t)\n    if t == 1:\n        first_step = (w - w_old).round(4)\n        raw_first = (-0.1 * m / (np.sqrt(s) + 1e-8)).round(4)\n    history.append(w.round(4))\nprint(history, first_step, raw_first)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02b-optimizers",
+    "kind": "task",
+    "id": "adam-lr",
+    "starter": "# уже есть: adam_step(w, g, m, s, t, lr) из задачи «Шаг Adam руками»\nimport numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\", \"amount\"]].values.astype(float)   # без масштаба\ny = ok[\"actual_min\"].values\nX1 = np.column_stack([np.ones(len(X)), X])\nn = len(y)",
+    "setup": "import numpy as np\ndef adam_step(w, g, m, s, t, lr=0.1, b1=0.9, b2=0.999, eps=1e-8):\n    m = b1 * m + (1 - b1) * g\n    s = b2 * s + (1 - b2) * g ** 2\n    w = w - lr * (m / (1 - b1 ** t)) / (np.sqrt(s / (1 - b2 ** t)) + eps)\n    return w, m, s",
+    "check": "import numpy as _np, pandas as _pd\nd0 = _pd.read_csv('deliveries.csv'); ok0 = d0[d0['actual_min'].between(1, 299)].copy(); ok0['walk'] = (ok0['courier'] == 'пеший').astype(int)\nXa = _np.column_stack([_np.ones(len(ok0)), ok0[['distance_km', 'items', 'walk', 'amount']].values.astype(float)]); ya = ok0['actual_min'].values\nW = {}\nfor lr in [0.005, 0.01, 0.05, 0.2, 1.0]:\n    w, m, s = _np.zeros(5), _np.zeros(5), _np.zeros(5)\n    for t in range(1, 2001):\n        g = 2 / len(ya) * Xa.T @ (Xa @ w - ya); m = 0.9 * m + 0.1 * g; s = 0.999 * s + 0.001 * g * g\n        w = w - lr * (m / (1 - 0.9 ** t)) / (_np.sqrt(s / (1 - 0.999 ** t)) + 1e-8)\n    W[lr] = round(float(_np.mean((Xa @ w - ya) ** 2)), 1)\ngot = {float(k): v for k, v in need('mse_by_lr', dict).items()}\nassert set(got) == set(W), f'Ключи mse_by_lr — шаги {sorted(W)}, а сейчас {sorted(got)}.'\nfor lr in W:\n    if lr == 1.0:   # при lr = 1 спуск скачет: точное число зависит от порядка операций, важно лишь, что далеко от 60\n        assert got[lr] > 61, f'mse_by_lr[1.0] = {got[lr]}: при таком шаге Adam не должен успокоиться у дна. Каждый запуск — с нулевых w, m, s и t от 1 до 2000.'\n        continue\n    assert close(got[lr], W[lr], 0.11), f'mse_by_lr[{lr}] = {got[lr]}, а нужно {W[lr]}. Каждый запуск — с нулевых w, m, s и t от 1 до 2000.'\nwant_good = sorted(lr for lr, v in W.items() if v < 61 and lr != 1.0)\nassert [float(x) for x in need('good', list)] == want_good, f'good = {need(\"good\")}, а нужно {want_good}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\", \"amount\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nX1 = np.column_stack([np.ones(len(X)), X])\nn = len(y)\n\nmse_by_lr = {}\nfor lr in [0.005, 0.01, 0.05, 0.2, 1.0]:\n    w, m, s = np.zeros(5), np.zeros(5), np.zeros(5)\n    for t in range(1, 2001):\n        g = 2 / n * X1.T @ (X1 @ w - y)\n        w, m, s = adam_step(w, g, m, s, t, lr=lr)\n    mse_by_lr[lr] = round(float(np.mean((X1 @ w - y) ** 2)), 1)\ngood = sorted(lr for lr, v in mse_by_lr.items() if v < 61)\nprint(mse_by_lr, good)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02b-optimizers",
+    "kind": "task",
+    "id": "decay",
+    "starter": "w0, lr, lam = 10.0, 0.1, 0.5",
+    "setup": "",
+    "check": "assert close(need('factor'), 0.9, 1e-9), f'factor = {need(\"factor\")}, а нужно 0.9: 1 − 2 · 0.1 · 0.5.'\nassert close(need('w5'), 5.9049, 1e-4), f'w5 = {need(\"w5\")}, а нужно 5.9049: 10 · 0.9⁵.'\nassert close(need('w5_small'), 9.5099, 1e-4), f'w5_small = {need(\"w5_small\")}, а нужно 9.5099: множитель 1 − 2 · 0.1 · 0.05 = 0.99.'",
+    "solution": "w0, lr, lam = 10.0, 0.1, 0.5\nfactor = 1 - 2 * lr * lam\nw5 = round(w0 * factor ** 5, 4)\nw5_small = round(w0 * (1 - 2 * lr * 0.05) ** 5, 4)\nprint(factor, w5, w5_small)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/02b-optimizers",
+    "kind": "task",
+    "id": "l2-grad",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import Ridge\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\ndef gd_l2(X1, y, lam, lr=0.1, steps=1000):\n    ...",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import Ridge as _R\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy(); ok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values.astype(float); y0 = ok['actual_min'].values\nXs0 = (X0 - X0.mean(axis=0)) / X0.std(axis=0); n0 = len(y0)\nf = need('gd_l2')\nwt = _np.asarray(f(_np.column_stack([_np.ones(n0), Xs0]), y0, 0.5), dtype=float)\nrr = _R(alpha=0.5 * n0).fit(Xs0, y0)\nassert wt.shape == (4,), f'gd_l2 вернула форму {wt.shape}, а нужно 4 веса.'\nassert abs(wt[0] - y0.mean()) < 1e-4, f'Свободный член {wt[0]:.3f}, а при стандартизированных признаках он должен остаться средним y ({y0.mean():.3f}). Не штрафуйте w[0].'\nassert _np.allclose(wt, _np.r_[rr.intercept_, rr.coef_], atol=1e-5), 'gd_l2(X1, y, 0.5) не совпадает с Ridge(alpha=0.5·n). Штраф в градиенте — 2·lam·w (кроме w[0]).'\nW, N, M = {}, {}, {}\nX10 = _np.column_stack([_np.ones(n0), Xs0])\nfor lam in [0, 0.1, 1.0]:\n    w = _np.zeros(4)\n    for _ in range(1000):\n        g = 2 / n0 * X10.T @ (X10 @ w - y0); p = 2 * lam * w; p[0] = 0; w = w - 0.1 * (g + p)\n    W[lam] = w; N[lam] = round(float(_np.linalg.norm(w[1:])), 3); M[lam] = round(float(_np.mean((X10 @ w - y0) ** 2)), 2)\ngw, gn, gm = need('weights', dict), need('norms', dict), need('mse_train', dict)\nfor lam in W:\n    assert _np.allclose(gw[lam], W[lam], atol=1e-6), f'weights[{lam}] = {_np.round(gw[lam], 3)}, а нужно {W[lam].round(3)}.'\n    assert close(gn[lam], N[lam], 0.0011), f'norms[{lam}] = {gn[lam]}, а нужно {N[lam]}. Длина без свободного члена: w[1:].'\n    assert close(gm[lam], M[lam], 0.011), f'mse_train[{lam}] = {gm[lam]}, а нужно {M[lam]}.'\nassert close(need('alpha_ridge'), 1.0 * n0, 1e-6), f'alpha_ridge = {need(\"alpha_ridge\")}. У Ridge штраф к сумме квадратов ошибок, у нас к среднему: alpha = lam · n.'\nassert bool(need('same_as_ridge')) is True, 'same_as_ridge должно быть True. Сравните weights[1.0] с np.r_[ridge.intercept_, ridge.coef_].'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import Ridge\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nXs = (X - X.mean(axis=0)) / X.std(axis=0)\nX1 = np.column_stack([np.ones(len(Xs)), Xs])\n\ndef gd_l2(X1, y, lam, lr=0.1, steps=1000):\n    w = np.zeros(X1.shape[1])\n    for _ in range(steps):\n        g = 2 / len(y) * X1.T @ (X1 @ w - y)\n        penalty = 2 * lam * w\n        penalty[0] = 0\n        w = w - lr * (g + penalty)\n    return w\n\nweights, norms, mse_train = {}, {}, {}\nfor lam in [0, 0.1, 1.0]:\n    w = gd_l2(X1, y, lam)\n    weights[lam] = w\n    norms[lam] = round(float(np.linalg.norm(w[1:])), 3)\n    mse_train[lam] = round(float(np.mean((X1 @ w - y) ** 2)), 2)\n\nalpha_ridge = 1.0 * len(y)\nridge = Ridge(alpha=alpha_ridge).fit(Xs, y)\nsame_as_ridge = bool(np.allclose(weights[1.0], np.r_[ridge.intercept_, ridge.coef_], atol=1e-6))\nprint(norms, mse_train, alpha_ridge, same_as_ridge)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\nlr = 0.1\nf_train = np.full(len(y_train), y_train.mean())     # старт — среднее\nf_test = np.full(len(y_test), y_train.mean())\nprint(\"старт: MAE на тесте\", round(mean_absolute_error(y_test, f_test), 2))\nfor k in range(1, 51):\n    residual = y_train - f_train                     # на сколько ошибаемся сейчас\n    tree = DecisionTreeRegressor(max_depth=3, random_state=0).fit(X_train, residual)\n    f_train += lr * tree.predict(X_train)\n    f_test += lr * tree.predict(X_test)\n    if k in (1, 5, 10, 20, 50):\n        print(f\"{k} деревьев: MAE на тесте {mean_absolute_error(y_test, f_test):.2f}\")",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "cell",
+    "id": "cell3",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\nfor n in (50, 300):\n    gb = GradientBoostingRegressor(n_estimators=n, learning_rate=0.1, max_depth=3, random_state=0).fit(X_train, y_train)\n    print(f\"бустинг, {n} деревьев: MAE {mean_absolute_error(y_test, gb.predict(X_test)):.2f}\")\nrf = RandomForestRegressor(n_estimators=100, random_state=0).fit(X_train, y_train)\nprint(f\"случайный лес: MAE {mean_absolute_error(y_test, rf.predict(X_test)):.2f}\")",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "cell",
+    "id": "cell4",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ngb = GradientBoostingRegressor(n_estimators=300, learning_rate=0.1, max_depth=3, random_state=0).fit(X_train, y_train)\nimp = pd.Series(gb.feature_importances_, index=X.columns).sort_values(ascending=False)\nprint(imp.head(6).round(3))\nprint(\"сумма важностей:\", round(imp.sum(), 3))",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "predict",
+    "id": "q1",
+    "code": "import numpy as np\ny = np.array([30.0, 40.0, 50.0])\nf = np.full(3, y.mean())\nprint((y - f).tolist())",
+    "answer": "`[-10.0, 0.0, 10.0]`",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "task",
+    "id": "toy-boost",
+    "starter": "import numpy as np\n\nlr = 0.3\nf = np.full(4, y.mean())\nhistory = [f.round(2).tolist()]",
+    "setup": "import numpy as np\nwalk = np.array([0, 0, 1, 1])\ny = np.array([20.0, 24.0, 38.0, 42.0])",
+    "check": "import numpy as _np\nw0, y0 = need('walk'), need('y')\nf = _np.full(4, y0.mean()); h = [f.round(2).tolist()]\nfor _ in range(3):\n    r = y0 - f; step = _np.where(w0 == 1, r[w0 == 1].mean(), r[w0 == 0].mean()); f = f + 0.3 * step; h.append(f.round(2).tolist())\ng = need('history', list)\nassert len(g) == 4, 'history — старт и три шага: 4 списка.'\nassert all(_np.allclose(a, b, atol=0.006) for a, b in zip(g, h)), f'history = {g}, а нужно {h}.'\nassert close(need('gap_left'), round(40 - f[2], 2), 0.006), f'gap_left = {need(\"gap_left\")}.'",
+    "solution": "import numpy as np\n\nlr = 0.3\nf = np.full(4, y.mean())\nhistory = [f.round(2).tolist()]\nfor _ in range(3):\n    r = y - f\n    stump = np.where(walk == 1, r[walk == 1].mean(), r[walk == 0].mean())\n    f = f + lr * stump\n    history.append(f.round(2).tolist())\ngap_left = round(40 - f[2], 2)\nprint(history, gap_left)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "task",
+    "id": "residuals",
+    "starter": "import numpy as np\ny = np.array([22.0, 35.0, 41.0, 28.0, 54.0])",
+    "setup": "",
+    "check": "import numpy as _np\ny0 = _np.array([22.0, 35.0, 41.0, 28.0, 54.0])\nassert _np.allclose(need('r'), y0 - y0.mean()), f'r = {need(\"r\")}.'\nassert close(need('mae0'), _np.abs(y0 - y0.mean()).mean()), f'mae0 = {need(\"mae0\")}.'",
+    "solution": "import numpy as np\ny = np.array([22.0, 35.0, 41.0, 28.0, 54.0])\nf = np.full(len(y), y.mean())\nr = y - f\nmae0 = np.abs(r).mean()",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "task",
+    "id": "one-step",
+    "starter": "import numpy as np\ny = np.array([22.0, 35.0, 41.0, 28.0, 54.0])\nf = np.full(5, y.mean())\ntree_pred = np.array([-12.0, -2.0, 4.0, -8.0, 16.0])",
+    "setup": "",
+    "check": "import numpy as _np\ny0 = _np.array([22.0, 35.0, 41.0, 28.0, 54.0]); f0 = _np.full(5, y0.mean()) + 0.1 * _np.array([-12.0, -2.0, 4.0, -8.0, 16.0])\nassert _np.allclose(need('f1'), f0), f'f1 = {need(\"f1\")}, а нужно {f0}.'\nassert close(need('mae1'), _np.abs(y0 - f0).mean()), f'mae1 = {need(\"mae1\")}.'",
+    "solution": "import numpy as np\ny = np.array([22.0, 35.0, 41.0, 28.0, 54.0])\nf = np.full(5, y.mean())\ntree_pred = np.array([-12.0, -2.0, 4.0, -8.0, 16.0])\nf1 = f + 0.1 * tree_pred\nmae1 = np.abs(y - f1).mean()",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "task",
+    "id": "p-boost",
+    "starter": "",
+    "setup": "",
+    "check": "import numpy as _np\nfrom sklearn.tree import DecisionTreeRegressor as _T\nX0 = _np.array([[1], [2], [3], [4], [5], [6]]); y0 = _np.array([10.0, 12.0, 20.0, 22.0, 40.0, 42.0]); f0 = _np.full(6, y0.mean())\nfor _ in range(5): f0 = f0 + 0.5 * _T(max_depth=1).fit(X0, y0 - f0).predict(X0)\nassert _lines == [str(round(float(_np.abs(y0 - f0).mean()), 2))], f'Сейчас: {_lines}.'",
+    "solution": "import numpy as np\nfrom sklearn.tree import DecisionTreeRegressor\nX = np.array([[1], [2], [3], [4], [5], [6]])\ny = np.array([10.0, 12.0, 20.0, 22.0, 40.0, 42.0])\nf = np.full(len(y), y.mean())\nfor _ in range(5):\n    tree = DecisionTreeRegressor(max_depth=1).fit(X, y - f)\n    f = f + 0.5 * tree.predict(X)\nprint(round(float(np.abs(y - f).mean()), 2))",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "task",
+    "id": "manual-boost",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.tree import DecisionTreeRegressor as _T\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\ndef _b(lr):\n    ft = _np.full(len(c), c.mean()); fe = _np.full(len(dd), c.mean())\n    for _ in range(30):\n        t = _T(max_depth=3, random_state=0).fit(a, c - ft); ft += lr * t.predict(a); fe += lr * t.predict(b)\n    return round(_mae(dd, fe), 2)\nassert close(need('mae_01'), _b(0.1), 0.011), f'mae_01 = {need(\"mae_01\")}, а нужно {_b(0.1)}.'\nassert close(need('mae_03'), _b(0.3), 0.011), f'mae_03 = {need(\"mae_03\")}, а нужно {_b(0.3)}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ndef boost(X_tr, y_tr, X_te, n, lr, depth):\n    f_tr = np.full(len(y_tr), y_tr.mean())\n    f_te = np.full(len(X_te), y_tr.mean())\n    for _ in range(n):\n        tree = DecisionTreeRegressor(max_depth=depth, random_state=0).fit(X_tr, y_tr - f_tr)\n        f_tr = f_tr + lr * tree.predict(X_tr)\n        f_te = f_te + lr * tree.predict(X_te)\n    return f_te\n\nmae_01 = round(mean_absolute_error(y_test, boost(X_train, y_train, X_test, 30, 0.1, 3)), 2)\nmae_03 = round(mean_absolute_error(y_test, boost(X_train, y_train, X_test, 30, 0.3, 3)), 2)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "task",
+    "id": "vs-sklearn",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ndef boost(X_tr, y_tr, X_te, n, lr, depth):\n    f_tr = np.full(len(y_tr), y_tr.mean())\n    f_te = np.full(len(X_te), y_tr.mean())\n    for _ in range(n):\n        tree = DecisionTreeRegressor(max_depth=depth, random_state=0).fit(X_tr, y_tr - f_tr)\n        f_tr = f_tr + lr * tree.predict(X_tr)\n        f_te = f_te + lr * tree.predict(X_te)\n    return f_te",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.tree import DecisionTreeRegressor as _T\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\nft = _np.full(len(c), c.mean()); fe = _np.full(len(dd), c.mean())\nfor _ in range(50):\n    t = _T(max_depth=3, random_state=0).fit(a, c - ft); ft += 0.1 * t.predict(a); fe += 0.1 * t.predict(b)\nps = _GB(n_estimators=50, learning_rate=0.1, max_depth=3, random_state=0).fit(a, c).predict(b)\nassert close(need('mae_mine'), round(_mae(dd, fe), 2), 0.011), f'mae_mine = {need(\"mae_mine\")}.'\nassert close(need('mae_sk'), round(_mae(dd, ps), 2), 0.011), f'mae_sk = {need(\"mae_sk\")}.'\nassert close(need('corr'), round(_np.corrcoef(fe, ps)[0, 1], 4), 0.0011), f'corr = {need(\"corr\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ndef boost(X_tr, y_tr, X_te, n, lr, depth):\n    f_tr = np.full(len(y_tr), y_tr.mean())\n    f_te = np.full(len(X_te), y_tr.mean())\n    for _ in range(n):\n        tree = DecisionTreeRegressor(max_depth=depth, random_state=0).fit(X_tr, y_tr - f_tr)\n        f_tr = f_tr + lr * tree.predict(X_tr)\n        f_te = f_te + lr * tree.predict(X_te)\n    return f_te\n\nmine = boost(X_train, y_train, X_test, 50, 0.1, 3)\nsk = GradientBoostingRegressor(n_estimators=50, learning_rate=0.1, max_depth=3, random_state=0).fit(X_train, y_train).predict(X_test)\nmae_mine = round(mean_absolute_error(y_test, mine), 2)\nmae_sk = round(mean_absolute_error(y_test, sk), 2)\ncorr = round(np.corrcoef(mine, sk)[0, 1], 4)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "task",
+    "id": "depth-one",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\nm = {k: round(_mae(dd, _GB(n_estimators=200, learning_rate=0.1, max_depth=k, random_state=0).fit(a, c).predict(b)), 2) for k in (1, 4)}\nassert close(need('mae_stumps'), m[1], 0.011) and close(need('mae_deep'), m[4], 0.011), f'mae_stumps, mae_deep = {need(\"mae_stumps\")}, {need(\"mae_deep\")}, а нужно {m[1]}, {m[4]}.'\nassert need('winner') == ('пни' if m[1] < m[4] else 'глубина 4'), f'winner = {need(\"winner\")!r}.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\nres = {}\nfor depth in (1, 4):\n    gb = GradientBoostingRegressor(n_estimators=200, learning_rate=0.1, max_depth=depth, random_state=0).fit(X_train, y_train)\n    res[depth] = round(mean_absolute_error(y_test, gb.predict(X_test)), 2)\nmae_stumps, mae_deep = res[1], res[4]\nwinner = \"пни\" if mae_stumps < mae_deep else \"глубина 4\"",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "task",
+    "id": "lr-trees",
+    "starter": "from sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\npairs = [(0.3, 100), (0.1, 300), (0.05, 600), (0.02, 300)]\nmae = {}",
+    "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+    "check": "from sklearn.ensemble import GradientBoostingRegressor as _G\nfrom sklearn.metrics import mean_absolute_error as _mae\na, b, c, d_ = need('X_train'), need('X_test'), need('y_train'), need('y_test')\nw = {f'{lr}x{n}': round(_mae(d_, _G(n_estimators=n, learning_rate=lr, max_depth=3, random_state=0).fit(a, c).predict(b)), 3) for lr, n in [(0.3, 100), (0.1, 300), (0.05, 600), (0.02, 300)]}\ng = need('mae', dict)\nassert set(g) == set(w), f'Ключи mae: {sorted(g)}, а нужно {sorted(w)}.'\nassert all(close(g[k], w[k], 0.002) for k in w), f'mae = {g}, а нужно {w}.'\nbest = min(w.values())\nassert need('undertrained') == [k for k in w if w[k] > best + 0.1][0], f'undertrained = {need(\"undertrained\")!r}.'",
+    "solution": "from sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\npairs = [(0.3, 100), (0.1, 300), (0.05, 600), (0.02, 300)]\nmae = {}\nfor lr, n in pairs:\n    gb = GradientBoostingRegressor(n_estimators=n, learning_rate=lr, max_depth=3, random_state=0).fit(X_train, y_train)\n    mae[f\"{lr}x{n}\"] = round(mean_absolute_error(y_test, gb.predict(X_test)), 3)\nbest = min(mae.values())\nundertrained = [k for k in mae if mae[k] > best + 0.1][0]\nprint(mae, undertrained)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/03-boosting",
+    "kind": "task",
+    "id": "mae-boost",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.tree import DecisionTreeRegressor as _T\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\nft = _np.full(len(c), c.median()); fe = _np.full(len(dd), c.median())\nfor _ in range(100):\n    t = _T(max_depth=3, random_state=0).fit(a, _np.sign(c - ft)); ft += t.predict(a); fe += t.predict(b)\nw1 = round(_mae(dd, fe), 2)\nw2 = round(_mae(dd, _GB(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=0).fit(a, c).predict(b)), 2)\nassert close(need('mae_l1'), w1, 0.011), f'mae_l1 = {need(\"mae_l1\")}, а нужно {w1}.'\nassert close(need('mae_l2'), w2, 0.011), f'mae_l2 = {need(\"mae_l2\")}, а нужно {w2}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\nf_tr = np.full(len(y_train), y_train.median())\nf_te = np.full(len(y_test), y_train.median())\nfor _ in range(100):\n    tree = DecisionTreeRegressor(max_depth=3, random_state=0).fit(X_train, np.sign(y_train - f_tr))\n    f_tr = f_tr + tree.predict(X_train)\n    f_te = f_te + tree.predict(X_test)\nmae_l1 = round(mean_absolute_error(y_test, f_te), 2)\ngb = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=0).fit(X_train, y_train)\nmae_l2 = round(mean_absolute_error(y_test, gb.predict(X_test)), 2)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\nfig, ax = plt.subplots(figsize=(7, 4))\nfor lr in (0.3, 0.1, 0.03):\n    gb = GradientBoostingRegressor(n_estimators=600, learning_rate=lr, max_depth=3, random_state=0).fit(X_train, y_train)\n    curve = [mean_absolute_error(y_test, p) for p in gb.staged_predict(X_test)]\n    ax.plot(range(1, 601), curve, label=f\"шаг {lr}\")\nax.set_ylim(3.6, 6)\nax.set_xlabel(\"число деревьев\")\nax.set_ylabel(\"MAE на отложенных данных\")\nax.legend()\nplt.show()",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "cell",
+    "id": "cell2",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ngb = GradientBoostingRegressor(n_estimators=2000, learning_rate=0.1, max_depth=3,\n                               n_iter_no_change=20, validation_fraction=0.15, random_state=0)\ngb.fit(X_train, y_train)\nprint(\"деревьев построено:\", gb.n_estimators_)\nprint(\"MAE на тесте:\", round(mean_absolute_error(y_test, gb.predict(X_test)), 2))",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "cell",
+    "id": "cell4",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int)   # avg_check с пропусками!\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nhgb = HistGradientBoostingClassifier(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0)\nhgb.fit(X_train, y_train)\nrf = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0)\nrf.fit(X_train.fillna(0), y_train)\nprint(\"бустинг AUC:\", round(roc_auc_score(y_test, hgb.predict_proba(X_test)[:, 1]), 3))\nprint(\"лес AUC:    \", round(roc_auc_score(y_test, rf.predict_proba(X_test.fillna(0))[:, 1]), 3))",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "cell",
+    "id": "cell5",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ncols = [\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]\ny = ok[\"actual_min\"]\n\nX_dum = pd.get_dummies(ok[cols], dtype=int)\nX_cat = ok[cols].copy()\nfor c in [\"courier\", \"weather\", \"shop_id\"]:\n    X_cat[c] = X_cat[c].astype(\"category\")              # тип «категория» — сигнал для бустинга\n\nfor name, X in [(\"get_dummies\", X_dum), (\"category\", X_cat)]:\n    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n    m = HistGradientBoostingRegressor(max_iter=300, max_depth=3, categorical_features=\"from_dtype\", random_state=0)\n    m.fit(X_tr, y_tr)\n    print(f\"{name:12}: столбцов {X.shape[1]:2}, MAE {mean_absolute_error(y_te, m.predict(X_te)):.3f}\")",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "predict",
+    "id": "q1",
+    "code": "lr_old, n_old = 0.1, 200\nlr_new = 0.05\nprint(int(n_old * lr_old / lr_new))",
+    "answer": "`400`",
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "task",
+    "id": "staged",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\ncv = [_mae(dd, p) for p in _GB(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=0).fit(a, c).staged_predict(b)]\ngot = need('curve')\nassert len(got) == 100 and _np.allclose(got, cv, atol=1e-6), 'curve — 100 значений MAE на тесте после каждого дерева.'\nassert need('best_n') == int(_np.argmin(cv)) + 1, f'best_n = {need(\"best_n\")}, а нужно {int(_np.argmin(cv)) + 1}. Число деревьев считается с 1.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ngb = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=0).fit(X_train, y_train)\ncurve = [mean_absolute_error(y_test, p) for p in gb.staged_predict(X_test)]\nbest_n = int(np.argmin(curve)) + 1",
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "task",
+    "id": "shrink",
+    "starter": "y, lr = 10, 0.1\npred = 0\npreds = []",
+    "setup": "",
+    "check": "p = 0; want = []\nfor _ in range(40):\n    p += 0.1 * (10 - p); want.append(p)\ngot = need('preds')\nassert len(got) == 40 and all(close(a, b, 1e-9) for a, b in zip(got, want)), 'preds не совпадает: на каждом шаге pred += lr * (y - pred).'\nassert need('n_needed') == next(i + 1 for i, v in enumerate(want) if v >= 9.5), f'n_needed = {need(\"n_needed\")}.'",
+    "solution": "y, lr = 10, 0.1\npred = 0\npreds = []\nfor _ in range(40):\n    pred += lr * (y - pred)\n    preds.append(pred)\nn_needed = next(i + 1 for i, v in enumerate(preds) if v >= 9.5)",
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "task",
+    "id": "p-early",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == ['True'], f'Сейчас: {_lines}.'",
+    "solution": "import numpy as np\nfrom sklearn.ensemble import GradientBoostingRegressor\nrng = np.random.default_rng(0)\nX = rng.normal(size=(500, 3))\ny = X[:, 0] * 3 + rng.normal(size=500)\ngb = GradientBoostingRegressor(n_estimators=1000, n_iter_no_change=10, validation_fraction=0.2, random_state=0)\ngb.fit(X, y)\nprint(gb.n_estimators_ < 1000)",
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "task",
+    "id": "train-vs-test",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\ng = _GB(n_estimators=400, learning_rate=0.3, max_depth=3, random_state=0).fit(a, c)\nte = [_mae(dd, p) for p in g.staged_predict(b)]; tr = [_mae(c, p) for p in g.staged_predict(a)]\nk = int(_np.argmin(te)) + 1\nassert need('best_n') == k, f'best_n = {need(\"best_n\")}, а нужно {k}.'\nassert close(need('te_best'), round(te[k - 1], 3), 0.002) and close(need('te_last'), round(te[-1], 3), 0.002), f'te_best, te_last = {need(\"te_best\")}, {need(\"te_last\")}.'\nassert close(need('tr_last'), round(tr[-1], 3), 0.002), f'tr_last = {need(\"tr_last\")}.'\nfor _name, _reference_curve in [('tr', tr), ('te', te)]:\n    _submitted_curve = _np.asarray(need(_name), dtype=float)\n    assert (_submitted_curve.shape == (400,)\n            and _np.allclose(_submitted_curve, _reference_curve, rtol=1e-6, atol=1e-6)), f'{_name}: нужны все 400 MAE после каждого дерева на соответствующей выборке, в порядке от 1 до 400. Правильных итоговых чисел недостаточно — проверьте сам массив.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\ngb = GradientBoostingRegressor(n_estimators=400, learning_rate=0.3, max_depth=3, random_state=0).fit(X_train, y_train)\ntr = [mean_absolute_error(y_train, p) for p in gb.staged_predict(X_train)]\nte = [mean_absolute_error(y_test, p) for p in gb.staged_predict(X_test)]\nbest_n = int(np.argmin(te)) + 1\nte_best, te_last = round(te[best_n - 1], 3), round(te[-1], 3)\ntr_last = round(tr[-1], 3)",
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "task",
+    "id": "early-stop",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB\nfrom sklearn.metrics import mean_absolute_error as _mae\nd = _pd.read_csv('deliveries.csv', parse_dates=['created']); ok = d[d['actual_min'].between(1, 299)].copy()\nok['hour'] = ok['created'].dt.hour\nX0 = _pd.get_dummies(ok[['distance_km', 'items', 'hour', 'courier', 'weather', 'shop_id']], dtype=int); y0 = ok['actual_min']\na, b, c, dd = _tts(X0, y0, test_size=0.25, random_state=42)\na1, v, c1, vy = _tts(a, c, test_size=0.2, random_state=0)\ng = _GB(n_estimators=600, learning_rate=0.1, max_depth=3, random_state=0).fit(a1, c1)\nk = int(_np.argmin([_mae(vy, p) for p in g.staged_predict(v)])) + 1\nassert need('best_n') == k, f'best_n = {need(\"best_n\")}, а нужно {k}. Выбирайте по валидации, а не по тесту.'\nt = round(_mae(dd, _GB(n_estimators=k, learning_rate=0.1, max_depth=3, random_state=0).fit(a, c).predict(b)), 2)\nassert close(need('test_mae'), t, 0.011), f'test_mae = {need(\"test_mae\")}, а нужно {t}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\n\nX_fit, X_val, y_fit, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=0)\ngb = GradientBoostingRegressor(n_estimators=600, learning_rate=0.1, max_depth=3, random_state=0).fit(X_fit, y_fit)\nval_curve = [mean_absolute_error(y_val, p) for p in gb.staged_predict(X_val)]\nbest_n = int(np.argmin(val_curve)) + 1\nfinal = GradientBoostingRegressor(n_estimators=best_n, learning_rate=0.1, max_depth=3, random_state=0).fit(X_train, y_train)\ntest_mae = round(mean_absolute_error(y_test, final.predict(X_test)), 2)",
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "task",
+    "id": "subsample",
+    "starter": "from sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error",
+    "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)",
+    "check": "from sklearn.ensemble import GradientBoostingRegressor as _G\nfrom sklearn.metrics import mean_absolute_error as _mae\na, b, c, d_ = need('X_train'), need('X_test'), need('y_train'), need('y_test')\nw = {sb: round(_mae(d_, _G(n_estimators=300, learning_rate=0.1, max_depth=3, subsample=sb, random_state=0).fit(a, c).predict(b)), 3) for sb in [1.0, 0.7, 0.5]}\ng = {float(k): v for k, v in need('mae_by_sub', dict).items()}\nassert all(close(g[k], w[k], 0.002) for k in w), f'mae_by_sub = {g}, а нужно {w}.'\nassert bool(need('helps')) == any(w[1.0] - w[k] > 0.01 for k in [0.7, 0.5]), 'helps — улучшилась ли MAE больше чем на 0.01 хотя бы при одном subsample < 1.'",
+    "solution": "from sklearn.ensemble import GradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nmae_by_sub = {}\nfor sub in [1.0, 0.7, 0.5]:\n    gb = GradientBoostingRegressor(n_estimators=300, learning_rate=0.1, max_depth=3, subsample=sub, random_state=0)\n    mae_by_sub[sub] = round(mean_absolute_error(y_test, gb.fit(X_train, y_train).predict(X_test)), 3)\nhelps = any(mae_by_sub[1.0] - mae_by_sub[s] > 0.01 for s in [0.7, 0.5])\nprint(mae_by_sub, helps)",
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "task",
+    "id": "native-cat",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nres = {}",
+    "setup": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ncols = [\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]\ny = ok[\"actual_min\"]",
+    "check": "from sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nfrom sklearn.metrics import mean_absolute_error as _mae\nok0, cols0, y0 = need('ok'), need('cols'), need('y')\nimport pandas as _pd\nXd = _pd.get_dummies(ok0[cols0], dtype=int)\nXc = ok0[cols0].copy()\nfor c in ['courier', 'weather', 'shop_id']: Xc[c] = Xc[c].astype('category')\nw = {}\nfor k, X_ in [('dummies', Xd), ('category', Xc)]:\n    a, b, c, d_ = _tts(X_, y0, test_size=0.25, random_state=42)\n    m = _H(max_iter=300, max_depth=3, categorical_features='from_dtype', random_state=0).fit(a, c)\n    w[k] = (X_.shape[1], round(_mae(d_, m.predict(b)), 3))\ng = {k: tuple(v) for k, v in need('res', dict).items()}\nassert all(g[k][0] == w[k][0] and close(g[k][1], w[k][1], 0.002) for k in w), f'res = {g}, а нужно {w}.'\nassert need('n_categories') == sum(ok0[c].nunique() for c in ['courier', 'weather', 'shop_id']), f'n_categories = {need(\"n_categories\")}.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nX_dum = pd.get_dummies(ok[cols], dtype=int)\nX_cat = ok[cols].copy()\nfor c in [\"courier\", \"weather\", \"shop_id\"]:\n    X_cat[c] = X_cat[c].astype(\"category\")\nres = {}\nfor name, X in [(\"dummies\", X_dum), (\"category\", X_cat)]:\n    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n    m = HistGradientBoostingRegressor(max_iter=300, max_depth=3, categorical_features=\"from_dtype\", random_state=0).fit(X_tr, y_tr)\n    res[name] = (X.shape[1], round(mean_absolute_error(y_te, m.predict(X_te)), 3))\nn_categories = sum(ok[c].nunique() for c in [\"courier\", \"weather\", \"shop_id\"])\nprint(res, n_categories)",
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "task",
+    "id": "hgb-nan",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import HistGradientBoostingClassifier as _H, RandomForestClassifier as _RF\nfrom sklearn.metrics import roc_auc_score as _auc\ng = _pd.read_csv('guests_churn.csv'); y = g['churned']\nX0 = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int)\na, b, c, d = _tts(X0, y, test_size=0.25, random_state=42, stratify=y)\nh = round(_auc(d, _H(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0).fit(a, c).predict_proba(b)[:, 1]), 3)\nr = round(_auc(d, _RF(n_estimators=100, min_samples_leaf=5, random_state=0).fit(a.fillna(0), c).predict_proba(b.fillna(0))[:, 1]), 3)\nassert close(need('auc_hgb'), h, 0.002), f'auc_hgb = {need(\"auc_hgb\")}, а нужно {h}.'\nassert close(need('auc_rf'), r, 0.002), f'auc_rf = {need(\"auc_rf\")}, а нужно {r}.'\nassert need('nan_in_train') == int(a.isna().sum().sum()), f'nan_in_train = {need(\"nan_in_train\")}.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nnan_in_train = int(X_train.isna().sum().sum())\nhgb = HistGradientBoostingClassifier(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0).fit(X_train, y_train)\nrf = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0).fit(X_train.fillna(0), y_train)\nauc_hgb = round(roc_auc_score(y_test, hgb.predict_proba(X_test)[:, 1]), 3)\nauc_rf = round(roc_auc_score(y_test, rf.predict_proba(X_test.fillna(0))[:, 1]), 3)",
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/04-tuning",
+    "kind": "task",
+    "id": "grid-boost",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, GridSearchCV\nfrom sklearn.ensemble import HistGradientBoostingClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts, GridSearchCV as _GS\nfrom sklearn.ensemble import HistGradientBoostingClassifier as _H\nfrom sklearn.metrics import roc_auc_score as _auc\n_bp, _cv, _ta = need('best_params'), need('cv_auc'), need('test_auc')   # сначала — есть ли ответы (эталон считается долго)\ng = _pd.read_csv('guests_churn.csv'); y = g['churned']\nX0 = _pd.get_dummies(g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int)\na, b, c, d = _tts(X0, y, test_size=0.25, random_state=42, stratify=y)\ngs = _GS(_H(max_iter=200, random_state=0), {'learning_rate': [0.05, 0.1], 'max_depth': [2, 3, 5]}, cv=3, scoring='roc_auc').fit(a, c)\nassert dict(need('best_params')) == gs.best_params_, f'best_params = {need(\"best_params\")}, а нужно {gs.best_params_}.'\nassert close(need('cv_auc'), round(gs.best_score_, 3), 0.002), f'cv_auc = {need(\"cv_auc\")}.'\nassert close(need('test_auc'), round(_auc(d, gs.predict_proba(b)[:, 1]), 3), 0.002), f'test_auc = {need(\"test_auc\")}.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, GridSearchCV\nfrom sklearn.ensemble import HistGradientBoostingClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\ngrid = GridSearchCV(HistGradientBoostingClassifier(max_iter=200, random_state=0),\n                    {\"learning_rate\": [0.05, 0.1], \"max_depth\": [2, 3, 5]}, cv=3, scoring=\"roc_auc\")\ngrid.fit(X_train, y_train)\nbest_params = grid.best_params_\ncv_auc = round(grid.best_score_, 3)\ntest_auc = round(roc_auc_score(y_test, grid.predict_proba(X_test)[:, 1]), 3)",
+    "files": [
+      "deliveries.csv",
+      "guests_churn.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/05-project",
+    "kind": "task",
+    "id": "look",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])\ns = s.loc[s[\"date\"] < \"2025-04-01\"].copy()\ns[\"weekend\"] = (s[\"date\"].dt.weekday >= 5).astype(int)",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('daily_sales.csv', parse_dates=['date'])\ns0 = s0.loc[s0['date'] < '2025-04-01'].copy()\ns0['weekend'] = (s0['date'].dt.weekday >= 5).astype(int)\npv = s0.groupby(['format', 'weekend'])['revenue_k'].mean().unstack()\np = need('pivot', _pd.DataFrame)\nfor f in pv.index:\n    for w in (0, 1):\n        assert close(p.loc[f, w], round(pv.loc[f, w], 1), 0.06), f'pivot[{f}, {w}] = {p.loc[f, w]}, а нужно {round(pv.loc[f, w], 1)}.'\nr = (pv[1] / pv[0]).round(2)\nwr = need('weekend_ratio', _pd.Series)\nassert all(close(wr[f], r[f], 0.011) for f in r.index), f'weekend_ratio: ожидалось {r.to_dict()}.'\nassert need('most_weekday') == r.idxmin(), f'most_weekday = {need(\"most_weekday\")!r}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])\ns = s.loc[s[\"date\"] < \"2025-04-01\"].copy()\ns[\"weekend\"] = (s[\"date\"].dt.weekday >= 5).astype(int)\n\npivot = s.groupby([\"format\", \"weekend\"])[\"revenue_k\"].mean().unstack().round(1)\nweekend_ratio = (pivot[1] / pivot[0]).round(2)\nmost_weekday = weekend_ratio.idxmin()",
+    "files": [
+      "daily_sales.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/05-project",
+    "kind": "task",
+    "id": "split",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('daily_sales.csv', parse_dates=['date'])\nX0 = need('X', _pd.DataFrame)\nassert len(X0) == len(s0), f'В X {len(X0)} строк, а в данных {len(s0)}.'\nneed_cols = {'temp', 'rain', 'holiday', 'promo', 'weekday', 'month', 'weekend', 'day_n'}\nassert need_cols <= set(X0.columns), f'Не хватает столбцов: {need_cols - set(X0.columns)}.'\nassert any(c.startswith('shop_id_') for c in X0.columns) and any(c.startswith('format_') for c in X0.columns), 'Нужны флаги shop_id_… и format_….'\nassert 'revenue_k' not in X0.columns and 'date' not in X0.columns and 'city' not in X0.columns, 'В признаках не должно быть revenue_k, date и city.'\nassert X0['day_n'].min() == 0 and X0['day_n'].max() == 730, 'day_n — дней от первой даты (от 0 до 730).'\nw = (s0['date'] < '2025-07-01')\nassert need('n_train') == int(w.sum()) and need('n_test') == int((~w).sum()), f'n_train, n_test = {need(\"n_train\")}, {need(\"n_test\")}.'\n_mask = need('tr')\nassert _mask.index.equals(w.index) and (_mask == w).all(), 'tr: каждый ID должен соответствовать дате до01.07.2025.'\n_source = s0.copy()\n_source['weekday'] = _source['date'].dt.weekday\n_source['month'] = _source['date'].dt.month\n_source['weekend'] = (_source['weekday'] >= 5).astype(int)\n_source['day_n'] = (_source['date'] - _pd.Timestamp('2024-01-01')).dt.days\nfor _weather in ('temp','rain'):\n    _source[_weather] = _source[_weather].astype(float)\n    _climate = s0[w].groupby(s0.loc[w,'date'].dt.month)[_weather].mean()\n    _source.loc[~w,_weather] = _source.loc[~w,'month'].map(_climate)\n_ref = _pd.get_dummies(_source[['temp','rain','holiday','promo','weekday','month','weekend','day_n','shop_id','format']], columns=['shop_id','format'],dtype=int)\nassert X0.index.equals(_ref.index) and list(X0.columns)==list(_ref.columns) and (X0 == _ref).all().all(), 'X: неверные значения/индексы; не заменяйте погоду целевой выручкой.'\n_f = need('prep')\n_one = s0.iloc[[1000]].copy()\nassert _f(_one).columns.tolist()==_ref.columns.tolist() and (_f(_one).iloc[0] == _ref.loc[_one.index[0]]).all(), 'Одиночная дата должна давать тот же day_n и схему, что в пакете.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])\n\ndef prep(s, as_of=\"2025-07-01\"):\n    s = s.copy()\n    history = pd.read_csv('daily_sales.csv', parse_dates=['date'])\n    history = history[history['date'] < as_of]\n    future = s['date'] >= as_of\n    for weather in ('temp','rain'):\n        s[weather] = s[weather].astype(float)\n        climate = history.groupby(history['date'].dt.month)[weather].mean()\n        s.loc[future, weather] = s.loc[future,'date'].dt.month.map(climate)\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - pd.Timestamp(\"2024-01-01\")).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    result = pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\n    schema = ['temp','rain','holiday','promo','weekday','month','weekend','day_n'] + ['shop_id_'+v for v in sorted(history.shop_id.unique())] + ['format_'+v for v in sorted(history['format'].unique())]\n    return result.reindex(columns=schema, fill_value=0)\n\nX = prep(s)\ntr = s[\"date\"] < \"2025-07-01\"\nn_train, n_test = int(tr.sum()), int((~tr).sum())",
+    "files": [
+      "daily_sales.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/05-project",
+    "kind": "task",
+    "id": "baselines",
+    "starter": "# уже есть: s (таблица) и prep(s) из шага 2\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\ns = s.sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\nX = prep(s, as_of=\"2025-04-01\")\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-04-01\"",
+    "setup": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])\ns = s.loc[s[\"date\"] < \"2025-07-01\"].copy()\ndef prep(s, as_of=\"2025-04-01\"):\n    s = s.copy()\n    history = pd.read_csv('daily_sales.csv', parse_dates=['date'])\n    history = history[history['date'] < as_of]\n    future = s['date'] >= as_of\n    for weather in ('temp','rain'):\n        s[weather] = s[weather].astype(float)\n        climate = history.groupby(history['date'].dt.month)[weather].mean()\n        s.loc[future, weather] = s.loc[future,'date'].dt.month.map(climate)\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - pd.Timestamp(\"2024-01-01\")).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    result = pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\n    schema = ['temp','rain','holiday','promo','weekday','month','weekend','day_n'] + ['shop_id_'+v for v in sorted(history.shop_id.unique())] + ['format_'+v for v in sorted(history['format'].unique())]\n    return result.reindex(columns=schema, fill_value=0)",
+    "check": "import pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import mean_absolute_error as _mae\ns0 = _pd.read_csv('daily_sales.csv', parse_dates=['date']).sort_values(['shop_id', 'date']).reset_index(drop=True)\ns0 = s0.loc[s0['date'] < '2025-07-01'].copy()\nX0 = prep(s0, as_of='2025-04-01')\ny0 = s0['revenue_k']\nt0 = s0['date'] < '2025-04-01'\n_history = s0[t0].assign(weekday=s0.loc[t0,'date'].dt.weekday).sort_values('date')\n_last = _history.groupby(['shop_id','weekday'])['revenue_k'].last()\nlag = _pd.Series([_last.loc[(row.shop_id,row.date.weekday())] for row in s0.itertuples()],index=s0.index)\nml = round(_mae(y0[~t0], lag[~t0]), 2)\nmn = round(_mae(y0[~t0], _LR().fit(X0[t0], y0[t0]).predict(X0[~t0])), 2)\nassert close(need('mae_lag7'), ml, 0.011), f'mae_lag7 = {need(\"mae_lag7\")}, а нужно {ml}.'\nassert close(need('mae_lin'), mn, 0.011), f'mae_lin = {need(\"mae_lin\")}, а нужно {mn}.'\nassert need('lin_better') == (mn < ml), f'lin_better = {need(\"lin_better\")}.'",
+    "solution": "from sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error\n\ns = s.sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\nX = prep(s, as_of=\"2025-04-01\")\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-04-01\"\n\nhistory = s[tr].assign(weekday=s.loc[tr,'date'].dt.weekday).sort_values('date')\nlast = history.groupby(['shop_id','weekday'])['revenue_k'].last()\nlag7 = pd.Series([last.loc[(r.shop_id,r.date.weekday())] for r in s.itertuples()], index=s.index)\nmae_lag7 = round(mean_absolute_error(y[~tr], lag7[~tr]), 2)\nlin = LinearRegression().fit(X[tr], y[tr])\nmae_lin = round(mean_absolute_error(y[~tr], lin.predict(X[~tr])), 2)\nlin_better = mae_lin < mae_lag7",
+    "files": [
+      "daily_sales.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/05-project",
+    "kind": "task",
+    "id": "interactions",
+    "starter": "# уже есть: s, X, y, tr и mae_lin — ошибка простой линейной модели\noff = ((X[\"weekend\"] + X[\"holiday\"]) > 0).astype(int)     # выходной или праздник",
+    "setup": "import pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"]).sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\ndef prep(s, as_of=\"2025-07-01\"):\n    s = s.copy()\n    history = pd.read_csv('daily_sales.csv', parse_dates=['date'])\n    history = history[history['date'] < as_of]\n    future = s['date'] >= as_of\n    for weather in ('temp','rain'):\n        s[weather] = s[weather].astype(float)\n        climate = history.groupby(history['date'].dt.month)[weather].mean()\n        s.loc[future, weather] = s.loc[future,'date'].dt.month.map(climate)\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - pd.Timestamp(\"2024-01-01\")).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    result = pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\n    schema = ['temp','rain','holiday','promo','weekday','month','weekend','day_n'] + ['shop_id_'+v for v in sorted(history.shop_id.unique())] + ['format_'+v for v in sorted(history['format'].unique())]\n    return result.reindex(columns=schema, fill_value=0)\ns = s[s[\"date\"] < \"2025-07-01\"].copy()\nX = prep(s, as_of=\"2025-04-01\")\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-04-01\"\nmae_lin = mean_absolute_error(y[~tr], LinearRegression().fit(X[tr], y[tr]).predict(X[~tr]))",
+    "check": "from sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import mean_absolute_error as _mae\nX0 = prep(s, as_of=\"2025-04-01\"); off0 = ((X0['weekend'] + X0['holiday']) > 0).astype(int)\nX0['bc_off'] = X0['format_бизнес-центр'] * off0; X0['mall_off'] = X0['format_ТЦ'] * off0; X0['street_rain'] = X0['format_улица'] * X0['rain']\nm = round(_mae(y[~tr], _LR().fit(X0[tr], y[tr]).predict(X0[~tr])), 2)\nassert close(need('mae_inter'), m, 0.011), f'mae_inter = {need(\"mae_inter\")}, а нужно {m}. Проверьте три новых признака.'\nassert close(need('gain'), round(mae_lin - m, 2), 0.02), f'gain = {need(\"gain\")}.'",
+    "solution": "off = ((X[\"weekend\"] + X[\"holiday\"]) > 0).astype(int)\nX2 = X.copy()\nX2[\"bc_off\"] = X2[\"format_бизнес-центр\"] * off\nX2[\"mall_off\"] = X2[\"format_ТЦ\"] * off\nX2[\"street_rain\"] = X2[\"format_улица\"] * X2[\"rain\"]\nlin2 = LinearRegression().fit(X2[tr], y[tr])\nmae_inter = round(mean_absolute_error(y[~tr], lin2.predict(X2[~tr])), 2)\ngain = round(mae_lin - mae_inter, 2)",
+    "files": [
+      "daily_sales.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/05-project",
+    "kind": "task",
+    "id": "boosting",
+    "starter": "# уже есть: s, X, y, tr и mae_inter — ошибка линейной модели с взаимодействиями\nfrom sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor",
+    "setup": "import pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"]).sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\ndef prep(s, as_of=\"2025-07-01\"):\n    s = s.copy()\n    history = pd.read_csv('daily_sales.csv', parse_dates=['date'])\n    history = history[history['date'] < as_of]\n    future = s['date'] >= as_of\n    for weather in ('temp','rain'):\n        s[weather] = s[weather].astype(float)\n        climate = history.groupby(history['date'].dt.month)[weather].mean()\n        s.loc[future, weather] = s.loc[future,'date'].dt.month.map(climate)\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - pd.Timestamp(\"2024-01-01\")).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    result = pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\n    schema = ['temp','rain','holiday','promo','weekday','month','weekend','day_n'] + ['shop_id_'+v for v in sorted(history.shop_id.unique())] + ['format_'+v for v in sorted(history['format'].unique())]\n    return result.reindex(columns=schema, fill_value=0)\ns = s[s[\"date\"] < \"2025-07-01\"].copy()\nX = prep(s, as_of=\"2025-04-01\")\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-04-01\"\n_off = ((X[\"weekend\"] + X[\"holiday\"]) > 0).astype(int)\n_X2 = X.copy(); _X2[\"bc_off\"] = _X2[\"format_бизнес-центр\"] * _off; _X2[\"mall_off\"] = _X2[\"format_ТЦ\"] * _off; _X2[\"street_rain\"] = _X2[\"format_улица\"] * _X2[\"rain\"]\nmae_inter = mean_absolute_error(y[~tr], LinearRegression().fit(_X2[tr], y[tr]).predict(_X2[~tr]))",
+    "check": "from sklearn.ensemble import HistGradientBoostingRegressor as _H, RandomForestRegressor as _RF\nfrom sklearn.metrics import mean_absolute_error as _mae\nh = round(_mae(y[~tr], _H(random_state=0).fit(X[tr], y[tr]).predict(X[~tr])), 2)\nr = round(_mae(y[~tr], _RF(n_estimators=100, min_samples_leaf=3, random_state=0).fit(X[tr], y[tr]).predict(X[~tr])), 2)\nassert close(need('mae_hgb'), h, 0.011), f'mae_hgb = {need(\"mae_hgb\")}, а нужно {h}.'\nassert close(need('mae_rf'), r, 0.011), f'mae_rf = {need(\"mae_rf\")}, а нужно {r}.'\nres = {'бустинг': h, 'лес': r, 'линейная с взаимодействиями': round(mae_inter, 2)}\nassert need('best_model') == min(res, key=res.get), f'best_model = {need(\"best_model\")!r}.'",
+    "solution": "from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nhgb = HistGradientBoostingRegressor(random_state=0).fit(X[tr], y[tr])\nrf = RandomForestRegressor(n_estimators=100, min_samples_leaf=3, random_state=0).fit(X[tr], y[tr])\nmae_hgb = round(mean_absolute_error(y[~tr], hgb.predict(X[~tr])), 2)\nmae_rf = round(mean_absolute_error(y[~tr], rf.predict(X[~tr])), 2)\nres = {\"бустинг\": mae_hgb, \"лес\": mae_rf, \"линейная с взаимодействиями\": round(mae_inter, 2)}\nbest_model = min(res, key=res.get)",
+    "files": [
+      "daily_sales.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/05-project",
+    "kind": "task",
+    "id": "tune",
+    "starter": "# уже есть: s, X, y, tr\nimport numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nfit = s[\"date\"] < \"2025-04-01\"\nval = tr & ~fit",
+    "setup": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"]).sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\ndef prep(s, as_of=\"2025-07-01\"):\n    s = s.copy()\n    history = pd.read_csv('daily_sales.csv', parse_dates=['date'])\n    history = history[history['date'] < as_of]\n    future = s['date'] >= as_of\n    for weather in ('temp','rain'):\n        s[weather] = s[weather].astype(float)\n        climate = history.groupby(history['date'].dt.month)[weather].mean()\n        s.loc[future, weather] = s.loc[future,'date'].dt.month.map(climate)\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - pd.Timestamp(\"2024-01-01\")).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    result = pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\n    schema = ['temp','rain','holiday','promo','weekday','month','weekend','day_n'] + ['shop_id_'+v for v in sorted(history.shop_id.unique())] + ['format_'+v for v in sorted(history['format'].unique())]\n    return result.reindex(columns=schema, fill_value=0)\nX = prep(s, as_of=\"2025-04-01\")\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-07-01\"",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nfrom sklearn.metrics import mean_absolute_error as _mae\nf0 = s['date'] < '2025-04-01'; v0 = tr & ~f0; rows = []\nfor lr in [0.05, 0.1]:\n    for md in [3, 6, None]:\n        m = _H(learning_rate=lr, max_depth=md, max_iter=500, early_stopping=False, random_state=0).fit(X[f0], y[f0])\n        cv = [_mae(y[v0], p) for p in m.staged_predict(X[v0])]; k = int(_np.argmin(cv)) + 1\n        rows.append((lr, md, k, cv[k - 1]))\ng = need('grid', _pd.DataFrame)\nassert {'lr', 'depth', 'n_iter', 'val_mae'} <= set(g.columns), 'В grid нужны столбцы lr, depth, n_iter и val_mae.'\nassert len(g) == 6, f'В grid {len(g)} строк, нужно 6.'\ndef _grid_key(row):\n    return (float(row['lr']), None if _pd.isna(row['depth']) else float(row['depth']))\n_expected_rows = {(lr, md): (k, v) for lr, md, k, v in rows}\n_submitted_keys = [_grid_key(row) for _, row in g.iterrows()]\nassert len(set(_submitted_keys)) == 6 and set(_submitted_keys) == set(_expected_rows), 'grid: нужны ровно шесть разных пар lr из [0.05, 0.1] и depth из [3, 6, None]; каждая строка должна сохранять параметры своего расчёта. Порядок строк может быть любым.'\nfor _, row in g.iterrows():\n    _key = _grid_key(row)\n    _k, _v = _expected_rows[_key]\n    assert row['n_iter'] == _k and close(row['val_mae'], _v, 0.01), f'lr={_key[0]}, depth={_key[1]}: n_iter и val_mae должны относиться к этой паре параметров.'\nb = min(rows, key=lambda r: r[3])\nassert close(need('val_mae'), round(b[3], 2), 0.011), 'Сохраните MAE лучшей строки на апреле–июне.'\n_submitted_best = need('best', _pd.Series)\nassert (_grid_key(_submitted_best) == (b[0], b[1])\n        and _submitted_best['n_iter'] == b[2]\n        and close(_submitted_best['val_mae'], b[3], 0.01)), 'best должна сохранять параметры, число деревьев и ошибку лучшей строки grid; не меняйте её lr/depth после расчёта.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nfit = s[\"date\"] < \"2025-04-01\"\nval = tr & ~fit\n\nrows = []\nfor lr in [0.05, 0.1]:\n    for depth in [3, 6, None]:\n        m = HistGradientBoostingRegressor(learning_rate=lr, max_depth=depth, max_iter=500,\n                                          early_stopping=False, random_state=0).fit(X[fit], y[fit])\n        curve = [mean_absolute_error(y[val], p) for p in m.staged_predict(X[val])]\n        k = int(np.argmin(curve)) + 1\n        rows.append({\"lr\": lr, \"depth\": depth, \"n_iter\": k, \"val_mae\": curve[k - 1]})\ngrid = pd.DataFrame(rows)\nbest = grid.loc[grid[\"val_mae\"].idxmin()]\nval_mae = round(float(best[\"val_mae\"]), 2)",
+    "files": [
+      "daily_sales.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/05-project",
+    "kind": "task",
+    "id": "trend",
+    "starter": "# уже есть: s (со столбцом day_n), X, y, tr\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error",
+    "setup": "import pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"]).sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\ndef prep(s, as_of=\"2025-07-01\"):\n    s = s.copy()\n    history = pd.read_csv('daily_sales.csv', parse_dates=['date'])\n    history = history[history['date'] < as_of]\n    future = s['date'] >= as_of\n    for weather in ('temp','rain'):\n        s[weather] = s[weather].astype(float)\n        climate = history.groupby(history['date'].dt.month)[weather].mean()\n        s.loc[future, weather] = s.loc[future,'date'].dt.month.map(climate)\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - pd.Timestamp(\"2024-01-01\")).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    result = pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\n    schema = ['temp','rain','holiday','promo','weekday','month','weekend','day_n'] + ['shop_id_'+v for v in sorted(history.shop_id.unique())] + ['format_'+v for v in sorted(history['format'].unique())]\n    return result.reindex(columns=schema, fill_value=0)\ns = s[s[\"date\"] < \"2025-07-01\"].copy()\nX = prep(s, as_of=\"2025-04-01\")\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-04-01\"\ns[\"day_n\"] = X[\"day_n\"]",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nfrom sklearn.metrics import mean_absolute_error as _mae\np0 = _H(random_state=0).fit(X[tr], y[tr]).predict(X[~tr])\ntl = _LR().fit(s.loc[tr, ['day_n']], _np.log(y[tr])); trd = _np.exp(tl.predict(s[['day_n']]))\nXn = X.drop(columns=['day_n'])\np1 = _H(random_state=0).fit(Xn[tr], (y / trd)[tr]).predict(Xn[~tr]) * trd[~tr]\nbm = (y[~tr] - p0).groupby(s.loc[~tr, 'date'].dt.month).mean().round(2)\nfor _name, _pred in [('p_before', p0), ('p_after', p1)]:\n    _got = _np.asarray(need(_name))\n    assert _got.shape == _pred.shape and _np.allclose(_got, _pred, atol=1e-4), f'{_name}: проверьте вектор прогнозов на валидационных строках.'\ngb = need('bias_by_month', _pd.Series)\nassert sorted(int(k) for k in gb.index) == sorted(int(k) for k in bm.index), f'Индекс bias_by_month — месяцы валидации, а сейчас {[int(k) for k in gb.index]}.'\nassert all(close(gb[k], bm[k], 0.011) for k in bm.index), f'bias_by_month: ожидалось {({int(k): float(v) for k, v in bm.items()})}.'\nassert close(need('bias_before'), round((y[~tr] - p0).mean(), 2), 0.011), f'bias_before = {need(\"bias_before\")}.'\nassert close(need('bias_after'), round((y[~tr] - p1).mean(), 2), 0.011), f'bias_after = {need(\"bias_after\")}.'\nassert close(need('mae_after'), round(_mae(y[~tr], p1), 2), 0.011), f'mae_after = {need(\"mae_after\")}.'\nassert close(need('growth'), round(_np.exp(tl.coef_[0] * 365), 3), 0.0011), f'growth = {need(\"growth\")}.'",
+    "solution": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.metrics import mean_absolute_error\n\np_before = HistGradientBoostingRegressor(random_state=0).fit(X[tr], y[tr]).predict(X[~tr])\nbias_by_month = (y[~tr] - p_before).groupby(s.loc[~tr, \"date\"].dt.month).mean().round(2)\nbias_before = round((y[~tr] - p_before).mean(), 2)\nprint(bias_by_month)\n\ntl = LinearRegression().fit(s.loc[tr, [\"day_n\"]], np.log(y[tr]))\ntrend = np.exp(tl.predict(s[[\"day_n\"]]))\ngrowth = round(np.exp(tl.coef_[0] * 365), 3)\n\nXn = X.drop(columns=[\"day_n\"])\nm = HistGradientBoostingRegressor(random_state=0).fit(Xn[tr], (y / trend)[tr])\np_after = m.predict(Xn[~tr]) * trend[~tr]\nbias_after = round((y[~tr] - p_after).mean(), 2)\nmae_after = round(mean_absolute_error(y[~tr], p_after), 2)",
+    "files": [
+      "daily_sales.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/05-project",
+    "kind": "task",
+    "id": "compare",
+    "starter": "# доступны s, y, tr, функция prep(s, as_of) и X для выпуска 1 июля\nimport time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error\n\nmodels = {\n    \"линейная\": LinearRegression(),\n    \"лес\": RandomForestRegressor(n_estimators=100, min_samples_leaf=3, random_state=0),\n    \"GradientBoosting\": GradientBoostingRegressor(random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(random_state=0),\n    \"тренд + бустинг\": TrendBoost(),\n}",
+    "setup": "from time import perf_counter as _measurement_clock\n_measurements = {}\ndef _timed_estimator_call(method, operation):\n    # Install and remove observers outside the measured interval. A delegating\n    # wrapper may call any of the supplied estimators; returning a cache is not fit.\n    from sklearn.linear_model import LinearRegression\n    from sklearn.ensemble import (RandomForestRegressor, GradientBoostingRegressor,\n                                  HistGradientBoostingRegressor)\n    classes = (LinearRegression, RandomForestRegressor,\n               GradientBoostingRegressor, HistGradientBoostingRegressor)\n    originals = [(cls, getattr(cls, method), method in cls.__dict__) for cls in classes]\n    calls = []\n    def observe(original):\n        def wrapped(estimator, *args, **kwargs):\n            calls.append(estimator)\n            return original(estimator, *args, **kwargs)\n        return wrapped\n    try:\n        for cls, original, _owned in originals:\n            setattr(cls, method, observe(original))\n        start = _measurement_clock()\n        result = operation()\n        elapsed = _measurement_clock() - start\n    finally:\n        for cls, original, owned in originals:\n            if owned:\n                setattr(cls, method, original)\n            else:\n                delattr(cls, method)\n    assert calls, ('Внутри timed_' + method + ' должен выполняться настоящий ' +\n                   method + ' оценщика из процедуры. Возврат заранее готового ' +\n                   'результата не измеряет эту операцию; обёртка должна делегировать вызов.')\n    return result, elapsed\n\ndef timed_fit(name, model, features, target):\n    \"\"\"Обучить модель; вернуть длительность вызова fit в секундах.\"\"\"\n    _, elapsed = _timed_estimator_call('fit', lambda: model.fit(features, target))\n    _measurements[name] = dict(model=model, train=features.copy(), target=target.copy(), fit_s=elapsed)\n    return elapsed\n\ndef timed_predict(name, model, features):\n    \"\"\"Вернуть (пакетный прогноз, длительность predict в миллисекундах).\"\"\"\n    prediction, elapsed = _timed_estimator_call('predict', lambda: model.predict(features))\n    elapsed_ms = elapsed * 1000\n    record = _measurements[name]\n    assert record['model'] is model, 'Передайте в timed_predict ту же модель, что в timed_fit.'\n    record.update(test=features.copy(), predict_ms=elapsed_ms)\n    return prediction, elapsed_ms\n\nimport pandas as pd\ns = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"]).sort_values([\"shop_id\", \"date\"]).reset_index(drop=True)\ndef prep(s, as_of=\"2025-07-01\"):\n    s = s.copy()\n    history = pd.read_csv('daily_sales.csv', parse_dates=['date'])\n    history = history[history['date'] < as_of]\n    future = s['date'] >= as_of\n    for weather in ('temp','rain'):\n        s[weather] = s[weather].astype(float)\n        climate = history.groupby(history['date'].dt.month)[weather].mean()\n        s.loc[future, weather] = s.loc[future,'date'].dt.month.map(climate)\n    s[\"weekday\"] = s[\"date\"].dt.weekday\n    s[\"month\"] = s[\"date\"].dt.month\n    s[\"weekend\"] = (s[\"weekday\"] >= 5).astype(int)\n    s[\"day_n\"] = (s[\"date\"] - pd.Timestamp(\"2024-01-01\")).dt.days\n    cols = [\"temp\", \"rain\", \"holiday\", \"promo\", \"weekday\", \"month\", \"weekend\", \"day_n\", \"shop_id\", \"format\"]\n    result = pd.get_dummies(s[cols], columns=[\"shop_id\", \"format\"], dtype=int)\n    schema = ['temp','rain','holiday','promo','weekday','month','weekend','day_n'] + ['shop_id_'+v for v in sorted(history.shop_id.unique())] + ['format_'+v for v in sorted(history['format'].unique())]\n    return result.reindex(columns=schema, fill_value=0)\nX = prep(s)\ny = s[\"revenue_k\"]\ntr = s[\"date\"] < \"2025-07-01\"\n\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import HistGradientBoostingRegressor\n\nclass TrendBoost:\n    \"\"\"Процедура из шага 7 с тем же интерфейсом fit/predict.\"\"\"\n    def fit(self, features, target):\n        self.trend = LinearRegression().fit(features[[\"day_n\"]], np.log(target))\n        level = np.exp(self.trend.predict(features[[\"day_n\"]]))\n        self.residual = HistGradientBoostingRegressor(random_state=0)\n        self.residual.fit(features.drop(columns=\"day_n\"), target / level)\n        return self\n\n    def predict(self, features):\n        level = np.exp(self.trend.predict(features[[\"day_n\"]]))\n        return level * self.residual.predict(features.drop(columns=\"day_n\"))",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB, HistGradientBoostingRegressor as _H, RandomForestRegressor as _RF\nfrom sklearn.metrics import mean_absolute_error as _mae, mean_squared_error as _mse\nref = {}\nfor k, m in {'линейная': _LR(), 'лес': _RF(n_estimators=100, min_samples_leaf=3, random_state=0),\n             'GradientBoosting': _GB(random_state=0), 'HistGradientBoosting': _H(random_state=0), 'тренд + бустинг': TrendBoost()}.items():\n    p = m.fit(X[tr], y[tr]).predict(X[~tr])\n    ref[k] = (round(float(_np.sqrt(_mse(y[~tr], p))), 2), round(float(_mae(y[~tr], p)), 2))\nt = need('table', _pd.DataFrame)\nassert set(t.index) == set(ref), f'Индекс table — названия моделей {sorted(ref)}, а сейчас {list(t.index)}.'\nassert {'val_rmse', 'rmse', 'mae', 'fit_s', 'predict_ms'} <= set(t.columns), f'Нужны столбцы val_rmse, rmse, mae, fit_s, predict_ms, а сейчас {list(t.columns)}.'\nfor k, (r, a) in ref.items():\n    assert close(t.loc[k, 'rmse'], r, 0.011), f'{k}: rmse = {t.loc[k, \"rmse\"]}, а нужно {r}. Обучение на tr, ошибка на ~tr.'\n    assert close(t.loc[k, 'mae'], a, 0.011), f'{k}: mae = {t.loc[k, \"mae\"]}, а нужно {a}.'\nassert t.index.is_unique, 'Названия моделей в table не должны повторяться.'\nfor _name in t.index:\n    assert _name in _measurements, f'{_name}: вызовите timed_fit для финального обучения.'\n    _record = _measurements[_name]\n    assert 'predict_ms' in _record, f'{_name}: вызовите timed_predict после timed_fit.'\n    assert _record['train'].equals(X[tr]) and _record['target'].equals(y[tr]), f'{_name}: timed_fit должен обучать на финальной тренировочной части.'\n    assert _record['test'].equals(X[~tr]), f'{_name}: timed_predict должен получать весь финальный тест.'\n    for _col in ('fit_s', 'predict_ms'):\n        assert _np.isfinite(t.loc[_name, _col]) and close(t.loc[_name, _col], _record[_col], 1e-9), f'{_name}: {_col} не совпало с фактическим интервалом. Запишите результат timed_fit/timed_predict без подмены и округления.'\nassert list(t.index) == list(t.sort_values('val_rmse').index), 'Строки table должны идти по возрастанию val_rmse.'\nassert need('best') == t['val_rmse'].idxmin(), f'best = {need(\"best\")!r}.'\ng = round(float(t.loc['линейная', 'rmse'] - t.loc[need('best'), 'rmse']), 2)\nassert close(need('gain_vs_linear'), g, 0.011), f'gain_vs_linear = {need(\"gain_vs_linear\")}, а по таблице {g}: RMSE линейной минус RMSE лучшей.'\nassert need('nightly_ok') == bool((t['fit_s'] < 60).all()), f'nightly_ok = {need(\"nightly_ok\")}: все ли fit_s меньше 60 секунд по вашей таблице?'\n_vX = prep(s, as_of='2025-04-01')\n_vtrain = s['date'] < '2025-04-01'\n_val = (s['date'] >= '2025-04-01') & tr\nfor _name, _model in {'линейная': _LR(), 'лес': _RF(n_estimators=100,min_samples_leaf=3,random_state=0), 'GradientBoosting': _GB(random_state=0), 'HistGradientBoosting': _H(random_state=0), 'тренд + бустинг': TrendBoost()}.items():\n    _vp = _model.fit(_vX[_vtrain],y[_vtrain]).predict(_vX[_val])\n    assert close(t.loc[_name,'val_rmse'],float(_np.sqrt(_mse(y[_val],_vp))),1e-6), f'{_name}: проверьте апрельский выпуск. Готовьте признаки для обучения и валидации через prep(s, as_of=\"2025-04-01\"), обучайтесь до апреля и оценивайте апрель–июнь. Записывайте val_rmse без округления.'",
+    "solution": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error\n\nmodels = {\n    \"линейная\": LinearRegression(),\n    \"лес\": RandomForestRegressor(n_estimators=100, min_samples_leaf=3, random_state=0),\n    \"GradientBoosting\": GradientBoostingRegressor(random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(random_state=0),\n    \"тренд + бустинг\": TrendBoost(),\n}\n\nrows = []\nvalidation_X = prep(s, as_of='2025-04-01')\nvalidation_train = s['date'] < '2025-04-01'\nvalidation = (s['date'] >= '2025-04-01') & tr\nvalidation_scores = {}\nfor name, model in models.items():\n    vp = model.fit(validation_X[validation_train],y[validation_train]).predict(validation_X[validation])\n    validation_scores[name] = float(np.sqrt(mean_squared_error(y[validation],vp)))\nbest = min(validation_scores, key=validation_scores.get)\nfor name, model in models.items():\n    fit_s = timed_fit(name, model, X[tr], y[tr])\n    pred, predict_ms = timed_predict(name, model, X[~tr])\n\n    rows.append({\"model\": name,\n                 \"rmse\": round(float(np.sqrt(mean_squared_error(y[~tr], pred))), 2),\n                 \"mae\": round(float(mean_absolute_error(y[~tr], pred)), 2),\n                 \"fit_s\": fit_s, \"predict_ms\": predict_ms, \"val_rmse\": validation_scores[name]})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"val_rmse\")\ngain_vs_linear = round(float(table.loc[\"линейная\", \"rmse\"] - table.loc[best, \"rmse\"]), 2)\nnightly_ok = bool((table[\"fit_s\"] < 60).all())\nprint(table.round(3))\nprint(best, gain_vs_linear, nightly_ok)",
+    "files": [
+      "daily_sales.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/05-project",
+    "kind": "task",
+    "id": "release-row",
+    "starter": "import pandas as pd\n\ndef baseline_at(sales, as_of, target, shop_id):\n    ...\n\nprint(baseline_at(sales, \"2025-08-01\", \"2025-08-08\", \"PRM-1\"))",
+    "setup": "import pandas as pd\n_release_sales = pd.read_csv(\"daily_sales.csv\", parse_dates=[\"date\"])\nsales = _release_sales.loc[_release_sales.date < \"2025-08-01\"].copy()",
+    "check": "import pandas as _pd\n_forecast = need('baseline_at')\n_original = _pd.read_csv('daily_sales.csv', parse_dates=['date'])\nfor _release, _target, _shop in [('2025-08-01', '2025-08-08', 'PRM-1'), ('2025-06-04', '2025-06-11', 'KZN-1')]:\n    _history = _original.loc[_original.date < _release].copy()\n    _known = _history.loc[(_history.shop_id == _shop) & (_history.date.dt.weekday == _pd.Timestamp(_target).weekday())]\n    _last = _known.loc[_known.date.idxmax()]\n    _revised = _original.copy()\n    _future = _revised.date >= _release\n    _revised.loc[_future, 'revenue_k'] += 100\n    _revised.loc[_future, 'temp'] += 10\n    _revised.loc[_future, 'rain'] = 1 - _revised.loc[_future, 'rain']\n    for _frame in (_history, _revised):\n        _result = _forecast(_frame.copy(), _release, _target, _shop)\n        assert isinstance(_result, (list, tuple)) and len(_result) == 2, 'Верните дату последнего доступного такого же дня недели и выручку этой кофейни.'\n        _day, _value = _result\n        assert _pd.Timestamp(_day) == _last.date, f'Выпуск {_release}, кофейня {_shop}. Проверьте день недели и дату источника: касса дня выпуска ещё не закрыта.'\n        assert close(_value, _last.revenue_k), f'Выпуск {_release}, кофейня {_shop}. Касса за {_last.date:%d.%m.%Y} уже известна. Выданный ориентир должен сохраниться при изменении более поздней выручки и погоды.'",
+    "solution": "import pandas as pd\n\ndef baseline_at(sales, as_of, target, shop_id):\n    weekday = pd.Timestamp(target).weekday()\n    known = sales[(sales[\"shop_id\"] == shop_id) & (sales[\"date\"] < pd.Timestamp(as_of))]\n    same_day = known[known[\"date\"].dt.weekday == weekday]\n    last = same_day.loc[same_day[\"date\"].idxmax()]\n    return last[\"date\"], float(last[\"revenue_k\"])\n\nprint(baseline_at(sales, \"2025-08-01\", \"2025-08-08\", \"PRM-1\"))",
+    "files": [
+      "daily_sales.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/06-libraries",
+    "kind": "cell",
+    "id": "cell1",
+    "code": "import pandas as pd\ntoy = pd.DataFrame({\"shop\": [\"A\", \"B\", \"A\", \"A\", \"B\"], \"revenue\": [60, 40, 70, 50, 44]})\ng = toy.groupby(\"shop\")[\"revenue\"]\nprev_sum = g.cumsum() - toy[\"revenue\"]           # сумма предыдущих строк той же кофейни\nprev_cnt = g.cumcount()                          # сколько их было\ntoy[\"shop_code\"] = (prev_sum / prev_cnt).fillna(50)    # 0 / 0 даёт NaN → заглушка\nprint(toy)",
+    "expect_error": false,
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch10/06-libraries",
+    "kind": "task",
+    "id": "speed-table",
+    "starter": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_squared_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmodels = {\n    \"GradientBoosting\": GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(max_iter=200, max_depth=3, random_state=0),\n    \"RandomForest\": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=0),\n}",
+    "setup": "from time import perf_counter as _measurement_clock\n_measurements = {}\ndef _timed_estimator_call(method, operation):\n    # Install and remove observers outside the measured interval. A delegating\n    # wrapper may call any of the supplied estimators; returning a cache is not fit.\n    from sklearn.linear_model import LinearRegression\n    from sklearn.ensemble import (RandomForestRegressor, GradientBoostingRegressor,\n                                  HistGradientBoostingRegressor)\n    classes = (LinearRegression, RandomForestRegressor,\n               GradientBoostingRegressor, HistGradientBoostingRegressor)\n    originals = [(cls, getattr(cls, method), method in cls.__dict__) for cls in classes]\n    calls = []\n    def observe(original):\n        def wrapped(estimator, *args, **kwargs):\n            calls.append(estimator)\n            return original(estimator, *args, **kwargs)\n        return wrapped\n    try:\n        for cls, original, _owned in originals:\n            setattr(cls, method, observe(original))\n        start = _measurement_clock()\n        result = operation()\n        elapsed = _measurement_clock() - start\n    finally:\n        for cls, original, owned in originals:\n            if owned:\n                setattr(cls, method, original)\n            else:\n                delattr(cls, method)\n    assert calls, ('Внутри timed_' + method + ' должен выполняться настоящий ' +\n                   method + ' оценщика из процедуры. Возврат заранее готового ' +\n                   'результата не измеряет эту операцию; обёртка должна делегировать вызов.')\n    return result, elapsed\n\ndef timed_fit(name, model, features, target):\n    \"\"\"Обучить модель; вернуть длительность вызова fit в секундах.\"\"\"\n    _, elapsed = _timed_estimator_call('fit', lambda: model.fit(features, target))\n    _measurements[name] = dict(model=model, train=features.copy(), target=target.copy(), fit_s=elapsed)\n    return elapsed\n\ndef timed_predict(name, model, features):\n    \"\"\"Вернуть (пакетный прогноз, длительность predict в миллисекундах).\"\"\"\n    prediction, elapsed = _timed_estimator_call('predict', lambda: model.predict(features))\n    elapsed_ms = elapsed * 1000\n    record = _measurements[name]\n    assert record['model'] is model, 'Передайте в timed_predict ту же модель, что в timed_fit.'\n    record.update(test=features.copy(), predict_ms=elapsed_ms)\n    return prediction, elapsed_ms",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.ensemble import GradientBoostingRegressor as _GB, HistGradientBoostingRegressor as _H, RandomForestRegressor as _RF\nfrom sklearn.metrics import mean_squared_error as _mse\nref = {}\nfor k, m in {'GradientBoosting': _GB(n_estimators=200, max_depth=3, random_state=0), 'HistGradientBoosting': _H(max_iter=200, max_depth=3, random_state=0),\n             'RandomForest': _RF(n_estimators=100, min_samples_leaf=5, random_state=0)}.items():\n    ref[k] = round(float(_np.sqrt(_mse(y_te, m.fit(X_tr, y_tr).predict(X_te)))), 3)\nt = need('table', _pd.DataFrame)\nassert set(t.index) == set(ref), f'Индекс table — названия моделей {sorted(ref)}, а сейчас {list(t.index)}.'\nassert {'rmse', 'fit_s', 'predict_ms'} <= set(t.columns), f'Нужны столбцы rmse, fit_s, predict_ms, а сейчас {list(t.columns)}.'\nfor k in ref:\n    assert close(t.loc[k, 'rmse'], ref[k], 0.0011), f'{k}: rmse = {t.loc[k, \"rmse\"]}, а нужно {ref[k]}. RMSE — корень из mean_squared_error на тесте.'\nassert t.index.is_unique, 'Названия моделей в table не должны повторяться.'\nfor _name in t.index:\n    assert _name in _measurements, f'{_name}: вызовите timed_fit для финального обучения.'\n    _record = _measurements[_name]\n    assert 'predict_ms' in _record, f'{_name}: вызовите timed_predict после timed_fit.'\n    assert _record['train'].equals(X_tr) and _record['target'].equals(y_tr), f'{_name}: timed_fit должен обучать на финальной тренировочной части.'\n    assert _record['test'].equals(X_te), f'{_name}: timed_predict должен получать весь финальный тест.'\n    for _col in ('fit_s', 'predict_ms'):\n        assert _np.isfinite(t.loc[_name, _col]) and close(t.loc[_name, _col], _record[_col], 1e-9), f'{_name}: {_col} не совпало с фактическим интервалом. Запишите результат timed_fit/timed_predict без подмены и округления.'\nassert list(t.index) == list(t.sort_values('rmse').index), 'Строки table должны идти по возрастанию rmse: .sort_values(\"rmse\").'\nassert need('best') == t['rmse'].idxmin(), f'best = {need(\"best\")!r}, а меньше всего ошибка у {t[\"rmse\"].idxmin()!r}.'\nassert need('fastest_fit') == t['fit_s'].idxmin(), f'fastest_fit = {need(\"fastest_fit\")!r}, а по вашей же таблице быстрее всех обучилась {t[\"fit_s\"].idxmin()!r}.'",
+    "solution": "import time\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor, RandomForestRegressor\nfrom sklearn.metrics import mean_squared_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\ny = ok[\"actual_min\"]\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)\n\nmodels = {\n    \"GradientBoosting\": GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),\n    \"HistGradientBoosting\": HistGradientBoostingRegressor(max_iter=200, max_depth=3, random_state=0),\n    \"RandomForest\": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=0),\n}\n\nrows = []\nfor name, model in models.items():\n    fit_s = timed_fit(name, model, X_tr, y_tr)\n    pred, predict_ms = timed_predict(name, model, X_te)\n\n    rmse = np.sqrt(mean_squared_error(y_te, pred))\n    rows.append({\"model\": name, \"rmse\": round(float(rmse), 3), \"fit_s\": fit_s, \"predict_ms\": predict_ms})\n\ntable = pd.DataFrame(rows).set_index(\"model\").sort_values(\"rmse\")\nbest = table.index[0]\nfastest_fit = table[\"fit_s\"].idxmin()\nprint(table.round(3))\nprint(\"лучший:\", best, \"| быстрее всех обучился:\", fastest_fit)",
+    "files": [
+      "deliveries.csv"
+    ],
+    "display": true
+  }
+]

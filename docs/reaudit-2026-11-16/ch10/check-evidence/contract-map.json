@@ -1,0 +1,401 @@
+[
+  {
+    "task": "ch10/01-gradient/loss-at",
+    "promise": "Напишите функцию `loss(w)` — MSE модели `w * x` на данных `x`, `y` — и сохраните `l5 = loss(5)` и `l10 = loss(10)`. В `better` сохраните то из чисел 5 и 10, при котором ошибка меньше.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01-gradient/numeric-grad",
+    "promise": "Напишите функцию `num_grad(f, w, eps=1e-5)`, которая оценивает производную функции `f` в точке `w` по формуле (f(w + eps) − f(w − eps)) / (2·eps). Проверьте её на f(w) = w²: сохраните `g3 = num_grad(lambda w: w ** 2, 3)` (должно быть около 6).\n\nЗатем сверьте формулу производной из урока с численной оценкой на пяти доставках (`loss` и `grad` в заготовке): сохраните `g5_formula = grad(5)` и `g5_numeric = num_grad(loss, 5)`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01-gradient/p-gd",
+    "promise": "Соберите градиентный спуск для одного веса.\n\n\nДоступные строки для сборки с отступами:\nx = np.array([1.0, 2.0, 3.0])\nw, lr = 0.0, 0.05\ng = np.mean(2 * (w * x - y) * x)\nfor _ in range(100):\ny = np.array([2.0, 4.0, 6.0])\nprint(round(float(w), 3))\nimport numpy as np\nw = w - lr * g",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01-gradient/lr-modes",
+    "promise": "Запустите спуск из `w = 0` по 30 шагов с тремя шагами обучения: 0.001, 0.01 и 0.1 (функции `loss` и `grad` в заготовке). Сохраните словарь `final` — `{lr: значение MSE после 30 шагов}` и `diverged` — список шагов обучения, при которых итоговая ошибка больше, чем в начале (при `w = 0`).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01-gradient/history",
+    "promise": "Запустите спуск с `lr = 0.01` из `w = 0` на 40 шагов и сохраните список `history` — MSE после каждого шага (40 чисел). Нарисуйте его линией, подпишите ось X `\"шаг\"`, ось Y `\"MSE\"`. В `steps_to_30` сохраните номер первого шага (считая с 1), после которого MSE стала меньше 30.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Gap: verifies history numeric values and plot count/labels but does not compare line x/y values with history (C29/C30).",
+    "execution_coverage": "targeted probe"
+  },
+  {
+    "task": "ch10/01-gradient/stop-rule",
+    "promise": "Напишите `descend(lr, tol=1e-6, max_steps=10000)` как в разборе урока: спуск из `w = 0`, остановка, когда потеря за шаг изменилась меньше чем на `tol`; вернуть `(w, число шагов)`. Сохраните `steps` — словарь `{lr: число шагов}` для `lr` из `[0.001, 0.01, 0.03]` и `w_found` — словарь `{lr: w}` (4 знака). Затем выясните, что будет при `lr = 0.1`: сохраните `steps_01` и `w_01` (как есть, без округления). При `lr = 0.1` numpy напечатает предупреждения `RuntimeWarning: overflow` — это ожидаемо: числа перестают помещаться в float. Чтобы их не видеть, вызов можно обернуть в `with np.errstate(all=\"ignore\"):`.\n\nСделайте ещё один шаг из нуля с `learning_rate=1e-12`. Сохраните в словаре `stop_diagnostics` три поля: `gradient` — производная в новой точке, `loss_delta` — абсолютное изменение MSE после шага, `reason` — строка `small_step_not_minimum`, если градиент по модулю больше 0.001, иначе `small_gradient`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01-gradient/two-params",
+    "promise": "Найдите спуском веса `w` и `b` модели `w * x + b` для данных из заготовки: старт 0, `lr = 0.02`, 3000 шагов. Сохраните `w`, `b` (2 знака) и `exact` — решение `np.polyfit(x, y, 1)` (тоже 2 знака). В `close_enough` — `True`, если спуск отличается от точного решения меньше чем на 0.05 по обоим параметрам.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01-gradient/mae-gd",
+    "promise": "Обучите ту же модель `w * x + b` спуском по **средней абсолютной ошибке** (MAE). Её «производная» по w — mean(sign(ошибка) · x), по b — mean(sign(ошибка)), где `np.sign` даёт −1, 0 или 1. Данные — из заготовки, в них есть выброс. Старт 0, `lr = 0.05`, 5000 шагов. Сохраните `w_mae`, `b_mae` (2 знака) и для сравнения `w_mse` — наклон `np.polyfit(x, y, 1)[0]` (2 знака). Какой наклон ближе к 7 (настоящему наклону без выброса)? Сохраните `robust` — `\"MAE\"` или `\"MSE\"`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01b-numeric/ops-hand",
+    "promise": "В таблице 1000 строк и 10 столбцов (вместе со столбцом единиц), спуску нужно 100 шагов. Посчитайте по формулам урока, сколько умножений потребуется:\n\n- `normal_ops` — нормальному уравнению ($n \\cdot d^2 + d^3$);\n- `gd_ops` — спуску ($2 \\cdot n \\cdot d \\cdot k$);\n- `cheaper` — `\"формула\"` или `\"спуск\"`, смотря что дешевле;\n- `steps_equiv` — сколько целых шагов спуска стоят столько же, сколько одна формула: `normal_ops // (2 * n * d)`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01b-numeric/ops-count",
+    "promise": "Напишите две функции подсчёта умножений: `ops_normal(n, d)` — нормальное уравнение ($n \\cdot d^2 + d^3$) и `ops_gd(n, d, steps)` — спуск ($2 \\cdot n \\cdot d \\cdot steps$). Для трёх таблиц из заготовки и 500 шагов соберите DataFrame `cost`: индекс — название таблицы, столбцы `normal`, `gd` и `cheaper` (`\"формула\"` или `\"спуск\"`). Затем сохраните:\n\n- `ratio_text` — во сколько раз спуск дешевле формулы для текстов отзывов (`int`);\n- `mem_gb` — сколько гигабайт займёт $X^\\top X$ для текстов, если одно число — 8 байт (1 ГБ = 10⁹ байт);\n- `d_break` — при $n = 100\\,000$ и 500 шагах наименьшее $d$ от 1 до 5000, при котором формула становится дороже спуска.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01b-numeric/bisect-steps",
+    "promise": "Деление пополам каждый шаг вдвое укорачивает отрезок. Не запуская сам поиск, посчитайте:\n\n- `len_after_5` — длину отрезка `[0, 100]` после 5 делений;\n- `steps_100` — сколько делений нужно, чтобы отрезок `[0, 100]` стал не длиннее 0.01;\n- `steps_300` — то же для отрезка `[0, 300]` и допуска 0.01 (как в примере с обещанием времени).\n\nЧисло шагов можно найти циклом «пока длина больше допуска — делим» или формулой $\\lceil \\log_2(\\text{длина} / \\text{допуск}) \\rceil$ — в Python `math.ceil(math.log2(...))`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01b-numeric/bisect",
+    "promise": "Напишите функцию `bisect(f, lo, hi, tol=1e-6)`: она ищет ноль функции `f` на отрезке `[lo, hi]`, где у `f(lo)` и `f(hi)` разные знаки, и возвращает пару `(x, steps)`: середину последнего отрезка и число сделанных делений. С её помощью найдите:\n\n- `root3` — кубический корень из 2: ноль `x**3 - 2` на `[0, 2]` (6 знаков) и `steps3` — сколько шагов понадобилось;\n- `w_min` — дно ямы для данных из заготовки: ноль производной `grad(w)` на `[0, 30]` (3 знака). Сравните с точным `exact = (x * y).sum() / (x ** 2).sum()` (тоже 3 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01b-numeric/promise-levels",
+    "promise": "Директор спрашивает: насколько дольше придётся обещать, если опаздывать не в 10 %, а в 5 % доставок? А если смириться с 20 %? Для каждого уровня опозданий из `levels` найдите делением пополам обещание в минутах: ноль функции «доля доставок дольше $t$ − уровень» на `[0, 300]` с `tol=0.01`, результат округлите через `round`. Функция `bisect` из урока уже есть. Сохраните:\n\n- `promise` — словарь `{уровень: обещание}` (`int`);\n- `late` — словарь `{уровень: доля опозданий при этом обещании}` (3 знака);\n- `extra_for_5` — на сколько минут обещание при 5 % дольше, чем при 10 %.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible bisect-and-round procedure versus checker first feasible integer deserves transfer inspection; original data are integer-valued.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/01b-numeric/promise-time",
+    "promise": "Сейчас «Зерно» обещает одно и то же время всем курьерам, хотя пешие медленнее. Для каждого типа курьера (`авто`, `вело`, `пеший`) найдите делением пополам наименьшее целое обещание (в минутах), при котором опаздывает не больше 10 % доставок этого типа. Используйте функцию `bisect` из заготовки на отрезке `[0, 300]` с `tol=0.01` и округлите результат через `round`. Сохраните словари с ключами-типами:\n\n- `promise` — найденное обещание (`int`);\n- `late_at_promise` — доля опозданий при этом обещании (3 знака);\n- `q90` — 90-й процентиль времени `np.quantile(..., 0.9)` для сравнения.\n\nВ `slowest` сохраните тип курьера с самым долгим обещанием.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02-gd-many/grad-vec",
+    "promise": "Для маленькой таблицы `X1` (уже со столбцом единиц) и весов `w` посчитайте градиент MSE формулой `2 / n * X1.T @ (X1 @ w - y)` и сохраните его в `g`. В `direction` сохраните список: для каждого веса `\"вверх\"`, если вес надо увеличивать (градиент отрицательный), иначе `\"вниз\"`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02-gd-many/one-step",
+    "promise": "Три доставки, один признак и столбец единиц: `X1 = [[1, 1], [1, 2], [1, 3]]`, ответы `y = [3, 5, 7]`, стартовые веса `w = [0, 0]`. Посчитайте градиент MSE `g = 2 / n * X1.T @ (X1 @ w - y)` и веса после одного шага `w_new = w - lr * g` при `lr = 0.1`. Сохраните также `mse_before` и `mse_after` — MSE до и после шага.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02-gd-many/p-batch",
+    "promise": "Соберите код, который перемешивает номера 10 строк и печатает размеры батчей по 4.\n\n\nДоступные строки для сборки с отступами:\nbatch = order[start:start + 4]\nsizes = []\nprint(sizes)\nimport numpy as np\norder = rng.permutation(10)\nfor start in range(0, 10, 4):\nrng = np.random.default_rng(0)\nsizes.append(len(batch))",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02-gd-many/gd-fit",
+    "promise": "Напишите функцию `gd(X1, y, lr, steps)`, возвращающую веса после `steps` шагов спуска из нулей. Обучите линейную модель на масштабированных признаках `distance_km`, `items`, `walk` (`Xs` уже в заготовке) со столбцом единиц: `lr = 0.1`, 200 шагов. Сохраните веса `w` и `mse` — MSE на тех же данных (2 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Static boundary: gd function called once and checked only returned vector length, though w and mse independently recomputed.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02-gd-many/max-lr",
+    "promise": "Для масштабированных признаков (как в прошлой задаче, со столбцом единиц) найдите среди шагов `[0.1, 0.3, 0.5, 0.7, 0.9, 1.1]` самый большой, при котором после 100 шагов MSE меньше 61. Сохраните словарь `res` `{шаг: MSE после 100 шагов}` (для взорвавшихся значений будет `inf` или `nan` — это нормально) и `best_lr`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02-gd-many/minibatch",
+    "promise": "Обучите модель стохастическим спуском: батчи по 64 строки, шаг 0.05, 3 эпохи, генератор `np.random.default_rng(1)`, порядок строк перемешивается в начале каждой эпохи (`rng.permutation`). Сохраните список `epoch_mse` — MSE на всех данных после каждой эпохи (3 числа) и `steps` — сколько всего шагов (обновлений весов) было сделано.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02-gd-many/to-goal",
+    "promise": "Посчитайте, за сколько шагов полного (не стохастического) спуска MSE на доставках с четырьмя признаками (`distance_km`, `items`, `walk`, `amount`; таблицы `X`, `Xs` и ответ `y` уже есть в заготовке) опустится ниже 61. Напишите `steps_to(A, lr, goal=61, max_steps=20000)` — номер первого шага, после которого MSE < goal, или `None`, если не дошли. Сохраните `scaled` — словарь `{lr: шаги}` для масштабированных признаков и `lr` из `[0.1, 0.5]`, и `raw` — то же для исходных признаков и `lr` из `[1e-6, 2e-6]`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02-gd-many/decay",
+    "promise": "SGD с постоянным шагом «дрожит» вокруг минимума. Сравните постоянный шаг 0.05 и уменьшающийся `lr_t = 0.05 / (1 + t / 200)`, где t — номер шага с начала обучения (с 0). Признаки — масштабированные `distance_km`, `items`, `walk` (заготовка: `X1` уже со столбцом единиц), батч 32, 20 эпох, порядок строк — `rng = np.random.default_rng(0)` (свой генератор для каждого варианта). После каждой эпохи запишите MSE на всех данных. Сохраните `last5_const`, `last5_decay` — MSE последних пяти эпох (списки, 3 знака) и `jitter` — словарь `{\"const\": …, \"decay\": …}` с размахом (max − min) этих пяти значений (3 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Gap: zip comparisons lack length=5 assertions; empty/truncated lists can pass with valid jitter (C31).",
+    "execution_coverage": "targeted probe"
+  },
+  {
+    "task": "ch10/02-gd-many/sgd-sklearn",
+    "promise": "Сравните `make_pipeline(StandardScaler(), SGDRegressor(random_state=r))` для `r` в `[0, 1, 2, 3, 4]` на доставках (признаки `distance_km`, `items`, `walk`; цель `actual_min`). Сохраните список `maes` — MAE на тех же данных для каждого `r` (3 знака), `spread` — разницу между наибольшей и наименьшей (3 знака) и `mae_exact` — MAE `LinearRegression` (3 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02b-optimizers/momentum-hand",
+    "promise": "Склон с постоянным градиентом `g = -1`, шаг `lr = 0.2`, `beta = 0.5`, старт `v = 0`, `w = 0`. Сделайте три шага с инерцией по правилу урока (v ← β·v + g, w ← w − lr·v) и сохраните:\n\n- `ws` — список весов после каждого шага (3 числа, 4 знака);\n- `plain_step` — длину шага обычного спуска без инерции: `lr * abs(g)`;\n- `limit_step` — к какой длине стремится шаг с инерцией: `lr * abs(g) / (1 - beta)`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02b-optimizers/momentum",
+    "promise": "Проверим инерцию на модели «минуты = w·км + b» с пяти доставок урока «Градиентный спуск: шаг за шагом к минимуму» — той самой, где свободный член «тянулся» медленно. Правило шага — из раздела выше: v ← β·v + градиент, w ← w − lr·v, отдельно для `w` и для `b`. Запустите 3000 шагов с `lr = 0.02` и β из `[0, 0.5, 0.9]` (β = 0 — обычный спуск). Для каждого β найдите номер первого шага, после которого MSE отличается от минимально возможной `best_mse` (она уже посчитана в заготовке по точному решению `np.polyfit`) меньше чем на 0.01: `steps_by_beta` — словарь `{β: шаг}`. В `final_wb` — `(w, b)` при β = 0.9 после 3000 шагов (3 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02b-optimizers/adam-step",
+    "promise": "Напишите функцию `adam_step(w, g, m, s, t, lr=0.1, b1=0.9, b2=0.999, eps=1e-8)`: она делает один шаг Adam по формулам урока и возвращает тройку `(w, m, s)` — новые веса, сглаженный градиент и сглаженный квадрат градиента. `t` — номер шага, начиная с 1.\n\nНа трёх доставках из разбора первого шага Adam (заготовка: `X1`, `y`, старт `w = (0, 5)`) сделайте 3 шага Adam с `lr = 0.1`. Градиент на каждом шаге — `2 / n * X1.T @ (X1 @ w - y)`. Сохраните:\n\n- `history` — список весов после каждого шага (3 массива по 2 числа, округлите до 4 знаков);\n- `first_step` — сдвиг весов на первом шаге, `w` после шага минус `w` до (4 знака);\n- `raw_first` — каким был бы первый сдвиг **без** поправки: `-lr * m / (np.sqrt(s) + eps)` с неисправленными `m` и `s` после первого шага (4 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02b-optimizers/adam-lr",
+    "promise": "Adam прощает немасштабированные признаки, но не любой шаг. На доставках без масштаба (заготовка: `X1` со столбцом единиц и суммой заказа в рублях, `y`) запустите Adam по 2000 шагов из нулевых весов с каждым `lr` из `[0.005, 0.01, 0.05, 0.2, 1.0]`. Функция одного шага `adam_step` уже есть — та же, что в задаче «Шаг Adam руками». Сохраните:\n\n- `mse_by_lr` — словарь `{lr: MSE после 2000 шагов}` (1 знак);\n- `good` — список `lr` (по возрастанию), при которых MSE меньше 61 (минимум на этих данных — 60.0).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02b-optimizers/decay",
+    "promise": "Затухание весов из раздела про L2-штраф: на каждом шаге вес умножается на $1 - 2\\eta\\lambda$. Пусть градиент по весу равен нулю (признак ничего не объясняет), $w = 10$, $\\eta = 0.1$, $\\lambda = 0.5$. Сохраните:\n\n- `factor` — множитель $1 - 2\\eta\\lambda$;\n- `w5` — вес после 5 таких шагов (4 знака);\n- `w5_small` — вес после 5 шагов при $\\lambda = 0.05$ (4 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/02b-optimizers/l2-grad",
+    "promise": "Напишите функцию `gd_l2(X1, y, lam, lr=0.1, steps=1000)`: спуск по MSE со штрафом $\\lambda \\sum w_j^2$, где свободный член `w[0]` не штрафуется. Признаки в заготовке уже стандартизированы, первый столбец `X1` — единицы. Для `lam` из `[0, 0.1, 1.0]` сохраните словари с ключами-λ:\n\n- `weights` — веса после спуска (массивы, свободный член первым);\n- `norms` — длина вектора весов **без** свободного члена, `np.linalg.norm(w[1:])` (3 знака);\n- `mse_train` — MSE на этих данных (2 знака).\n\nЕщё сохраните `alpha_ridge` — какой `alpha` у `Ridge` соответствует `lam = 1.0` на этих данных, и `same_as_ridge` — совпадают ли веса спуска при `lam = 1.0` с `Ridge(alpha=alpha_ridge)` (`np.allclose(..., atol=1e-6)`).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/03-boosting/toy-boost",
+    "promise": "Повторите пример с четырьмя доставками кодом, но с шагом η = 0.3 и тремя шагами. «Пень» здесь — просто средний остаток в каждой группе по признаку `walk`. Сохраните `history` — список прогнозов после каждого шага (каждый прогноз — список из 4 чисел, 2 знака), начиная со старта (всего 4 списка), и `gap_left` — сколько минут ещё не хватает группе пеших до их среднего (40) после трёх шагов (2 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/03-boosting/residuals",
+    "promise": "Прогноз `f` — пока просто среднее `y`. Сохраните остатки `r = y - f` и `mae0` — среднюю абсолютную ошибку такого прогноза.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/03-boosting/one-step",
+    "promise": "Сделайте один шаг бустинга руками: «дерево» уже обучено и предсказывает поправки `tree_pred`. Обновите прогноз `f` с шагом 0.1 и сохраните новый прогноз `f1` и его MAE `mae1`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/03-boosting/p-boost",
+    "promise": "Соберите цикл бустинга из пяти шагов.\n\n\nДоступные строки для сборки с отступами:\ntree = DecisionTreeRegressor(max_depth=1).fit(X, y - f)\nimport numpy as np\nf = np.full(len(y), y.mean())\nprint(round(float(np.abs(y - f).mean()), 2))\nf = f + 0.5 * tree.predict(X)\ny = np.array([10.0, 12.0, 20.0, 22.0, 40.0, 42.0])\nfor _ in range(5):\nfrom sklearn.tree import DecisionTreeRegressor\nX = np.array([[1], [2], [3], [4], [5], [6]])",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/03-boosting/manual-boost",
+    "promise": "Напишите функцию `boost(X_tr, y_tr, X_te, n, lr, depth)`, которая делает `n` шагов бустинга с деревьями `DecisionTreeRegressor(max_depth=depth, random_state=0)` и возвращает прогноз для `X_te`. Посчитайте MAE на тесте для `(n=30, lr=0.1, depth=3)` и `(n=30, lr=0.3, depth=3)` и сохраните `mae_01`, `mae_03` (2 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/03-boosting/vs-sklearn",
+    "promise": "Сравните ваш `boost` (50 деревьев, шаг 0.1, глубина 3) с `GradientBoostingRegressor(n_estimators=50, learning_rate=0.1, max_depth=3, random_state=0)`. Сохраните `mae_mine`, `mae_sk` (2 знака) и `corr` — корреляцию прогнозов двух моделей на тесте (4 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/03-boosting/depth-one",
+    "promise": "Сравните бустинг из «пней» (деревьев глубины 1) и из деревьев глубины 4: `GradientBoostingRegressor(n_estimators=200, learning_rate=0.1, max_depth=d, random_state=0)` для `d` = 1 и 4. Сохраните `mae_stumps`, `mae_deep` (2 знака) и `winner` — `\"пни\"` или `\"глубина 4\"`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/03-boosting/lr-trees",
+    "promise": "Проверьте правило «уменьшили шаг вдвое — деревьев нужно вдвое больше». Обучите `GradientBoostingRegressor(max_depth=3, random_state=0)` на доставках (данные и разбиение — в заготовке) для пар `(learning_rate, n_estimators)`: `(0.3, 100)`, `(0.1, 300)`, `(0.05, 600)` и `(0.02, 300)`. Сохраните `mae` — словарь `{\"0.3x100\": …, \"0.1x300\": …, \"0.05x600\": …, \"0.02x300\": …}` (MAE на тесте, 3 знака) и `undertrained` — ключ пары, которая заметно хуже остальных (больше чем на 0.1 минуты от лучшей).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/03-boosting/mae-boost",
+    "promise": "Сделайте ручной бустинг по **MAE**: «остаток» для MAE — знак ошибки `np.sign(y - f)`, а не сама ошибка. Старт — **медиана** `y_train`, 100 деревьев глубины 3 (`random_state=0`), шаг 1.0 — прогноз дерева (средний знак в листе, от −1 до 1) прибавляется целиком. Сохраните `mae_l1` — MAE на тесте (2 знака) и `mae_l2` — MAE бустинга по MSE из `GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=0)` (2 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/04-tuning/staged",
+    "promise": "Обучите `GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=0)` и с помощью `staged_predict` соберите список `curve` — MAE на тесте после каждого дерева (100 чисел). Сохраните `best_n` — число деревьев с наименьшей ошибкой.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/04-tuning/shrink",
+    "promise": "Упрощённый бустинг на одном числе: ответ `y = 10`, стартовый прогноз 0, и каждое новое дерево **точно** угадывает текущий остаток, но добавляется с весом `lr = 0.1`. Тогда после каждого дерева прогноз растёт на 10 % оставшегося остатка. Посчитайте циклом список `preds` — прогнозы после 1, 2, …, 40 деревьев — и `n_needed` — первое число деревьев, при котором прогноз не меньше 9.5.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/04-tuning/p-early",
+    "promise": "Соберите обучение бустинга с ранней остановкой и печать числа построенных деревьев.\n\n\nДоступные строки для сборки с отступами:\ngb.fit(X, y)\ny = X[:, 0] * 3 + rng.normal(size=500)\nX = rng.normal(size=(500, 3))\nprint(gb.n_estimators_ < 1000)\nrng = np.random.default_rng(0)\nfrom sklearn.ensemble import GradientBoostingRegressor\nimport numpy as np\ngb = GradientBoostingRegressor(n_estimators=1000, n_iter_no_change=10, validation_fraction=0.2, random_state=0)",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/04-tuning/train-vs-test",
+    "promise": "Обучите `GradientBoostingRegressor(n_estimators=400, learning_rate=0.3, max_depth=3, random_state=0)`. По `staged_predict` соберите MAE на обучении (`tr`) и на тесте (`te`) — по 400 чисел. Сохраните `best_n` (минимум на тесте), `te_best`, `te_last` (MAE на тесте при лучшем числе деревьев и при 400, 3 знака) и `tr_last` (MAE на обучении при 400, 3 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Static gap: requested full tr and te arrays not checked, only selected scalars; unexecuted counterexample.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/04-tuning/early-stop",
+    "promise": "Найдите число деревьев честно: отделите от обучающих данных валидацию (`train_test_split(X_train, y_train, test_size=0.2, random_state=0)`), обучите бустинг на 600 деревьев (шаг 0.1, глубина 3, `random_state=0`) на оставшейся части, найдите по `staged_predict` лучшее число деревьев на валидации `best_n`, затем обучите модель с `n_estimators=best_n` на **всех** обучающих данных и сохраните `test_mae` (2 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/04-tuning/subsample",
+    "promise": "Параметр `subsample` строит каждое дерево на случайной доле строк — как бутстрэп в лесу. Проверьте на доставках: `GradientBoostingRegressor(n_estimators=300, learning_rate=0.1, max_depth=3, random_state=0)` с `subsample` из `[1.0, 0.7, 0.5]`. Сохраните `mae_by_sub` — словарь `{subsample: MAE на тесте}` (3 знака) и `helps` — `True`, если хоть одно значение меньше 1.0 улучшило MAE больше чем на 0.01.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/04-tuning/native-cat",
+    "promise": "Повторите разбор урока: `HistGradientBoostingRegressor(max_iter=300, max_depth=3, categorical_features=\"from_dtype\", random_state=0)` на доставках в двух вариантах — признаки через `pd.get_dummies` и признаки с курьером, погодой и кофейней как `category`. Разбиение одинаковое: `train_test_split(..., test_size=0.25, random_state=42)`. Сохраните `res` — словарь `{\"dummies\": (число столбцов, MAE), \"category\": (число столбцов, MAE)}` (MAE — 3 знака) и `n_categories` — общее число разных значений в трёх категориальных столбцах.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/04-tuning/hgb-nan",
+    "promise": "На `guests_churn.csv` (признаки — `get_dummies` без `fillna`, `card_blocked` исключить) обучите `HistGradientBoostingClassifier(learning_rate=0.05, max_iter=300, max_depth=3, random_state=0)` и `RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0)` (лесу пропуски заполните нулём). Сохраните `auc_hgb`, `auc_rf` (3 знака) и `nan_in_train` — число пропусков в `X_train`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/04-tuning/grid-boost",
+    "promise": "Подберите для `HistGradientBoostingClassifier(max_iter=200, random_state=0)` на оттоке параметры по сетке `{\"learning_rate\": [0.05, 0.1], \"max_depth\": [2, 3, 5]}` через `GridSearchCV(..., cv=3, scoring=\"roc_auc\")` на обучающей части. Сохраните `best_params` (словарь), `cv_auc` — лучший средний AUC на кросс-валидации и `test_auc` — AUC лучшей модели на тесте (оба 3 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/05-project/look",
+    "promise": "Посчитайте среднюю выручку по формату и выходным (суббота и воскресенье) — таблицу `pivot` (строки — формат, столбцы — 0/1 «выходной», 1 знак). Сохраните `weekend_ratio` — для каждого формата отношение выручки в выходной к будней (Series, 2 знака), и `most_weekday` — формат, который сильнее всего зависит от будней (наименьшее отношение).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/05-project/split",
+    "promise": "Напишите функцию `prep(s)`, которая добавляет `weekday`, `month`, `weekend`, `day_n` (дней от фиксированной даты 2024-01-01) и возвращает таблицу признаков: `temp`, `rain`, `holiday`, `promo`, `weekday`, `month`, `weekend`, `day_n` плюс флаги `shop_id` и `format` (`pd.get_dummies(..., columns=[\"shop_id\", \"format\"], dtype=int)`). Сохраните схему категорий по истории до даты выпуска. Для ещё неизвестной погоды подставьте для каждого месяца среднюю температуру и долю дождливых дней из доступной истории. Одиночный день должен получить те же признаки, что и в полном пакете. Разделите данные по времени: `train` — даты до 2025-07-01, `test` — с этой даты. Сохраните `X`, маску `tr` (True для обучающих строк), `n_train`, `n_test`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Exact row/date masks and schema, history weather values and one-row prep tested; C34-C35 future invariance.",
+    "execution_coverage": "targeted probe"
+  },
+  {
+    "task": "ch10/05-project/baselines",
+    "promise": "Посчитайте на тесте MAE двух ориентиров:\n\n- `mae_lag7` — MAE недельного ориентира, замороженного на 1 июля. Для каждой пары «кофейня, день недели» найдите последнюю выручку, известную по 30 июня включительно. Эту сумму прогнозируйте для всех будущих дат той же кофейни с тем же днём недели;\n- `mae_lin` — `LinearRegression` на признаках `X` (обучение на `tr`).\n\nОбе MAE округлите до двух знаков (тыс. ₽). В `lin_better` сохраните результат сравнения `mae_lin < mae_lag7`. В прогнозах и для 8 июля, и для 30 декабря за основу берётся июньская история. Факты июля–декабря нужны только для расчёта ошибки уже готового прогноза.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Reference reconstructs history-only weekday values; future facts only evaluation targets; C36 transfer invariant.",
+    "execution_coverage": "targeted probe"
+  },
+  {
+    "task": "ch10/05-project/interactions",
+    "promise": "Помогите линейной модели: добавьте к `X` три признака-произведения — `bc_off` (бизнес-центр × (выходной или праздник)), `mall_off` (ТЦ × (выходной или праздник)) и `street_rain` (улица × дождь). Обучите `LinearRegression` и сохраните `mae_inter` (2 знака) и `gain` — на сколько тысяч рублей ошибка меньше, чем у простой линейной модели (2 знака).\n\nВ этой карточке отложенный период — апрель–июнь. Июль–декабрь понадобится в последнем сравнении.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/05-project/boosting",
+    "promise": "На исходных признаках `X` (без ручных взаимодействий) обучите `HistGradientBoostingRegressor(random_state=0)` и `RandomForestRegressor(n_estimators=100, min_samples_leaf=3, random_state=0)`. Сохраните `mae_hgb`, `mae_rf` (2 знака) и `best_model` — `\"бустинг\"`, `\"лес\"` или `\"линейная с взаимодействиями\"` (её ошибка — `mae_inter` в заготовке).\n\nВ этой карточке отложенный период — апрель–июнь. Июль–декабрь понадобится в последнем сравнении.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/05-project/tune",
+    "promise": "Подберите бустинг честно. Валидация — апрель–июнь 2025 (`val`: обучающие строки с датой от 2025-04-01), обучение для подбора — даты до 2025-04-01 (`fit`). Для каждой пары `learning_rate` в `[0.05, 0.1]` и `max_depth` в `[3, 6, None]` обучите `HistGradientBoostingRegressor(learning_rate=..., max_depth=..., max_iter=500, early_stopping=False, random_state=0)` на `fit`, по `staged_predict` найдите лучшее число итераций на `val` и его MAE. Сохраните DataFrame `grid` (столбцы `lr`, `depth`, `n_iter`, `val_mae`), лучшую строку — в `best` (Series), зафиксируйте выбранное число деревьев до открытия финального полугодия. В `val_mae` верните ошибку лучшей строки, округлённую до двух знаков. Осторожно: в DataFrame глубина `None` превращается в `NaN`, а `HistGradientBoostingRegressor(max_depth=nan)` падает с ошибкой. Переведите её обратно: `None if pd.isna(best[\"depth\"]) else int(best[\"depth\"])`.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Static gap: grid row values checked positionally but lr/depth keys not verified, best only n_iter; unexecuted counterexample.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/05-project/trend",
+    "promise": "Посмотрите на ошибки бустинга по умолчанию (`HistGradientBoostingRegressor(random_state=0)`) на апреле–июне по месяцам: средняя ошибка `факт − прогноз` больше нуля значит, что модель занижает прогноз. Сеть растёт, а деревья не умеют продолжать тренд за пределы обучающих данных: для всех дат после марта 2025 `day_n` «как самый поздний известный день».\n\nИсправим: оцените тренд линейной регрессией логарифма выручки на `day_n` по обучающим строкам, `trend = np.exp(модель.predict(s[[\"day_n\"]]))`. Обучите бустинг (`random_state=0`) на признаках **без** `day_n` с ответом `y / trend`, а прогноз умножьте обратно на `trend`. Сохраните векторы прогнозов до и после поправки как `p_before` и `p_after` в порядке валидационных строк. Сохраните `bias_by_month` — среднюю ошибку `факт − прогноз` бустинга по умолчанию по месяцам валидации (Series с индексом-номером месяца, 2 знака), `bias_before` и `bias_after` — среднюю ошибку `факт − прогноз` на всей валидации до и после (2 знака), `mae_after` (2 знака) и `growth` — годовой рост по тренду (`np.exp(коэффициент × 365)`, 3 знака).",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Visible outputs and checker compared; numeric contract consistent on baseline; no new defect established by static inspection.",
+    "execution_coverage": "static only; standard execution delegated to coordinator"
+  },
+  {
+    "task": "ch10/05-project/release-row",
+    "promise": "Утром **1 августа 2025** управляющая заказывает прогноз на пятницу **8 августа** для PRM-1. Касса и фактическая погода появляются по окончании дня. Архива погодных прогнозов нет. Это тренировочный выпуск, отдельный от основного проекта.\n\nВ апрельской валидации строка решения выглядит так: **выпуск 1 апреля → последние доступные касса и фактическая погода 31 марта → на будущую дату можно взять календарь и исторический сценарий погоды**. До просмотра августовских фактов запишите такую же строку для нового выпуска. Какую последнюю пятницу уже можно использовать? При использовании календарного ориентира фактическая погода 8 августа ему не нужна.\n\nНапишите функцию `baseline_at(sales, as_of, target, shop_id)`. Она получает таблицу с датами pandas и возвращает пару «дата источника, выручка в тыс. ₽» для последнего доступного такого же дня недели в этой кофейне. `as_of` — утро выпуска; факты самого дня ещё не поступили. Достаточно решения для случаев, когда в истории есть подходящий день. В заготовке доступна только история до выпуска. Проверка также передаст таблицу с более поздними строками и покажет, изменился ли уже выданный прогноз.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Two releases/shops, revised future cash and weather; exact date and value checked; C32-C33.",
+    "execution_coverage": "targeted probe"
+  },
+  {
+    "task": "ch10/05-project/compare",
+    "promise": "Операционному директору нужен разовый прогноз на 1 июля. Сначала разделите два этапа:\n\n| Этап | Дата выпуска | Обучение | Период оценки |\n|---|---|---|---|\n| Выбор процедуры | 1 апреля 2025 | до 1 апреля | апрель–июнь 2025 |\n| Финальный отчёт | 1 июля 2025 | до 1 июля | июль–декабрь 2025 |\n\nЕсли даты выпуска и наблюдения пока смешиваются, выполните [тренировку с одной строкой августовского прогноза](#task-release-row), затем вернитесь к этому календарю.\n\nВ заготовке пять процедур, включая бустинг с трендом. Для апрельского выпуска получите признаки через `prep(s, as_of=\"2025-04-01\")`: погода после даты выпуска известна только как сценарий. Обучите каждую процедуру на истории до апреля, на апреле–июне рассчитайте `val_rmse` с полной точностью и выберите `best` по минимуму. Затем переобучите все процедуры на истории до июля: таблица `X` уже подготовлена для июльского выпуска. Один раз оцените их на июле–декабре. Сохраните `table` с индексом по названию процедуры, отсортированную по `val_rmse`. Округляйте `val_rmse` только при печати.\n\nДля каждой строки сохраните `rmse` и `mae` финального периода в тыс. ₽ (2 знака). Финальное обучение выполните через `fit_s = timed_fit(name, model, X[tr], y[tr])`, пакетный прогноз — через `pred, predict_ms = timed_predict(name, model, X[~tr])`. Готовые функции сами вызывают модель и замеряют интервал непосредственно вокруг fit/predict: первая возвращает секунды, вторая — прогноз и миллисекунды. Сохраните возвращённые интервалы без округления. Апрельский выбор можно считать обычными fit/predict; замеры нужны для финального прохода.\n\nВ `gain_vs_linear` запишите, на сколько финальный RMSE выбранной процедуры ниже линейной модели (2 знака). В `nightly_ok` укажите, у всех ли финальное обучение заняло меньше минуты **по вашим замерам**. В блокноте библиотек вы отдельно измерите подбор числа деревьев и финальное обучение.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Explicit timer migration; numeric metrics and as-of validation recomputed; registered times compared. All priority dimensions executed in C01-C06,C09-C14,C21-C25.",
+    "execution_coverage": "targeted probe"
+  },
+  {
+    "task": "ch10/06-libraries/speed-table",
+    "promise": "Соберите в браузере такую же таблицу, как в блокноте с CatBoost и LightGBM, для трёх моделей sklearn на доставках. Модели и разбиение уже в заготовке. Для каждой модели вызовите `fit_s = timed_fit(name, model, X_tr, y_tr)`, затем `pred, predict_ms = timed_predict(name, model, X_te)`. Эти готовые функции сами вызывают fit/predict и измеряют интервал через `time.perf_counter()` непосредственно вокруг вызова: `fit_s` — секунды, `predict_ms` — миллисекунды. Сохраните возвращённые интервалы без округления; посчитайте RMSE на тесте (`rmse`, 3 знака). Сохраните DataFrame `table`: индекс — названия моделей из словаря `models`, столбцы `rmse`, `fit_s`, `predict_ms`, строки отсортированы по `rmse` от лучшей. Ещё сохраните `best` — название модели с наименьшей ошибкой и `fastest_fit` — название модели, которая обучилась быстрее всех.",
+    "basis": "Visible task before inspecting check",
+    "inspection": "Explicit timer migration; metrics recomputed; fastest from measured table; controlled reverse order C27.",
+    "execution_coverage": "targeted probe"
+  }
+]

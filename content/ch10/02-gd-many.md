@@ -721,6 +721,7 @@ assert all(close(a, b, 0.002) for a, b in zip(need('last5_const'), c)), f'last5_
 assert all(close(a, b, 0.002) for a, b in zip(need('last5_decay'), dd)), f'last5_decay = {need("last5_decay")}, а нужно {dd}.'
 j = need('jitter', dict)
 assert close(j['const'], round(max(c) - min(c), 3), 0.003) and close(j['decay'], round(max(dd) - min(dd), 3), 0.003), f'jitter = {j}.'
+assert len(need('last5_const')) == 5 and len(need('last5_decay')) == 5, 'last5_const и last5_decay должны содержать ровно пять MSE — за последние пять эпох.'
 ```
 
 ### hint
