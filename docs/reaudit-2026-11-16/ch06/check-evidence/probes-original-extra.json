@@ -1,0 +1,110 @@
+[
+  {
+    "id": "C43",
+    "key": "08b-groups-speed/speed-table",
+    "label": "author actual measured durations positive control",
+    "expected": true,
+    "code": "import time\nimport pandas as pd\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.linear_model import LogisticRegression\n\nmodels = {\n    \"дерево\": DecisionTreeClassifier(max_depth=3, random_state=0),\n    \"лес\": RandomForestClassifier(n_estimators=100, random_state=0),\n    \"логрегрессия\": LogisticRegression(max_iter=2000),\n}\nrows = []\nfor name, model in models.items():\n    t0 = time.perf_counter()\n    model.fit(X_train, y_train)\n    t1 = time.perf_counter()\n    pred = model.predict(X_test)\n    t2 = time.perf_counter()\n    rows.append({\"модель\": name, \"accuracy\": round((pred == y_test).mean(), 3),\n                 \"fit_s\": t1 - t0, \"predict_s\": t2 - t1})\nspeed = pd.DataFrame(rows).set_index(\"модель\")\nfit_ratio = speed.loc[\"лес\", \"fit_s\"] / speed.loc[\"дерево\", \"fit_s\"]\nprint(f\"лес учится в {fit_ratio:.0f} раз дольше\")\nspeed",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C44",
+    "key": "08b-groups-speed/speed-table",
+    "label": "alternate model iteration order measured honestly",
+    "expected": true,
+    "code": "import time\nimport pandas as pd\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.linear_model import LogisticRegression\n\nmodels = {\n    \"дерево\": DecisionTreeClassifier(max_depth=3, random_state=0),\n    \"лес\": RandomForestClassifier(n_estimators=100, random_state=0),\n    \"логрегрессия\": LogisticRegression(max_iter=2000),\n}\nrows = []\nfor name, model in reversed(list(models.items())):\n    t0 = time.perf_counter()\n    model.fit(X_train, y_train)\n    t1 = time.perf_counter()\n    pred = model.predict(X_test)\n    t2 = time.perf_counter()\n    rows.append({\"модель\": name, \"accuracy\": round((pred == y_test).mean(), 3),\n                 \"fit_s\": t1 - t0, \"predict_s\": t2 - t1})\nspeed = pd.DataFrame(rows).set_index(\"модель\")\nfit_ratio = speed.loc[\"лес\", \"fit_s\"] / speed.loc[\"дерево\", \"fit_s\"]\nprint(f\"лес учится в {fit_ratio:.0f} раз дольше\")\nspeed",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C45",
+    "key": "03-tree/leaf-size",
+    "label": "final label perturbation must not affect chosen parameter",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ncols = [\"distance_km\", \"items\", \"promised_min\", \"hour\"]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[cols], y, test_size=0.25, random_state=42)\ny_test = ~y_test\ntest_by_leaf = {}\nfor k in [1, 5, 20, 50, 100]:\n    model = DecisionTreeClassifier(min_samples_leaf=k, random_state=0).fit(X_train, y_train)\n    test_by_leaf[k] = round(model.score(X_test, y_test), 3)\nbest_leaf = max(test_by_leaf, key=test_by_leaf.get)",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C46",
+    "key": "06-logistic/threshold",
+    "label": "final label perturbation must not affect chosen parameter",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\ny_test = ~y_test\np = LogisticRegression(max_iter=2000).fit(X_train, y_train).predict_proba(X_test)[:, 1]\nalarm = p >= 0.3\nalarms = round(alarm.mean(), 3)\ncaught = round(y_test[alarm].sum() / y_test.sum(), 3)\nhit = round(y_test[alarm].mean(), 3)\n\nimport numpy as np\nfor t in np.arange(0.10, 0.90, 0.05).round(2):\n    if y_test[p >= t].mean() >= 0.8:\n        t80 = t\n        caught80 = round(y_test[p >= t].sum() / y_test.sum(), 3)\n        break",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C47",
+    "key": "07-regression/depth",
+    "label": "final label perturbation must not affect chosen parameter",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\ny_test = y_test + 1000\nmae_by_depth = {}\nfor depth in [2, 5, None]:\n    tree = DecisionTreeRegressor(max_depth=depth, random_state=0).fit(X_train, y_train)\n    mae_by_depth[depth] = round(mean_absolute_error(y_test, tree.predict(X_test)), 2)\nbest_depth = min(mae_by_depth, key=mae_by_depth.get)",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C48",
+    "key": "09-project/leak",
+    "label": "demonstration diagnostic split excludes final IDs",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier\ncols = [\"tenure_months\", \"app\", \"visits_90d\", \"days_since_last\", \"avg_check\",\n        \"delivery_share\", \"promo_used\", \"complaints\", \"card_blocked\"]\nXa, Xb, ya, yb = train_test_split(g[cols], g[\"churned\"], test_size=0.25, random_state=42, stratify=g[\"churned\"])\ntree = DecisionTreeClassifier(max_depth=3, random_state=0).fit(Xa, ya)\nacc_all = round(tree.score(Xb, yb), 3)\ntop_feature = pd.Series(tree.feature_importances_, index=cols).idxmax()\nclean = [c for c in cols if c != top_feature]\nacc_clean = round(DecisionTreeClassifier(max_depth=3, random_state=0).fit(Xa[clean], ya).score(Xb[clean], yb), 3)\nblocked_churn = round(g.loc[g[\"card_blocked\"] == 1, \"churned\"].mean(), 3)\nprint(acc_all, top_feature, acc_clean, blocked_churn)",
+    "setup_append": "",
+    "diagnostic": "{\"demo_ids\": g.index.tolist(), \"final_ids\": _ref()[4].index.tolist(), \"overlap\": sorted(set(g.index)&set(_ref()[4].index)), \"demo_train_ids\": Xa.index.tolist(), \"demo_valid_ids\": Xb.index.tolist()}"
+  },
+  {
+    "id": "C49",
+    "key": "04-categorical/shop-rate",
+    "label": "leave-one-out is distinct from explicit training-mean contract",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[[\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.assign(shop_rate=X_train[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nX_test = X_test.assign(shop_rate=X_test[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\nn = X_train.groupby(\"shop_id\")[\"shop_id\"].transform(\"size\")\nX_train[\"shop_rate\"] = ((X_train[\"shop_rate\"]*n-y_train.astype(int))/(n-1)).fillna(y_train.mean())",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C50",
+    "key": "09-project/top",
+    "label": "winner with consistent alphabetic input order",
+    "expected": true,
+    "code": "X_train=X_train.sort_index(axis=1)\nX_test=X_test.reindex(columns=X_train.columns)\nmodel.fit(X_train,y_train)\nimport pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(240).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C51",
+    "key": "09-project/top",
+    "label": "40 candidate working pool, four exact IDs and scores",
+    "expected": true,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": "{\"current_risk\": current_risk.to_dict(), \"current_ids\": current_ids, \"k\": int(len(current)*.1), \"historical_ids\": top_ids}",
+    "file_variants": {
+      "guests_current.csv": "guests-current-40.csv"
+    }
+  },
+  {
+    "id": "C52",
+    "key": "09-project/top",
+    "label": "40 tied predictions choose four smaller guest IDs",
+    "expected": true,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": "{\"current_risk\": current_risk.to_dict(), \"current_ids\": current_ids, \"k\": int(len(current)*.1), \"historical_ids\": top_ids}",
+    "file_variants": {
+      "guests_current.csv": "guests-current-40-ties.csv"
+    }
+  },
+  {
+    "id": "C53",
+    "key": "09-project/top",
+    "label": "ties follow incoming row order instead of guest ID",
+    "expected": false,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": "{\"current_risk\": current_risk.to_dict(), \"current_ids\": current_ids, \"k\": int(len(current)*.1), \"historical_ids\": top_ids}",
+    "file_variants": {
+      "guests_current.csv": "guests-current-40-ties.csv"
+    }
+  }
+]

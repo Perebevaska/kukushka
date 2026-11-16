@@ -62,7 +62,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random
 p = LogisticRegression(max_iter=2000).fit(X_train, y_train).predict_proba(X_test)[:, 1]
 
 risk = pd.DataFrame({"p": p, "late": y_test})
-risk["group"] = pd.cut(risk["p"], [0, 0.2, 0.4, 0.6, 0.8, 1])
+risk["group"] = pd.cut(risk["p"], [0, 0.2, 0.4, 0.6, 0.8, 1], include_lowest=True)
 cal = risk.groupby("group", observed=True).agg(pred=("p", "mean"), fact=("late", "mean"), n=("p", "size"))
 print(cal.round(2))
 
@@ -402,17 +402,18 @@ ref = r.groupby(g, observed=True).agg(pred=('p', 'mean'), fact=('late', 'mean'),
 t = need('cal', _pd.DataFrame)
 assert {'pred', 'fact', 'n'} <= set(t.columns), f'Столбцы cal: {list(t.columns)}. Нужны pred, fact и n.'
 assert len(t) == len(ref), f'В cal {len(t)} строк, а групп с доставками {len(ref)}. Границы: [0, 0.25, 0.5, 0.75, 1]; пустые группы убирает observed=True.'
+assert t.index.is_unique and set(t.index) == set(ref.index), 'Индекс cal — интервалы pd.cut с заданными границами, включая 0.'
+t = t.reindex(ref.index)
 assert [int(x) for x in t['n']] == [int(x) for x in ref['n']], f'Размеры групп n = {list(t["n"])}, а нужно {list(ref["n"])}.'
 assert all(close(x, z, 1e-3) for x, z in zip(t['pred'], ref['pred'])), 'pred не совпадает: это средняя вероятность в группе.'
 assert all(close(x, z, 1e-3) for x, z in zip(t['fact'], ref['fact'])), 'fact не совпадает: это доля опозданий (среднее late) в группе.'
 wv = round((ref['pred'] - ref['fact']).abs().max(), 3)
 assert close(need('worst'), wv), f'worst = {need("worst")}, а нужно {wv}. Возьмите модуль разницы .abs() и максимум.'
 assert int(t['n'].sum()) == len(w), 'Все вероятности, включая 0 и 1, должны попасть в корзины.'
-
 ```
 
 ### hint
-Соберите `risk = pd.DataFrame({"p": p, "late": y_test})` и добавьте столбец группы: `risk["group"] = pd.cut(risk["p"], [0, 0.25, 0.5, 0.75, 1])`.
+Соберите `risk = pd.DataFrame({"p": p, "late": y_test})` и добавьте столбец группы: `risk["group"] = pd.cut(risk["p"], [0, 0.25, 0.5, 0.75, 1], include_lowest=True)`.
 
 ### hint
 Именованная агрегация: `groupby("group", observed=True).agg(pred=("p", "mean"), fact=("late", "mean"), n=("p", "size"))`.

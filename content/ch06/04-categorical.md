@@ -773,12 +773,35 @@ _aligned(xa, a, 'X_train')
 _aligned(xb, b, 'X_test')
 w = round(((r - allr).abs().max()) * 100, 2)
 assert close(need('diff'), w), f'diff = {need("diff")}, а ожидалось {w}.'
-_new = ok.copy()
-_new.loc[b.index[0], 'shop_id'] = 'NEW-SHOP'
-_replay = rerun_with(ok=_new)
-_new_test = b.copy()
-_new_test.loc[b.index[0], 'shop_id'] = 'NEW-SHOP'
-_aligned(_replay['X_test'], _new_test, 'X_test с новой кофейней')
+
+for _name,_want in [('y_train',ya),('y_test',yb)]:
+    _got=need(_name,_pd.Series)
+    assert _got.index.is_unique and set(_got.index)==set(_want.index), f'{_name}: сохраните исходные ID доставок.'
+    assert (_got.reindex(_want.index)==_want).all(), f'{_name}: метки должны соответствовать доставкам по исходному ID.'
+from pathlib import Path as _Path
+_path=_Path('deliveries.csv')
+_original=_path.read_bytes()
+try:
+    _probe=d.copy()
+    _probe.loc[a.index[0],'shop_id']='SINGLE-TRAIN'
+    _probe.loc[b.index[0],'shop_id']='NEW-SHOP'
+    _probe.to_csv(_path,index=False)
+    _replay=rerun_with()
+finally:
+    _path.write_bytes(_original)
+_probe_ok=_probe[_probe['actual_min'].between(1,299)]
+_probe_y=_probe_ok['actual_min']>_probe_ok['promised_min']
+_pa,_pb,_pya,_pyb=_tts(_probe_ok[['shop_id']],_probe_y,test_size=.25,random_state=42)
+r=_pya.groupby(_pa['shop_id']).mean()
+ya=_pya
+_ps=_replay.get('shop_rate')
+assert isinstance(_ps,_pd.Series) and _ps.index.is_unique and set(_ps.index)==set(r.index), 'shop_rate: не теряйте кофейню с единственной обучающей строкой.'
+assert all(close(_ps[k],r[k],1e-9) for k in r.index), 'На новом файле доли считаются только по train, включая одиночную обучающую строку.'
+_aligned(_replay['X_train'],_pa,'X_train с одиночной строкой')
+_aligned(_replay['X_test'],_pb,'X_test с новой кофейней')
+for _name,_want in [('y_train',_pya),('y_test',_pyb)]:
+    _got=_replay[_name]
+    assert isinstance(_got,_pd.Series) and _got.index.is_unique and set(_got.index)==set(_want.index) and (_got.reindex(_want.index)==_want).all(), f'{_name}: не меняйте привязку меток к ID на новом файле.'
 ```
 
 ### hint

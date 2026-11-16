@@ -647,7 +647,10 @@ plot_tree(model, feature_names=cols, class_names=["вовремя", "опозд�
 
 ## task: leaf-size | Минимум в листе | base
 
-Обучите деревья **без** ограничения глубины, но с `min_samples_leaf` из списка `[1, 5, 20, 50, 100]`. Соберите словарь `test_by_leaf`: ключ — значение `min_samples_leaf`, значение — доля правильных ответов на тесте (3 знака). В `best_leaf` сохраните значение `min_samples_leaf` с лучшей долей.
+Обучите деревья **без** ограничения глубины, но с `min_samples_leaf` из списка `[1, 5, 20, 50, 100]`. Соберите словарь `validation_by_leaf`: ключ — значение `min_samples_leaf`, значение — доля правильных ответов на валидации (3 знака). В `best_leaf` сохраните значение `min_samples_leaf` с лучшей долей.
+
+
+Сначала отложите финальный test (25 %, `random_state=42`). Оставшиеся данные разделите на train и validation (25 % остатка, `random_state=43`). Подбирайте минимум только по validation; метки и признаки финального test в переборе не используются. Это тот же порядок, что в задаче «Подобрать глубину».
 
 ### starter
 ```python
@@ -659,8 +662,9 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["hour"] = ok["created"].dt.hour
 cols = ["distance_km", "items", "promised_min", "hour"]
 y = ok["actual_min"] > ok["promised_min"]
-X_train, X_test, y_train, y_test = train_test_split(ok[cols], y, test_size=0.25, random_state=42)
-test_by_leaf = {}
+X_dev, X_test, y_dev, y_test = train_test_split(ok[cols], y, test_size=0.25, random_state=42)
+X_train, X_valid, y_train, y_valid = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)
+validation_by_leaf = {}
 
 ```
 
@@ -674,20 +678,21 @@ ok = d[d['actual_min'].between(1, 299)].copy()
 ok['hour'] = ok['created'].dt.hour
 cols = ['distance_km', 'items', 'promised_min', 'hour']
 y = ok['actual_min'] > ok['promised_min']
-a, b, c, e = _tts(ok[cols], y, test_size=0.25, random_state=42)
+_dev, _test, _dy, _ty = _tts(ok[cols], y, test_size=0.25, random_state=42)
+a, b, c, e = _tts(_dev, _dy, test_size=0.25, random_state=43)
 w = {k: round(_T(min_samples_leaf=k, random_state=0).fit(a, c).score(b, e), 3) for k in [1, 5, 20, 50, 100]}
-r = need('test_by_leaf', dict)
-assert sorted(r) == sorted(w), f'Ключи test_by_leaf: {sorted(r)}, а нужны {sorted(w)}.'
+r = need('validation_by_leaf', dict)
+assert sorted(r) == sorted(w), f'Ключи validation_by_leaf: {sorted(r)}, а нужны {sorted(w)}.'
 for k in w:
-    assert close(r[k], w[k]), f'test_by_leaf[{k}] = {r[k]}, а нужно {w[k]}. Дерево — только с min_samples_leaf и random_state=0, без max_depth.'
-assert need('best_leaf') == max(w, key=w.get), f'best_leaf = {need("best_leaf")}. Это ключ test_by_leaf с наибольшей долей.'
+    assert close(r[k], w[k]), f'validation_by_leaf[{k}] = {r[k]}, а нужно {w[k]}. Дерево — только с min_samples_leaf и random_state=0, без max_depth.'
+assert need('best_leaf') == max(w, key=w.get), f'best_leaf = {need("best_leaf")}. Это ключ validation_by_leaf с наибольшей долей.'
 ```
 
 ### hint
-`for k in [1, 5, 20, 50, 100]:` — внутри `DecisionTreeClassifier(min_samples_leaf=k, random_state=0)`, обучение и `test_by_leaf[k] = round(model.score(X_test, y_test), 3)`.
+`for k in [1, 5, 20, 50, 100]:` — внутри `DecisionTreeClassifier(min_samples_leaf=k, random_state=0)`, обучение и `validation_by_leaf[k] = round(model.score(X_valid, y_valid), 3)`.
 
 ### hint
-`max_depth` не задавайте вовсе — ограничивает дерево только `min_samples_leaf`. Лучшее значение — ключ словаря с наибольшей долей: `max(test_by_leaf, key=test_by_leaf.get)`, как в главе 1.
+`max_depth` не задавайте вовсе — ограничивает дерево только `min_samples_leaf`. Лучшее значение — ключ словаря с наибольшей долей: `max(validation_by_leaf, key=validation_by_leaf.get)`, как в главе 1.
 
 ### solution
 ```python
@@ -699,16 +704,17 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["hour"] = ok["created"].dt.hour
 cols = ["distance_km", "items", "promised_min", "hour"]
 y = ok["actual_min"] > ok["promised_min"]
-X_train, X_test, y_train, y_test = train_test_split(ok[cols], y, test_size=0.25, random_state=42)
-test_by_leaf = {}
+X_dev, X_test, y_dev, y_test = train_test_split(ok[cols], y, test_size=0.25, random_state=42)
+X_train, X_valid, y_train, y_valid = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)
+validation_by_leaf = {}
 for k in [1, 5, 20, 50, 100]:
     model = DecisionTreeClassifier(min_samples_leaf=k, random_state=0).fit(X_train, y_train)
-    test_by_leaf[k] = round(model.score(X_test, y_test), 3)
-best_leaf = max(test_by_leaf, key=test_by_leaf.get)
+    validation_by_leaf[k] = round(model.score(X_valid, y_valid), 3)
+best_leaf = max(validation_by_leaf, key=validation_by_leaf.get)
 ```
 
 ### explain
-Даже без ограничения глубины одно только требование «в листе не меньше N доставок» убирает переобучение. Слишком маленький минимум — дерево запоминает шум, слишком большой — снова недообучение.
+Требование «в листе не меньше N доставок» ограничивает сложность дерева даже без заданной максимальной глубины. Слишком маленький минимум — дерево запоминает шум, слишком большой — снова недообучение.
 
 ## task: best-threshold | Перебор порогов | plus
 

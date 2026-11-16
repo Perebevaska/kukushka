@@ -1,0 +1,500 @@
+[
+  {
+    "id": "C01",
+    "key": "01-what-is-ml/xy",
+    "label": "alternate explicit loc and copied labels",
+    "expected": true,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nX = ok.loc[:, [\"distance_km\", \"items\", \"promised_min\"]]\ny = ok.actual_min.gt(ok.promised_min).copy()\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C02",
+    "key": "01-what-is-ml/xy",
+    "label": "labels reversed, original row IDs retained",
+    "expected": false,
+    "code": "import pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nX = ok[[\"distance_km\", \"items\", \"promised_min\"]]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\ny = pd.Series(y.to_numpy()[::-1], index=y.index)",
+    "setup_append": "",
+    "diagnostic": "{\"y\": y.to_dict(), \"X\": X.to_dict()}"
+  },
+  {
+    "id": "C03",
+    "key": "01-what-is-ml/first-tree",
+    "label": "fitted model overwritten by fit on zeros; stale train metric",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.metrics import accuracy_score\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\nX = ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\"]]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nmodel = DecisionTreeClassifier(max_depth=3, random_state=0).fit(X, y)\ntrain_acc = round(accuracy_score(y, model.predict(X)), 3)\nmodel.fit(X, y.astype(int) * 0)",
+    "setup_append": "",
+    "diagnostic": "{\"predict\": model.predict(X).tolist(), \"label\": y.tolist(), \"train_acc\": float(train_acc), \"actual_acc\": float((model.predict(X)==y).mean())}"
+  },
+  {
+    "id": "C04",
+    "key": "02-split/split",
+    "label": "alternate split per matching index",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nX = ok[[\"distance_km\", \"items\", \"promised_min\"]]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nidx_train, idx_test = train_test_split(X.index, test_size=0.25, random_state=42)\nX_train, X_test = X.loc[idx_train], X.loc[idx_test]\ny_train, y_test = y.loc[idx_train], y.loc[idx_test]\nprint(len(X_train), len(X_test))\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C05",
+    "key": "02-split/split",
+    "label": "labels shifted under retained split row IDs",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\nX = ok[[\"distance_km\", \"items\", \"promised_min\"]]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nprint(len(X_train), len(X_test))\ny_train = pd.Series(y_train.to_numpy()[::-1], index=y_train.index)",
+    "setup_append": "",
+    "diagnostic": "{\"X_train_index\": X_train.index.tolist(), \"y_train\": y_train.to_dict()}"
+  },
+  {
+    "id": "C06",
+    "key": "03-tree/proba",
+    "label": "alternate positive-class lookup and list",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ncols = [\"distance_km\", \"items\", \"promised_min\", \"hour\"]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[cols], y, test_size=0.25, random_state=42)\nmodel = DecisionTreeClassifier(max_depth=3, random_state=0).fit(X_train, y_train)\np_late = model.predict_proba(X_test)[:, list(model.classes_).index(True)]\nn_risky = int((p_late >= 0.6).sum())\nn_values = pd.Series(p_late).nunique()\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C07",
+    "key": "03-tree/proba",
+    "label": "probabilities reversed independently of test rows",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ncols = [\"distance_km\", \"items\", \"promised_min\", \"hour\"]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[cols], y, test_size=0.25, random_state=42)\nmodel = DecisionTreeClassifier(max_depth=3, random_state=0).fit(X_train, y_train)\np_late = model.predict_proba(X_test)[:, 1]\nn_risky = int((p_late >= 0.6).sum())\nn_values = pd.Series(p_late).nunique()\np_late = p_late[::-1]",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C08",
+    "key": "04-categorical/shop-rate",
+    "label": "join instead of map; complete row sorting",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[[\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.join(shop_rate.rename(\"shop_rate\"), on=\"shop_id\").fillna({\"shop_rate\": y_train.mean()}).sort_index()\nX_test = X_test.join(shop_rate.rename(\"shop_rate\"), on=\"shop_id\").fillna({\"shop_rate\": y_train.mean()}).sort_index()\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C09",
+    "key": "04-categorical/shop-rate",
+    "label": "equivalent filter inline instead of variable ok",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(d.loc[d[\"actual_min\"].between(1, 299), [\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.assign(shop_rate=X_train[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nX_test = X_test.assign(shop_rate=X_test[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C10",
+    "key": "04-categorical/shop-rate",
+    "label": "shop labels sorted separately from encoded values",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[[\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.assign(shop_rate=X_train[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nX_test = X_test.assign(shop_rate=X_test[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\nX_test[\"shop_id\"] = sorted(X_test[\"shop_id\"])",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C11",
+    "key": "04-categorical/shop-rate",
+    "label": "training labels shifted but old shop mapping retained",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[[\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.assign(shop_rate=X_train[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nX_test = X_test.assign(shop_rate=X_test[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\ny_train = pd.Series(y_train.to_numpy()[::-1], index=y_train.index)",
+    "setup_append": "",
+    "diagnostic": "{\"X_train\": X_train.to_dict(), \"y_train\": y_train.to_dict(), \"X_test\": X_test.to_dict(), \"y_test\": y_test.to_dict()}"
+  },
+  {
+    "id": "C12",
+    "key": "04-categorical/shop-rate",
+    "label": "unknown test shop falls back to test mean",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[[\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.assign(shop_rate=X_train[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nX_test = X_test.assign(shop_rate=X_test[\"shop_id\"].map(shop_rate).fillna(y_test.mean()))\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C13",
+    "key": "04-categorical/shop-rate",
+    "label": "silently drop singleton training groups",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[[\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.assign(shop_rate=X_train[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nX_test = X_test.assign(shop_rate=X_test[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\nn = X_train.groupby(\"shop_id\")[\"shop_id\"].transform(\"size\")\nX_train = X_train[n > 1]",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C14",
+    "key": "05-forest/avg-proba",
+    "label": "alternate stack then axis 0 average",
+    "expected": true,
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nforest = RandomForestClassifier(n_estimators=30, random_state=0).fit(X_train, y_train)\n\nprobs = [tree.predict_proba(X_test.to_numpy())[:, 1] for tree in forest.estimators_]\nmanual = np.stack(probs).sum(axis=0) / len(probs)\nmax_diff = float(np.abs(manual - forest.predict_proba(X_test)[:, 1]).max())\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C15",
+    "key": "05-forest/avg-proba",
+    "label": "independent reordering of averaged probabilities",
+    "expected": false,
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nforest = RandomForestClassifier(n_estimators=30, random_state=0).fit(X_train, y_train)\n\nprobs = [tree.predict_proba(X_test.to_numpy())[:, 1] for tree in forest.estimators_]\nmanual = np.mean(probs, axis=0)\nmax_diff = float(np.abs(manual - forest.predict_proba(X_test)[:, 1]).max())\nmanual = manual[::-1]",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C16",
+    "key": "05-forest/first-forest",
+    "label": "forest refit on zeros while preserving reported accuracy",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nforest = RandomForestClassifier(n_estimators=50, random_state=0).fit(X_train, y_train)\nacc_test = round(forest.score(X_test, y_test), 3)\nforest.fit(X_train, y_train.astype(int)*0)",
+    "setup_append": "",
+    "diagnostic": "{\"predict\": forest.predict(X_test).tolist(), \"label\": y_test.tolist(), \"reported\": float(acc_test), \"actual\": float(forest.score(X_test,y_test))}"
+  },
+  {
+    "id": "C17",
+    "key": "06-logistic/proba",
+    "label": "alternate class-column lookup",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nmodel = LogisticRegression(max_iter=2000).fit(X_train, y_train)\np = model.predict_proba(X_test)[:, list(model.classes_).index(True)]\nmean_p = round(p.mean(), 3)\nn_alarm = int((p >= 0.5).sum())\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C18",
+    "key": "06-logistic/proba",
+    "label": "correct histogram with shuffled order IDs",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nmodel = LogisticRegression(max_iter=2000).fit(X_train, y_train)\np = model.predict_proba(X_test)[:, 1]\nmean_p = round(p.mean(), 3)\nn_alarm = int((p >= 0.5).sum())\np = p[::-1]",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C19",
+    "key": "06b-probabilities/calib",
+    "label": "alternate correctly reordered group rows",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\np = LogisticRegression(max_iter=2000).fit(X_train, y_train).predict_proba(X_test)[:, 1]\nrisk = pd.DataFrame({\"p\": p, \"late\": y_test})\nrisk[\"group\"] = pd.cut(risk[\"p\"], [0, 0.25, 0.5, 0.75, 1], include_lowest=True)\ncal = risk.groupby(\"group\", observed=True).agg(pred=(\"p\", \"mean\"), fact=(\"late\", \"mean\"), n=(\"p\", \"size\"))\nworst = round((cal[\"pred\"] - cal[\"fact\"]).abs().max(), 3)\ncal = cal.iloc[::-1]",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C20",
+    "key": "06b-probabilities/calib",
+    "label": "group labels reversed independently of numeric statistics",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\np = LogisticRegression(max_iter=2000).fit(X_train, y_train).predict_proba(X_test)[:, 1]\nrisk = pd.DataFrame({\"p\": p, \"late\": y_test})\nrisk[\"group\"] = pd.cut(risk[\"p\"], [0, 0.25, 0.5, 0.75, 1], include_lowest=True)\ncal = risk.groupby(\"group\", observed=True).agg(pred=(\"p\", \"mean\"), fact=(\"late\", \"mean\"), n=(\"p\", \"size\"))\nworst = round((cal[\"pred\"] - cal[\"fact\"]).abs().max(), 3)\ncal.index = cal.index[::-1]",
+    "setup_append": "",
+    "diagnostic": "{\"cal\": cal.reset_index().astype(str).to_dict(\"records\"), \"worst\": float(worst)}"
+  },
+  {
+    "id": "C21",
+    "key": "07-regression/residuals",
+    "label": "alternate full row order",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestRegressor\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nforest = RandomForestRegressor(n_estimators=50, random_state=0).fit(X_train, y_train)\n\nres = pd.DataFrame({\"fact\": y_test, \"pred\": forest.predict(X_test)})\nres[\"err\"] = res[\"fact\"] - res[\"pred\"]\nres = res.join(ok[\"courier\"])\nbig_share = round((res[\"err\"].abs() > 10).mean(), 3)\nerr_by_courier = res.groupby(\"courier\")[\"err\"].mean().round(2)\nworst_courier = res.loc[res[\"err\"].abs().idxmax(), \"courier\"]\nres = res.sort_index(ascending=False)",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C22",
+    "key": "07-regression/residuals",
+    "label": "only predictions reassigned under unchanged IDs",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestRegressor\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nforest = RandomForestRegressor(n_estimators=50, random_state=0).fit(X_train, y_train)\n\nres = pd.DataFrame({\"fact\": y_test, \"pred\": forest.predict(X_test)})\nres[\"err\"] = res[\"fact\"] - res[\"pred\"]\nres = res.join(ok[\"courier\"])\nbig_share = round((res[\"err\"].abs() > 10).mean(), 3)\nerr_by_courier = res.groupby(\"courier\")[\"err\"].mean().round(2)\nworst_courier = res.loc[res[\"err\"].abs().idxmax(), \"courier\"]\nres[\"pred\"] = res[\"pred\"].iloc[::-1].to_numpy()",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C23",
+    "key": "07-regression/fact-pred",
+    "label": "alternate pair order on scatter",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred[::-1], y_test.iloc[::-1], s=8, alpha=0.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C24",
+    "key": "07-regression/fact-pred",
+    "label": "fact independently reversed on scatter",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred, y_test.iloc[::-1], s=8, alpha=0.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C25",
+    "key": "08-validation/three-parts",
+    "label": "alternate consistent column order",
+    "expected": true,
+    "code": "from sklearn.model_selection import train_test_split\nX_rest, X_test, y_rest, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\nX_train, X_valid, y_train, y_valid = train_test_split(X_rest, y_rest, test_size=0.25, random_state=42)\nprint(len(X_train), len(X_valid), len(X_test))\nX_train, X_valid, X_test = [v.sort_index(axis=1) for v in (X_train, X_valid, X_test)]",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C26",
+    "key": "08-validation/three-parts",
+    "label": "all valid labels flipped under original IDs",
+    "expected": false,
+    "code": "from sklearn.model_selection import train_test_split\nX_rest, X_test, y_rest, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\nX_train, X_valid, y_train, y_valid = train_test_split(X_rest, y_rest, test_size=0.25, random_state=42)\nprint(len(X_train), len(X_valid), len(X_test))\ny_valid = ~y_valid",
+    "setup_append": "",
+    "diagnostic": "{\"y_valid\": y_valid.to_dict(), \"valid_ids\": X_valid.index.tolist()}"
+  },
+  {
+    "id": "C27",
+    "key": "08b-groups-speed/group-split",
+    "label": "alternate set operations for overlaps",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import GroupShuffleSplit, train_test_split\no = pd.read_csv(\"guest_orders.csv\")\nX = o[[\"weekday\", \"hour\", \"items\", \"amount\", \"distance_km\"]]\ny, groups = o[\"dessert\"], o[\"guest_id\"]\n\ngss = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=4)\ntrain_idx, test_idx = next(gss.split(X, y, groups=groups))\nn_test_rows = len(test_idx)\nn_test_guests = groups.iloc[test_idx].nunique()\ncommon = len(set(groups.iloc[train_idx]).intersection(groups.iloc[test_idx]))\n\ng_tr, g_te = train_test_split(groups, test_size=0.25, random_state=4)\ncommon_plain = len(set(g_tr).intersection(g_te))\nprint(n_test_rows, n_test_guests, common, common_plain)\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C28",
+    "key": "08b-groups-speed/group-split",
+    "label": "union instead of shared guest intersection",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import GroupShuffleSplit, train_test_split\no = pd.read_csv(\"guest_orders.csv\")\nX = o[[\"weekday\", \"hour\", \"items\", \"amount\", \"distance_km\"]]\ny, groups = o[\"dessert\"], o[\"guest_id\"]\n\ngss = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=4)\ntrain_idx, test_idx = next(gss.split(X, y, groups=groups))\nn_test_rows = len(test_idx)\nn_test_guests = groups.iloc[test_idx].nunique()\ncommon = len(set(groups.iloc[train_idx]) | set(groups.iloc[test_idx]))\n\ng_tr, g_te = train_test_split(groups, test_size=0.25, random_state=4)\ncommon_plain = len(set(g_tr) & set(g_te))\nprint(n_test_rows, n_test_guests, common, common_plain)\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C29",
+    "key": "08b-groups-speed/speed-table",
+    "label": "hardcoded durations after real measurements",
+    "expected": false,
+    "code": "import time\nimport pandas as pd\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.linear_model import LogisticRegression\n\nmodels = {\n    \"дерево\": DecisionTreeClassifier(max_depth=3, random_state=0),\n    \"лес\": RandomForestClassifier(n_estimators=100, random_state=0),\n    \"логрегрессия\": LogisticRegression(max_iter=2000),\n}\nrows = []\nfor name, model in models.items():\n    t0 = time.perf_counter()\n    model.fit(X_train, y_train)\n    t1 = time.perf_counter()\n    pred = model.predict(X_test)\n    t2 = time.perf_counter()\n    rows.append({\"модель\": name, \"accuracy\": round((pred == y_test).mean(), 3),\n                 \"fit_s\": t1 - t0, \"predict_s\": t2 - t1})\nspeed = pd.DataFrame(rows).set_index(\"модель\")\nfit_ratio = speed.loc[\"лес\", \"fit_s\"] / speed.loc[\"дерево\", \"fit_s\"]\nprint(f\"лес учится в {fit_ratio:.0f} раз дольше\")\nspeed\nspeed[\"fit_s\"] = [0.01, 0.02, 0.03]\nspeed[\"predict_s\"] = 0.01\nfit_ratio = speed.loc[\"лес\", \"fit_s\"] / speed.loc[\"дерево\", \"fit_s\"]",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C30",
+    "key": "09-project/prepare",
+    "label": "alternate alphabetical feature order",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int)\nX = X.sort_index(axis=1)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ntrain_rate, test_rate = round(y_train.mean(), 3), round(y_test.mean(), 3)\nprint(X.shape, train_rate, test_rate)\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C31",
+    "key": "09-project/prepare",
+    "label": "target substituted for historical feature",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ntrain_rate, test_rate = round(y_train.mean(), 3), round(y_test.mean(), 3)\nprint(X.shape, train_rate, test_rate)\nX_train[\"days_since_last\"] = y_train",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C32",
+    "key": "09-project/final",
+    "label": "alternate explicit accuracy from predict",
+    "expected": true,
+    "code": "from sklearn.ensemble import RandomForestClassifier\nmodel = RandomForestClassifier(n_estimators=100, min_samples_leaf=3, random_state=0).fit(X_train, y_train)\ntest_acc = round(float((model.predict(X_test) == y_test).mean()), 3)\nbase_test = round((y_test == 0).mean(), 3)\nrule_test = round(((X_test[\"days_since_last\"] > 45) == y_test).mean(), 3)\nprint(test_acc, base_test, rule_test)\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C33",
+    "key": "09-project/final",
+    "label": "refit on final test after reporting metric",
+    "expected": false,
+    "code": "from sklearn.ensemble import RandomForestClassifier\nmodel = RandomForestClassifier(n_estimators=100, min_samples_leaf=3, random_state=0).fit(X_train, y_train)\ntest_acc = round(model.score(X_test, y_test), 3)\nbase_test = round((y_test == 0).mean(), 3)\nrule_test = round(((X_test[\"days_since_last\"] > 45) == y_test).mean(), 3)\nprint(test_acc, base_test, rule_test)\nmodel.fit(X_test,y_test)",
+    "setup_append": "",
+    "diagnostic": "{\"prediction\": model.predict(X_test).tolist(), \"test_y\": y_test.tolist(), \"reported\": float(test_acc), \"model_test_acc\": float(model.score(X_test,y_test))}"
+  },
+  {
+    "id": "C34",
+    "key": "09-project/final",
+    "label": "same required RF and feature set with alphabetic column order",
+    "expected": true,
+    "code": "from sklearn.ensemble import RandomForestClassifier\nmodel = RandomForestClassifier(n_estimators=100, min_samples_leaf=3, random_state=0).fit(X_train, y_train)\ntest_acc = round(model.score(X_test, y_test), 3)\nbase_test = round((y_test == 0).mean(), 3)\nrule_test = round(((X_test[\"days_since_last\"] > 45) == y_test).mean(), 3)\nprint(test_acc, base_test, rule_test)\n",
+    "setup_append": "X_train = X_train.sort_index(axis=1)\nX_test = X_test.reindex(columns=X_train.columns)",
+    "diagnostic": ""
+  },
+  {
+    "id": "C35",
+    "key": "09-project/top",
+    "label": "alternate nlargest after ID sort",
+    "expected": true,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].nlargest(60, keep=\"first\")\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(240).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)\n",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C36",
+    "key": "09-project/top",
+    "label": "winner accidentally refit on final test before producing consistent lists",
+    "expected": false,
+    "code": "model.fit(X_test,y_test)\nimport pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(240).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)\n",
+    "setup_append": "",
+    "diagnostic": "{\"risk\": risk.to_dict(), \"top_ids\": top_ids, \"current_risk\": current_risk.to_dict(), \"current_ids\": current_ids, \"actual_fit_n\": len(model.estimators_[0].estimators_samples_) if hasattr(model.estimators_[0], \"estimators_samples_\") else int(model.estimators_[0].tree_.n_node_samples[0])}"
+  },
+  {
+    "id": "C37",
+    "key": "09-project/top",
+    "label": "current probabilities assigned under reversed guest IDs",
+    "expected": false,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(240).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)\ncurrent_risk = pd.Series(current_risk.to_numpy(), index=current_risk.index[::-1])",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C38",
+    "key": "09-project/top",
+    "label": "wrong selected guest order",
+    "expected": false,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(240).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)\ncurrent_ids = current_ids[::-1]",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C39",
+    "key": "04-categorical/shop-rate",
+    "label": "join correct on singleton train",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[[\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.join(shop_rate.rename(\"shop_rate\"), on=\"shop_id\").fillna({\"shop_rate\": y_train.mean()}).sort_index()\nX_test = X_test.join(shop_rate.rename(\"shop_rate\"), on=\"shop_id\").fillna({\"shop_rate\": y_train.mean()}).sort_index()\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\n",
+    "setup_append": "",
+    "diagnostic": "{\"X_train\": X_train.to_dict(), \"y_train\": y_train.to_dict(), \"X_test\": X_test.to_dict(), \"y_test\": y_test.to_dict(), \"rates\": shop_rate.to_dict()}",
+    "file_variants": {
+      "deliveries.csv": "deliveries-singleton.csv"
+    }
+  },
+  {
+    "id": "C40",
+    "key": "04-categorical/shop-rate",
+    "label": "actual singleton train removed incorrectly",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[[\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.assign(shop_rate=X_train[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nX_test = X_test.assign(shop_rate=X_test[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\nn = X_train.groupby(\"shop_id\")[\"shop_id\"].transform(\"size\")\nX_train = X_train[n > 1]",
+    "setup_append": "",
+    "diagnostic": "{\"X_train\": X_train.to_dict(), \"y_train\": y_train.to_dict(), \"X_test\": X_test.to_dict(), \"y_test\": y_test.to_dict(), \"rates\": shop_rate.to_dict()}",
+    "file_variants": {
+      "deliveries.csv": "deliveries-singleton.csv"
+    }
+  },
+  {
+    "id": "C41",
+    "key": "04-categorical/shop-rate",
+    "label": "join correct on singleton and unknown shop",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[[\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.join(shop_rate.rename(\"shop_rate\"), on=\"shop_id\").fillna({\"shop_rate\": y_train.mean()}).sort_index()\nX_test = X_test.join(shop_rate.rename(\"shop_rate\"), on=\"shop_id\").fillna({\"shop_rate\": y_train.mean()}).sort_index()\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\n",
+    "setup_append": "",
+    "diagnostic": "{\"X_train\": X_train.to_dict(), \"y_train\": y_train.to_dict(), \"X_test\": X_test.to_dict(), \"y_test\": y_test.to_dict(), \"rates\": shop_rate.to_dict()}",
+    "file_variants": {
+      "deliveries.csv": "deliveries-unknown-singleton.csv"
+    }
+  },
+  {
+    "id": "C42",
+    "key": "04-categorical/shop-rate",
+    "label": "unknown shop filled by test mean",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[[\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.assign(shop_rate=X_train[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nX_test = X_test.assign(shop_rate=X_test[\"shop_id\"].map(shop_rate).fillna(y_test.mean()))\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\n",
+    "setup_append": "",
+    "diagnostic": "{\"X_train\": X_train.to_dict(), \"y_train\": y_train.to_dict(), \"X_test\": X_test.to_dict(), \"y_test\": y_test.to_dict(), \"rates\": shop_rate.to_dict()}",
+    "file_variants": {
+      "deliveries.csv": "deliveries-unknown-singleton.csv"
+    }
+  },
+  {
+    "id": "C43",
+    "key": "08b-groups-speed/speed-table",
+    "label": "author actual measured durations positive control",
+    "expected": true,
+    "code": "import time\nimport pandas as pd\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.linear_model import LogisticRegression\n\nmodels = {\n    \"дерево\": DecisionTreeClassifier(max_depth=3, random_state=0),\n    \"лес\": RandomForestClassifier(n_estimators=100, random_state=0),\n    \"логрегрессия\": LogisticRegression(max_iter=2000),\n}\nrows = []\nfor name, model in models.items():\n    t0 = time.perf_counter()\n    model.fit(X_train, y_train)\n    t1 = time.perf_counter()\n    pred = model.predict(X_test)\n    t2 = time.perf_counter()\n    rows.append({\"модель\": name, \"accuracy\": round((pred == y_test).mean(), 3),\n                 \"fit_s\": t1 - t0, \"predict_s\": t2 - t1})\nspeed = pd.DataFrame(rows).set_index(\"модель\")\nfit_ratio = speed.loc[\"лес\", \"fit_s\"] / speed.loc[\"дерево\", \"fit_s\"]\nprint(f\"лес учится в {fit_ratio:.0f} раз дольше\")\nspeed",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C44",
+    "key": "08b-groups-speed/speed-table",
+    "label": "alternate model iteration order measured honestly",
+    "expected": true,
+    "code": "import time\nimport pandas as pd\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.linear_model import LogisticRegression\n\nmodels = {\n    \"дерево\": DecisionTreeClassifier(max_depth=3, random_state=0),\n    \"лес\": RandomForestClassifier(n_estimators=100, random_state=0),\n    \"логрегрессия\": LogisticRegression(max_iter=2000),\n}\nrows = []\nfor name, model in reversed(list(models.items())):\n    t0 = time.perf_counter()\n    model.fit(X_train, y_train)\n    t1 = time.perf_counter()\n    pred = model.predict(X_test)\n    t2 = time.perf_counter()\n    rows.append({\"модель\": name, \"accuracy\": round((pred == y_test).mean(), 3),\n                 \"fit_s\": t1 - t0, \"predict_s\": t2 - t1})\nspeed = pd.DataFrame(rows).set_index(\"модель\")\nfit_ratio = speed.loc[\"лес\", \"fit_s\"] / speed.loc[\"дерево\", \"fit_s\"]\nprint(f\"лес учится в {fit_ratio:.0f} раз дольше\")\nspeed",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C45",
+    "key": "03-tree/leaf-size",
+    "label": "final label perturbation must not affect chosen parameter",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ncols = [\"distance_km\", \"items\", \"promised_min\", \"hour\"]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_dev, X_test, y_dev, y_test = train_test_split(ok[cols], y, test_size=0.25, random_state=42)\ny_test = ~y_test\nX_train, X_valid, y_train, y_valid = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)\nvalidation_by_leaf = {}\nfor k in [1, 5, 20, 50, 100]:\n    model = DecisionTreeClassifier(min_samples_leaf=k, random_state=0).fit(X_train, y_train)\n    validation_by_leaf[k] = round(model.score(X_valid, y_valid), 3)\nbest_leaf = max(validation_by_leaf, key=validation_by_leaf.get)",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C46",
+    "key": "06-logistic/threshold",
+    "label": "final label perturbation must not affect chosen parameter",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_dev, X_test, y_dev, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\ny_test = ~y_test\nX_train, X_valid, y_train, y_valid = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)\np = LogisticRegression(max_iter=2000).fit(X_train, y_train).predict_proba(X_valid)[:, 1]\nalarm = p >= 0.3\nalarms = round(alarm.mean(), 3)\ncaught = round(y_valid[alarm].sum() / y_valid.sum(), 3)\nhit = round(y_valid[alarm].mean(), 3)\n\nimport numpy as np\nfor t in np.arange(0.10, 0.90, 0.05).round(2):\n    if y_valid[p >= t].mean() >= 0.8:\n        t80 = t\n        caught80 = round(y_valid[p >= t].sum() / y_valid.sum(), 3)\n        break",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C47",
+    "key": "07-regression/depth",
+    "label": "final label perturbation must not affect chosen parameter",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeRegressor\nfrom sklearn.metrics import mean_absolute_error\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_dev, X_test, y_dev, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\ny_test = y_test + 1000\nX_train, X_valid, y_train, y_valid = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)\nmae_by_depth = {}\nfor depth in [2, 5, None]:\n    tree = DecisionTreeRegressor(max_depth=depth, random_state=0).fit(X_train, y_train)\n    mae_by_depth[depth] = round(mean_absolute_error(y_valid, tree.predict(X_valid)), 2)\nbest_depth = min(mae_by_depth, key=mae_by_depth.get)",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C48",
+    "key": "09-project/leak",
+    "label": "demonstration diagnostic split excludes final IDs",
+    "expected": true,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier\ncols = [\"tenure_months\", \"app\", \"visits_90d\", \"days_since_last\", \"avg_check\",\n        \"delivery_share\", \"promo_used\", \"complaints\", \"card_blocked\"]\nXa, Xb, ya, yb = train_test_split(g[cols], g[\"churned\"], test_size=0.25, random_state=42, stratify=g[\"churned\"])\ntree = DecisionTreeClassifier(max_depth=3, random_state=0).fit(Xa, ya)\nacc_all = round(tree.score(Xb, yb), 3)\ntop_feature = pd.Series(tree.feature_importances_, index=cols).idxmax()\nclean = [c for c in cols if c != top_feature]\nacc_clean = round(DecisionTreeClassifier(max_depth=3, random_state=0).fit(Xa[clean], ya).score(Xb[clean], yb), 3)\nblocked_churn = round(g.loc[g[\"card_blocked\"] == 1, \"churned\"].mean(), 3)\nprint(acc_all, top_feature, acc_clean, blocked_churn)",
+    "setup_append": "",
+    "diagnostic": "{\"demo_ids\": g.index.tolist(), \"final_ids\": _ref()[4].index.tolist(), \"overlap\": sorted(set(g.index)&set(_ref()[4].index)), \"demo_train_ids\": Xa.index.tolist(), \"demo_valid_ids\": Xb.index.tolist()}"
+  },
+  {
+    "id": "C49",
+    "key": "04-categorical/shop-rate",
+    "label": "leave-one-out is distinct from explicit training-mean contract",
+    "expected": false,
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)]\ny = ok[\"actual_min\"] > ok[\"promised_min\"]\nX_train, X_test, y_train, y_test = train_test_split(ok[[\"shop_id\"]], y, test_size=0.25, random_state=42)\nshop_rate = y_train.groupby(X_train[\"shop_id\"]).mean()\nX_train = X_train.assign(shop_rate=X_train[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nX_test = X_test.assign(shop_rate=X_test[\"shop_id\"].map(shop_rate).fillna(y_train.mean()))\nall_rate = y.groupby(ok[\"shop_id\"]).mean()\ndiff = round((shop_rate - all_rate).abs().max() * 100, 2)\nn = X_train.groupby(\"shop_id\")[\"shop_id\"].transform(\"size\")\nX_train[\"shop_rate\"] = ((X_train[\"shop_rate\"]*n-y_train.astype(int))/(n-1)).fillna(y_train.mean())",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C50",
+    "key": "09-project/top",
+    "label": "winner with consistent alphabetic input order",
+    "expected": true,
+    "code": "X_train=X_train.sort_index(axis=1)\nX_test=X_test.reindex(columns=X_train.columns)\nmodel.fit(X_train,y_train)\nimport pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "C51",
+    "key": "09-project/top",
+    "label": "40 candidate working pool, four exact IDs and scores",
+    "expected": true,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": "{\"current_risk\": current_risk.to_dict(), \"current_ids\": current_ids, \"k\": int(len(current)*.1), \"historical_ids\": top_ids}",
+    "file_variants": {
+      "guests_current.csv": "guests-current-40.csv"
+    }
+  },
+  {
+    "id": "C52",
+    "key": "09-project/top",
+    "label": "40 tied predictions choose four smaller guest IDs",
+    "expected": true,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": "{\"current_risk\": current_risk.to_dict(), \"current_ids\": current_ids, \"k\": int(len(current)*.1), \"historical_ids\": top_ids}",
+    "file_variants": {
+      "guests_current.csv": "guests-current-40-ties.csv"
+    }
+  },
+  {
+    "id": "C53",
+    "key": "09-project/top",
+    "label": "ties follow incoming row order instead of guest ID",
+    "expected": false,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": "{\"current_risk\": current_risk.to_dict(), \"current_ids\": current_ids, \"k\": int(len(current)*.1), \"historical_ids\": top_ids}",
+    "file_variants": {
+      "guests_current.csv": "guests-current-40-ties.csv"
+    }
+  }
+]

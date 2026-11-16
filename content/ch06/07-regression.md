@@ -606,7 +606,10 @@ gain = round(mean_absolute_error(y_test, [y_train.median()] * len(y_test)) - mea
 
 ## task: depth | Глубина дерева для минут | base
 
-Обучите `DecisionTreeRegressor(random_state=0)` с глубиной 2, 5 и без ограничения (`max_depth=None`). Сохраните в `mae_by_depth` словарь `{2: ..., 5: ..., None: ...}` с MAE на тесте (2 знака), а в `best_depth` — глубину с наименьшей MAE.
+Обучите `DecisionTreeRegressor(random_state=0)` с глубиной 2, 5 и без ограничения (`max_depth=None`). Сохраните в `mae_by_depth` словарь `{2: ..., 5: ..., None: ...}` с MAE на валидации (2 знака), а в `best_depth` — глубину с наименьшей MAE.
+
+
+До перебора отложите финальные 25 % (`random_state=42`), затем выделите validation — 25 % оставшихся (`random_state=43`). Обучайте на train, MAE для выбора глубины считайте по `X_valid, y_valid`. Финальный test не участвует в выборе.
 
 ### starter
 ```python
@@ -620,7 +623,8 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["hour"] = ok["created"].dt.hour
 y = ok["actual_min"]
 X = pd.get_dummies(ok[["distance_km", "items", "promised_min", "hour", "courier", "weather", "shop_id"]], dtype=int)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_dev, X_test, y_dev, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_train, X_valid, y_train, y_valid = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)
 
 ```
 
@@ -635,7 +639,8 @@ ok = d[d['actual_min'].between(1, 299)].copy()
 ok['hour'] = ok['created'].dt.hour
 y = ok['actual_min']
 X = _pd.get_dummies(ok[['distance_km', 'items', 'promised_min', 'hour', 'courier', 'weather', 'shop_id']], dtype=int)
-a, b, c, e = _tts(X, y, test_size=0.25, random_state=42)
+_dev, _test, _dy, _ty = _tts(X, y, test_size=0.25, random_state=42)
+a, b, c, e = _tts(_dev, _dy, test_size=0.25, random_state=43)
 want = {k: round(_mae(e, _T(max_depth=k, random_state=0).fit(a, c).predict(b)), 2) for k in (2, 5, None)}
 got = need('mae_by_depth', dict)
 assert set(got) == {2, 5, None}, f'Ключи словаря: {list(got)}. Нужны 2, 5 и None.'
@@ -662,16 +667,17 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["hour"] = ok["created"].dt.hour
 y = ok["actual_min"]
 X = pd.get_dummies(ok[["distance_km", "items", "promised_min", "hour", "courier", "weather", "shop_id"]], dtype=int)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_dev, X_test, y_dev, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_train, X_valid, y_train, y_valid = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)
 mae_by_depth = {}
 for depth in [2, 5, None]:
     tree = DecisionTreeRegressor(max_depth=depth, random_state=0).fit(X_train, y_train)
-    mae_by_depth[depth] = round(mean_absolute_error(y_test, tree.predict(X_test)), 2)
+    mae_by_depth[depth] = round(mean_absolute_error(y_valid, tree.predict(X_valid)), 2)
 best_depth = min(mae_by_depth, key=mae_by_depth.get)
 ```
 
 ### explain
-Как и в классификации, дерево без ограничения глубины запоминает обучающие доставки (на train его ошибка почти нулевая) и хуже работает на новых. Слишком мелкое дерево не успевает уловить закономерности. Подбирать глубину по тесту, как мы сейчас сделали, на самом деле нечестно — правильный способ с валидационной выборкой будет в следующем уроке.
+Как и в классификации, дерево без ограничения глубины запоминает обучающие доставки (на train его ошибка почти нулевая) и хуже работает на новых. Слишком мелкое дерево не успевает уловить закономерности. Здесь глубина выбрана по валидационной части. Финальные строки отложены отдельно и при выборе не использовались. После фиксации настройки её можно один раз оценить на финальном тесте; следующий урок обобщит этот порядок.
 
 ## task: fact-pred | График «факт против прогноза» | base
 
@@ -708,8 +714,19 @@ X = _pd.get_dummies(ok[['distance_km', 'items', 'promised_min', 'hour', 'courier
 a, b, c, e = _tts(X, y, test_size=0.25, random_state=42)
 p = _LR().fit(a, c).predict(b)
 ax = ax_of()
-assert ax.collections, 'Точек на графике нет — нужен ax.scatter(...).'
-pts = _np.asarray(ax.collections[0].get_offsets())
+from matplotlib.collections import PathCollection as _PathCollection
+def _visible(_artist):
+    _alpha = _artist.get_alpha()
+    return _artist.get_visible() and (_alpha is None or _np.any(_np.asarray(_alpha) > 0))
+_scatters = [c for c in ax.collections if isinstance(c, _PathCollection) and _visible(c)]
+_point_lines = [l for l in ax.lines if _visible(l) and l.get_linestyle() in ('None', '', ' ')
+                and l.get_marker() not in (None, 'None', '', ' ') and l.get_markersize() > 0]
+_offsets = [_np.ma.asarray(c.get_offsets()) for c in _scatters]
+_offsets += [_np.ma.column_stack([l.get_xdata(), l.get_ydata()]) for l in _point_lines]
+assert _offsets, 'На графике нужны видимые точки: используйте scatter или маркеры без соединяющей линии.'
+assert all(not _np.ma.getmaskarray(v).any() for v in _offsets), 'На графике есть пропущенные координаты: нужны все пары факт–прогноз.'
+pts = _np.concatenate([_np.asarray(v, dtype=float) for v in _offsets], axis=0)
+assert _np.isfinite(pts).all(), 'Координаты факт–прогноз должны быть конечными числами.'
 assert len(pts) == len(e), f'На графике {len(pts)} точек, а тестовых доставок {len(e)}.'
 assert _np.allclose(_np.sort(pts[:, 0]), _np.sort(p), atol=1e-6), 'По оси X должен быть прогноз, а по оси Y — факт. Проверьте порядок аргументов scatter.'
 assert _np.allclose(_np.sort(pts[:, 1]), _np.sort(e.to_numpy(dtype=float))), 'По оси Y должен быть факт y_test.'
@@ -718,7 +735,14 @@ for _fact in _np.unique(_expected[:, 1]):
     _actual_group = _np.sort(pts[pts[:, 1] == _fact, 0])
     _expected_group = _np.sort(_expected[_expected[:, 1] == _fact, 0])
     assert len(_actual_group) == len(_expected_group) and _np.allclose(_actual_group, _expected_group, atol=1e-6), f'Факт {_fact}: перепутаны пары факт–прогноз. Сохраняйте соответствие строк при построении графика.'
-assert any(list(l.get_xdata()) == [10, 100] and list(l.get_ydata()) == [10, 100] for l in ax.lines), 'Не вижу диагонали: ax.plot([10, 100], [10, 100], ...).'
+from matplotlib.colors import to_rgba as _to_rgba
+def _gray_dashed_diagonal(_line):
+    _rgba = _to_rgba(_line.get_color())
+    return (_visible(_line) and _rgba[3] > 0 and _line.get_linewidth() > 0
+            and _line.get_linestyle() == '--' and 0 < _rgba[0] < 1
+            and _np.allclose(_rgba[:3], [_rgba[0]] * 3, rtol=0, atol=1e-6)
+            and list(_line.get_xdata()) == [10, 100] and list(_line.get_ydata()) == [10, 100])
+assert any(_gray_dashed_diagonal(l) for l in ax.lines), 'Добавьте видимую серую пунктирную диагональ: ax.plot([10, 100], [10, 100], color="grey", linestyle="--").'
 assert ax.get_xlabel() == 'прогноз, мин' and ax.get_ylabel() == 'факт, мин', f'Подписи осей: {ax.get_xlabel()!r} и {ax.get_ylabel()!r}, а нужны "прогноз, мин" и "факт, мин".'
 assert 'линейная' in ax.get_title().lower(), f'Заголовок {ax.get_title()!r} — в нём должно быть слово «линейная».'
 ```

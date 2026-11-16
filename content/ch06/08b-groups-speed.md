@@ -583,9 +583,35 @@ assert {'accuracy', 'fit_s', 'predict_s'} <= set(t.columns), f'Столбцы sp
 for n in _acc:
     assert close(t.loc[n, 'accuracy'], _acc[n], 0.0011), f'{n}: accuracy = {t.loc[n, "accuracy"]}, а ожидалось {_acc[n]}. Доля совпадений predict(X_test) и y_test.'
 assert (t[['fit_s', 'predict_s']] > 0).all().all(), 'Времена должны быть положительными: разница показаний perf_counter после и до.'
-assert calls('perf_counter') >= 2, 'Замеряйте время через time.perf_counter().'
-assert t.loc['лес', 'fit_s'] > t.loc['дерево', 'fit_s'], 'Лес из 100 деревьев не может учиться быстрее одного дерева — проверьте, что в fit_s попал именно fit своей модели.'
 assert close(need('fit_ratio'), t.loc['лес', 'fit_s'] / t.loc['дерево', 'fit_s'], 0.05 * need('fit_ratio') + 0.01), 'fit_ratio — fit_s леса, делённое на fit_s дерева.'
+import time as _time
+_clock=[0.0]
+_durations={_T: (2.125,.375), _RF: (7.625,1.125), _LR: (4.375,.625)}
+_original_clock=_time.perf_counter
+_original_methods={}
+def _timed(_fn,_duration):
+    def _wrapped(self,*args,**kwargs):
+        _value=_fn(self,*args,**kwargs)
+        _clock[0]+=_duration
+        return _value
+    return _wrapped
+try:
+    _time.perf_counter=lambda:_clock[0]
+    for _cls,(_fit,_predict) in _durations.items():
+        for _name,_duration in [('fit',_fit),('predict',_predict)]:
+            _original_methods[_cls,_name]=getattr(_cls,_name)
+            setattr(_cls,_name,_timed(getattr(_cls,_name),_duration))
+    _replay=rerun_with(X_train=need("X_train"), X_test=need("X_test"), y_train=need("y_train"), y_test=need("y_test"))
+finally:
+    _time.perf_counter=_original_clock
+    for (_cls,_name),_method in _original_methods.items():
+        setattr(_cls,_name,_method)
+_repeated=_replay.get('speed')
+assert isinstance(_repeated,_pd.DataFrame), 'Сохраните speed и при повторном замере.'
+for _label,_cls in [('дерево',_T),('лес',_RF),('логрегрессия',_LR)]:
+    _fit,_predict=_durations[_cls]
+    assert close(_repeated.loc[_label,'fit_s'],_fit,1e-9), f'{_label}: fit_s должна быть разностью показаний perf_counter вокруг настоящего fit этой модели.'
+    assert close(_repeated.loc[_label,'predict_s'],_predict,1e-9), f'{_label}: predict_s должна измерять настоящий predict этой модели отдельно от обучения.'
 ```
 
 ### hint

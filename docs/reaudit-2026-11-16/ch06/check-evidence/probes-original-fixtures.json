@@ -1,0 +1,38 @@
+[
+  {
+    "id": "C51",
+    "key": "09-project/top",
+    "label": "40 candidate working pool, four exact IDs and scores",
+    "expected": true,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": "{\"current_risk\": current_risk.to_dict(), \"current_ids\": current_ids, \"k\": int(len(current)*.1), \"historical_ids\": top_ids}",
+    "file_variants": {
+      "guests_current.csv": "guests-current-40.csv"
+    }
+  },
+  {
+    "id": "C52",
+    "key": "09-project/top",
+    "label": "40 tied predictions choose four smaller guest IDs",
+    "expected": true,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": "{\"current_risk\": current_risk.to_dict(), \"current_ids\": current_ids, \"k\": int(len(current)*.1), \"historical_ids\": top_ids}",
+    "file_variants": {
+      "guests_current.csv": "guests-current-40-ties.csv"
+    }
+  },
+  {
+    "id": "C53",
+    "key": "09-project/top",
+    "label": "ties follow incoming row order instead of guest ID",
+    "expected": false,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": "{\"current_risk\": current_risk.to_dict(), \"current_ids\": current_ids, \"k\": int(len(current)*.1), \"historical_ids\": top_ids}",
+    "file_variants": {
+      "guests_current.csv": "guests-current-40-ties.csv"
+    }
+  }
+]

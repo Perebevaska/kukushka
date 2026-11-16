@@ -437,6 +437,11 @@ assert f.n_estimators == 50 and f.random_state == 0, f'У леса n_estimators=
 assert hasattr(f, 'estimators_'), 'Лес создан, но не обучен — вызовите fit.'
 w = round(_RF(n_estimators=50, random_state=0).fit(a, ya).score(b, yb), 3)
 assert close(need('acc_test'), w), f'acc_test = {need("acc_test")}, а ожидалось {w}. Обучение — на X_train, оценка — на X_test.'
+import numpy as _np
+_expected = _RF(n_estimators=50,random_state=0).fit(a,ya).predict(b)
+_actual = f.predict(b)
+assert _np.array_equal(_actual,_expected), 'Переданный forest выдаёт другие прогнозы. Обучайте его по X_train, y_train.'
+assert close(need('acc_test'),round((_actual == yb).mean(),3)), 'acc_test должна соответствовать прогнозам переданного forest после последнего fit.'
 ```
 
 ### hint
@@ -462,7 +467,7 @@ acc_test = round(forest.score(X_test, y_test), 3)
 
 ## task: gap | Кто переобучился сильнее | base
 
-Обучите на одних и тех же данных дерево без ограничения глубины (`DecisionTreeClassifier(random_state=0)`) и лес `RandomForestClassifier(n_estimators=50, random_state=0)`. Для каждой модели посчитайте разрыв «обучение − тест» в процентных пунктах (1 знак): `gap_tree` и `gap_forest`. В `winner` сохраните `"лес"` или `"дерево"` — у кого выше доля правильных ответов на тесте.
+Обучите на одних и тех же данных дерево без ограничения глубины (`DecisionTreeClassifier(random_state=0)`) и лес `RandomForestClassifier(n_estimators=50, random_state=0)`. Для каждой модели посчитайте разрыв «обучение − тест» в процентных пунктах (1 знак): `gap_tree` и `gap_forest`. В `winner` сохраните `"лес"` или `"дерево"` — у кого выше доля правильных ответов на этом срезе. Здесь описываем две заранее заданные модели. Для выбора рабочего алгоритма понадобится валидация, а финальный тест служит оценкой уже выбранной стратегии.
 
 ### setup
 ```python
@@ -513,7 +518,7 @@ assert need('winner') == ('лес' if f.score(b, yb) > t.score(b, yb) else 'де
 `model.score(X_train, y_train)` и `model.score(X_test, y_test)` — для обеих моделей.
 
 ### hint
-Разрыв — `(доля на обучении − доля на тесте) * 100`, округление в конце. Дерево без ограничения глубины почти идеально запоминает обучение, поэтому его разрыв будет большим. Победителя выбирайте по тесту, а не по обучению.
+Разрыв — `(доля на обучении − доля на тесте) * 100`, округление в конце. Дерево без ограничения глубины почти идеально запоминает обучение, поэтому его разрыв будет большим. Здесь winner обозначает лидера двух заранее заданных моделей на данном срезе. Выбор рабочей модели выполняют по валидации.
 
 ### solution
 ```python
@@ -540,7 +545,7 @@ winner = "лес" if forest.score(X_test, y_test) > tree.score(X_test, y_test) e
 
 ## task: n-trees | Кривая числа деревьев | base
 
-Для числа деревьев из списка `sizes` обучите `RandomForestClassifier(n_estimators=n, random_state=0)` и сохраните доли правильных ответов на тесте в список `accs` (без округления). Нарисуйте линию: по оси X — `sizes`, по Y — `accs`, подпишите ось X `"число деревьев"`.
+Для числа деревьев из списка `sizes` обучите `RandomForestClassifier(n_estimators=n, random_state=0)` и сохраните доли правильных ответов на тесте в список `accs` (без округления). Нарисуйте линию: по оси X — `sizes`, по Y — `accs`, подпишите ось X `"число деревьев"`. Это описательная кривая на данном срезе. При подборе числа деревьев для рабочего прогноза такую кривую строят на валидации, затем один раз оценивают выбранную настройку на финальном тесте.
 
 ### setup
 ```python

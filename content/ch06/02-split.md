@@ -350,6 +350,10 @@ assert len(Xte) == len(b), f'В X_test {len(Xte)} строк, а при test_siz
 assert list(Xtr.index) == list(a.index) and list(Xte.index) == list(b.index), 'Строки попали не в ту часть. Проверьте random_state=42.'
 assert list(ytr.index) == list(Xtr.index) and list(yte.index) == list(Xte.index), 'y_train и y_test должны соответствовать X_train и X_test — проверьте порядок переменных слева от знака =.'
 assert _lines == [f'{len(a)} {len(b)}'], f'Вывод: {_lines}, а нужно две длины через пробел — сначала обучающей, потом тестовой.'
+for _label,_got,_want in [('X_train',Xtr,a),('X_test',Xte,b),('y_train',ytr,c),('y_test',yte,e)]:
+    if isinstance(_want, _pd.DataFrame):
+        assert list(_got.columns)==list(_want.columns), f'{_label}: сохраните названия и порядок признаков.'
+    assert _got.shape == _want.shape and (_got.to_numpy() == _want.to_numpy()).all(), f'{_label}: значения должны соответствовать ID доставок, не только индексам частей.'
 ```
 
 ### hint

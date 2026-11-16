@@ -200,13 +200,13 @@ print(coefs.round(2))
 
 | слагаемое | вес | значение | вклад |
 |---|---|---|---|
-| свободный член | — | — | +1.693 |
-| `distance_km` | 0.911 | 0.8 | +0.729 |
-| `items` | 0.461 | 1 | +0.461 |
-| `promised_min` | −0.184 | 30 | −5.508 |
-| `hour` | 0.044 | 21 | +0.919 |
-| `courier_пеший` | 2.488 | 1 | +2.488 |
-| `weather_снег` | 1.094 | 1 | +1.094 |
+| свободный член | — | — | +1.699 |
+| `distance_km` | 0.910 | 0.8 | +0.728 |
+| `items` | 0.462 | 1 | +0.462 |
+| `promised_min` | −0.183 | 30 | −5.504 |
+| `hour` | 0.044 | 21 | +0.921 |
+| `courier_пеший` | 2.482 | 1 | +2.482 |
+| `weather_снег` | 1.090 | 1 | +1.090 |
 | `shop_id_KZN-2` | 0.753 | 1 | +0.753 |
 
 Флаги со значением 0 (другие курьеры, погода, кофейни) ничего не добавляют. Сумма: $z \approx$ **2.63**. Сигмоида: $1 / (1 + e^{-2.63}) \approx 1 / (1 + 0.072) \approx$ **0.93**.
@@ -217,7 +217,7 @@ print(coefs.round(2))
 
 Что получилось: модель почти уверена в опоздании — пеший курьер, снег, проблемная кофейня, поздний час. Самый большой по модулю вклад — у обещания (−5.5), но это не «главный» признак: просто 30 минут — большое число, а вес «за минуту». Решают флаги, которые набрали вместе больше +4.
 
-И ещё одна честная деталь: эта доставка на самом деле приехала **вовремя**. Вероятность 0.93 не обещает опоздание — она говорит, что из сотни таких доставок опоздали бы около 93. Эта оказалась среди остальных семи.
+И ещё одна честная деталь: эта доставка на самом деле приехала **вовремя**. Модель оценила риск в 0.93. Чтобы проверить эту оценку, надо взять много доставок с близким прогнозом и сравнить их фактическую долю опозданий со средним риском. Эту проверку сделаем в следующем уроке.
 
 ```python
 import numpy as np
@@ -243,7 +243,7 @@ print("predict_proba:", round(model.predict_proba(X_test.loc[[1590]])[0, 1], 2))
 ```
 
 ::: warn Веса флагов читаются парами
-Флаги одного признака без `drop_first` в каждой строке в сумме дают 1: доставка либо авто, либо вело, либо пешая. Поэтому вес отдельного флага сам по себе мало что значит — смысл имеет **разница** весов внутри признака. `courier_вело` = −0.40 — это не «вело безопаснее среднего», а «вело где-то между авто (−2.09) и пешим (+2.49)»: разница пеший − вело = 2.89, вело − авто = 1.69. С `drop_first=True` вес флага сразу был бы разницей с отброшенной категорией. Так же с погодой: `weather_облачно` = −0.81 против `weather_ясно` = −0.20 — небольшая разница внутри погоды (в облачные дни и в данных опаздывают реже: 19 % против 24 %), а главный сигнал погоды — снег (+1.09).
+Флаги одного признака без `drop_first` в каждой строке в сумме дают 1: доставка либо авто, либо вело, либо пешая. Поэтому вес отдельного флага сам по себе мало что значит — смысл имеет **разница** весов внутри признака. `courier_вело` = −0.41 — это не «вело безопаснее среднего», а «вело где-то между авто (−2.09) и пешим (+2.48)»: разница пеший − вело = 2.89, вело − авто = 1.68. С `drop_first=True` вес флага сразу был бы разницей с отброшенной категорией. Так же с погодой: `weather_облачно` = −0.81 против `weather_ясно` = −0.20 — небольшая разница внутри погоды (в облачные дни и в данных опаздывают реже: 19 % против 24 %), а главный сигнал погоды — снег (+1.09).
 :::
 
 ::: deep Веса и шансы
@@ -405,13 +405,16 @@ n_alarm = int((p >= 0.5).sum())
 
 ## task: threshold | Порог под требование диспетчера | base
 
-Диспетчер решил поднимать тревогу, если вероятность опоздания 0.3 и выше. Для тестовых доставок посчитайте (все — 3 знака):
+Диспетчер решил поднимать тревогу, если вероятность опоздания 0.3 и выше. Для валидационных доставок посчитайте (все — 3 знака):
 
 - `alarms` — долю доставок с тревогой;
 - `caught` — долю настоящих опозданий, на которые была тревога;
 - `hit` — долю тревог, которые оправдались (доставка опоздала).
 
 Затем диспетчер требует, чтобы оправдывались не меньше 80 % тревог. Переберите пороги `np.arange(0.10, 0.90, 0.05).round(2)` и сохраните в `t80` первый (самый низкий) порог, при котором `hit` ≥ 0.8, а в `caught80` — долю пойманных опозданий при нём (3 знака).
+
+
+До расчётов отложите финальный test (25 %, `random_state=42`), затем отделите validation — 25 % остатка (`random_state=43`). Обучите логистическую регрессию только на train и получите `p` для `X_valid`. Все доли и подбор `t80` здесь относятся к validation. Финальные `X_test, y_test` не используйте: достижение 80 % на наборе подбора ещё не гарантирует их на новых данных.
 
 ### starter
 ```python
@@ -425,8 +428,9 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["hour"] = ok["created"].dt.hour
 y = ok["actual_min"] > ok["promised_min"]
 X = pd.get_dummies(ok[["distance_km", "items", "promised_min", "hour", "courier", "weather", "shop_id"]], dtype=int)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
-p = LogisticRegression(max_iter=2000).fit(X_train, y_train).predict_proba(X_test)[:, 1]
+X_dev, X_test, y_dev, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_train, X_valid, y_train, y_valid = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)
+p = LogisticRegression(max_iter=2000).fit(X_train, y_train).predict_proba(X_valid)[:, 1]
 
 ```
 
@@ -440,12 +444,13 @@ ok = d[d['actual_min'].between(1, 299)].copy()
 ok['hour'] = ok['created'].dt.hour
 y = ok['actual_min'] > ok['promised_min']
 X = _pd.get_dummies(ok[['distance_km', 'items', 'promised_min', 'hour', 'courier', 'weather', 'shop_id']], dtype=int)
-a, b, c, e = _tts(X, y, test_size=0.25, random_state=42)
+_dev, _test, _dy, _ty = _tts(X, y, test_size=0.25, random_state=42)
+a, b, c, e = _tts(_dev, _dy, test_size=0.25, random_state=43)
 w = _LR(max_iter=2000).fit(a, c).predict_proba(b)[:, 1]
 al = w >= 0.3
 want = {'alarms': round(al.mean(), 3), 'caught': round(e[al].sum() / e.sum(), 3), 'hit': round(e[al].mean(), 3)}
-assert close(need('alarms'), want['alarms']), f'alarms = {need("alarms")}, а нужно {want["alarms"]}. Это доля всех тестовых доставок, где p ≥ 0.3.'
-assert close(need('caught'), want['caught']), f'caught = {need("caught")}, а нужно {want["caught"]}. Делить нужно на число всех опозданий в тесте.'
+assert close(need('alarms'), want['alarms']), f'alarms = {need("alarms")}, а нужно {want["alarms"]}. Это доля всех валидационных доставок, где p ≥ 0.3.'
+assert close(need('caught'), want['caught']), f'caught = {need("caught")}, а нужно {want["caught"]}. Делить нужно на число всех опозданий в валидации.'
 assert close(need('hit'), want['hit']), f'hit = {need("hit")}, а нужно {want["hit"]}. Это доля опозданий среди доставок с тревогой.'
 import numpy as _np
 _t = next(t for t in _np.arange(0.10, 0.90, 0.05).round(2) if e[w >= t].mean() >= 0.8)
@@ -454,10 +459,10 @@ assert close(need('caught80'), round(e[w >= _t].sum() / e.sum(), 3)), f'caught80
 ```
 
 ### hint
-Маска тревог: `alarm = p >= 0.3`. Опоздания с тревогой: `y_test[alarm]`.
+Маска тревог: `alarm = p >= 0.3`. Опоздания с тревогой: `y_valid[alarm]`.
 
 ### hint
-`caught` — `y_test[alarm].sum() / y_test.sum()`, `hit` — `y_test[alarm].mean()`.
+`caught` — `y_valid[alarm].sum() / y_valid.sum()`, `hit` — `y_valid[alarm].mean()`.
 
 ### hint
 Для `t80`: `for t in np.arange(0.10, 0.90, 0.05).round(2):` — посчитайте `hit` при пороге `t` и остановитесь (`break`) на первом, где он не меньше 0.8.
@@ -473,23 +478,24 @@ ok = d[d["actual_min"].between(1, 299)].copy()
 ok["hour"] = ok["created"].dt.hour
 y = ok["actual_min"] > ok["promised_min"]
 X = pd.get_dummies(ok[["distance_km", "items", "promised_min", "hour", "courier", "weather", "shop_id"]], dtype=int)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
-p = LogisticRegression(max_iter=2000).fit(X_train, y_train).predict_proba(X_test)[:, 1]
+X_dev, X_test, y_dev, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_train, X_valid, y_train, y_valid = train_test_split(X_dev, y_dev, test_size=0.25, random_state=43)
+p = LogisticRegression(max_iter=2000).fit(X_train, y_train).predict_proba(X_valid)[:, 1]
 alarm = p >= 0.3
 alarms = round(alarm.mean(), 3)
-caught = round(y_test[alarm].sum() / y_test.sum(), 3)
-hit = round(y_test[alarm].mean(), 3)
+caught = round(y_valid[alarm].sum() / y_valid.sum(), 3)
+hit = round(y_valid[alarm].mean(), 3)
 
 import numpy as np
 for t in np.arange(0.10, 0.90, 0.05).round(2):
-    if y_test[p >= t].mean() >= 0.8:
+    if y_valid[p >= t].mean() >= 0.8:
         t80 = t
-        caught80 = round(y_test[p >= t].sum() / y_test.sum(), 3)
+        caught80 = round(y_valid[p >= t].sum() / y_valid.sum(), 3)
         break
 ```
 
 ### explain
-При пороге 0.3 тревога у 27 % доставок; она накрывает 81 % настоящих опозданий, и 70 % тревог оправдываются. Требование «80 % оправданий» впервые выполняется при пороге 0.6: там 80 тревог, из них оправдались ровно 64 — 0.800, граница включена, поэтому в условии «≥». Ловим тогда лишь 60 % опозданий: за точность тревог платим пропущенными опозданиями. Заметьте и неровность: при 0.65 доля оправданий снова опускается ниже 0.8 — на нескольких сотнях тестовых доставок она «шумит». Какой порог лучше — вопрос цены: что дороже, лишний звонок гостю или опоздание без предупреждения.
+Порог выбирается по валидации: более высокая точность тревог обычно означает меньший охват опозданий. Доля оправдавшихся тревог может меняться неровно: соседние пороги оставляют разные небольшие наборы заказов. Порог `t80` уже подобран на validation, поэтому его качество здесь нельзя выдавать за независимую итоговую оценку. После фиксации порога его один раз проверяют на сохранённом финальном test.
 
 ## task: coefs | Знаки коэффициентов | base
 

@@ -1,0 +1,164 @@
+[
+  {
+    "id": "R01",
+    "key": "09-project/top",
+    "label": "reviewer beforeproof R01",
+    "expected": false,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)\nrisk.loc[risk.idxmin()] = float('nan')",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "R05",
+    "key": "07-regression/fact-pred",
+    "label": "reviewer beforeproof R05",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nfor mask in (pred < 40, pred >= 40):\n    ax.scatter(pred[mask], y_test.to_numpy()[mask], s=8, alpha=0.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "R06",
+    "key": "07-regression/fact-pred",
+    "label": "reviewer beforeproof R06",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred, y_test, s=8, alpha=0.5)\nax.scatter(pred[:2], y_test.iloc[:2][::-1])\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X01",
+    "key": "07-regression/fact-pred",
+    "label": "author visible scatter",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred, y_test, s=8, alpha=0.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X02",
+    "key": "09-project/top",
+    "label": "author complete finite risk",
+    "expected": true,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X03",
+    "key": "09-project/top",
+    "label": "infinite risk of one guest",
+    "expected": false,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)\nrisk.iloc[0]=float(\"inf\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X04",
+    "key": "09-project/top",
+    "label": "wrong finite risk of one guest",
+    "expected": false,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)\nrisk.iloc[0] += .001",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X05",
+    "key": "07-regression/fact-pred",
+    "label": "correct pairs reversed and split over two scatters",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\norder = list(range(len(pred)-1,-1,-1))\ncut = len(order)//2\nfor idx in (order[:cut],order[cut:]):\n    ax.scatter(pred[idx],y_test.iloc[idx],s=8,alpha=.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X06",
+    "key": "07-regression/fact-pred",
+    "label": "correct point graph via Line2D markers without connecting line",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.plot(pred, y_test, marker=\"o\", linestyle=\"None\", markersize=3, alpha=.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X07",
+    "key": "07-regression/fact-pred",
+    "label": "all points invisible",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred,y_test,s=8,visible=False)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X08",
+    "key": "07-regression/fact-pred",
+    "label": "all points transparent",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred,y_test,s=8,alpha=0)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X09",
+    "key": "07-regression/fact-pred",
+    "label": "diagonal invisible",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred, y_test, s=8, alpha=0.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\", visible=False)\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X10",
+    "key": "07-regression/fact-pred",
+    "label": "diagonal transparent",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred, y_test, s=8, alpha=0.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\", alpha=0)\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X11",
+    "key": "07-regression/fact-pred",
+    "label": "red solid diagonal contrary to visible requirement",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred, y_test, s=8, alpha=0.5)\nax.plot([10,100],[10,100],color=\"red\",linestyle=\"-\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X12",
+    "key": "07-regression/fact-pred",
+    "label": "gray RGB and custom dashed diagonal",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred, y_test, s=8, alpha=0.5)\nax.plot([10,100],[10,100],color=\"#808080\",linestyle=(0,(5,3)))\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X13",
+    "key": "07-regression/fact-pred",
+    "label": "extra correct duplicate point changes multiplicity",
+    "expected": false,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred, y_test, s=8, alpha=0.5)\nax.scatter(pred[:1],y_test.iloc[:1])\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "X14",
+    "key": "07-regression/fact-pred",
+    "label": "hidden helper scatter plus the correct visible graph",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.scatter(pred,y_test,visible=False)\nax.scatter(pred, y_test, s=8, alpha=0.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": ""
+  },
+  {
+    "id": "R12",
+    "key": "08b-groups-speed/speed-table",
+    "label": "honest perf_counter imported under seconds alias",
+    "expected": true,
+    "code": "from time import perf_counter as seconds\nimport pandas as pd\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.linear_model import LogisticRegression\n\nmodels = {\n    \"дерево\": DecisionTreeClassifier(max_depth=3, random_state=0),\n    \"лес\": RandomForestClassifier(n_estimators=100, random_state=0),\n    \"логрегрессия\": LogisticRegression(max_iter=2000),\n}\nrows = []\nfor name, model in models.items():\n    t0 = seconds()\n    model.fit(X_train, y_train)\n    t1 = seconds()\n    pred = model.predict(X_test)\n    t2 = seconds()\n    rows.append({\"модель\": name, \"accuracy\": round((pred == y_test).mean(), 3),\n                 \"fit_s\": t1 - t0, \"predict_s\": t2 - t1})\nspeed = pd.DataFrame(rows).set_index(\"модель\")\nfit_ratio = speed.loc[\"лес\", \"fit_s\"] / speed.loc[\"дерево\", \"fit_s\"]\nprint(f\"лес учится в {fit_ratio:.0f} раз дольше\")\nspeed",
+    "setup_append": "",
+    "diagnostic": ""
+  }
+]

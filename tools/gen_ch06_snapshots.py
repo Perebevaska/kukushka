@@ -12,13 +12,16 @@ def write_snapshots(directory):
         writer=csv.writer(stream)
         writer.writerow(['guest_id','snapshot_date','target_start','target_end_exclusive','target_available_at','card_blocked_available_at'])
         writer.writerows((r['guest_id'],'2026-10-01','2026-10-01','2026-11-30','2026-11-30','2026-11-30') for r in rows)
-    # Independent new feature process: no churned/card_blocked values are read.
+    # A separate synthetic candidate pool uses historical feature profiles.
+    # Distinct IDs avoid implying an event history shared with the labelled cohort.
+    # No churned/card_blocked values are read.
     rng=np.random.default_rng(61201)
     features=[c for c in columns if c not in ('churned','card_blocked')]
     with (directory/'guests_current.csv').open('w') as stream:
-        writer=csv.DictWriter(stream,fieldnames=['snapshot_date']+features); writer.writeheader()
-        for row in rows:
+        writer=csv.DictWriter(stream,fieldnames=['snapshot_date']+features, lineterminator='\n'); writer.writeheader()
+        for candidate_id, row in enumerate(rows, 30001):
             r={c:row[c] for c in features}; r['snapshot_date']='2026-12-01'
+            r['guest_id']=f'G-{candidate_id}'
             r['tenure_months']=int(r['tenure_months'])+2
             visits=max(0,int(rng.poisson(max(0.3,float(r['visits_90d'])))))
             r['visits_90d']=visits

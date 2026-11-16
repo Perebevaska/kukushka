@@ -1,0 +1,29 @@
+[
+  {
+    "id": "R01",
+    "key": "09-project/top",
+    "label": "reviewer beforeproof R01",
+    "expected": false,
+    "code": "import pandas as pd\nrisk = pd.Series(model.predict_proba(X_test)[:, 1], index=X_test.index)\ntop = risk.loc[g.loc[risk.index].sort_values(\"guest_id\").index].sort_values(ascending=False, kind=\"stable\").head(60)\ntop_ids = list(g.loc[top.index, \"guest_id\"])\ntop_rate = round(y_test.loc[top.index].mean(), 3)\nlift = round(top_rate / y_test.mean(), 1)\nalready_gone = round((X_test.loc[top.index, \"days_since_last\"] > 45).mean(), 3)\nprint(top_ids[:5], top_rate, lift, already_gone)\ncurrent = pd.read_csv('guests_current.csv').set_index('guest_id')\ncurrent['avg_check'] = current['avg_check'].fillna(0)\ncurrent_X = pd.get_dummies(current.drop(columns='snapshot_date'), dtype=int).reindex(columns=X_train.columns, fill_value=0)\ncurrent_risk = pd.Series(model.predict_proba(current_X)[:,1], index=current.index)\ncurrent_ids = current_risk.sort_index().sort_values(ascending=False, kind='stable').head(int(len(current) * 0.1)).index.tolist()\n\nrule_top = X_test.loc[g.loc[X_test.index].sort_values('guest_id').index, 'days_since_last'].sort_values(ascending=False, kind='stable').head(60)\nrule_top_ids = g.loc[rule_top.index, 'guest_id'].tolist()\nrule_top_rate = round(y_test.loc[rule_top.index].mean(), 3)\nrisk.loc[risk.idxmin()] = float('nan')",
+    "setup_append": "",
+    "diagnostic": "{\"risk_ids\": risk.index.tolist(), \"risk\": [None if pd.isna(x) else float(x) for x in risk], \"model_risk\": model.predict_proba(X_test)[:,1].tolist(), \"current_ids\": current_ids}"
+  },
+  {
+    "id": "X05",
+    "key": "07-regression/fact-pred",
+    "label": "correct pairs reversed and split over two scatters",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\norder = list(range(len(pred)-1,-1,-1))\ncut = len(order)//2\nfor idx in (order[:cut],order[cut:]):\n    ax.scatter(pred[idx],y_test.iloc[idx],s=8,alpha=.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": "{\"expected_pairs\": [[float(x),float(y)] for x,y in zip(pred,y_test)], \"scatter_offsets\": [c.get_offsets().tolist() for c in ax.collections], \"marker_pairs\": [[[float(x),float(y)] for x,y in zip(l.get_xdata(),l.get_ydata())] for l in ax.lines if l.get_marker() not in (None,\"None\",\"\",\" \")]}"
+  },
+  {
+    "id": "X06",
+    "key": "07-regression/fact-pred",
+    "label": "correct point graph via Line2D markers without connecting line",
+    "expected": true,
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\", parse_dates=[\"created\"])\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"hour\"] = ok[\"created\"].dt.hour\ny = ok[\"actual_min\"]\nX = pd.get_dummies(ok[[\"distance_km\", \"items\", \"promised_min\", \"hour\", \"courier\", \"weather\", \"shop_id\"]], dtype=int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\npred = LinearRegression().fit(X_train, y_train).predict(X_test)\n\nfig, ax = plt.subplots(figsize=(5, 5))\nax.plot(pred, y_test, marker=\"o\", linestyle=\"None\", markersize=3, alpha=.5)\nax.plot([10, 100], [10, 100], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"прогноз, мин\")\nax.set_ylabel(\"факт, мин\")\nax.set_title(\"Линейная регрессия: факт против прогноза\")",
+    "setup_append": "",
+    "diagnostic": "{\"expected_pairs\": [[float(x),float(y)] for x,y in zip(pred,y_test)], \"scatter_offsets\": [c.get_offsets().tolist() for c in ax.collections], \"marker_pairs\": [[[float(x),float(y)] for x,y in zip(l.get_xdata(),l.get_ydata())] for l in ax.lines if l.get_marker() not in (None,\"None\",\"\",\" \")]}"
+  }
+]
