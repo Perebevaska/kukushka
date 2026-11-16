@@ -1,0 +1,1 @@
+fit сохраняет self.intercept_/coef_ и возвращает self; predict читает состояние конкретного объекта. RegressorMixin первым,BaseEstimator последним дают score/get_params и копирование. Правила бизнеса проверяются теми же фолдами.

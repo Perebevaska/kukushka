@@ -63,6 +63,8 @@ print((X @ w + b).round(1))
 
 {{practice: predict-all, by-hand, predict-df}}
 
+**Проверьте порядок по ключам.** Рецепт требует 2 единицы кофе и 1 единицу молока. В справочнике сначала записано молоко по 3 ₽, затем кофе по 10 ₽. До умножения назовите стоимость рецепта. Как перестроить вектор цен по именам ингредиентов, чтобы перестановка строк справочника сохраняла ответ? Сопоставьте это действие с JOIN или reindex.
+
 ## Матрица на матрицу
 
 Пример из жизни кофейни. Рецепты: сколько граммов кофе, мл молока и граммов сиропа идёт на один напиток. Цены: сколько стоит грамм/мл у двух поставщиков.
@@ -551,7 +553,7 @@ print(G.round(1), C.round(3), corr, sep="\n")
 
 ## task: predict-df | Прогноз модели как X @ w | plus
 
-Обучите `LinearRegression` на доставках (признаки `distance_km`, `items`, `walk`; цель `actual_min`; время 1–299 минут). Посчитайте прогнозы для всех доставок матричным умножением `X.values @ model.coef_ + model.intercept_` и сравните с `model.predict(X)`. Сохраните `manual` (массив), `max_diff` — наибольшую абсолютную разницу между двумя способами, и `same` — `True`, если она меньше 1e-9.
+Обучите `LinearRegression` на доставках (признаки `distance_km`, `items`, `walk`; цель `actual_min`; время 1–299 минут). Посчитайте прогнозы для всех доставок матричным умножением `X.values @ model.coef_ + model.intercept_` и сравните с `model.predict(X)`. Сохраните обученную модель в `model`: проверка вызывает её predict на исходных и новых строках. Сохраните `manual` (массив), `max_diff` — наибольшую абсолютную разницу между двумя способами, и `same` — `True`, если она меньше 1e-9.
 
 ### starter
 ```python
@@ -578,7 +580,17 @@ X0 = ok[['distance_km', 'items', 'walk']]; m = _LR().fit(X0, ok['actual_min'])
 mm = X0.values @ m.coef_ + m.intercept_
 man = _np.asarray(need('manual'))
 assert man.shape == mm.shape and _np.allclose(man, mm), 'manual не совпадает с X.values @ coef_ + intercept_.'
-assert need('max_diff') < 1e-9 and need('same') is True or need('same') == True, f'max_diff = {need("max_diff")}, same = {need("same")}.'
+
+_student_model=need('model')
+_student_pred=_np.asarray(_student_model.predict(X0),dtype=float)
+assert _student_pred.shape==mm.shape and _np.allclose(_student_pred,mm,rtol=1e-8,atol=1e-8), 'Переданная model должна прогнозировать исходные строки так же, как обученная линейная регрессия.'
+_new=_pd.DataFrame([[2.5,1.,0.],[9.,3.,1.]],columns=X0.columns)
+_new_pred=_np.asarray(_student_model.predict(_new),dtype=float)
+assert _new_pred.shape==(2,) and _np.allclose(_new_pred,m.predict(_new),rtol=1e-8,atol=1e-8), 'model.predict должна работать на новых строках с тем же порядком признаков.'
+_diff=float(_np.abs(man-_student_pred).max())
+_value=float(need('max_diff'))
+assert _np.isfinite(_value) and _value>=0 and _np.isclose(_value,_diff,rtol=0,atol=1e-10), 'max_diff — вычисленный максимум абсолютных разностей manual и переданной model.predict, конечное неотрицательное число.'
+assert bool(need('same')) == bool(_diff<1e-9), 'same сравнивает вычисленную максимальную разность с 1e-9.'
 ```
 
 ### hint

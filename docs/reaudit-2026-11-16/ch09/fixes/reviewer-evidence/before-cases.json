@@ -1,0 +1,206 @@
+[
+ {
+  "id": "alias-clock",
+  "key": "ch09/02b-vectorize/best-of",
+  "expected": true,
+  "code": "from time import perf_counter as now\n\ndef best_time(f, repeats=5):\n    times = []\n    for _ in range(repeats):\n        t0 = now()\n        f()\n        times.append(now() - t0)\n    return min(times)\n\nt_sum = best_time(lambda: sum(range(1_000_000)))\nprint(f\"{t_sum:.4f} с\")",
+  "setup": "",
+  "check": "import time as _t\nf = need('best_time')\n_calls = []\ndef _work():\n    _calls.append(1)\n    if len(_calls) == 1:                       # первый вызов медленный, остальные — мгновенные\n        s = 0\n        for i in range(300_000):\n            s += i\nr = f(_work, 4)\nassert len(_calls) == 4, f'best_time(f, 4) вызвала f {len(_calls)} раз, а нужно 4: по разу на каждый повтор.'\nassert isinstance(r, float) and r >= 0, f'best_time вернула {r!r}: нужно одно число — время в секундах.'\n_t0 = _t.perf_counter(); s = 0\nfor i in range(300_000):\n    s += i\n_heavy = _t.perf_counter() - _t0\nassert r < _heavy / 5, f'Вернулось {r:.4f} с — это похоже на время медленного первого вызова или на среднее. Нужно наименьшее из повторов: min(...).'\n_calls.clear(); f(_work)\nassert len(_calls) == 5, f'Без второго аргумента best_time вызвала f {len(_calls)} раз, а по умолчанию повторов 5.'\nts = need('t_sum')\nassert isinstance(ts, float) and 0 <= ts < 60, f't_sum = {ts!r}: время в секундах от best_time(lambda: sum(range(1_000_000))).'\n_original_clock = _t.perf_counter\ntry:\n    for _durations, _expected in [([.004,0,.002,.003],0.0),([.004,.001,.002,.003],.001)]:\n        _ticks = iter([tick for i,duration in enumerate(_durations) for tick in (float(i),float(i)+duration)])\n        _t.perf_counter = lambda: next(_ticks)\n        _count = []\n        _measured = f(lambda: _count.append(1),4)\n        assert len(_count)==4 and close(_measured,_expected,1e-10), 'best_time должен вернуть реальный минимум; нулевой минимум допустим, постоянный ноль не подходит.'\nfinally:\n    _t.perf_counter = _original_clock",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "fa1134cc4e7eeff7fb72aa0c4436c8a8c0e11e5204956ee05f2f6350cb634bae"
+ },
+ {
+  "id": "attribute-clock",
+  "key": "ch09/02b-vectorize/best-of",
+  "expected": true,
+  "code": "import time\n\ndef best_time(f, repeats=5):\n    times = []\n    for _ in range(repeats):\n        t0 = time.perf_counter()\n        f()\n        times.append(time.perf_counter() - t0)\n    return min(times)\n\nt_sum = best_time(lambda: sum(range(1_000_000)))\nprint(f\"{t_sum:.4f} с\")",
+  "setup": "",
+  "check": "import time as _t\nf = need('best_time')\n_calls = []\ndef _work():\n    _calls.append(1)\n    if len(_calls) == 1:                       # первый вызов медленный, остальные — мгновенные\n        s = 0\n        for i in range(300_000):\n            s += i\nr = f(_work, 4)\nassert len(_calls) == 4, f'best_time(f, 4) вызвала f {len(_calls)} раз, а нужно 4: по разу на каждый повтор.'\nassert isinstance(r, float) and r >= 0, f'best_time вернула {r!r}: нужно одно число — время в секундах.'\n_t0 = _t.perf_counter(); s = 0\nfor i in range(300_000):\n    s += i\n_heavy = _t.perf_counter() - _t0\nassert r < _heavy / 5, f'Вернулось {r:.4f} с — это похоже на время медленного первого вызова или на среднее. Нужно наименьшее из повторов: min(...).'\n_calls.clear(); f(_work)\nassert len(_calls) == 5, f'Без второго аргумента best_time вызвала f {len(_calls)} раз, а по умолчанию повторов 5.'\nts = need('t_sum')\nassert isinstance(ts, float) and 0 <= ts < 60, f't_sum = {ts!r}: время в секундах от best_time(lambda: sum(range(1_000_000))).'\n_original_clock = _t.perf_counter\ntry:\n    for _durations, _expected in [([.004,0,.002,.003],0.0),([.004,.001,.002,.003],.001)]:\n        _ticks = iter([tick for i,duration in enumerate(_durations) for tick in (float(i),float(i)+duration)])\n        _t.perf_counter = lambda: next(_ticks)\n        _count = []\n        _measured = f(lambda: _count.append(1),4)\n        assert len(_count)==4 and close(_measured,_expected,1e-10), 'best_time должен вернуть реальный минимум; нулевой минимум допустим, постоянный ноль не подходит.'\nfinally:\n    _t.perf_counter = _original_clock",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "fa1134cc4e7eeff7fb72aa0c4436c8a8c0e11e5204956ee05f2f6350cb634bae"
+ },
+ {
+  "id": "constant-best",
+  "key": "ch09/02b-vectorize/best-of",
+  "expected": false,
+  "code": "from time import perf_counter as now\n\ndef best_time(f, repeats=5):\n    times = []\n    for _ in range(repeats):\n        t0 = now()\n        f()\n        times.append(now() - t0)\n    return 0.0\n\nt_sum = best_time(lambda: sum(range(1_000_000)))\nprint(f\"{t_sum:.4f} с\")",
+  "setup": "",
+  "check": "import time as _t\nf = need('best_time')\n_calls = []\ndef _work():\n    _calls.append(1)\n    if len(_calls) == 1:                       # первый вызов медленный, остальные — мгновенные\n        s = 0\n        for i in range(300_000):\n            s += i\nr = f(_work, 4)\nassert len(_calls) == 4, f'best_time(f, 4) вызвала f {len(_calls)} раз, а нужно 4: по разу на каждый повтор.'\nassert isinstance(r, float) and r >= 0, f'best_time вернула {r!r}: нужно одно число — время в секундах.'\n_t0 = _t.perf_counter(); s = 0\nfor i in range(300_000):\n    s += i\n_heavy = _t.perf_counter() - _t0\nassert r < _heavy / 5, f'Вернулось {r:.4f} с — это похоже на время медленного первого вызова или на среднее. Нужно наименьшее из повторов: min(...).'\n_calls.clear(); f(_work)\nassert len(_calls) == 5, f'Без второго аргумента best_time вызвала f {len(_calls)} раз, а по умолчанию повторов 5.'\nts = need('t_sum')\nassert isinstance(ts, float) and 0 <= ts < 60, f't_sum = {ts!r}: время в секундах от best_time(lambda: sum(range(1_000_000))).'\n_original_clock = _t.perf_counter\ntry:\n    for _durations, _expected in [([.004,0,.002,.003],0.0),([.004,.001,.002,.003],.001)]:\n        _ticks = iter([tick for i,duration in enumerate(_durations) for tick in (float(i),float(i)+duration)])\n        _t.perf_counter = lambda: next(_ticks)\n        _count = []\n        _measured = f(lambda: _count.append(1),4)\n        assert len(_count)==4 and close(_measured,_expected,1e-10), 'best_time должен вернуть реальный минимум; нулевой минимум допустим, постоянный ноль не подходит.'\nfinally:\n    _t.perf_counter = _original_clock",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "fa1134cc4e7eeff7fb72aa0c4436c8a8c0e11e5204956ee05f2f6350cb634bae"
+ },
+ {
+  "id": "legacy-wrapper-unchanged",
+  "key": "ch09/02b-vectorize/vectorize",
+  "expected": true,
+  "code": "import time\nimport numpy as np\n\nrng = np.random.default_rng(1)\nn = 100_000\nkm = rng.uniform(0.5, 12, n).round(1)\nrain = rng.random(n) < 0.2                 # True — шёл дождь\n\ndef pay_loop(km, rain):\n    out = np.empty(len(km))\n    for i in range(len(km)):\n        p = 60 + 14 * km[i]\n        if km[i] > 8:\n            p += 100\n        if rain[i]:\n            p *= 1.3\n        out[i] = p\n    return out\ndef pay_vec(km,rain):\n    p = 60+14*km+np.where(km>8,100,0)\n    return np.where(rain,p*1.3,p)\nimport time\ndef best_time(f, repeats=5):\n    times = []\n    for _ in range(repeats):\n        t0 = time.perf_counter()\n        f()\n        times.append(time.perf_counter() - t0)\n    return float(min(times))\nsame = bool(np.allclose(pay_loop(km,rain),pay_vec(km,rain)))\nt_loop = best_time(lambda: pay_loop(km,rain))\nt_vec = best_time(lambda: pay_vec(km,rain))\nspeedup = t_loop/t_vec if t_vec else None\ntotal = int(round(float(pay_vec(km,rain).sum())))",
+  "setup": "",
+  "check": "import numpy as _np\n_r = _np.random.default_rng(1); _km = _r.uniform(0.5, 12, 100_000).round(1); _rain = _r.random(100_000) < 0.2\n_p = 60 + 14 * _km + _np.where(_km > 8, 100, 0); _p = _np.where(_rain, _p * 1.3, _p)\nf = need('pay_vec')\ngot = _np.asarray(f(_km, _rain), dtype=float)\nassert got.shape == _p.shape, f'pay_vec вернула массив формы {got.shape}, а нужно {_p.shape}: по одной сумме на доставку.'\nassert _np.allclose(got[_km > 8], _p[_km > 8]) or not _np.allclose(got[_km <= 8], _p[_km <= 8]), 'Для доставок дальше 8 км сумма не сходится: не забыли надбавку 100 ₽ до умножения на 1.3?'\nassert _np.allclose(got, _p), 'pay_vec считает не так, как pay_loop. Сравните на первых строках: pay_loop(km[:5], rain[:5]) и pay_vec(km[:5], rain[:5]).'\nassert need('same') is True or need('same') == True, 'same должно быть True: сравните ответы двух функций через np.allclose.'\ntl, tv = need('t_loop'), need('t_vec')\nassert tl >= 0 and tv >= 0, 't_loop и t_vec — положительные длительности в секундах: perf_counter() после минус perf_counter() до.'\nassert tl < 600 and tv < 600, 'Время похоже не на секунды. Это разность двух показаний time.perf_counter().'\nassert (close(need('speedup'), tl/tv,max(0.02*tl/tv,.6)) if tv>0 else need('speedup') is None), 'speedup — отношение времен, при нулевом знаменателе None.'\n\nassert need('total') == int(round(_p.sum())), f'total = {need(\"total\")}. Сумма всех выплат pay_vec(km, rain), округлённая до рубля.'\nimport dis as _dis\nimport time as _time\nassert not any(i.opname in ('FOR_ITER','GET_ITER') for i in _dis.get_instructions(f)), 'pay_vec должна обрабатывать массив целиком, а не быть алиасом цикла.'\nfor _kms in (_np.array([0.,8.,8.01,15.]),_np.linspace(.1,20,1337)):\n    _rr = _np.arange(len(_kms))%2==0\n    _want = (60+14*_kms+_np.where(_kms>8,100,0))*_np.where(_rr,1.3,1.)\n    _times=[]\n    for _ in range(3):\n        _start=_time.perf_counter(); _actual=f(_kms,_rr); _times.append(_time.perf_counter()-_start)\n    assert _np.allclose(_actual,_want), 'pay_vec неверна на другой длине или на границе8км.'\nassert calls('perf_counter') >= 4, 'Замерьте реальные вызовы обеих функций через perf_counter; ускорение диагностическое.'",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "32f3d604d33cd39d25828218e390c95effa90af5216a10c85060bc0bf4e822e7"
+ },
+ {
+  "id": "legacy-direct-unchanged",
+  "key": "ch09/02b-vectorize/vectorize",
+  "expected": true,
+  "code": "import time\nimport numpy as np\n\nrng = np.random.default_rng(1)\nn = 100_000\nkm = rng.uniform(0.5, 12, n).round(1)\nrain = rng.random(n) < 0.2                 # True — шёл дождь\n\ndef pay_loop(km, rain):\n    out = np.empty(len(km))\n    for i in range(len(km)):\n        p = 60 + 14 * km[i]\n        if km[i] > 8:\n            p += 100\n        if rain[i]:\n            p *= 1.3\n        out[i] = p\n    return out\ndef pay_vec(km,rain):\n    p = 60+14*km+np.where(km>8,100,0)\n    return np.where(rain,p*1.3,p)\nsame = bool(np.allclose(pay_loop(km,rain),pay_vec(km,rain)))\nloop_times = []\nvec_times = []\nfor _ in range(5):\n    t0 = time.perf_counter()\n    loop_result = pay_loop(km,rain)\n    loop_times.append(time.perf_counter()-t0)\n    t0 = time.perf_counter()\n    vec_result = pay_vec(km,rain)\n    vec_times.append(time.perf_counter()-t0)\nt_loop = min(loop_times)\nt_vec = min(vec_times)\nspeedup = t_loop/t_vec if t_vec else None\ntotal = int(round(float(vec_result.sum())))\nprint(t_loop,t_vec,speedup,same,total)\n",
+  "setup": "",
+  "check": "import numpy as _np\n_r = _np.random.default_rng(1); _km = _r.uniform(0.5, 12, 100_000).round(1); _rain = _r.random(100_000) < 0.2\n_p = 60 + 14 * _km + _np.where(_km > 8, 100, 0); _p = _np.where(_rain, _p * 1.3, _p)\nf = need('pay_vec')\ngot = _np.asarray(f(_km, _rain), dtype=float)\nassert got.shape == _p.shape, f'pay_vec вернула массив формы {got.shape}, а нужно {_p.shape}: по одной сумме на доставку.'\nassert _np.allclose(got[_km > 8], _p[_km > 8]) or not _np.allclose(got[_km <= 8], _p[_km <= 8]), 'Для доставок дальше 8 км сумма не сходится: не забыли надбавку 100 ₽ до умножения на 1.3?'\nassert _np.allclose(got, _p), 'pay_vec считает не так, как pay_loop. Сравните на первых строках: pay_loop(km[:5], rain[:5]) и pay_vec(km[:5], rain[:5]).'\nassert need('same') is True or need('same') == True, 'same должно быть True: сравните ответы двух функций через np.allclose.'\ntl, tv = need('t_loop'), need('t_vec')\nassert tl >= 0 and tv >= 0, 't_loop и t_vec — положительные длительности в секундах: perf_counter() после минус perf_counter() до.'\nassert tl < 600 and tv < 600, 'Время похоже не на секунды. Это разность двух показаний time.perf_counter().'\nassert (close(need('speedup'), tl/tv,max(0.02*tl/tv,.6)) if tv>0 else need('speedup') is None), 'speedup — отношение времен, при нулевом знаменателе None.'\n\nassert need('total') == int(round(_p.sum())), f'total = {need(\"total\")}. Сумма всех выплат pay_vec(km, rain), округлённая до рубля.'\nimport dis as _dis\nimport time as _time\nassert not any(i.opname in ('FOR_ITER','GET_ITER') for i in _dis.get_instructions(f)), 'pay_vec должна обрабатывать массив целиком, а не быть алиасом цикла.'\nfor _kms in (_np.array([0.,8.,8.01,15.]),_np.linspace(.1,20,1337)):\n    _rr = _np.arange(len(_kms))%2==0\n    _want = (60+14*_kms+_np.where(_kms>8,100,0))*_np.where(_rr,1.3,1.)\n    _times=[]\n    for _ in range(3):\n        _start=_time.perf_counter(); _actual=f(_kms,_rr); _times.append(_time.perf_counter()-_start)\n    assert _np.allclose(_actual,_want), 'pay_vec неверна на другой длине или на границе8км.'\nassert calls('perf_counter') >= 4, 'Замерьте реальные вызовы обеих функций через perf_counter; ускорение диагностическое.'",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "32f3d604d33cd39d25828218e390c95effa90af5216a10c85060bc0bf4e822e7"
+ },
+ {
+  "id": "manual-valid",
+  "key": "ch09/02-matrices/predict-df",
+  "expected": true,
+  "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]]\ny = ok[\"actual_min\"]\nmodel = LinearRegression().fit(X, y)\n\nmanual = X.values @ model.coef_ + model.intercept_\nmax_diff = np.abs(manual - model.predict(X)).max()\nsame = bool(max_diff < 1e-9)",
+  "setup": "",
+  "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']]; m = _LR().fit(X0, ok['actual_min'])\nmm = X0.values @ m.coef_ + m.intercept_\nman = _np.asarray(need('manual'))\nassert man.shape == mm.shape and _np.allclose(man, mm), 'manual не совпадает с X.values @ coef_ + intercept_.'\nassert need('max_diff') < 1e-9 and need('same') is True or need('same') == True, f'max_diff = {need(\"max_diff\")}, same = {need(\"same\")}.'",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "2e0e07fa89914de6e06f37fff8a03774f93a50cb4c63dbc6dea1702b341e78fd"
+ },
+ {
+  "id": "manual-negative",
+  "key": "ch09/02-matrices/predict-df",
+  "expected": false,
+  "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]]\ny = ok[\"actual_min\"]\nmodel = LinearRegression().fit(X, y)\n\nmanual = X.values @ model.coef_ + model.intercept_\nmax_diff = np.abs(manual - model.predict(X)).max()\nsame = bool(max_diff < 1e-9)\nmax_diff=-14.0",
+  "setup": "",
+  "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']]; m = _LR().fit(X0, ok['actual_min'])\nmm = X0.values @ m.coef_ + m.intercept_\nman = _np.asarray(need('manual'))\nassert man.shape == mm.shape and _np.allclose(man, mm), 'manual не совпадает с X.values @ coef_ + intercept_.'\nassert need('max_diff') < 1e-9 and need('same') is True or need('same') == True, f'max_diff = {need(\"max_diff\")}, same = {need(\"same\")}.'",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "2e0e07fa89914de6e06f37fff8a03774f93a50cb4c63dbc6dea1702b341e78fd"
+ },
+ {
+  "id": "submitted-model-wrong",
+  "key": "ch09/02-matrices/predict-df",
+  "expected": false,
+  "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]]\ny = ok[\"actual_min\"]\nmodel = LinearRegression().fit(X, y)\n\nmanual = X.values @ model.coef_ + model.intercept_\nmax_diff = np.abs(manual - model.predict(X)).max()\nsame = bool(max_diff < 1e-9)\nmodel.intercept_+=8.",
+  "setup": "",
+  "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']]; m = _LR().fit(X0, ok['actual_min'])\nmm = X0.values @ m.coef_ + m.intercept_\nman = _np.asarray(need('manual'))\nassert man.shape == mm.shape and _np.allclose(man, mm), 'manual не совпадает с X.values @ coef_ + intercept_.'\nassert need('max_diff') < 1e-9 and need('same') is True or need('same') == True, f'max_diff = {need(\"max_diff\")}, same = {need(\"same\")}.'",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "2e0e07fa89914de6e06f37fff8a03774f93a50cb4c63dbc6dea1702b341e78fd"
+ },
+ {
+  "id": "same-quality-valid",
+  "key": "ch09/04-transform/same-quality",
+  "expected": true,
+  "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import r2_score\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nP = np.random.default_rng(7).normal(size=(3, 3))\n\nXp = X @ P\npred_x = LinearRegression().fit(X, y).predict(X)\npred_p = LinearRegression().fit(Xp, y).predict(Xp)\nr2_x = round(r2_score(y, pred_x), 4)\nr2_p = round(r2_score(y, pred_p), 4)\nmax_pred_diff = np.abs(pred_x - pred_p).max()",
+  "setup": "",
+  "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import r2_score as _r2\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nP0 = _np.random.default_rng(7).normal(size=(3, 3))\na = _LR().fit(X0, y0).predict(X0); b = _LR().fit(X0 @ P0, y0).predict(X0 @ P0)\nassert close(need('r2_x'), round(_r2(y0, a), 4)) and close(need('r2_p'), round(_r2(y0, b), 4)), f'r2_x, r2_p = {need(\"r2_x\")}, {need(\"r2_p\")}.'\nassert need('max_pred_diff') < 1e-6, f'max_pred_diff = {need(\"max_pred_diff\")} — прогнозы должны совпасть.'",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "1e3923e43bfc08ae7b8800571454f5a19b21a39b6398fa1122a8680d6a30633b"
+ },
+ {
+  "id": "same-quality-negative",
+  "key": "ch09/04-transform/same-quality",
+  "expected": false,
+  "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import r2_score\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nP = np.random.default_rng(7).normal(size=(3, 3))\n\nXp = X @ P\npred_x = LinearRegression().fit(X, y).predict(X)\npred_p = LinearRegression().fit(Xp, y).predict(Xp)\nr2_x = round(r2_score(y, pred_x), 4)\nr2_p = round(r2_score(y, pred_p), 4)\nmax_pred_diff = np.abs(pred_x - pred_p).max()\nmax_pred_diff=-14.0",
+  "setup": "",
+  "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import r2_score as _r2\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nP0 = _np.random.default_rng(7).normal(size=(3, 3))\na = _LR().fit(X0, y0).predict(X0); b = _LR().fit(X0 @ P0, y0).predict(X0 @ P0)\nassert close(need('r2_x'), round(_r2(y0, a), 4)) and close(need('r2_p'), round(_r2(y0, b), 4)), f'r2_x, r2_p = {need(\"r2_x\")}, {need(\"r2_p\")}.'\nassert need('max_pred_diff') < 1e-6, f'max_pred_diff = {need(\"max_pred_diff\")} — прогнозы должны совпасть.'",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "1e3923e43bfc08ae7b8800571454f5a19b21a39b6398fa1122a8680d6a30633b"
+ },
+ {
+  "id": "submitted-predictions-shifted",
+  "key": "ch09/04-transform/same-quality",
+  "expected": false,
+  "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import r2_score\n\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values\ny = ok[\"actual_min\"].values\nP = np.random.default_rng(7).normal(size=(3, 3))\n\nXp = X @ P\npred_x = LinearRegression().fit(X, y).predict(X)\npred_p = LinearRegression().fit(Xp, y).predict(Xp)\nr2_x = round(r2_score(y, pred_x), 4)\nr2_p = round(r2_score(y, pred_p), 4)\nmax_pred_diff = np.abs(pred_x - pred_p).max()\npred_p=pred_p+2.",
+  "setup": "",
+  "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import r2_score as _r2\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values; y0 = ok['actual_min'].values\nP0 = _np.random.default_rng(7).normal(size=(3, 3))\na = _LR().fit(X0, y0).predict(X0); b = _LR().fit(X0 @ P0, y0).predict(X0 @ P0)\nassert close(need('r2_x'), round(_r2(y0, a), 4)) and close(need('r2_p'), round(_r2(y0, b), 4)), f'r2_x, r2_p = {need(\"r2_x\")}, {need(\"r2_p\")}.'\nassert need('max_pred_diff') < 1e-6, f'max_pred_diff = {need(\"max_pred_diff\")} — прогнозы должны совпасть.'",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "1e3923e43bfc08ae7b8800571454f5a19b21a39b6398fa1122a8680d6a30633b"
+ },
+ {
+  "id": "restored-negative",
+  "key": "ch09/04-transform/attack",
+  "expected": false,
+  "code": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values.astype(float)\nhidden = X @ np.random.default_rng(1).normal(size=(3, 3))\nknown = X[:3]\n\nP_found = np.linalg.solve(known, hidden[:3])\nrestored = hidden @ np.linalg.inv(P_found)\nmax_err = np.abs(restored - X).max()\nleaked = bool(max_err < 1e-6)\nmax_err=-.125",
+  "setup": "",
+  "check": "import numpy as _np, pandas as _pd\nd = _pd.read_csv('deliveries.csv'); ok = d[d['actual_min'].between(1, 299)].copy()\nok['walk'] = (ok['courier'] == 'пеший').astype(int)\nX0 = ok[['distance_km', 'items', 'walk']].values.astype(float)\nP0 = _np.random.default_rng(1).normal(size=(3, 3))\nassert _np.allclose(need('P_found'), P0), 'P_found не совпала с настоящей P. Решите solve(known, hidden[:3]).'\nassert _np.allclose(need('restored'), X0), 'restored должна совпасть с X.'\nassert need('max_err') < 1e-6, f'max_err = {need(\"max_err\")}.'\nassert need('leaked') == True, 'leaked должно быть True.'",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "6798538daf7cd53a5f7c2c61d514636aab13af5cdd467bfa695ab2964db6930f"
+ },
+ {
+  "id": "real-hidden",
+  "key": "ch09/05-project/hidden-quality",
+  "expected": true,
+  "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import r2_score\n\nf = pd.read_csv(\"family_members.csv\")\nX = f[[\"gender\", \"age\", \"income_k\", \"family_size\"]].values\ny = f[\"spend_k\"].values\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nr2_base = r2_score(y_test, LinearRegression().fit(X_train, y_train).predict(X_test))\nP = np.random.default_rng(42).normal(size=(4, 4))\n\nhidden_model = LinearRegression().fit(X_train @ P, y_train)\nr2_full = r2_score(y_test, hidden_model.predict(X_test @ P))\nr2_hidden = round(r2_full, 4)\nsame = bool(abs(r2_full - r2_base) < 1e-9)",
+  "setup": "",
+  "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import r2_score as _r2\nf0 = _pd.read_csv('family_members.csv')\na, b, c, d = _tts(f0[['gender', 'age', 'income_k', 'family_size']].values, f0['spend_k'].values, test_size=0.25, random_state=42)\nP0 = _np.random.default_rng(42).normal(size=(4, 4))\nw = _r2(d, _LR().fit(a @ P0, c).predict(b @ P0))\nassert close(need('r2_hidden'), round(w, 4)), f'r2_hidden = {need(\"r2_hidden\")}, а нужно {round(w, 4)}. Тестовые признаки тоже надо умножить на P.'\nassert need('same') == True, 'same должно быть True: R² совпадают до 1e-9.'\n_model = need('hidden_model')\n_prediction = _np.asarray(_model.predict(b @ P0))\nassert _prediction.shape == d.shape and _np.allclose(_prediction, _LR().fit(a @ P0,c).predict(b @ P0)), 'Нужны реальные прогнозы обученной hidden_model на преобразованном тесте.'\nassert close(need('r2_hidden'), round(_r2(d,_prediction),4)), 'r2_hidden пересчитывается из переданной модели.'\n_new = _np.array([[0,22,50,1],[1,65,120,4]])\nassert _np.allclose(_model.predict(_new @ P0), _LR().fit(a @ P0,c).predict(_new @ P0)), 'На новых строках hidden_model не соответствует обучению с данным ключом.'",
+  "files": [
+   "family_members.csv"
+  ],
+  "check_sha256": "122f7049e1e010c94e278bcd3e83869cff22d17b309778cc0b724dd6a70688a0"
+ },
+ {
+  "id": "proxy-repeat-first",
+  "key": "ch09/05-project/hidden-quality",
+  "expected": false,
+  "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import r2_score\n\nf = pd.read_csv(\"family_members.csv\")\nX = f[[\"gender\", \"age\", \"income_k\", \"family_size\"]].values\ny = f[\"spend_k\"].values\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nr2_base = r2_score(y_test, LinearRegression().fit(X_train, y_train).predict(X_test))\nP = np.random.default_rng(42).normal(size=(4, 4))\n\nhidden_model = LinearRegression().fit(X_train @ P, y_train)\nr2_full = r2_score(y_test, hidden_model.predict(X_test @ P))\nr2_hidden = round(r2_full, 4)\nsame = bool(abs(r2_full - r2_base) < 1e-9)\nhidden_model.predict=lambda matrix: np.repeat(21.27,len(matrix))",
+  "setup": "",
+  "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import r2_score as _r2\nf0 = _pd.read_csv('family_members.csv')\na, b, c, d = _tts(f0[['gender', 'age', 'income_k', 'family_size']].values, f0['spend_k'].values, test_size=0.25, random_state=42)\nP0 = _np.random.default_rng(42).normal(size=(4, 4))\nw = _r2(d, _LR().fit(a @ P0, c).predict(b @ P0))\nassert close(need('r2_hidden'), round(w, 4)), f'r2_hidden = {need(\"r2_hidden\")}, а нужно {round(w, 4)}. Тестовые признаки тоже надо умножить на P.'\nassert need('same') == True, 'same должно быть True: R² совпадают до 1e-9.'\n_model = need('hidden_model')\n_prediction = _np.asarray(_model.predict(b @ P0))\nassert _prediction.shape == d.shape and _np.allclose(_prediction, _LR().fit(a @ P0,c).predict(b @ P0)), 'Нужны реальные прогнозы обученной hidden_model на преобразованном тесте.'\nassert close(need('r2_hidden'), round(_r2(d,_prediction),4)), 'r2_hidden пересчитывается из переданной модели.'\n_new = _np.array([[0,22,50,1],[1,65,120,4]])\nassert _np.allclose(_model.predict(_new @ P0), _LR().fit(a @ P0,c).predict(_new @ P0)), 'На новых строках hidden_model не соответствует обучению с данным ключом.'",
+  "files": [
+   "family_members.csv"
+  ],
+  "check_sha256": "122f7049e1e010c94e278bcd3e83869cff22d17b309778cc0b724dd6a70688a0"
+ },
+ {
+  "id": "rounded-comparison",
+  "key": "ch09/05-project/hidden-quality",
+  "expected": false,
+  "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import r2_score\n\nf = pd.read_csv(\"family_members.csv\")\nX = f[[\"gender\", \"age\", \"income_k\", \"family_size\"]].values\ny = f[\"spend_k\"].values\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)\nr2_base = r2_score(y_test, LinearRegression().fit(X_train, y_train).predict(X_test))\nP = np.random.default_rng(42).normal(size=(4, 4))\n\nhidden_model = LinearRegression().fit(X_train @ P, y_train)\nr2_full = r2_score(y_test, hidden_model.predict(X_test @ P))\nr2_hidden = round(r2_full, 4)\nsame = bool(abs(round(r2_full,4) - round(r2_base,4)) < 1e-9)",
+  "setup": "",
+  "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.metrics import r2_score as _r2\nf0 = _pd.read_csv('family_members.csv')\na, b, c, d = _tts(f0[['gender', 'age', 'income_k', 'family_size']].values, f0['spend_k'].values, test_size=0.25, random_state=42)\nP0 = _np.random.default_rng(42).normal(size=(4, 4))\nw = _r2(d, _LR().fit(a @ P0, c).predict(b @ P0))\nassert close(need('r2_hidden'), round(w, 4)), f'r2_hidden = {need(\"r2_hidden\")}, а нужно {round(w, 4)}. Тестовые признаки тоже надо умножить на P.'\nassert need('same') == True, 'same должно быть True: R² совпадают до 1e-9.'\n_model = need('hidden_model')\n_prediction = _np.asarray(_model.predict(b @ P0))\nassert _prediction.shape == d.shape and _np.allclose(_prediction, _LR().fit(a @ P0,c).predict(b @ P0)), 'Нужны реальные прогнозы обученной hidden_model на преобразованном тесте.'\nassert close(need('r2_hidden'), round(_r2(d,_prediction),4)), 'r2_hidden пересчитывается из переданной модели.'\n_new = _np.array([[0,22,50,1],[1,65,120,4]])\nassert _np.allclose(_model.predict(_new @ P0), _LR().fit(a @ P0,c).predict(_new @ P0)), 'На новых строках hidden_model не соответствует обучению с данным ключом.'",
+  "files": [
+   "family_members.csv"
+  ],
+  "check_sha256": "122f7049e1e010c94e278bcd3e83869cff22d17b309778cc0b724dd6a70688a0"
+ },
+ {
+  "id": "ndarray-y",
+  "key": "ch09/03b-own-model/group-mean",
+  "expected": true,
+  "code": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nfrom sklearn.base import RegressorMixin, BaseEstimator\nfrom sklearn.model_selection import cross_val_score\nXc = ok[[\"courier\"]]\nclass CourierMean(RegressorMixin,BaseEstimator):\n    def fit(self,X,y):\n        self.means_ = pd.DataFrame({\"courier\":X[\"courier\"].to_numpy(),\"y\":np.asarray(y)}).groupby(\"courier\")[\"y\"].mean()\n        return self\n    def predict(self,X):\n        return X[\"courier\"].map(self.means_).to_numpy()\ncv_courier = -cross_val_score(CourierMean(),Xc,y,cv=5,scoring=\"neg_mean_absolute_error\",n_jobs=1)\ncv_courier_mean = round(float(cv_courier.mean()),2)\nwalk_mean = round(float(CourierMean().fit(Xc,y).means_[\"пеший\"]),1)\nbeats_mean = bool(cv_courier.mean()<8.24)",
+  "setup": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nXc = ok[[\"courier\"]]\ny = ok[\"actual_min\"]",
+  "check": "import numpy as _np, pandas as _pd\nfrom sklearn.base import BaseEstimator as _BE\nfrom sklearn.model_selection import cross_val_score as _cvs\nC = need('CourierMean')\nassert issubclass(C, _BE), 'Добавьте родителей: class CourierMean(RegressorMixin, BaseEstimator).'\n_tx = _pd.DataFrame({'courier': ['а', 'б', 'а', 'б']}); _ty = _pd.Series([10.0, 30.0, 20.0, 50.0])\n_m = C().fit(_tx, _ty)\nassert hasattr(_m, 'means_'), 'После fit должен появиться атрибут means_: self.means_ = ...'\n_p = _np.asarray(_m.predict(_pd.DataFrame({'courier': ['б', 'а']})), dtype=float)\nassert _np.allclose(_p, [40.0, 15.0]), f'На игрушке (а: 10 и 20, б: 30 и 50) predict для [б, а] должен дать [40.0, 15.0], а дал {_p.tolist()}.'\nX0, y0 = need('Xc'), need('y')\ndef _ref_cv():\n    out = []\n    from sklearn.model_selection import KFold as _KF\n    for tr, te in _KF(5).split(X0):\n        mm = _pd.Series(y0.values[tr]).groupby(X0['courier'].values[tr]).mean()\n        out.append(_np.abs(X0['courier'].iloc[te].map(mm).values - y0.values[te]).mean())\n    return _np.array(out)\nref = _ref_cv()\ncc = _np.asarray(need('cv_courier'), dtype=float)\nassert cc.shape == (5,) and (cc > 0).all(), f'cv_courier — пять положительных MAE, сейчас {cc.round(2).tolist()}.'\nassert _np.allclose(cc, ref), f'cv_courier = {cc.round(2).tolist()}, а нужно {ref.round(2).tolist()}.'\nassert close(need('cv_courier_mean'), round(float(ref.mean()), 2), 0.0051), f'cv_courier_mean = {need(\"cv_courier_mean\")}.'\nwm = round(float(y0[X0['courier'] == 'пеший'].mean()), 1)\nassert close(need('walk_mean'), wm, 0.051), f'walk_mean = {need(\"walk_mean\")}: среднее время пеших, которое модель выучила на всех данных.'\nassert bool(need('beats_mean')) == bool(ref.mean() < 8.24), 'beats_mean: меньше ли средняя MAE правила, чем 8.24 у «всем среднее»?'",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "cb18cb2fa49cc0533b08228b8bbe3e74ea6000f4ff114d86a0e6550145418a93"
+ },
+ {
+  "id": "series-y",
+  "key": "ch09/03b-own-model/group-mean",
+  "expected": true,
+  "code": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values.astype(float)\ny = ok[\"actual_min\"]\nfrom sklearn.base import RegressorMixin, BaseEstimator\nfrom sklearn.model_selection import cross_val_score\nXc = ok[[\"courier\"]]\nclass CourierMean(RegressorMixin,BaseEstimator):\n    def fit(self,X,y):\n        self.means_ = pd.DataFrame({\"courier\":X[\"courier\"].to_numpy(),\"y\":np.asarray(y)}).groupby(\"courier\")[\"y\"].mean()\n        return self\n    def predict(self,X):\n        return X[\"courier\"].map(self.means_).to_numpy()\ncv_courier = -cross_val_score(CourierMean(),Xc,y,cv=5,scoring=\"neg_mean_absolute_error\",n_jobs=1)\ncv_courier_mean = round(float(cv_courier.mean()),2)\nwalk_mean = round(float(CourierMean().fit(Xc,y).means_[\"пеший\"]),1)\nbeats_mean = bool(cv_courier.mean()<8.24)",
+  "setup": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nXc = ok[[\"courier\"]]\ny = ok[\"actual_min\"]",
+  "check": "import numpy as _np, pandas as _pd\nfrom sklearn.base import BaseEstimator as _BE\nfrom sklearn.model_selection import cross_val_score as _cvs\nC = need('CourierMean')\nassert issubclass(C, _BE), 'Добавьте родителей: class CourierMean(RegressorMixin, BaseEstimator).'\n_tx = _pd.DataFrame({'courier': ['а', 'б', 'а', 'б']}); _ty = _pd.Series([10.0, 30.0, 20.0, 50.0])\n_m = C().fit(_tx, _ty)\nassert hasattr(_m, 'means_'), 'После fit должен появиться атрибут means_: self.means_ = ...'\n_p = _np.asarray(_m.predict(_pd.DataFrame({'courier': ['б', 'а']})), dtype=float)\nassert _np.allclose(_p, [40.0, 15.0]), f'На игрушке (а: 10 и 20, б: 30 и 50) predict для [б, а] должен дать [40.0, 15.0], а дал {_p.tolist()}.'\nX0, y0 = need('Xc'), need('y')\ndef _ref_cv():\n    out = []\n    from sklearn.model_selection import KFold as _KF\n    for tr, te in _KF(5).split(X0):\n        mm = _pd.Series(y0.values[tr]).groupby(X0['courier'].values[tr]).mean()\n        out.append(_np.abs(X0['courier'].iloc[te].map(mm).values - y0.values[te]).mean())\n    return _np.array(out)\nref = _ref_cv()\ncc = _np.asarray(need('cv_courier'), dtype=float)\nassert cc.shape == (5,) and (cc > 0).all(), f'cv_courier — пять положительных MAE, сейчас {cc.round(2).tolist()}.'\nassert _np.allclose(cc, ref), f'cv_courier = {cc.round(2).tolist()}, а нужно {ref.round(2).tolist()}.'\nassert close(need('cv_courier_mean'), round(float(ref.mean()), 2), 0.0051), f'cv_courier_mean = {need(\"cv_courier_mean\")}.'\nwm = round(float(y0[X0['courier'] == 'пеший'].mean()), 1)\nassert close(need('walk_mean'), wm, 0.051), f'walk_mean = {need(\"walk_mean\")}: среднее время пеших, которое модель выучила на всех данных.'\nassert bool(need('beats_mean')) == bool(ref.mean() < 8.24), 'beats_mean: меньше ли средняя MAE правила, чем 8.24 у «всем среднее»?'",
+  "files": [
+   "deliveries.csv"
+  ],
+  "check_sha256": "cb18cb2fa49cc0533b08228b8bbe3e74ea6000f4ff114d86a0e6550145418a93"
+ }
+]

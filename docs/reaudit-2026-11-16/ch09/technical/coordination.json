@@ -1,0 +1,2037 @@
+{
+  "phase": "initial snapshot; final retest and release reconciled in follow-up",
+  "generated_at": "2026-11-16T14:56:33.923117+00:00",
+  "baseline_head": "6dd6a73793fabd1f629b2722ef914a31cc408c0e",
+  "baseline_counts": {
+    "cell": 31,
+    "predict": 8,
+    "task": 59
+  },
+  "baseline_export_sha256": "b07c61a8db22f32ed3d57de28b229c4302ed86a3a41a2d027dc60014eb65c3e0",
+  "baseline_export_hash_is_full_export_hash": false,
+  "full_export": {
+    "path": "/tmp/kuch09round/course.json",
+    "sha256": "712ceab6baa6fa8103f83f0acf257c70fa1f5b12381b1f0bd3f6844b68aa7517",
+    "matches_baseline_full_hash": true,
+    "chapter_exact_filter": true
+  },
+  "inventory_counts": {
+    "task": 59,
+    "predict": 8,
+    "quiz": 11,
+    "final_quiz": 16
+  },
+  "registry_current_difference": {
+    "missing": [],
+    "extra": []
+  },
+  "export_counts": {
+    "cell": 31,
+    "predict": 8,
+    "task": 59
+  },
+  "export_task_predict_difference": {
+    "missing": [],
+    "extra": []
+  },
+  "initial": {
+    "rows": 97,
+    "boolean_rows": 97,
+    "unique_ids": 94,
+    "accepted_ids": 94,
+    "first_try_accepted_ids": 92,
+    "failures": [
+      {
+        "summary_line": 31,
+        "at": "2026-11-16T14:44:41.295Z",
+        "id": "02b-vectorize/vectorize",
+        "lesson": "02b-vectorize",
+        "task": "vectorize",
+        "code": "import time\nimport numpy as np\n\nrng = np.random.default_rng(1)\nn = 100_000\nkm = rng.uniform(0.5, 12, n).round(1)\nrain = rng.random(n) < 0.2                 # True — шёл дождь\n\ndef pay_loop(km, rain):\n    out = np.empty(len(km))\n    for i in range(len(km)):\n        p = 60 + 14 * km[i]\n        if km[i] > 8:\n            p += 100\n        if rain[i]:\n            p *= 1.3\n        out[i] = p\n    return out\ndef pay_vec(km,rain):\n    p = 60+14*km+np.where(km>8,100,0)\n    return np.where(rain,p*1.3,p)\nimport time\ndef best_time(f, repeats=5):\n    times = []\n    for _ in range(repeats):\n        t0 = time.perf_counter()\n        f()\n        times.append(time.perf_counter() - t0)\n    return float(min(times))\nsame = bool(np.allclose(pay_loop(km,rain),pay_vec(km,rain)))\nt_loop = best_time(lambda: pay_loop(km,rain))\nt_vec = best_time(lambda: pay_vec(km,rain))\nspeedup = t_loop/t_vec if t_vec else None\ntotal = int(round(float(pay_vec(km,rain).sum())))",
+        "expect": "Q1: Получить тот же фонд выплат без100000 проходов Python. Q2: Пример np.where, дождь применяется ко всей сумме. Q3: same=True, total включает дальность до дождевого множителя; отношение фактически измеренных времён.",
+        "passed": false,
+        "feedback": "Пока не так.\nЗамерьте реальные вызовы обеих функций через perf_counter; ускорение диагностическое.",
+        "visible_output": [
+          ""
+        ]
+      },
+      {
+        "summary_line": 33,
+        "at": "2026-11-16T14:45:21.029Z",
+        "id": "02b-vectorize/vectorize",
+        "lesson": "02b-vectorize",
+        "task": "vectorize",
+        "code": "import time\nimport numpy as np\n\nrng = np.random.default_rng(1)\nn = 100_000\nkm = rng.uniform(0.5, 12, n).round(1)\nrain = rng.random(n) < 0.2                 # True — шёл дождь\n\ndef pay_loop(km, rain):\n    out = np.empty(len(km))\n    for i in range(len(km)):\n        p = 60 + 14 * km[i]\n        if km[i] > 8:\n            p += 100\n        if rain[i]:\n            p *= 1.3\n        out[i] = p\n    return out\ndef pay_vec(km,rain):\n    p = 60+14*km+np.where(km>8,100,0)\n    return np.where(rain,p*1.3,p)\nimport time\ndef best_time(f, repeats=5):\n    times = []\n    for _ in range(repeats):\n        t0 = time.perf_counter()\n        f()\n        times.append(time.perf_counter() - t0)\n    return float(min(times))\nsame = bool(np.allclose(pay_loop(km,rain),pay_vec(km,rain)))\nt_loop = best_time(lambda: pay_loop(km,rain))\nt_vec = best_time(lambda: pay_vec(km,rain))\nspeedup = t_loop/t_vec if t_vec else None\ntotal = int(round(float(pay_vec(km,rain).sum())))\nprint(\"t_loop\",t_loop,\"t_vec\",t_vec,\"speedup\",speedup,\"same\",same,\"total\",total)",
+        "expect": "Q1: Хочу увидеть реальные длительности оплаты циклом и массивом, чтобы понять отказ измерения. Q2: В отказе просят реальные вызовы perf_counter, такие вызовы уже внутри best_time. Q3: Печать покажет фактические t_loop и t_vec; если один минимум ноль, не буду подменять его константой. Ожидаю same=True и, при t_vec=0, speedup=None.",
+        "passed": false,
+        "feedback": "Пока не так.\nЗамерьте реальные вызовы обеих функций через perf_counter; ускорение диагностическое.\nВозьмите подсказку — это нормально.",
+        "visible_output": [
+          "t_loop 0.03979999999999961 t_vec 0.00019999999999953388 speedup 199.00000000046185 same True total 19281182"
+        ]
+      },
+      {
+        "summary_line": 55,
+        "at": "2026-11-16T14:46:12.789Z",
+        "id": "03b-own-model/group-mean",
+        "lesson": "03b-own-model",
+        "task": "group-mean",
+        "code": "import numpy as np\nimport pandas as pd\nd = pd.read_csv(\"deliveries.csv\")\nok = d[d[\"actual_min\"].between(1, 299)].copy()\nok[\"walk\"] = (ok[\"courier\"] == \"пеший\").astype(int)\nX = ok[[\"distance_km\", \"items\", \"walk\"]].values.astype(float)\ny = ok[\"actual_min\"].values\nfrom sklearn.base import RegressorMixin, BaseEstimator\nfrom sklearn.model_selection import cross_val_score\nXc = ok[[\"courier\"]]\nclass CourierMean(RegressorMixin,BaseEstimator):\n    def fit(self,X,y):\n        self.means_ = pd.DataFrame({\"courier\":X[\"courier\"].to_numpy(),\"y\":np.asarray(y)}).groupby(\"courier\")[\"y\"].mean()\n        return self\n    def predict(self,X):\n        return X[\"courier\"].map(self.means_).to_numpy()\ncv_courier = -cross_val_score(CourierMean(),Xc,y,cv=5,scoring=\"neg_mean_absolute_error\",n_jobs=1)\ncv_courier_mean = round(float(cv_courier.mean()),2)\nwalk_mean = round(float(CourierMean().fit(Xc,y).means_[\"пеший\"]),1)\nbeats_mean = bool(cv_courier.mean()<8.24)",
+        "expect": "Q1: Оценить правило диспетчера по типу курьера. Q2: Абзац groupby в fit,map в predict. Q3: Пять MAE и пешее среднее; beats_mean сравнит их с8.24.",
+        "passed": false,
+        "feedback": "Пока не так.\nПроверка споткнулась: AttributeError: 'numpy.ndarray' object has no attribute 'values'. Скорее всего, в переменной лежит не то, что ожидалось (проверьте тип: число, строка, список или таблица).",
+        "visible_output": [
+          ""
+        ]
+      }
+    ],
+    "inventory_difference": {
+      "missing": [],
+      "extra": []
+    },
+    "raw_summary_exact_multiset_match": true,
+    "missing_raw_rows": 0,
+    "extra_raw_rows": 0,
+    "expect_nonempty": 97
+  },
+  "raw_pairs": [
+    {
+      "input": "student/01-vectors/attempt-01.jsonl",
+      "feedback": "student/01-vectors/feedback-01.jsonl",
+      "input_sha256": "e5205c6588534a8aef9f0809b4b20a1983ef1c1dadf1c843fa5c2be1d27b2a13",
+      "feedback_sha256": "7aede83d5f073b56dc8f1398f61b86990caf65950f004aa85f0ae21443a9ec34",
+      "input_rows": 10,
+      "feedback_rows": 10,
+      "checks": [
+        {
+          "line": 1,
+          "id": "01-vectors/revenue",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "01-vectors/plan",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "01-vectors/p-predict",
+          "matches": true
+        },
+        {
+          "line": 4,
+          "id": "01-vectors/norm",
+          "matches": true
+        },
+        {
+          "line": 5,
+          "id": "01-vectors/dist",
+          "matches": true
+        },
+        {
+          "line": 6,
+          "id": "01-vectors/manhattan",
+          "matches": true
+        },
+        {
+          "line": 7,
+          "id": "01-vectors/neighbors-scale",
+          "matches": true
+        },
+        {
+          "line": 8,
+          "id": "01-vectors/cosine",
+          "matches": true
+        },
+        {
+          "line": 9,
+          "id": "01-vectors/dot-model",
+          "matches": true
+        },
+        {
+          "line": 10,
+          "id": "01-vectors/recommend",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/01-vectors/choices-01.jsonl",
+      "feedback": "student/01-vectors/choices-feedback-01.jsonl",
+      "input_sha256": "78ef30ad3b10fe2591656529d60c918fc5e1c6062404e32e904b3790c794b631",
+      "feedback_sha256": "9e8e92c6c9011752db3373d161e1ba1c1e36a3d569df47fc5eb31aa8c1cbfc2a",
+      "input_rows": 4,
+      "feedback_rows": 4,
+      "checks": [
+        {
+          "line": 1,
+          "id": "01-vectors/predict/1",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "01-vectors/quiz/1",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "01-vectors/predict/2",
+          "matches": true
+        },
+        {
+          "line": 4,
+          "id": "01-vectors/quiz/2",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/02-matrices/attempt-01.jsonl",
+      "feedback": "student/02-matrices/feedback-01.jsonl",
+      "input_sha256": "8512d85286639393c851291b539b6b1ed1c6eabbbda2e140e63ce973b5bc43f5",
+      "feedback_sha256": "52844c59a097f07170e3d066784dcc5fe9d33bee9d7f29f4a74b1dc63b107033",
+      "input_rows": 9,
+      "feedback_rows": 9,
+      "checks": [
+        {
+          "line": 1,
+          "id": "02-matrices/shape",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "02-matrices/predict-all",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "02-matrices/p-cost",
+          "matches": true
+        },
+        {
+          "line": 4,
+          "id": "02-matrices/supplier",
+          "matches": true
+        },
+        {
+          "line": 5,
+          "id": "02-matrices/network",
+          "matches": true
+        },
+        {
+          "line": 6,
+          "id": "02-matrices/by-hand",
+          "matches": true
+        },
+        {
+          "line": 7,
+          "id": "02-matrices/gram",
+          "matches": true
+        },
+        {
+          "line": 8,
+          "id": "02-matrices/predict-df",
+          "matches": true
+        },
+        {
+          "line": 9,
+          "id": "02-matrices/intercept-col",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/02-matrices/choices-01.jsonl",
+      "feedback": "student/02-matrices/choices-feedback-01.jsonl",
+      "input_sha256": "52338ce39ee913e9f37f21eefe3a3f46dc615a6e413283ca7e3306c2785d40de",
+      "feedback_sha256": "a7b1323f127a8624af100a82ec0aa03e5ffa514bd15c4179edd328c93e7c72e6",
+      "input_rows": 3,
+      "feedback_rows": 3,
+      "checks": [
+        {
+          "line": 1,
+          "id": "02-matrices/predict/1",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "02-matrices/quiz/1",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "02-matrices/quiz/2",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/02b-vectorize/attempt-01.jsonl",
+      "feedback": "student/02b-vectorize/feedback-01.jsonl",
+      "input_sha256": "fd48991b3b5e29c66679cb4bfe7bc641a8f94530ce53c93164b7ee93bdda617c",
+      "feedback_sha256": "c09775971d7c1f0a947e8fcf7ce7205057ed18ce92762679968d3b960867ad35",
+      "input_rows": 6,
+      "feedback_rows": 6,
+      "checks": [
+        {
+          "line": 1,
+          "id": "02b-vectorize/disc",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "02b-vectorize/best-of",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "02b-vectorize/tiers",
+          "matches": true
+        },
+        {
+          "line": 4,
+          "id": "02b-vectorize/apply-col",
+          "matches": true
+        },
+        {
+          "line": 5,
+          "id": "02b-vectorize/vectorize",
+          "matches": true
+        },
+        {
+          "line": 6,
+          "id": "02b-vectorize/nearest-shop",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/02b-vectorize/attempt-02.jsonl",
+      "feedback": "student/02b-vectorize/feedback-02.jsonl",
+      "input_sha256": "ff090ef0c0ac3c6a73f48613ba90407a0f7a25bc99efb505f28362ca88f6ca85",
+      "feedback_sha256": "85375da97018e0c4d14786fdec4f107e70ef696dbc6fe28e240361b4e307a951",
+      "input_rows": 1,
+      "feedback_rows": 1,
+      "checks": [
+        {
+          "line": 1,
+          "id": "02b-vectorize/vectorize",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/02b-vectorize/attempt-03.jsonl",
+      "feedback": "student/02b-vectorize/feedback-03.jsonl",
+      "input_sha256": "6484551df0d39f19f9605a79b0c1d401b1cc23bc06728c016f5af417e0b1463d",
+      "feedback_sha256": "682f0af9d8526ba3162f7c47f0d73a08fb6d15f26675462c156574374665920d",
+      "input_rows": 1,
+      "feedback_rows": 1,
+      "checks": [
+        {
+          "line": 1,
+          "id": "02b-vectorize/vectorize",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/02b-vectorize/choices-01.jsonl",
+      "feedback": "student/02b-vectorize/choices-feedback-01.jsonl",
+      "input_sha256": "f7f7a522abe49003ee6082401a6dce4ea2854791efe0ab5cf3539fe43ffc4e0b",
+      "feedback_sha256": "50818cf2300d2ea0684301ddb216dffc2c97e014905203b255867b7e47181fa2",
+      "input_rows": 1,
+      "feedback_rows": 1,
+      "checks": [
+        {
+          "line": 1,
+          "id": "02b-vectorize/quiz/1",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/02b-vectorize/hint-01.jsonl",
+      "feedback": "student/02b-vectorize/hint-feedback-01.jsonl",
+      "input_sha256": "07a46dce76c013f4a640632c98b9ce362fe24bb21a8e0926b56bd302f80f2a0e",
+      "feedback_sha256": "e49ab381ad5b4c939242ec08940a33176fde1ed95dd899af3780548cf906c0e1",
+      "input_rows": 1,
+      "feedback_rows": 1,
+      "checks": [
+        {
+          "line": 1,
+          "id": "02b-vectorize/vectorize",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/03-normal-equation/attempt-01.jsonl",
+      "feedback": "student/03-normal-equation/feedback-01.jsonl",
+      "input_sha256": "0a402ef83317d7198fb865c7038ce5ff2ae3cb95e53208d8c41c0ef0ee5ab68d",
+      "feedback_sha256": "6ba3d2f01132aac2f6832c09e3c43e1d342b67c7d1538f8bcb7d6b04965f8808",
+      "input_rows": 10,
+      "feedback_rows": 10,
+      "checks": [
+        {
+          "line": 1,
+          "id": "03-normal-equation/solve2",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "03-normal-equation/dup-receipt",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "03-normal-equation/inverse",
+          "matches": true
+        },
+        {
+          "line": 4,
+          "id": "03-normal-equation/p-normal",
+          "matches": true
+        },
+        {
+          "line": 5,
+          "id": "03-normal-equation/my-ols",
+          "matches": true
+        },
+        {
+          "line": 6,
+          "id": "03-normal-equation/no-ones",
+          "matches": true
+        },
+        {
+          "line": 7,
+          "id": "03-normal-equation/rank",
+          "matches": true
+        },
+        {
+          "line": 8,
+          "id": "03-normal-equation/orthogonal",
+          "matches": true
+        },
+        {
+          "line": 9,
+          "id": "03-normal-equation/many-solutions",
+          "matches": true
+        },
+        {
+          "line": 10,
+          "id": "03-normal-equation/gd-preview",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/03-normal-equation/choices-01.jsonl",
+      "feedback": "student/03-normal-equation/choices-feedback-01.jsonl",
+      "input_sha256": "ac90650fba7218a32c4158010f10f5194b59d7b7cb39499763fbd07fccd82311",
+      "feedback_sha256": "09b7cd4d4616c083a18ab7a24c69b5da136ef4b0a7c743b46075c0397861ce7d",
+      "input_rows": 5,
+      "feedback_rows": 5,
+      "checks": [
+        {
+          "line": 1,
+          "id": "03-normal-equation/predict/1",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "03-normal-equation/predict/2",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "03-normal-equation/quiz/1",
+          "matches": true
+        },
+        {
+          "line": 4,
+          "id": "03-normal-equation/predict/3",
+          "matches": true
+        },
+        {
+          "line": 5,
+          "id": "03-normal-equation/quiz/2",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/03b-own-model/attempt-01.jsonl",
+      "feedback": "student/03b-own-model/feedback-01.jsonl",
+      "input_sha256": "968fc2aadeb8cbf40f0e3f4d8eda39d2620cccd85c231d46f07058532db3824b",
+      "feedback_sha256": "580d120f8e82eac6e2e1b50499260c340a1cea2689aa58567b3ef35aaee3ece9",
+      "input_rows": 6,
+      "feedback_rows": 6,
+      "checks": [
+        {
+          "line": 1,
+          "id": "03b-own-model/p-class",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "03b-own-model/fix-class",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "03b-own-model/my-class",
+          "matches": true
+        },
+        {
+          "line": 4,
+          "id": "03b-own-model/mean-model",
+          "matches": true
+        },
+        {
+          "line": 5,
+          "id": "03b-own-model/group-mean",
+          "matches": true
+        },
+        {
+          "line": 6,
+          "id": "03b-own-model/class-cv",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/03b-own-model/attempt-02.jsonl",
+      "feedback": "student/03b-own-model/feedback-02.jsonl",
+      "input_sha256": "4d83fbcd7527be2508fa983a69ed4500ed9f5ee7dc16b97c96f0df5a7bf34851",
+      "feedback_sha256": "d2d9e7517a51c657096fa9baad34f6f49757bf3631acc1333af029f1a62914ad",
+      "input_rows": 1,
+      "feedback_rows": 1,
+      "checks": [
+        {
+          "line": 1,
+          "id": "03b-own-model/group-mean",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/03b-own-model/choices-01.jsonl",
+      "feedback": "student/03b-own-model/choices-feedback-01.jsonl",
+      "input_sha256": "f0990c5a19129fb06d9eb6e4081505516f10c1ba363e8ded48ca1606a88fa5cc",
+      "feedback_sha256": "8b6db1f66af75e2b46c1b818fa07374b24df83626833a399be5cd2b344e32645",
+      "input_rows": 1,
+      "feedback_rows": 1,
+      "checks": [
+        {
+          "line": 1,
+          "id": "03b-own-model/quiz/1",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/04-transform/attempt-01.jsonl",
+      "feedback": "student/04-transform/feedback-01.jsonl",
+      "input_sha256": "66c3e7ac745fa88e710996efb479cf44e94ee6ed52bf15bb5a3f5bc4ecc940d6",
+      "feedback_sha256": "482fe9fbadfd707abd9f881aa2c058499a7a29cf083c916f0ddabfef26f59913",
+      "input_rows": 9,
+      "feedback_rows": 9,
+      "checks": [
+        {
+          "line": 1,
+          "id": "04-transform/mix",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "04-transform/diag",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "04-transform/p-restore",
+          "matches": true
+        },
+        {
+          "line": 4,
+          "id": "04-transform/invertible",
+          "matches": true
+        },
+        {
+          "line": 5,
+          "id": "04-transform/drop-col",
+          "matches": true
+        },
+        {
+          "line": 6,
+          "id": "04-transform/same-quality",
+          "matches": true
+        },
+        {
+          "line": 7,
+          "id": "04-transform/weights",
+          "matches": true
+        },
+        {
+          "line": 8,
+          "id": "04-transform/attack",
+          "matches": true
+        },
+        {
+          "line": 9,
+          "id": "04-transform/tree-vs-linear",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/04-transform/choices-01.jsonl",
+      "feedback": "student/04-transform/choices-feedback-01.jsonl",
+      "input_sha256": "d45a7295d9e10cf8e1b2950608d2fe0988ab8a21c100e203334e597f9d4ac46f",
+      "feedback_sha256": "ecb3f2ca6ee6b33e2b51f88030ef5be4d20551138afe88ff3898900c9613d8d5",
+      "input_rows": 4,
+      "feedback_rows": 4,
+      "checks": [
+        {
+          "line": 1,
+          "id": "04-transform/predict/1",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "04-transform/quiz/1",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "04-transform/predict/2",
+          "matches": true
+        },
+        {
+          "line": 4,
+          "id": "04-transform/quiz/2",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/05-project/attempt-01.jsonl",
+      "feedback": "student/05-project/feedback-01.jsonl",
+      "input_sha256": "35f93d080f1f47179274c9640c78bb96256c17c34c9795d1136432cc9c5cd776",
+      "feedback_sha256": "7af2a531ea03cd8780a6df9a9d8db42f9d0b2ca158aada04b440e3d20112a1d2",
+      "input_rows": 9,
+      "feedback_rows": 9,
+      "checks": [
+        {
+          "line": 1,
+          "id": "05-project/look",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "05-project/baseline",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "05-project/key",
+          "matches": true
+        },
+        {
+          "line": 4,
+          "id": "05-project/hidden-quality",
+          "matches": true
+        },
+        {
+          "line": 5,
+          "id": "05-project/weights",
+          "matches": true
+        },
+        {
+          "line": 6,
+          "id": "05-project/new-member",
+          "matches": true
+        },
+        {
+          "line": 7,
+          "id": "05-project/bad-key",
+          "matches": true
+        },
+        {
+          "line": 8,
+          "id": "05-project/tree-hidden",
+          "matches": true
+        },
+        {
+          "line": 9,
+          "id": "05-project/attack",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/05-project/choices-01.jsonl",
+      "feedback": "student/05-project/choices-feedback-01.jsonl",
+      "input_sha256": "2af485aecce2bf42be1e7611554ca1c21ee9c1dc5c373f607afbe5eefa45f97d",
+      "feedback_sha256": "30724bfc9de42298042211c10aa96f19d7cb1c242faa705ade717e79d9fb59be",
+      "input_rows": 1,
+      "feedback_rows": 1,
+      "checks": [
+        {
+          "line": 1,
+          "id": "05-project/quiz/1",
+          "matches": true
+        }
+      ]
+    },
+    {
+      "input": "student/test/choices-01.jsonl",
+      "feedback": "student/test/choices-feedback-01.jsonl",
+      "input_sha256": "da9711393e3f65ead3a5fbaf93159df658e82b63edf0f63f668b5f598183ae07",
+      "feedback_sha256": "4130766193edd8f0d5d3f4cc8e1717274a56c8ab2f22c883c1fada36787926eb",
+      "input_rows": 16,
+      "feedback_rows": 16,
+      "checks": [
+        {
+          "line": 1,
+          "id": "test/quiz/1",
+          "matches": true
+        },
+        {
+          "line": 2,
+          "id": "test/quiz/2",
+          "matches": true
+        },
+        {
+          "line": 3,
+          "id": "test/quiz/3",
+          "matches": true
+        },
+        {
+          "line": 4,
+          "id": "test/quiz/4",
+          "matches": true
+        },
+        {
+          "line": 5,
+          "id": "test/quiz/5",
+          "matches": true
+        },
+        {
+          "line": 6,
+          "id": "test/quiz/6",
+          "matches": true
+        },
+        {
+          "line": 7,
+          "id": "test/quiz/7",
+          "matches": true
+        },
+        {
+          "line": 8,
+          "id": "test/quiz/8",
+          "matches": true
+        },
+        {
+          "line": 9,
+          "id": "test/quiz/9",
+          "matches": true
+        },
+        {
+          "line": 10,
+          "id": "test/quiz/10",
+          "matches": true
+        },
+        {
+          "line": 11,
+          "id": "test/quiz/11",
+          "matches": true
+        },
+        {
+          "line": 12,
+          "id": "test/quiz/12",
+          "matches": true
+        },
+        {
+          "line": 13,
+          "id": "test/quiz/13",
+          "matches": true
+        },
+        {
+          "line": 14,
+          "id": "test/quiz/14",
+          "matches": true
+        },
+        {
+          "line": 15,
+          "id": "test/quiz/15",
+          "matches": true
+        },
+        {
+          "line": 16,
+          "id": "test/quiz/16",
+          "matches": true
+        }
+      ]
+    }
+  ],
+  "trace": [
+    {
+      "summary_line": 1,
+      "id": "01-vectors/revenue",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/attempt-01.jsonl",
+        "feedback": "student/01-vectors/feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "163143eb986b9451c2eb7b9067645ed1ca8fc26c9583367ab0bd7ec99404417b"
+    },
+    {
+      "summary_line": 2,
+      "id": "01-vectors/plan",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/attempt-01.jsonl",
+        "feedback": "student/01-vectors/feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "246ee1ff9e37f54b01edcbf9ffea9111853aaaa1d1699b9c95ed90fea41755c1"
+    },
+    {
+      "summary_line": 3,
+      "id": "01-vectors/p-predict",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/attempt-01.jsonl",
+        "feedback": "student/01-vectors/feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "dba63d11fed4c6bae4ec619e04ed3dff4eb93753f6ccc217e54a213672e8b4d8"
+    },
+    {
+      "summary_line": 4,
+      "id": "01-vectors/norm",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/attempt-01.jsonl",
+        "feedback": "student/01-vectors/feedback-01.jsonl",
+        "line": 4
+      },
+      "signature_sha256": "c455c5519bf4f4c12d0e9fa1f289fffd9744a439f27539a8d7cb914858c0caf7"
+    },
+    {
+      "summary_line": 5,
+      "id": "01-vectors/dist",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/attempt-01.jsonl",
+        "feedback": "student/01-vectors/feedback-01.jsonl",
+        "line": 5
+      },
+      "signature_sha256": "fb5616909234f0a9c2da56684a44ce6086fd9459138ea9daa48db3bc3f225db9"
+    },
+    {
+      "summary_line": 6,
+      "id": "01-vectors/manhattan",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/attempt-01.jsonl",
+        "feedback": "student/01-vectors/feedback-01.jsonl",
+        "line": 6
+      },
+      "signature_sha256": "bc0e9247f5034502d1f609963a47a6cb0d1eb8c1950468adee1d4c81e76ac2f3"
+    },
+    {
+      "summary_line": 7,
+      "id": "01-vectors/neighbors-scale",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/attempt-01.jsonl",
+        "feedback": "student/01-vectors/feedback-01.jsonl",
+        "line": 7
+      },
+      "signature_sha256": "02e818dc36153775518e60aaf833211295d85fac98490aa9566f4ed4bab03204"
+    },
+    {
+      "summary_line": 8,
+      "id": "01-vectors/cosine",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/attempt-01.jsonl",
+        "feedback": "student/01-vectors/feedback-01.jsonl",
+        "line": 8
+      },
+      "signature_sha256": "c5965bcf9b1337a207742ceebae60e07b50482f101c055751a32127947befdc1"
+    },
+    {
+      "summary_line": 9,
+      "id": "01-vectors/dot-model",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/attempt-01.jsonl",
+        "feedback": "student/01-vectors/feedback-01.jsonl",
+        "line": 9
+      },
+      "signature_sha256": "0e1e205adf657e9dfb2340c61949d787ccc3863cb63cc276e420011efef47d3d"
+    },
+    {
+      "summary_line": 10,
+      "id": "01-vectors/recommend",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/attempt-01.jsonl",
+        "feedback": "student/01-vectors/feedback-01.jsonl",
+        "line": 10
+      },
+      "signature_sha256": "87a2b36b6336a9835c8cce2f0048589bb8a43a8cb54751080da87a5070b19b20"
+    },
+    {
+      "summary_line": 11,
+      "id": "01-vectors/predict/1",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/choices-01.jsonl",
+        "feedback": "student/01-vectors/choices-feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "51aba18a6a75bcf40f49cc20dc3489e0452f6677db831eddc60d525a79e24eb7"
+    },
+    {
+      "summary_line": 12,
+      "id": "01-vectors/quiz/1",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/choices-01.jsonl",
+        "feedback": "student/01-vectors/choices-feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "575ef0a25ed8cf41f33d2c96a75000426dc7b47b786a8ee2c6139a226bda5639"
+    },
+    {
+      "summary_line": 13,
+      "id": "01-vectors/predict/2",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/choices-01.jsonl",
+        "feedback": "student/01-vectors/choices-feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "04987a7f3b4836474f7d739d6dc683404024cb452aed29bfffb61f541be58c81"
+    },
+    {
+      "summary_line": 14,
+      "id": "01-vectors/quiz/2",
+      "passed": true,
+      "source": {
+        "input": "student/01-vectors/choices-01.jsonl",
+        "feedback": "student/01-vectors/choices-feedback-01.jsonl",
+        "line": 4
+      },
+      "signature_sha256": "e2be47ba29b4fbd0fb6b2e5a7ada4141eefd87f7f0b9c4edb93f1f546b9e879f"
+    },
+    {
+      "summary_line": 15,
+      "id": "02-matrices/shape",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/attempt-01.jsonl",
+        "feedback": "student/02-matrices/feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "8ea3d477604b740f8eb7c70a0b0dcd75ed9b5cedfaab10e945f344e45ce27cc8"
+    },
+    {
+      "summary_line": 16,
+      "id": "02-matrices/predict-all",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/attempt-01.jsonl",
+        "feedback": "student/02-matrices/feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "e8262946a793966821fcba20698690f1a162c84adecfe0d01e21c959c008a6ed"
+    },
+    {
+      "summary_line": 17,
+      "id": "02-matrices/p-cost",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/attempt-01.jsonl",
+        "feedback": "student/02-matrices/feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "72119a91c6defa91130269671176351968bd1966d16afc5fbd7ca1b9a2445fc0"
+    },
+    {
+      "summary_line": 18,
+      "id": "02-matrices/supplier",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/attempt-01.jsonl",
+        "feedback": "student/02-matrices/feedback-01.jsonl",
+        "line": 4
+      },
+      "signature_sha256": "57e6a7ad00d77a167ac7912cbf7491ed7f60d76a0b7038473391abbd65ccc448"
+    },
+    {
+      "summary_line": 19,
+      "id": "02-matrices/network",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/attempt-01.jsonl",
+        "feedback": "student/02-matrices/feedback-01.jsonl",
+        "line": 5
+      },
+      "signature_sha256": "73659d97c42def5d94593f563ad22171c50afe44cf96665515775b867aa27d98"
+    },
+    {
+      "summary_line": 20,
+      "id": "02-matrices/by-hand",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/attempt-01.jsonl",
+        "feedback": "student/02-matrices/feedback-01.jsonl",
+        "line": 6
+      },
+      "signature_sha256": "04678efa379bbd0628539d9a963c1ee6c75fae2de78ec4593f687eb782852d51"
+    },
+    {
+      "summary_line": 21,
+      "id": "02-matrices/gram",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/attempt-01.jsonl",
+        "feedback": "student/02-matrices/feedback-01.jsonl",
+        "line": 7
+      },
+      "signature_sha256": "33ad45e6334274d5a46838a53bbed707c2db8d4d7a00f682c2788f114e5a1ff8"
+    },
+    {
+      "summary_line": 22,
+      "id": "02-matrices/predict-df",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/attempt-01.jsonl",
+        "feedback": "student/02-matrices/feedback-01.jsonl",
+        "line": 8
+      },
+      "signature_sha256": "70b8f79e40ab5aa1b5dd2be8744beb100988efb9cf97702992ddd0c80ed4cfb0"
+    },
+    {
+      "summary_line": 23,
+      "id": "02-matrices/intercept-col",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/attempt-01.jsonl",
+        "feedback": "student/02-matrices/feedback-01.jsonl",
+        "line": 9
+      },
+      "signature_sha256": "f4cf4cb98f5a906226b7b622ad7e5914830e93a461bc3a7416de4d4b5667a1b6"
+    },
+    {
+      "summary_line": 24,
+      "id": "02-matrices/predict/1",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/choices-01.jsonl",
+        "feedback": "student/02-matrices/choices-feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "6e598f707c5b328ff069dc7f1adabc622d79611e3df074b96822fc0c50e933a9"
+    },
+    {
+      "summary_line": 25,
+      "id": "02-matrices/quiz/1",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/choices-01.jsonl",
+        "feedback": "student/02-matrices/choices-feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "50fd642bb265d6003b04258fd611f6e6ef19209bcae8a691d170cc7ab2e71dd8"
+    },
+    {
+      "summary_line": 26,
+      "id": "02-matrices/quiz/2",
+      "passed": true,
+      "source": {
+        "input": "student/02-matrices/choices-01.jsonl",
+        "feedback": "student/02-matrices/choices-feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "05e2352549fbc57bc8c36e24e4cade314fc761337cd869b266e479c4a4284cfc"
+    },
+    {
+      "summary_line": 27,
+      "id": "02b-vectorize/disc",
+      "passed": true,
+      "source": {
+        "input": "student/02b-vectorize/attempt-01.jsonl",
+        "feedback": "student/02b-vectorize/feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "78b60e5bbb798e6173de214f5c28a497e26d53c4bc41f2e3a755ca441fab98ab"
+    },
+    {
+      "summary_line": 28,
+      "id": "02b-vectorize/best-of",
+      "passed": true,
+      "source": {
+        "input": "student/02b-vectorize/attempt-01.jsonl",
+        "feedback": "student/02b-vectorize/feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "fad2d54fe340d066ac4b95ecf124aaa8095b180c96d73a8193e7287a289ff2e7"
+    },
+    {
+      "summary_line": 29,
+      "id": "02b-vectorize/tiers",
+      "passed": true,
+      "source": {
+        "input": "student/02b-vectorize/attempt-01.jsonl",
+        "feedback": "student/02b-vectorize/feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "2a734436e87add7cd9d5087888d4df8d501bb13067ec8cc7ea345ce61f536859"
+    },
+    {
+      "summary_line": 30,
+      "id": "02b-vectorize/apply-col",
+      "passed": true,
+      "source": {
+        "input": "student/02b-vectorize/attempt-01.jsonl",
+        "feedback": "student/02b-vectorize/feedback-01.jsonl",
+        "line": 4
+      },
+      "signature_sha256": "c6186f7cbe87e1a62c96aa46b8b006c974e926ad0fbd22cfdb0345dc81779ea3"
+    },
+    {
+      "summary_line": 31,
+      "id": "02b-vectorize/vectorize",
+      "passed": false,
+      "source": {
+        "input": "student/02b-vectorize/attempt-01.jsonl",
+        "feedback": "student/02b-vectorize/feedback-01.jsonl",
+        "line": 5
+      },
+      "signature_sha256": "4e68089d4424b3f6d188c86f90e537ff622e48ff37bff60da77f4cab3ebb9cda"
+    },
+    {
+      "summary_line": 32,
+      "id": "02b-vectorize/nearest-shop",
+      "passed": true,
+      "source": {
+        "input": "student/02b-vectorize/attempt-01.jsonl",
+        "feedback": "student/02b-vectorize/feedback-01.jsonl",
+        "line": 6
+      },
+      "signature_sha256": "10c8b3423da09addced5cf5b46cf637349fc1f6a39967d9bd0a1ee9c40d30183"
+    },
+    {
+      "summary_line": 33,
+      "id": "02b-vectorize/vectorize",
+      "passed": false,
+      "source": {
+        "input": "student/02b-vectorize/attempt-02.jsonl",
+        "feedback": "student/02b-vectorize/feedback-02.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "8d661cea95ca54fbd99dbda84ece51c8a7a63ee1113764e6ee8eaf56e6bd670f"
+    },
+    {
+      "summary_line": 34,
+      "id": "02b-vectorize/vectorize",
+      "passed": true,
+      "source": {
+        "input": "student/02b-vectorize/attempt-03.jsonl",
+        "feedback": "student/02b-vectorize/feedback-03.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "7f23c38ab956b6583604fd47da9bef80b592a243aa896852eaec61b046cefcfd"
+    },
+    {
+      "summary_line": 35,
+      "id": "02b-vectorize/quiz/1",
+      "passed": true,
+      "source": {
+        "input": "student/02b-vectorize/choices-01.jsonl",
+        "feedback": "student/02b-vectorize/choices-feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "09f749640b6dca0e0ec22d95d1638ef0c30ca35ae58c4afceca92fb5679bc5ab"
+    },
+    {
+      "summary_line": 36,
+      "id": "03-normal-equation/solve2",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/attempt-01.jsonl",
+        "feedback": "student/03-normal-equation/feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "69e6964460acfe6ab72edf82b747cc96ab14b3ecabe4b8e0ee52d8b8bb83e1aa"
+    },
+    {
+      "summary_line": 37,
+      "id": "03-normal-equation/dup-receipt",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/attempt-01.jsonl",
+        "feedback": "student/03-normal-equation/feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "3a6753fe8afefe1ac692e70fef4f80fda9af7002d36bf708df332c404d85cd0f"
+    },
+    {
+      "summary_line": 38,
+      "id": "03-normal-equation/inverse",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/attempt-01.jsonl",
+        "feedback": "student/03-normal-equation/feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "47f495353536b27c2253575e4f8333f96d24d39f7d878c1a949ce6dbba6fe931"
+    },
+    {
+      "summary_line": 39,
+      "id": "03-normal-equation/p-normal",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/attempt-01.jsonl",
+        "feedback": "student/03-normal-equation/feedback-01.jsonl",
+        "line": 4
+      },
+      "signature_sha256": "f64b83646515bc753d0136d584cee0d54846c5e9f36d6fec1b82f138d8bcf704"
+    },
+    {
+      "summary_line": 40,
+      "id": "03-normal-equation/my-ols",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/attempt-01.jsonl",
+        "feedback": "student/03-normal-equation/feedback-01.jsonl",
+        "line": 5
+      },
+      "signature_sha256": "fca7e07174a8b7ed884525e07642256cbc9e403c2b44988fe09a06065b2e58e1"
+    },
+    {
+      "summary_line": 41,
+      "id": "03-normal-equation/no-ones",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/attempt-01.jsonl",
+        "feedback": "student/03-normal-equation/feedback-01.jsonl",
+        "line": 6
+      },
+      "signature_sha256": "f6583b5acb0e0c9463e622e8053e7466d6443ac5218f173093213c202ef224cb"
+    },
+    {
+      "summary_line": 42,
+      "id": "03-normal-equation/rank",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/attempt-01.jsonl",
+        "feedback": "student/03-normal-equation/feedback-01.jsonl",
+        "line": 7
+      },
+      "signature_sha256": "f661a02c8c7d68dd8370868b973f442cbbbdd1bb1e4cde955fc96815e3323dc3"
+    },
+    {
+      "summary_line": 43,
+      "id": "03-normal-equation/orthogonal",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/attempt-01.jsonl",
+        "feedback": "student/03-normal-equation/feedback-01.jsonl",
+        "line": 8
+      },
+      "signature_sha256": "81397ad017ae2db16196e8cfba3106760439935ebaa0aa37931843a293d2e9b6"
+    },
+    {
+      "summary_line": 44,
+      "id": "03-normal-equation/many-solutions",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/attempt-01.jsonl",
+        "feedback": "student/03-normal-equation/feedback-01.jsonl",
+        "line": 9
+      },
+      "signature_sha256": "b0b5906c591233eb3b69299f5278953cf7f82d54d330bc53793c3f6c4c8e8075"
+    },
+    {
+      "summary_line": 45,
+      "id": "03-normal-equation/gd-preview",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/attempt-01.jsonl",
+        "feedback": "student/03-normal-equation/feedback-01.jsonl",
+        "line": 10
+      },
+      "signature_sha256": "7c2a0b991fb28ec7914922add9ffd529ffea9020bd7aeca9e013b196327d60b7"
+    },
+    {
+      "summary_line": 46,
+      "id": "03-normal-equation/predict/1",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/choices-01.jsonl",
+        "feedback": "student/03-normal-equation/choices-feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "1bc2a0321737b48ec449c57218dd270edff7528d2538782f8887b93bea723396"
+    },
+    {
+      "summary_line": 47,
+      "id": "03-normal-equation/predict/2",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/choices-01.jsonl",
+        "feedback": "student/03-normal-equation/choices-feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "cc213a7e71f70b18c93692e34039ce3d1f96ed9ec938dda772fcb1f0c0e31a66"
+    },
+    {
+      "summary_line": 48,
+      "id": "03-normal-equation/quiz/1",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/choices-01.jsonl",
+        "feedback": "student/03-normal-equation/choices-feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "0e3438461554e65213301f599b9f119669d65392e76c291500d58108cda03e9a"
+    },
+    {
+      "summary_line": 49,
+      "id": "03-normal-equation/predict/3",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/choices-01.jsonl",
+        "feedback": "student/03-normal-equation/choices-feedback-01.jsonl",
+        "line": 4
+      },
+      "signature_sha256": "91e9a697cc2d7a412d25c4475542c4c0019c11df7f702fc6f0fca7710e1eb4f6"
+    },
+    {
+      "summary_line": 50,
+      "id": "03-normal-equation/quiz/2",
+      "passed": true,
+      "source": {
+        "input": "student/03-normal-equation/choices-01.jsonl",
+        "feedback": "student/03-normal-equation/choices-feedback-01.jsonl",
+        "line": 5
+      },
+      "signature_sha256": "bc9b7be94efc83cd34f4d18562cc14b65e9d43ea86cec27f5aa310d5c4eceb42"
+    },
+    {
+      "summary_line": 51,
+      "id": "03b-own-model/p-class",
+      "passed": true,
+      "source": {
+        "input": "student/03b-own-model/attempt-01.jsonl",
+        "feedback": "student/03b-own-model/feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "4e1485658731cf48ddd982f164456c3c6410dcbcba4080af8b14cf7803f800f3"
+    },
+    {
+      "summary_line": 52,
+      "id": "03b-own-model/fix-class",
+      "passed": true,
+      "source": {
+        "input": "student/03b-own-model/attempt-01.jsonl",
+        "feedback": "student/03b-own-model/feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "4b8afba7b534c4fdc3565d8ea020dd6fbb568121697dc543658d59ca311f9f03"
+    },
+    {
+      "summary_line": 53,
+      "id": "03b-own-model/my-class",
+      "passed": true,
+      "source": {
+        "input": "student/03b-own-model/attempt-01.jsonl",
+        "feedback": "student/03b-own-model/feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "d939f210c0b0a8b66eb8bff3673045c7f1f1006662b242259da0edfab38405fb"
+    },
+    {
+      "summary_line": 54,
+      "id": "03b-own-model/mean-model",
+      "passed": true,
+      "source": {
+        "input": "student/03b-own-model/attempt-01.jsonl",
+        "feedback": "student/03b-own-model/feedback-01.jsonl",
+        "line": 4
+      },
+      "signature_sha256": "9b3aa3bfa75eb7dd229c27342a40be7eeed39a3445b4fdb4f8acfdc4dcb47ca8"
+    },
+    {
+      "summary_line": 55,
+      "id": "03b-own-model/group-mean",
+      "passed": false,
+      "source": {
+        "input": "student/03b-own-model/attempt-01.jsonl",
+        "feedback": "student/03b-own-model/feedback-01.jsonl",
+        "line": 5
+      },
+      "signature_sha256": "581fcdd59249b91be67286ab3b69c091e354b52f25cdaf54ecb0ebff8eae3ef2"
+    },
+    {
+      "summary_line": 56,
+      "id": "03b-own-model/class-cv",
+      "passed": true,
+      "source": {
+        "input": "student/03b-own-model/attempt-01.jsonl",
+        "feedback": "student/03b-own-model/feedback-01.jsonl",
+        "line": 6
+      },
+      "signature_sha256": "cd676492923a00f3c3e56accce90d221108a0dce3d20ace864b3448955e090fc"
+    },
+    {
+      "summary_line": 57,
+      "id": "03b-own-model/group-mean",
+      "passed": true,
+      "source": {
+        "input": "student/03b-own-model/attempt-02.jsonl",
+        "feedback": "student/03b-own-model/feedback-02.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "f9f9930abc12f2c05bdce8de8340806424f5010fad36ddc04a093928d679359d"
+    },
+    {
+      "summary_line": 58,
+      "id": "03b-own-model/quiz/1",
+      "passed": true,
+      "source": {
+        "input": "student/03b-own-model/choices-01.jsonl",
+        "feedback": "student/03b-own-model/choices-feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "4a4d1e5b116e2b4f032da8e3b927fa2f2562f2ac40106a0768b7733838f6553d"
+    },
+    {
+      "summary_line": 59,
+      "id": "04-transform/mix",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/attempt-01.jsonl",
+        "feedback": "student/04-transform/feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "fb80e3b4a17c2cf356e2895e3506dfa255f98822bdd089f9064e2d67f6bc344a"
+    },
+    {
+      "summary_line": 60,
+      "id": "04-transform/diag",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/attempt-01.jsonl",
+        "feedback": "student/04-transform/feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "2ce69e8f6072adff14b9316caa05d81f53628b48bb004313f9438145a49df986"
+    },
+    {
+      "summary_line": 61,
+      "id": "04-transform/p-restore",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/attempt-01.jsonl",
+        "feedback": "student/04-transform/feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "0bacb138931c388675d4008344ad167587ec81dff0a2005a615c2e7e45e7ad6b"
+    },
+    {
+      "summary_line": 62,
+      "id": "04-transform/invertible",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/attempt-01.jsonl",
+        "feedback": "student/04-transform/feedback-01.jsonl",
+        "line": 4
+      },
+      "signature_sha256": "4acd074e8cf8304a7aaee8a7c267f81319cd8bc3c00ea262f4a3d87da8e2210f"
+    },
+    {
+      "summary_line": 63,
+      "id": "04-transform/drop-col",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/attempt-01.jsonl",
+        "feedback": "student/04-transform/feedback-01.jsonl",
+        "line": 5
+      },
+      "signature_sha256": "db374a7521c22e01f83a6b741a59e1baff358e1228404402f476621c8a85f9e3"
+    },
+    {
+      "summary_line": 64,
+      "id": "04-transform/same-quality",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/attempt-01.jsonl",
+        "feedback": "student/04-transform/feedback-01.jsonl",
+        "line": 6
+      },
+      "signature_sha256": "5be32054c1b29a2ca25bb4913cc9e092d751d4e1a43a0de387c4eef11042b5a5"
+    },
+    {
+      "summary_line": 65,
+      "id": "04-transform/weights",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/attempt-01.jsonl",
+        "feedback": "student/04-transform/feedback-01.jsonl",
+        "line": 7
+      },
+      "signature_sha256": "8f3098aa59219287291f14fbf4ae8fe2407dfe3a64a12687ed960487b0de9337"
+    },
+    {
+      "summary_line": 66,
+      "id": "04-transform/attack",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/attempt-01.jsonl",
+        "feedback": "student/04-transform/feedback-01.jsonl",
+        "line": 8
+      },
+      "signature_sha256": "cbfd4c4f2a8ec383b9366d5d962039d8b79fed2c65ec71572378468565de5a79"
+    },
+    {
+      "summary_line": 67,
+      "id": "04-transform/tree-vs-linear",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/attempt-01.jsonl",
+        "feedback": "student/04-transform/feedback-01.jsonl",
+        "line": 9
+      },
+      "signature_sha256": "133512da9d95e4c3de32feaa5da3940e3abd2d32d740056326c71cdbaf2aa5f1"
+    },
+    {
+      "summary_line": 68,
+      "id": "04-transform/predict/1",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/choices-01.jsonl",
+        "feedback": "student/04-transform/choices-feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "80a9ca0712be62a61acd3529d723a1108f3632222bf226e05d8dbb7b535841dc"
+    },
+    {
+      "summary_line": 69,
+      "id": "04-transform/quiz/1",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/choices-01.jsonl",
+        "feedback": "student/04-transform/choices-feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "1afefac50c4558d8be34de93a2f1a4ae68f152c1e0563874bc8a982f6a50eaa4"
+    },
+    {
+      "summary_line": 70,
+      "id": "04-transform/predict/2",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/choices-01.jsonl",
+        "feedback": "student/04-transform/choices-feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "8a418211d9b88c9399dafe431ca778c8297a16fa105086c45e0c719f9c223852"
+    },
+    {
+      "summary_line": 71,
+      "id": "04-transform/quiz/2",
+      "passed": true,
+      "source": {
+        "input": "student/04-transform/choices-01.jsonl",
+        "feedback": "student/04-transform/choices-feedback-01.jsonl",
+        "line": 4
+      },
+      "signature_sha256": "08fde3c86280a2ebebfe5c2d8279aa6327f7952cab8100098add7190573d8866"
+    },
+    {
+      "summary_line": 72,
+      "id": "05-project/look",
+      "passed": true,
+      "source": {
+        "input": "student/05-project/attempt-01.jsonl",
+        "feedback": "student/05-project/feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "eefc57ea82c36955ab80a5be35197466c75a501d3186e18da259a03fec89e636"
+    },
+    {
+      "summary_line": 73,
+      "id": "05-project/baseline",
+      "passed": true,
+      "source": {
+        "input": "student/05-project/attempt-01.jsonl",
+        "feedback": "student/05-project/feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "8a5a2aa73f1eea61ebc14c4f629af74b5d0c4180144c8466b382fb06c910a5a4"
+    },
+    {
+      "summary_line": 74,
+      "id": "05-project/key",
+      "passed": true,
+      "source": {
+        "input": "student/05-project/attempt-01.jsonl",
+        "feedback": "student/05-project/feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "38f08d359f4cc23057e0e48245338310bfd25f41ba8aefb8ba4adfc957a18d2c"
+    },
+    {
+      "summary_line": 75,
+      "id": "05-project/hidden-quality",
+      "passed": true,
+      "source": {
+        "input": "student/05-project/attempt-01.jsonl",
+        "feedback": "student/05-project/feedback-01.jsonl",
+        "line": 4
+      },
+      "signature_sha256": "2aa9f4ae8aa007dbde2221126f7cf3b75b1f8450d96db90947f04098e3a71d08"
+    },
+    {
+      "summary_line": 76,
+      "id": "05-project/weights",
+      "passed": true,
+      "source": {
+        "input": "student/05-project/attempt-01.jsonl",
+        "feedback": "student/05-project/feedback-01.jsonl",
+        "line": 5
+      },
+      "signature_sha256": "6e1501631cd75697628f7e17fa00fb57cb70eaf293036f014364bfbfa888c9da"
+    },
+    {
+      "summary_line": 77,
+      "id": "05-project/new-member",
+      "passed": true,
+      "source": {
+        "input": "student/05-project/attempt-01.jsonl",
+        "feedback": "student/05-project/feedback-01.jsonl",
+        "line": 6
+      },
+      "signature_sha256": "dd524e63d6441bab16062c23fcf0b9cf52ad355f1b100ca5fcf6589167ad2e16"
+    },
+    {
+      "summary_line": 78,
+      "id": "05-project/bad-key",
+      "passed": true,
+      "source": {
+        "input": "student/05-project/attempt-01.jsonl",
+        "feedback": "student/05-project/feedback-01.jsonl",
+        "line": 7
+      },
+      "signature_sha256": "12d22df24bc707b59948e15e3dd3123b05abdf4cb8487bd620bba2b04f40c57c"
+    },
+    {
+      "summary_line": 79,
+      "id": "05-project/tree-hidden",
+      "passed": true,
+      "source": {
+        "input": "student/05-project/attempt-01.jsonl",
+        "feedback": "student/05-project/feedback-01.jsonl",
+        "line": 8
+      },
+      "signature_sha256": "a37cf16108a5d2bcd6f4b203aff01faa39469e2175eafe381fa33aa1b07f1d0c"
+    },
+    {
+      "summary_line": 80,
+      "id": "05-project/attack",
+      "passed": true,
+      "source": {
+        "input": "student/05-project/attempt-01.jsonl",
+        "feedback": "student/05-project/feedback-01.jsonl",
+        "line": 9
+      },
+      "signature_sha256": "b39a17d0f13d2c075611a186cd61a4ebdece6f692eea50cf30372527737cc781"
+    },
+    {
+      "summary_line": 81,
+      "id": "05-project/quiz/1",
+      "passed": true,
+      "source": {
+        "input": "student/05-project/choices-01.jsonl",
+        "feedback": "student/05-project/choices-feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "cf607a782dd5edafbd2806e4afc2a3fbf6f6a04e9304cd75dbf0edecb268bd9f"
+    },
+    {
+      "summary_line": 82,
+      "id": "test/quiz/1",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 1
+      },
+      "signature_sha256": "9e8c2715eb60030980fcc098e2bdf65a05c65155581291b294664e9bf8d33876"
+    },
+    {
+      "summary_line": 83,
+      "id": "test/quiz/2",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 2
+      },
+      "signature_sha256": "1197b95f165a541d5cf397f6737e1c1b1df516937403f57529959e266676ee98"
+    },
+    {
+      "summary_line": 84,
+      "id": "test/quiz/3",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 3
+      },
+      "signature_sha256": "8b42b72eef47fa87e116f5095c05ef0a988e0ed049e9b647bc8a314d587d5728"
+    },
+    {
+      "summary_line": 85,
+      "id": "test/quiz/4",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 4
+      },
+      "signature_sha256": "a2aac39ab8ded24628aa2911befabd39d8abc7a96fdfce5e94ac0c1bc6d5fe40"
+    },
+    {
+      "summary_line": 86,
+      "id": "test/quiz/5",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 5
+      },
+      "signature_sha256": "d32e98393e614e40daf49765ab82be4d88555e237d71def8b8eba361d95d6b38"
+    },
+    {
+      "summary_line": 87,
+      "id": "test/quiz/6",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 6
+      },
+      "signature_sha256": "77213a95df72769b9763014a34e8d7a423afa112db08b5e5868112f98afb0382"
+    },
+    {
+      "summary_line": 88,
+      "id": "test/quiz/7",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 7
+      },
+      "signature_sha256": "8e68f4d3cd5d5a6ab284da6b502eb56e5606d604dab4320b060a3d1a43bc8cee"
+    },
+    {
+      "summary_line": 89,
+      "id": "test/quiz/8",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 8
+      },
+      "signature_sha256": "2ace29ee4b79a2defe7f3ffe2255bb8db2a0df3f3bf41b9d2cbb3ad4edb1e65e"
+    },
+    {
+      "summary_line": 90,
+      "id": "test/quiz/9",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 9
+      },
+      "signature_sha256": "b8e638e1585c25e1b146014cedf0f7562681601120f7a3a232985b86e6724eed"
+    },
+    {
+      "summary_line": 91,
+      "id": "test/quiz/10",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 10
+      },
+      "signature_sha256": "80bcd77dd6585dacaf26649184e1abae7c2e4d82a2abf89ec9ded2676c8fd1ab"
+    },
+    {
+      "summary_line": 92,
+      "id": "test/quiz/11",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 11
+      },
+      "signature_sha256": "0f8c0ecc6113de2f6676faae8a8f2aef152038d35235179571c2c00f9f30374c"
+    },
+    {
+      "summary_line": 93,
+      "id": "test/quiz/12",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 12
+      },
+      "signature_sha256": "0f6a34097620ec6974299f81403102fa03d04be4176d56bf22890e5ad46d3054"
+    },
+    {
+      "summary_line": 94,
+      "id": "test/quiz/13",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 13
+      },
+      "signature_sha256": "2fd005e22157928e923bf019dc3b8db78960e1951e54772dae7d83f54adb928e"
+    },
+    {
+      "summary_line": 95,
+      "id": "test/quiz/14",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 14
+      },
+      "signature_sha256": "e1fc24ed0e78b308f80e9a10d32865b26f359e20bc3df35de0b9cb5a0a96ef44"
+    },
+    {
+      "summary_line": 96,
+      "id": "test/quiz/15",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 15
+      },
+      "signature_sha256": "56711af5c8a1e9ff825a57e777088eb15888aeb16ffcf3d9b725e5620b72984f"
+    },
+    {
+      "summary_line": 97,
+      "id": "test/quiz/16",
+      "passed": true,
+      "source": {
+        "input": "student/test/choices-01.jsonl",
+        "feedback": "student/test/choices-feedback-01.jsonl",
+        "line": 16
+      },
+      "signature_sha256": "7d57ca51c1e0d17935858398f7f96af990dc5ce193223f5f3b20cfad562c169c"
+    }
+  ],
+  "help": {
+    "instrumented_hint_events": [
+      {
+        "input": "student/02b-vectorize/hint-01.jsonl",
+        "feedback": "student/02b-vectorize/hint-feedback-01.jsonl",
+        "line": 1,
+        "event": {
+          "lesson": "02b-vectorize",
+          "task": "vectorize",
+          "action": "hint",
+          "expect": "После двух реальных отказов прошу первую подсказку: Q1 понять контракт измерения реальных вызовов, Q2 вижу предложение подсказки после отказа, Q3 ожидаю способ проверить измерение без подгонки чисел.",
+          "id": "02b-vectorize/vectorize",
+          "hint": "ПОДСКАЗКА 1\n\nРаботайте с массивами целиком: 60 + 14 * km сразу даёт базовую оплату всех доставок. Условия «если» превращаются в np.where."
+        }
+      }
+    ],
+    "instrumented_assisted_ids": [
+      "02b-vectorize/vectorize"
+    ],
+    "summary_has_help_field": false,
+    "limitation": "One hint is evidenced positively. No solution reveal is the student declaration; absence of an event does not prove absence of all UI use. Theory use is not counted as hint assistance."
+  },
+  "prior_14": [
+    {
+      "id": "S09-01",
+      "source": "docs/audit-2026-11-13/ch09/student.md",
+      "line": 28,
+      "full_text": "- **S09-01. Какой линейной модели гарантирован результат?** В уроке о преобразовании слова «только для линейных моделей» я прочитал шире, чем показанный пример. Проверил знакомую Ridge на той же разбивке анкет с тем же ключом. У LinearRegression наибольшее изменение прогноза было порядка 10⁻¹², у Ridge(alpha=1000) — 0,937 тыс. ₽. Замена координат меняет штраф за величину новых весов. Теперь в своём выводе указываю обычную регрессию без регуляризации."
+    },
+    {
+      "id": "S09-02",
+      "source": "docs/audit-2026-11-13/ch09/student.md",
+      "line": 29,
+      "full_text": "- **S09-02. Какие именно анкеты должен знать подрядчик?** В последней паре тестовых вопросов об отдельных множителях и о полном ключе указано число строк. Для отдельного множителя отношение значений требует ненулевой исходной координаты. Например, если gender равен нулю, при множителе 2 и при 20 получится один и тот же ноль. Для полной матрицы проверил четыре анкеты с gender=0. Ранг известных строк получился 3, тогда как у первых четырёх строк из практики он равен 4. Теперь проверяю независимость строк до solve."
+    },
+    {
+      "id": "S09-03",
+      "source": "docs/audit-2026-11-13/ch09/student.md",
+      "line": 30,
+      "full_text": "- **S09-03. Совпадут ли прогнозы на новой строке, если обучающие признаки дублируются?** В проекте сказано, что достаточно обратимости P. Взял три строки [0,0], [1,1], [2,2] с ответами 0, 2, 4 и P=diag(1,2). Обе обычные LinearRegression выучили обучающие ответы точно. На новой строке [1,0] получили 1,0 и 0,4. После урока про дубли стало понятно, что разные наборы весов дают один и тот же оптимум на обучении. При полном ранге, как в работе с анкетами, эта неоднозначность исчезает."
+    },
+    {
+      "id": "S09-04",
+      "source": "docs/audit-2026-11-13/ch09/student.md",
+      "line": 32,
+      "full_text": "- **S09-04. Может ли честный секундомер дать ноль?** В best-of я для каждого из repeats вызовов считал разность показаний time.perf_counter и возвращал наименьшую. В локальной проверке код прошёл. В браузере для очень быстрой проверочной функции один интервал оказался 0,0 и задачу отклонили. Видимое условие просит вернуть фактически измеренный минимум. Подстановка положительного числа изменила бы ответ, а дополнительные вызовы изменили бы число повторов. Оставил исходную попытку и незакрытую задачу."
+    },
+    {
+      "id": "E9-01",
+      "source": "docs/audit-2026-11-13/ch09/expert.md",
+      "line": 31,
+      "full_text": "**E9-01 · P1 · итоговое решение о передаче анкет.** Предупреждение о четырёх известных парах правильно для восстановления полного ключа. Однако для раскрытия отдельных полей подрядчику может хватить одних опубликованных строк. На фактической таблице проекта только по `H = X @ P` и заявленным диапазонам удалось восстановить **пол и размер семьи у 5000 из 5000 участников, без известных анкет, целевой переменной, seed и ключа**. Поле 0/1 может принимать лишь два значения проекции, семейный размер — шесть равноотстоящих. У похожих записей часто повторяются одни и те же векторы разностей. Если три направления разностей не меняют искомое поле, их нормаль выделяет его. В функции `recover_discrete_fields` перебираются тройки частых разностей, проверяются число уровней и интервалы. С оригиналом сравниваем только после восстановления. Тот же результат получен с тремя дополнительными ключами (43–45). Это контрпример на конкретном файле; для восстановления всех четырёх полей без известных пар опыт не проводился. [Воспроизводимая атака](expert-data.py) · [Решение для руководителя](../../../content/ch09/05-project.md#L671)"
+    },
+    {
+      "id": "E9-02",
+      "source": "docs/audit-2026-11-13/ch09/expert.md",
+      "line": 35,
+      "full_text": "**E9-02 · P2 · 04, same-quality/weights и доказательство в проекте.** При обратимой P сохраняется множество линейных прогнозов и значение минимума ошибки на train. Если оптимальные веса неоднозначны, два независимых вызова `LinearRegression.fit` могут выбрать разные решения минимальной нормы, которые ведут себя по-разному вне обучающего подпространства. Для `X=[[0,0],[1,1],[2,2]], y=[0,1,2], P=diag(2,1)` оба обучающих R²=1; для новой анкеты [1,0] на двух представлениях прогнозы **0.5 и 0.8**. Ранг центрированной учебной семейной таблицы равен четырём и её численный результат корректен. Приёмка — разделить доказательство равенства классов моделей и гарантию конкретно обученного решения на новых строках, явно указать полный ранг с учётом intercept. [Объяснение](../../../content/ch09/04-transform.md#L140) · [Доказательство](../../../content/ch09/05-project.md#L99) · [NumPy о решении минимальной нормы](https://numpy.org/doc/2.4/reference/generated/numpy.linalg.lstsq.html)"
+    },
+    {
+      "id": "E9-03",
+      "source": "docs/audit-2026-11-13/ch09/expert.md",
+      "line": 37,
+      "full_text": "**E9-03 · P2 · необратимый ключ и условия атаки.** Октябрьская фраза исправлена в основном разборе и правильном ответе quiz (строки 44–50), но в recap и итоговой записке всё ещё утверждается, что вырожденный ключ ухудшает модель. На одном квадрате из четырёх точек проекция `diag(1,0)` сохраняет R²=1 для цели `y=x₁` и снижает до нуля для `y=x₂`. Учебный плохой ключ действительно уменьшает R² с 0.3713 до 0.3336. В выводе для руководителя нужно сохранить условное «может ухудшить». Аналогично финальный тест заявляет, что диагональный ключ восстанавливается **по одной** анкете. В 2273 анкетах пол равен нулю: отношение скрытой нулевой координаты к исходной даёт 0/0. Уточнить «для каждого столбца хотя бы одна известная ненулевая координата», для плотной матрицы — четыре **линейно независимых** известные строки. На первых четырёх строках учебного файла максимальная ошибка полного восстановления меньше 10⁻¹². [Октябрьский отчёт](../../audit-2026-10-15/09-linear-algebra.md) · [Исправленный quiz](../../../content/ch09/05-project.md#L44) · [Recap](../../../content/ch09/05-project.md#L9) · [Итог](../../../content/ch09/05-project.md#L677) · [Тест](../../../content/ch09/test.md#L187)"
+    },
+    {
+      "id": "E9-04",
+      "source": "docs/audit-2026-11-13/ch09/expert.md",
+      "line": 39,
+      "full_text": "**E9-04 · P2 · чем решать МНК.** В `my-ols/my-class` нормальные уравнения уместны для вывода формулы. Замена явной обратной матрицы на `solve(X.T@X, X.T@y)` сохраняет проблему обусловленности, поскольку κ₂(XᵀX)=κ₂(X)² при полном ранге. На матрице `[[1,1],[1,1+1e-8],[1,1-1e-8]]` с известными весами [1,−1] прямой `lstsq(X,y)` возвращает эти веса, а `solve` матрицы Грама в проверенной среде сообщает Singular matrix. Урок уже обсуждает риск почти зависимых столбцов и использует `lstsq` при вырожденности. Приёмка — распространить тот же устойчивый способ на близкие к вырожденным данные и переиспользуемый класс, подтвердить совпадение с текущим эталоном и на зависимых/почти зависимых входах. [Предупреждение о почти-повторах](../../../content/ch09/03-normal-equation.md#L237) · [Условия solve](https://numpy.org/doc/2.4/reference/generated/numpy.linalg.solve.html) · [Условия inv](https://numpy.org/doc/2.4/reference/generated/numpy.linalg.inv.html)"
+    },
+    {
+      "id": "E9-05",
+      "source": "docs/audit-2026-11-13/ch09/expert.md",
+      "line": 41,
+      "full_text": "**E9-05 · P2 · автоприёмка предметных действий.** `hidden-quality` принимает обучение и оценивание только на открытых данных. `many-solutions` принимает нулевой вектор и его сдвиг вдоль ядра: прогнозы совпадают, но остатки этих весов не минимальны. В `gram` проходит зануление матрицы после подсчёта проверочных флагов. `vectorize` принимает вызов одного и того же цикла дважды и фиктивные времена 1 и 0.01 секунды. В `attack` замена восстановленных анкет нулями после подсчёта доли не портит оценку, ложное значение самой доли отклоняется. Приёмка — вызвать предъявленную модель на свежей скрытой анкете, сравнить норму невязки с оптимумом, проверить полученные матрицы, а в упражнении о скорости замерять переданные функции самостоятельно на нескольких повторах. Использование `lstsq` для МНК, `solve(P.T,H.T).T` для восстановления и вычисление ковариации через `np.cov` прошли. [16 предметных проб](expert-probes.mjs) · [Минимум времени повторных измерений в Python](https://docs.python.org/3/library/timeit.html)"
+    },
+    {
+      "id": "M09-01",
+      "source": "docs/audit-2026-11-13/ch09/methodist.md",
+      "line": 31,
+      "full_text": "1. **M09-01 · P1 · 05-project/hidden-quality, weights.** В исходный check переданы только r2_hidden = round(r2_base, 4) и same = True после стартера. Второй fit и преобразование теста отсутствовали, зачёт получен. Другая проверка после верного расчёта принимает max_diff = −100. На учебной выборке реальные R² обеих моделей 0,3713, наибольшая абсолютная разница прогнозов примерно 4,4 × 10⁻¹². Попросить вернуть обученную модель и её прогнозы по ID, пересчитать величины из соответствующих друг другу строк. В новой выборке правильная модель на согласованно преобразованных данных проходит, подмена ключа, копирование открытых прогнозов без fit и отрицательная величина выявляются. Сохранить удачную задачу new-member как проверку фактического использования ключа. [Шаги 4–5б](../../../content/ch09/05-project.md)"
+    },
+    {
+      "id": "M09-02",
+      "source": "docs/audit-2026-11-13/ch09/methodist.md",
+      "line": 32,
+      "full_text": "2. **M09-02 · P2 · обоснование 04-transform и 05-project.** Обратимая P сохраняет пространство линейных функций и оптимальные обучающие прогнозы. Совпадение двух независимо обученных моделей на произвольном новом объекте требует уточнения. Обучить LinearRegression на (0,0), (1,1), (2,2) с целями 0, 1, 2. При P = diag(1,2) ошибки обеих моделей на обучении нулевые; новая строка (1,0) получает 0,5 и 0,2, тогда как для (3,3) обе модели дают 3. Измерений по одному направлению недостаточно, чтобы установить два коэффициента. В учебных анкетах центрированная матрица полного ранга 4. Встроить рядом с доказательством вопрос «Что мы узнали о госте, для которого два признака впервые разошлись?». На новом наборе ученик различает перенос фиксированных весов P⁻¹w и повторное обучение при неединственном оптимуме. Отдельно оговорить отсутствие штрафа: на x = 0,1,2 с y=x и P=2 обычный Ridge с неизменным alpha=1 даёт для x=2 прогнозы 1,667 и 1,889. [Обоснование](../../../content/ch09/05-project.md) · [Много решений](../../../content/ch09/03-normal-equation.md) · [Преобразование](../../../content/ch09/04-transform.md)"
+    },
+    {
+      "id": "M09-03",
+      "source": "docs/audit-2026-11-13/ch09/methodist.md",
+      "line": 33,
+      "full_text": "3. **M09-03 · P2 · итоговая записка и attack.** Сохранять публичный seed=42 для повторяемости вычислений уместно; он даёт подрядчику, знающему пример, весь ключ. По одной преобразованной таблице и рецепту генерации восстановлены 5000 строк с максимальной ошибкой 2,85 × 10⁻¹³, без пары известных анкет. Если конкретный P неизвестен, для его прямого восстановления нужны независимые исходные строки с соответствующими им преобразованными. Итоговый тест проверяет известную атаку, а в уроке 04 она также есть на уровне plus. Изменить итог проекта: «Покажите отдельно, что сохранилось у модели и что способен узнать получатель с указанными знаниями. Ответьте на исходный запрос о невозможности восстановления». На новом примере сравнить опубликованный учебный ключ и неизвестный ключ с четырьмя зависимыми парами. Одних четырёх строк недостаточно для однозначного решения системы ранга три; отсутствие полного ранга не доказывает защищённость таблицы. [Постановка](../../../content/ch09/intro.md) · [Итог и attack](../../../content/ch09/05-project.md) · [Предшествующая практика](../../../content/ch09/04-transform.md)"
+    },
+    {
+      "id": "M09-04",
+      "source": "docs/audit-2026-11-13/ch09/methodist.md",
+      "line": 34,
+      "full_text": "4. **M09-04 · P2 · recap и «Условия» финальной записки.** В объяснении и исправленном вопросе проекта уже есть точная оговорка о потере полезной для цели информации. В памятке и готовом ответе осталось безусловное ухудшение качества. На четырёх углах единичного квадрата P=diag(1,0) даёт R²=1 при y=x₁ и 0 при y=x₂. Перенести из основного текста в оба места: «Ранг упал; покажите, можно ли всё ещё выразить вашу цель по оставшимся координатам». На другой проекции проверить две цели и попросить объяснить вычисленный результат. [Формулировки одной страницы](../../../content/ch09/05-project.md) · [Октябрьский P2](../../audit-2026-10-15/09-linear-algebra.md)"
+    },
+    {
+      "id": "M09-05",
+      "source": "docs/audit-2026-11-13/ch09/methodist.md",
+      "line": 35,
+      "full_text": "5. **M09-05 · P2 · 02b-vectorize/vectorize.** В check передана функция pay_vec = pay_loop, итоговые суммы верны. Объявленные времена 0,4 и 0,1 секунды удовлетворили порогу и дали зачёт без векторизации. Эти числа — контрольная подстановка. Попросить предъявить функцию и наблюдаемые замеры, повторно вызвать обе реализации на скрытом наборе с разными длинами, включая границу 8 км. Сохранить независимую проверку сумм и учебный приём минимального времени из нескольких запусков. Считать ускорение диагностикой: высокое отношение из пользовательских переменных само по себе не проверяет реализацию. На новом тарифе сравнить настоящую векторную формулу и алиас; принять расчёт, который векторно обрабатывает длинную ось, объясняет результат и предъявляет фактические измерения. [Практика и проверка](../../../content/ch09/02b-vectorize.md)"
+    }
+  ],
+  "historical_ch09_program_rows": [
+    {
+      "line": 19,
+      "version": "baseline",
+      "fixture": "historical-observed",
+      "task": "ch09/03-normal-equation/many-solutions",
+      "case": "Коэффициент последнего флага фиксирован нулём, МНК по независимым столбцам",
+      "code_sha256": "fa5064e3453998750807fb90e5d1b6ca6a7e63e1789c58d79574d09f15904917",
+      "expected_by_lesson": true,
+      "cpython": true,
+      "pyodide": true
+    },
+    {
+      "line": 20,
+      "version": "baseline",
+      "fixture": "historical-observed",
+      "task": "ch09/03-normal-equation/many-solutions",
+      "case": "Та же минимальная ошибка, но сдвиг обоих решений на 9 вместо требуемых 10",
+      "code_sha256": "9ae4dd78aab9cb685bcaaa8d40574f3e1acbefbc1d2e30653c07a77303379b3f",
+      "expected_by_lesson": false,
+      "cpython": false,
+      "pyodide": false,
+      "feedback_cpython": "w_b: +10 к первому весу, −10 к трём последним, вес расстояния без изменений.",
+      "feedback_pyodide": "w_b: +10 к первому весу, −10 к трём последним, вес расстояния без изменений."
+    },
+    {
+      "line": 56,
+      "version": "final",
+      "fixture": "original",
+      "task": "ch09/03-normal-equation/many-solutions",
+      "case": "Коэффициент последнего флага фиксирован нулём, МНК по независимым столбцам",
+      "code_sha256": "fa5064e3453998750807fb90e5d1b6ca6a7e63e1789c58d79574d09f15904917",
+      "expected_by_lesson": true,
+      "cpython": true,
+      "pyodide": true,
+      "expected_by_original_lesson": true
+    },
+    {
+      "line": 57,
+      "version": "final",
+      "fixture": "original",
+      "task": "ch09/03-normal-equation/many-solutions",
+      "case": "Та же минимальная ошибка, но сдвиг обоих решений на 9 вместо требуемых 10",
+      "code_sha256": "9ae4dd78aab9cb685bcaaa8d40574f3e1acbefbc1d2e30653c07a77303379b3f",
+      "expected_by_lesson": false,
+      "cpython": false,
+      "pyodide": false,
+      "expected_by_original_lesson": false,
+      "feedback_cpython": "w_b: +10 к первому весу, −10 к трём последним, вес расстояния без изменений.",
+      "feedback_pyodide": "w_b: +10 к первому весу, −10 к трём последним, вес расстояния без изменений."
+    }
+  ],
+  "late_M09": {
+    "id": "M09",
+    "source": "docs/course-improvements/reaudit/review.md",
+    "line": 5,
+    "acceptance_source": "docs/course-improvements/reaudit/fixes/review/ch09.md"
+  },
+  "source_hashes_now": {
+    "content/ch09/01-vectors.md": "6185d846c28a847a63b5d6a3e1bad2ddf23106b55ec53f64023efacd5aa20284",
+    "content/ch09/02-matrices.md": "8fea5eab8076f7d6ec68c7ad1684e60a72a4005dfdb5be2cb1e1d5a60d3e5353",
+    "content/ch09/02b-vectorize.md": "e3810c19a2fb0050084bf974cfa34e0f52eca59b0612f5c334de6e2d2ca4c43d",
+    "content/ch09/03-normal-equation.md": "dd2912922ea6062f3deb2711fab1bf325cd68473514f486b01e78f31b24f9aad",
+    "content/ch09/03b-own-model.md": "619d620a2a850ee0ca09c5d669ce133ed3afce3b30e25aa03fbf481f62ae2c14",
+    "content/ch09/04-transform.md": "2a0c62eb6c2785bbe51199624c828a6a0d84c9d73d754251d620907b03bb439c",
+    "content/ch09/05-project.md": "34cd5ee2db18df7e08485c1d5eb798c98b403e4c26fbd17d8f107085c49554a7",
+    "content/ch09/intro.md": "e776cd05b848487a6f8cbb4ae9fa1969c3e2072961a55fb13e347a531ab5c6e1",
+    "content/ch09/test.md": "9c1a62b70795aae371d8ae16effa6cf38b1d6139cc284b1b1a243a118be83197"
+  },
+  "baseline_source_hashes": {
+    "content/ch09/01-vectors.md": "d00aeb3d3934e5c1174d560c43d7e13aab575249a817859a457279d0accb7b6e",
+    "content/ch09/02-matrices.md": "8fea5eab8076f7d6ec68c7ad1684e60a72a4005dfdb5be2cb1e1d5a60d3e5353",
+    "content/ch09/02b-vectorize.md": "3370a6e58e4770e41c8f4e60da4066a4d72f9aac448d0b0c2fe786b87d25a961",
+    "content/ch09/03-normal-equation.md": "4e79428ddded3753532cc14a781a2388c0ca2cab8982c44c5894422592d03c69",
+    "content/ch09/03b-own-model.md": "e04da0f9dc9760a0e388c3b769a65bbcf96fd4a31ee597ee7693c60aecda6c12",
+    "content/ch09/04-transform.md": "d121c5fe6191a9d860b74446bd941b9508437748dccd531f2a35bacaf38313ab",
+    "content/ch09/05-project.md": "fca6c3090fd96d2203a8143d271a11dfeb0142427437075626db0e5deed83970",
+    "content/ch09/intro.md": "e776cd05b848487a6f8cbb4ae9fa1969c3e2072961a55fb13e347a531ab5c6e1",
+    "content/ch09/test.md": "9c1a62b70795aae371d8ae16effa6cf38b1d6139cc284b1b1a243a118be83197"
+  },
+  "release": "Final publication pending by workflow; absence is not a finding.",
+  "issues": []
+}

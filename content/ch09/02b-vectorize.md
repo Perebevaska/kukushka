@@ -40,7 +40,7 @@ print("вектор:", (X @ w + b).round(1))
 
 ### Замер времени
 
-Теперь 100 тысяч строк. Время измерим секундомером `time.perf_counter()`: он возвращает текущее время в секундах с точностью до долей микросекунды. Разность двух показаний и есть длительность. Один замер шумит: первый вызов бывает медленнее следующих, а любой вызов может совпасть с работой другой программы. Поэтому замер повторяют несколько раз и берут **наименьшее** время — оно ближе всего к «чистой» скорости кода.
+Теперь 100 тысяч строк. Время измерим секундомером `time.perf_counter()`: его показания выражены в секундах, разрешение зависит от среды. Разность двух показаний даёт измеренную длительность и иногда оказывается нулевой. Один замер шумит: первый вызов бывает медленнее следующих, а любой вызов может совпасть с работой другой программы. Поэтому замер повторяют несколько раз и берут **наименьшее** время — оно ближе всего к «чистой» скорости кода.
 
 ```python
 import time
@@ -71,7 +71,11 @@ same = np.allclose(loop_predict(X, w, b), X @ w + b)
 
 print(f"цикл:   {t_loop:.3f} с")
 print(f"вектор: {t_vec:.4f} с")
-print(f"быстрее в {t_loop / t_vec:.0f} раз; ответы совпадают: {same}")
+print("ответы совпадают:", same)
+if t_vec > 0:
+    print(f"отношение времён: {t_loop / t_vec:.1f}")
+else:
+    print("Векторный расчёт занял меньше одного измеримого тика.")
 ```
 
 **Что здесь происходит:**
@@ -162,7 +166,7 @@ print("np.where:", np.where(km > 8, p + 100, p))
 
 {{practice: vectorize, nearest-shop}}
 
-При измеренном `t_vec=0` сохраните `speedup=None`: точность таймера не позволяет вычислить отношение. Для fee-col примените ту же обработку нулевого замера. Проверка вычисленного результата и измерение скорости — разные результаты эксперимента.
+При измеренном `t_vec=0` сохраните `speedup=None`: точность таймера не позволяет вычислить отношение. Для времени `t_col` функции `fee_col` примените ту же обработку нулевого замера. Проверка вычисленного результата и измерение скорости — разные результаты эксперимента.
 
 ## Практика
 
@@ -246,16 +250,26 @@ _calls.clear(); f(_work)
 assert len(_calls) == 5, f'Без второго аргумента best_time вызвала f {len(_calls)} раз, а по умолчанию повторов 5.'
 ts = need('t_sum')
 assert isinstance(ts, float) and 0 <= ts < 60, f't_sum = {ts!r}: время в секундах от best_time(lambda: sum(range(1_000_000))).'
-_original_clock = _t.perf_counter
-try:
-    for _durations, _expected in [([.004,0,.002,.003],0.0),([.004,.001,.002,.003],.001)]:
-        _ticks = iter([tick for i,duration in enumerate(_durations) for tick in (float(i),float(i)+duration)])
-        _t.perf_counter = lambda: next(_ticks)
-        _count = []
-        _measured = f(lambda: _count.append(1),4)
-        assert len(_count)==4 and close(_measured,_expected,1e-10), 'best_time должен вернуть реальный минимум; нулевой минимум допустим, постоянный ноль не подходит.'
-finally:
-    _t.perf_counter = _original_clock
+def _check_clock_minimum(_candidate):
+    # Originals stay in locals; rebinding a learner global cannot replace them.
+    _original = _t.perf_counter
+    _globals = getattr(_candidate, '__globals__', {})
+    _aliases = {name:value for name,value in list(_globals.items()) if value is _original}
+    try:
+        for _durations,_expected in [([.004,0,.002,.003],0.0),([.004,.001,.002,.003],.001)]:
+            _ticks=iter([tick for i,duration in enumerate(_durations) for tick in (float(i),float(i)+duration)])
+            def _clock():
+                return next(_ticks)
+            _t.perf_counter=_clock
+            for _name in _aliases:
+                _globals[_name]=_clock
+            _count=[]
+            _measured=_candidate(lambda:_count.append(1),4)
+            assert len(_count)==4 and close(_measured,_expected,1e-10), 'best_time должен вернуть реальный минимум; нулевой минимум допустим, постоянный ноль не подходит.'
+    finally:
+        _t.perf_counter=_original
+        _globals.update(_aliases)
+_check_clock_minimum(f)
 
 ```
 
@@ -341,7 +355,7 @@ print(total_bonus, n_mid, n_far)
 
 ## task: apply-col | apply или столбцы | base
 
-Сбор за упаковку: 15 ₽ за каждую позицию, но если позиций 4 и больше — фиксированно 60 ₽; заказы дороже 1500 ₽ упаковываются бесплатно. В заготовке — таблица доставок `d` (из `deliveries.csv`), функция `fee_apply` для `d.apply(fee_apply, axis=1)` и секундомер `best_time` из задачи «Секундомер с повторами». Напишите `fee_col(d)` — тот же расчёт через столбцы и `np.where`, без `apply` и циклов. Замерьте обе версии через `best_time`: `t_apply`, `t_col`; сохраните `speedup = t_apply / t_col` и `total` — сумму сборов по всем доставкам (`int`).
+Сбор за упаковку: 15 ₽ за каждую позицию, но если позиций 4 и больше — фиксированно 60 ₽; заказы дороже 1500 ₽ упаковываются бесплатно. В заготовке — таблица доставок `d` (из `deliveries.csv`), функция `fee_apply` для `d.apply(fee_apply, axis=1)` и секундомер `best_time` из задачи «Секундомер с повторами». Напишите `fee_col(d)` — тот же расчёт через столбцы и `np.where`, без `apply` и циклов. Для контрольного замера используйте выданный `timed_call(label, function, *args)`: он возвращает `(результат, секунды)` и сохраняет полный вход и результат вызова. Копирование выполняется вне измеряемого интервала. Вызовите `a, t_apply = timed_call("apply", lambda table: table.apply(fee_apply, axis=1), d)` и `b, t_col = timed_call("col", fee_col, d)`. Переданная функция должна рассчитывать результат и на другом наборе аргументов той же структуры; проверка вызывает её отдельно вне измеренного интервала. Собственная обёртка может повторять такие вызовы и выбирать минимум. Функция best_time остаётся для самостоятельных последующих замеров. Сохраните `speedup = t_apply / t_col` (при нулевом `t_col` — `None`; фиксированного ускорения на любой машине нет) и `total` — сумму сборов по всем доставкам (`int`).
 
 ### setup
 ```python
@@ -357,6 +371,21 @@ def best_time(f, repeats=3):
         f()
         times.append(time.perf_counter() - t0)
     return min(times)
+import time as _timer_time
+import copy as _timing_copy
+_measurement_clock = lambda: _timer_time.perf_counter()
+_timing_records = []
+
+def timed_call(label, function, *args):
+    # Copying is outside the measured interval: only the actual call is timed.
+    inputs = _timing_copy.deepcopy(args)
+    start = _measurement_clock()
+    result = function(*args)
+    elapsed = float(_measurement_clock() - start)
+    snapshot = _timing_copy.deepcopy(result)
+    _timing_records.append(dict(label=label, function=function, seconds=elapsed, inputs=inputs, result=snapshot))
+    return result, elapsed
+
 ```
 
 ### starter
@@ -373,7 +402,7 @@ def fee_apply(r):
 def fee_col(d):
     ...
 
-# готово, как в теории: d, best_time
+# готово, как в теории: d, timed_call, best_time
 ```
 
 ### check
@@ -387,17 +416,46 @@ assert _np.allclose(got, _f), f'fee_col не совпадает с fee_apply у 
 _names = need('fee_col').__code__.co_names
 assert not {'apply', 'iterrows', 'itertuples'} & set(_names), 'Внутри fee_col не должно быть apply и перебора строк — только столбцы и np.where.'
 ta, tc = need('t_apply'), need('t_col')
-assert ta > 0 and tc > 0, 't_apply и t_col — положительные времена в секундах от best_time.'
-assert close(need('speedup'), ta / tc, max(0.02 * ta / tc, 0.6)), f'speedup = {need("speedup")}, а t_apply / t_col = {ta / tc:.1f}.'
-assert ta / tc > 2, f'Версия через столбцы быстрее всего в {ta / tc:.1f} раза. Замеряете ли вы именно fee_col(d) и d.apply(fee_apply, axis=1)?'
+assert _np.isfinite(ta) and _np.isfinite(tc) and ta>=0 and tc>=0, 't_apply и t_col — конечные неотрицательные времена; нулевой отсчёт допустим.'
+assert (close(need('speedup'),ta/tc,max(.02*ta/tc,.6)) if tc>0 else need('speedup') is None), 'speedup — отношение времен, при нулевом t_col None.'
 assert need('total') == int(_f.sum()), f'total = {need("total")}.'
+
+import pandas as _timing_pd
+def _timing_equal(actual, expected):
+    if isinstance(expected, (_timing_pd.DataFrame, _timing_pd.Series)):
+        return isinstance(actual, type(expected)) and actual.equals(expected)
+    actual, expected = _np.asarray(actual), _np.asarray(expected)
+    return actual.shape == expected.shape and _np.array_equal(actual, expected)
+_probe_inputs=(_timing_pd.DataFrame({'items':[2,4,5,3], 'amount':[1500,1501,300,2000]},index=[10,8,2,7]),)
+_probe_output=_np.array([30,0,60,0])
+def _timing_matches(label, seconds, inputs, output):
+    for record in list(_timing_records):
+        if record['label'] != label or not close(record['seconds'], seconds, 1e-12):
+            continue
+        if len(record['inputs']) != len(inputs) or not all(_timing_equal(got,want) for got,want in zip(record['inputs'],inputs)):
+            continue
+        got, want = _np.asarray(record['result']), _np.asarray(output)
+        if got.shape == want.shape and _np.allclose(got, want):
+            try:
+                probe_result = _np.asarray(record['function'](*_timing_copy.deepcopy(_probe_inputs)))
+            except Exception:
+                continue
+            if probe_result.shape == _probe_output.shape and _np.allclose(probe_result,_probe_output):
+                return True
+    return False
+for _label,_seconds,_inputs,_output in [('apply',need('t_apply'),(d0,),_f),('col',need('t_col'),(d0,),_f)]:
+    assert _timing_matches(_label,_seconds,_inputs,_output), 'Измерьте требуемую операцию на полном входе через timed_call: вход, результат и сохранённое время должны относиться к одному реальному вызову; переданная функция должна считать и на новом входе.'
+
+import pandas as _pd
+_test=_pd.DataFrame({'items':[1,4,5,3], 'amount':[1500,1501,300,2000]},index=[7,2,9,5])
+assert _np.array_equal(_np.asarray(need('fee_col')(_test)),[15,0,60,0]), 'fee_col должна считать на новой таблице и границе 1500 рублей.'
 ```
 
 ### hint
 Условия те же, что в `fee_apply`, только для целых столбцов: `d["amount"] > 1500`, `d["items"] >= 4`. Цепочка `if … return` — это вложенный `np.where`, самое первое условие — снаружи.
 
 ### hint
-`np.where(d["amount"] > 1500, 0, np.where(d["items"] >= 4, 60, 15 * d["items"]))`. Замер: `t_apply = best_time(lambda: d.apply(fee_apply, axis=1))`, `t_col = best_time(lambda: fee_col(d))`.
+`np.where(d["amount"] > 1500, 0, np.where(d["items"] >= 4, 60, 15 * d["items"]))`. Замер: `a, t_apply = timed_call("apply", lambda table: table.apply(fee_apply, axis=1), d)`, `b, t_col = timed_call("col", fee_col, d)`.
 
 ### solution
 ```python
@@ -414,11 +472,11 @@ def fee_col(d):
     return np.where(d["amount"] > 1500, 0,
                     np.where(d["items"] >= 4, 60, 15 * d["items"]))
 
-t_apply = best_time(lambda: d.apply(fee_apply, axis=1))
-t_col = best_time(lambda: fee_col(d))
-speedup = t_apply / t_col
+a, t_apply = timed_call("apply", lambda table: table.apply(fee_apply, axis=1), d)
+b, t_col = timed_call("col", fee_col, d)
+speedup = t_apply / t_col if t_col > 0 else None
 total = int(fee_col(d).sum())
-print(f"apply {t_apply:.4f} с, столбцы {t_col:.5f} с, быстрее в {speedup:.0f} раз; сборов {total} ₽")
+print(f"apply {t_apply:.4f} с, столбцы {t_col:.5f} с, быстрее в {speedup} раз; сборов {total} ₽")
 ```
 
 ### explain
@@ -426,7 +484,25 @@ print(f"apply {t_apply:.4f} с, столбцы {t_col:.5f} с, быстрее в
 
 ## task: vectorize | Оплата курьеров без цикла | base
 
-За каждую доставку курьер получает 60 ₽ плюс 14 ₽ за километр. За дальнюю доставку (больше 8 км) добавляется 100 ₽, а в дождь вся сумма умножается на 1.3. В заготовке — 100 000 доставок (`km`, `rain`) и функция `pay_loop`, которая считает оплату циклом. Напишите функцию `pay_vec(km, rain)`, которая считает то же без цикла. Замерьте обе функции через `time.perf_counter()`: время в секундах — `t_loop` и `t_vec`. Сохраните `same` — совпадают ли ответы (`np.allclose`), `speedup` — во сколько раз векторный вариант быстрее (`t_loop / t_vec`), и `total` — общую сумму выплат, округлённую до рубля (`int`).
+За каждую доставку курьер получает 60 ₽ плюс 14 ₽ за километр. За дальнюю доставку (больше 8 км) добавляется 100 ₽, а в дождь вся сумма умножается на 1.3. В заготовке — 100 000 доставок (`km`, `rain`) и функция `pay_loop`, которая считает оплату циклом. Напишите функцию `pay_vec(km, rain)`, которая считает то же без цикла. Выданный `timed_call(label, function, *args)` вызывает функцию на переданном полном входе, измеряет её через `time.perf_counter()` и возвращает `(результат, секунды)`. Он сохраняет вход и результат для проверки операции; их копирование выполняется вне измеряемого интервала. Переданная функция должна рассчитывать результат и на другом наборе аргументов той же структуры; проверка вызывает её отдельно вне измеренного интервала. Собственная обёртка может вызывать этот помощник и выбирать минимум повторов. Замерьте `a, t_loop = timed_call("loop", pay_loop, km, rain)` и `b, t_vec = timed_call("vec", pay_vec, km, rain)`: время в секундах — `t_loop` и `t_vec`. Сохраните `same` — совпадают ли ответы (`np.allclose`), `speedup` — во сколько раз векторный вариант быстрее (`t_loop / t_vec`, а при нулевом `t_vec` — `None`), и `total` — общую сумму выплат, округлённую до рубля (`int`).
+
+### setup
+```python
+import time as _timer_time
+import copy as _timing_copy
+_measurement_clock = lambda: _timer_time.perf_counter()
+_timing_records = []
+
+def timed_call(label, function, *args):
+    # Copying is outside the measured interval: only the actual call is timed.
+    inputs = _timing_copy.deepcopy(args)
+    start = _measurement_clock()
+    result = function(*args)
+    elapsed = float(_measurement_clock() - start)
+    snapshot = _timing_copy.deepcopy(result)
+    _timing_records.append(dict(label=label, function=function, seconds=elapsed, inputs=inputs, result=snapshot))
+    return result, elapsed
+```
 
 ### starter
 ```python
@@ -466,7 +542,7 @@ assert _np.allclose(got[_km > 8], _p[_km > 8]) or not _np.allclose(got[_km <= 8]
 assert _np.allclose(got, _p), 'pay_vec считает не так, как pay_loop. Сравните на первых строках: pay_loop(km[:5], rain[:5]) и pay_vec(km[:5], rain[:5]).'
 assert need('same') is True or need('same') == True, 'same должно быть True: сравните ответы двух функций через np.allclose.'
 tl, tv = need('t_loop'), need('t_vec')
-assert tl >= 0 and tv >= 0, 't_loop и t_vec — положительные длительности в секундах: perf_counter() после минус perf_counter() до.'
+assert _np.isfinite(tl) and _np.isfinite(tv) and tl>=0 and tv>=0, 'Длительности конечные и неотрицательные.'
 assert tl < 600 and tv < 600, 'Время похоже не на секунды. Это разность двух показаний time.perf_counter().'
 assert (close(need('speedup'), tl/tv,max(0.02*tl/tv,.6)) if tv>0 else need('speedup') is None), 'speedup — отношение времен, при нулевом знаменателе None.'
 
@@ -481,8 +557,35 @@ for _kms in (_np.array([0.,8.,8.01,15.]),_np.linspace(.1,20,1337)):
     for _ in range(3):
         _start=_time.perf_counter(); _actual=f(_kms,_rr); _times.append(_time.perf_counter()-_start)
     assert _np.allclose(_actual,_want), 'pay_vec неверна на другой длине или на границе8км.'
-assert calls('perf_counter') >= 4, 'Замерьте реальные вызовы обеих функций через perf_counter; ускорение диагностическое.'
 
+
+
+import pandas as _timing_pd
+def _timing_equal(actual, expected):
+    if isinstance(expected, (_timing_pd.DataFrame, _timing_pd.Series)):
+        return isinstance(actual, type(expected)) and actual.equals(expected)
+    actual, expected = _np.asarray(actual), _np.asarray(expected)
+    return actual.shape == expected.shape and _np.array_equal(actual, expected)
+_probe_inputs=(_np.array([0.,8.,8.1,12.5]),_np.array([True,False,True,False]))
+_probe_km,_probe_rain=_probe_inputs
+_probe_output=(60+14*_probe_km+_np.where(_probe_km>8,100,0))*_np.where(_probe_rain,1.3,1.)
+def _timing_matches(label, seconds, inputs, output):
+    for record in list(_timing_records):
+        if record['label'] != label or not close(record['seconds'], seconds, 1e-12):
+            continue
+        if len(record['inputs']) != len(inputs) or not all(_timing_equal(got,want) for got,want in zip(record['inputs'],inputs)):
+            continue
+        got, want = _np.asarray(record['result']), _np.asarray(output)
+        if got.shape == want.shape and _np.allclose(got, want):
+            try:
+                probe_result = _np.asarray(record['function'](*_timing_copy.deepcopy(_probe_inputs)))
+            except Exception:
+                continue
+            if probe_result.shape == _probe_output.shape and _np.allclose(probe_result,_probe_output):
+                return True
+    return False
+for _label,_seconds,_inputs,_output in [('loop',need('t_loop'),(_km,_rain),_p),('vec',need('t_vec'),(_km,_rain),_p)]:
+    assert _timing_matches(_label,_seconds,_inputs,_output), 'Измерьте требуемую операцию на полном входе через timed_call: вход, результат и сохранённое время должны относиться к одному реальному вызову; переданная функция должна считать и на новом входе.'
 ```
 
 ### hint
@@ -492,7 +595,7 @@ assert calls('perf_counter') >= 4, 'Замерьте реальные вызов
 `np.where(km > 8, 100, 0)` — надбавка 100 там, где доставка дальняя, иначе 0. Дождь: `np.where(rain, p * 1.3, p)`.
 
 ### hint
-Замер: `t0 = time.perf_counter()`, затем `a = pay_loop(km, rain)`, затем `t_loop = time.perf_counter() - t0`. То же для `pay_vec`.
+Замеры: `a, t_loop = timed_call("loop", pay_loop, km, rain)` и `b, t_vec = timed_call("vec", pay_vec, km, rain)`. При `t_vec == 0` запишите `speedup = None`. Фиксированного ускорения на любой машине нет.
 
 ### solution
 ```python
@@ -519,13 +622,8 @@ def pay_vec(km, rain):
     p = 60 + 14 * km + np.where(km > 8, 100, 0)
     return np.where(rain, p * 1.3, p)
 
-t0 = time.perf_counter()
-a = pay_loop(km, rain)
-t_loop = time.perf_counter() - t0
-
-t0 = time.perf_counter()
-b = pay_vec(km, rain)
-t_vec = time.perf_counter() - t0
+a, t_loop = timed_call("loop", pay_loop, km, rain)
+b, t_vec = timed_call("vec", pay_vec, km, rain)
 
 same = bool(np.allclose(a, b))
 speedup = t_loop / t_vec if t_vec > 0 else None
@@ -538,7 +636,25 @@ print(f"цикл {t_loop:.3f} с, вектор {t_vec:.4f} с, быстрее в
 
 ## task: nearest-shop | Ближайшая кофейня для 30 тысяч заказов | plus
 
-Каждый заказ доставки отдаём ближайшей кофейне по манхэттенскому расстоянию (урок «Векторы»). В заготовке 30 000 заказов (`orders`, координаты в км), 6 кофеен (`shops`) и функция `nearest_loop` с двумя вложенными циклами. Напишите `nearest_vec(orders, shops)` без цикла по заказам. Цикл по шести кофейням оставить можно: короткий цикл не страшен, медленно работает длинный. Функция возвращает номер ближайшей кофейни для каждого заказа. Замерьте обе функции (`t_loop`, `t_vec`, секунды) и сохраните `speedup`. Ещё сохраните `load` — сколько заказов досталось каждой кофейне (массив из 6 чисел), и `busiest` — номер самой загруженной кофейни.
+Каждый заказ доставки отдаём ближайшей кофейне по манхэттенскому расстоянию (урок «Векторы»). В заготовке 30 000 заказов (`orders`, координаты в км), 6 кофеен (`shops`) и функция `nearest_loop` с двумя вложенными циклами. Напишите `nearest_vec(orders, shops)` без цикла по заказам. Цикл по шести кофейням оставить можно: короткий цикл не страшен, медленно работает длинный. Функция возвращает номер ближайшей кофейни для каждого заказа. При равной дистанции выбирайте кофейню с меньшим номером. Выданный `timed_call(label, function, *args)` вызывает функцию на переданном полном входе, измеряет её через `time.perf_counter()` и возвращает `(результат, секунды)`. Он сохраняет вход и результат для проверки операции; их копирование выполняется вне измеряемого интервала. Переданная функция должна рассчитывать результат и на другом наборе аргументов той же структуры; проверка вызывает её отдельно вне измеренного интервала. Собственная обёртка может вызывать этот помощник и выбирать минимум повторов. Вызовите `a, t_loop = timed_call("loop", nearest_loop, orders, shops)` и `b, t_vec = timed_call("vec", nearest_vec, orders, shops)`. Сохраните `speedup = t_loop / t_vec`, а при нулевом `t_vec` — `None`. Ещё сохраните `load` — сколько заказов досталось каждой кофейне (массив из 6 чисел), и `busiest` — номер самой загруженной кофейни.
+
+### setup
+```python
+import time as _timer_time
+import copy as _timing_copy
+_measurement_clock = lambda: _timer_time.perf_counter()
+_timing_records = []
+
+def timed_call(label, function, *args):
+    # Copying is outside the measured interval: only the actual call is timed.
+    inputs = _timing_copy.deepcopy(args)
+    start = _measurement_clock()
+    result = function(*args)
+    elapsed = float(_measurement_clock() - start)
+    snapshot = _timing_copy.deepcopy(result)
+    _timing_records.append(dict(label=label, function=function, seconds=elapsed, inputs=inputs, result=snapshot))
+    return result, elapsed
+```
 
 ### starter
 ```python
@@ -577,12 +693,42 @@ _De = _np.column_stack([_np.linalg.norm(_o - s, axis=1) for s in _s])
 assert (got == _w).all() or not (got == _De.argmin(axis=1)).all(), 'Номера совпадают с ближайшими по прямой. Нужно манхэттенское расстояние: сумма модулей разностей.'
 assert (got == _w).all(), f'Не совпало у {int((got != _w).sum())} заказов из 30 000. Сравните с nearest_loop на первых 10 заказах.'
 tl, tv = need('t_loop'), need('t_vec')
-assert tl > 0 and tv > 0, 't_loop и t_vec — положительные длительности в секундах.'
-assert close(need('speedup'), tl / tv, max(0.02 * tl / tv, 0.6)), f'speedup = {need("speedup")}, а t_loop / t_vec = {tl / tv:.1f}.'
-assert tl / tv > 2, f'Ускорение всего {tl / tv:.1f} раза. Похоже, в nearest_vec остался цикл по заказам.'
+assert _np.isfinite(tl) and _np.isfinite(tv) and tl >= 0 and tv >= 0, 'Длительности конечные и неотрицательные; ноль возможен у короткого вызова.'
+assert (close(need('speedup'),tl/tv,max(.02*tl/tv,.6)) if tv>0 else need('speedup') is None), 'speedup — отношение времен, при нулевом t_vec None.'
 ld = _np.bincount(_w, minlength=6)
 assert _np.array_equal(_np.asarray(need('load')), ld), f'load = {need("load")}, а нужно {ld.tolist()}: число заказов у каждой из 6 кофеен.'
 assert need('busiest') == int(ld.argmax()), f'busiest = {need("busiest")}.'
+
+for _orders,_shops in [(_np.array([[0.,0.],[1.,2.],[8.,3.]]),_np.array([[0.,1.],[7.,2.]])),(_np.array([[3.,4.]]),_np.array([[2.,4.],[4.,4.],[10.,10.]]))]:
+    _want=_np.abs(_orders[:,None,:]-_shops[None,:,:]).sum(axis=2).argmin(axis=1)
+    assert _np.array_equal(need('nearest_vec')(_orders,_shops),_want), 'nearest_vec должна работать на новых заказах и другом числе кофеен.'
+
+import pandas as _timing_pd
+def _timing_equal(actual, expected):
+    if isinstance(expected, (_timing_pd.DataFrame, _timing_pd.Series)):
+        return isinstance(actual, type(expected)) and actual.equals(expected)
+    actual, expected = _np.asarray(actual), _np.asarray(expected)
+    return actual.shape == expected.shape and _np.array_equal(actual, expected)
+_probe_inputs=(_np.array([[3.,4.],[0.,0.],[5.,5.]]),_np.array([[2.,4.],[4.,4.],[10.,10.]]))
+_probe_orders,_probe_shops=_probe_inputs
+_probe_output=_np.abs(_probe_orders[:,None,:]-_probe_shops[None,:,:]).sum(axis=2).argmin(axis=1)
+def _timing_matches(label, seconds, inputs, output):
+    for record in list(_timing_records):
+        if record['label'] != label or not close(record['seconds'], seconds, 1e-12):
+            continue
+        if len(record['inputs']) != len(inputs) or not all(_timing_equal(got,want) for got,want in zip(record['inputs'],inputs)):
+            continue
+        got, want = _np.asarray(record['result']), _np.asarray(output)
+        if got.shape == want.shape and _np.allclose(got, want):
+            try:
+                probe_result = _np.asarray(record['function'](*_timing_copy.deepcopy(_probe_inputs)))
+            except Exception:
+                continue
+            if probe_result.shape == _probe_output.shape and _np.allclose(probe_result,_probe_output):
+                return True
+    return False
+for _label,_seconds,_inputs,_output in [('loop',need('t_loop'),(_o,_s),_w),('vec',need('t_vec'),(_o,_s),_w)]:
+    assert _timing_matches(_label,_seconds,_inputs,_output), 'Измерьте требуемую операцию на полном входе через timed_call: вход, результат и сохранённое время должны относиться к одному реальному вызову; переданная функция должна считать и на новом входе.'
 ```
 
 ### hint
@@ -618,18 +764,13 @@ def nearest_vec(orders, shops):
     D = np.column_stack([np.abs(orders - s).sum(axis=1) for s in shops])   # 30 000 × 6
     return D.argmin(axis=1)
 
-t0 = time.perf_counter()
-a = nearest_loop(orders, shops)
-t_loop = time.perf_counter() - t0
+a, t_loop = timed_call("loop", nearest_loop, orders, shops)
+b, t_vec = timed_call("vec", nearest_vec, orders, shops)
 
-t0 = time.perf_counter()
-b = nearest_vec(orders, shops)
-t_vec = time.perf_counter() - t0
-
-speedup = t_loop / t_vec
+speedup = t_loop / t_vec if t_vec > 0 else None
 load = np.bincount(b, minlength=6)
 busiest = int(load.argmax())
-print(f"совпадает: {(a == b).all()}, быстрее в {speedup:.0f} раз")
+print(f"совпадает: {(a == b).all()}, быстрее в {speedup} раз")
 print("заказов по кофейням:", load, "| самая загруженная:", busiest)
 ```
 

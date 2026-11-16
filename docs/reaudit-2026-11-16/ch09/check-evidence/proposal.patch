@@ -1,0 +1,494 @@
+--- content/ch09/01-vectors.md
++++ content/ch09/01-vectors.md
+@@ -539,7 +539,7 @@
+ 
+ ## task: neighbors-scale | Соседи до и после масштаба | base
+ 
+-Возьмите из `guests_churn.csv` признаки `visits_90d`, `days_since_last`, `tenure_months` (заготовка: массив `G`, 2400 строк). Для первого гостя найдите 5 ближайших (евклидово расстояние, сам гость не считается) по сырым признакам — `near_raw` — и по масштабированным (каждый столбец минус его среднее, делённый на его стандартное отклонение) — `near_scaled`; оба — списки номеров строк по возрастанию расстояния. Признаки целые, поэтому у нескольких соседей расстояние бывает одинаковым; порядок между ними проверка не требует. Сохраните `common` — сколько номеров совпало, и `dominant` — имя признака с наибольшим стандартным отклонением в сырых данных.
++Возьмите из `guests_churn.csv` признаки `visits_90d`, `days_since_last`, `tenure_months` (заготовка: массив `G`, 2400 строк). Напишите функцию `nearest(A, i, k=5)`, возвращающую k ближайших к строке i номеров в A, исключая саму i. Используйте её и для других i и k. Для первого гостя найдите 5 ближайших (евклидово расстояние, сам гость не считается) по сырым признакам — `near_raw` — и по масштабированным (каждый столбец минус его среднее, делённый на его стандартное отклонение) — `near_scaled`; оба — списки номеров строк по возрастанию расстояния. Признаки целые, поэтому у нескольких соседей расстояние бывает одинаковым; порядок между ними проверка не требует. Сохраните `common` — сколько номеров совпало, и `dominant` — имя признака с наибольшим стандартным отклонением в сырых данных.
+ 
+ ### setup
+ ```python
+@@ -578,6 +578,13 @@
+ ns = _ok('near_scaled', (G0 - G0.mean(axis=0)) / G0.std(axis=0))
+ assert need('common') == len(set(nr) & set(ns)), f'common = {need("common")}: сколько номеров есть в обоих списках.'
+ assert need('dominant') == c0[int(G0.std(axis=0).argmax())], f'dominant = {need("dominant")!r}.'
++
++_f = need('nearest')
++for _A,_i,_k in [(_np.array([[0.,0.],[2.,0.],[5.,0.],[10.,0.]]),2,1),(_np.array([[1.,2.],[8.,4.],[3.,1.],[2.,7.],[11.,5.]]),1,3)]:
++    _dist=_np.linalg.norm(_A-_A[_i],axis=1); _dist[_i]=_np.inf
++    _indices=[int(j) for j in _f(_A,_i,_k)]
++    assert len(_indices)==_k and len(set(_indices))==_k and all(0<=j<len(_A) for j in _indices) and _i not in _indices, 'nearest(A, i, k): верните k разных индексов, исключив i.'
++    assert _np.allclose(_dist[_indices],_np.sort(_dist)[:_k]), 'nearest должна использовать переданные A, i и k и сортировать по расстоянию.'
+ ```
+ 
+ ### hint
+--- content/ch09/02-matrices.md
++++ content/ch09/02-matrices.md
+@@ -553,7 +553,7 @@
+ 
+ ## task: predict-df | Прогноз модели как X @ w | plus
+ 
+-Обучите `LinearRegression` на доставках (признаки `distance_km`, `items`, `walk`; цель `actual_min`; время 1–299 минут). Посчитайте прогнозы для всех доставок матричным умножением `X.values @ model.coef_ + model.intercept_` и сравните с `model.predict(X)`. Сохраните `manual` (массив), `max_diff` — наибольшую абсолютную разницу между двумя способами, и `same` — `True`, если она меньше 1e-9.
++Обучите `LinearRegression` на доставках (признаки `distance_km`, `items`, `walk`; цель `actual_min`; время 1–299 минут). Посчитайте прогнозы для всех доставок матричным умножением `X.values @ model.coef_ + model.intercept_` и сравните с `model.predict(X)`. Сохраните обученную модель в `model`: проверка вызывает её predict на исходных и новых строках. Сохраните `manual` (массив), `max_diff` — наибольшую абсолютную разницу между двумя способами, и `same` — `True`, если она меньше 1e-9.
+ 
+ ### starter
+ ```python
+@@ -580,7 +580,17 @@
+ mm = X0.values @ m.coef_ + m.intercept_
+ man = _np.asarray(need('manual'))
+ assert man.shape == mm.shape and _np.allclose(man, mm), 'manual не совпадает с X.values @ coef_ + intercept_.'
+-assert need('max_diff') < 1e-9 and need('same') is True or need('same') == True, f'max_diff = {need("max_diff")}, same = {need("same")}.'
++
++_student_model=need('model')
++_student_pred=_np.asarray(_student_model.predict(X0),dtype=float)
++assert _student_pred.shape==mm.shape and _np.allclose(_student_pred,mm,rtol=1e-8,atol=1e-8), 'Переданная model должна прогнозировать исходные строки так же, как обученная линейная регрессия.'
++_new=_pd.DataFrame([[2.5,1.,0.],[9.,3.,1.]],columns=X0.columns)
++_new_pred=_np.asarray(_student_model.predict(_new),dtype=float)
++assert _new_pred.shape==(2,) and _np.allclose(_new_pred,m.predict(_new),rtol=1e-8,atol=1e-8), 'model.predict должна работать на новых строках с тем же порядком признаков.'
++_diff=float(_np.abs(man-_student_pred).max())
++_value=float(need('max_diff'))
++assert _np.isfinite(_value) and _value>=0 and _np.isclose(_value,_diff,rtol=0,atol=1e-10), 'max_diff — вычисленный максимум абсолютных разностей manual и переданной model.predict, конечное неотрицательное число.'
++assert bool(need('same')) == bool(_diff<1e-9), 'same сравнивает вычисленную максимальную разность с 1e-9.'
+ ```
+ 
+ ### hint
+--- content/ch09/03b-own-model.md
++++ content/ch09/03b-own-model.md
+@@ -273,7 +273,7 @@
+ - `fit(self, X, y)` — добавляет столбец единиц, находит решение МНК непосредственно на расширенной матрице (например, через `np.linalg.lstsq`), сохраняет свободный член в `self.intercept_`, веса признаков — в `self.coef_` и возвращает `self`;
+ - `predict(self, X)` — возвращает `X @ coef_ + intercept_`.
+ 
+-Обучите модель на доставках из заготовки (`X` — три признака, `y` — минуты) и сохраните объект в `model`. В `w_all` сохраните свободный член и веса одним массивом (`np.r_[...]`, 3 знака). В `pred_new` — прогнозы для двух новых заказов из `new` (1 знак). Готовый `LinearRegression` не используйте.
++Обучите модель на доставках из заготовки (`X` — три признака, `y` — минуты) и сохраните объект в `model`. В `w_all` сохраните свободный член и веса одним массивом (`np.r_[...]`, 3 знака). В `pred_new` — прогнозы для двух новых заказов из `new` (1 знак). Готовый `LinearRegression` не используйте. Класс должен получать число признаков из X и переобучаться при новом вызове fit.
+ 
+ ### starter
+ ```python
+@@ -313,6 +313,13 @@
+ assert _np.allclose(need('w_all'), _np.round(_np.r_[lr.intercept_, lr.coef_], 3)), f'w_all = {need("w_all")}. Свободный член первым, затем веса, 3 знака.'
+ pn = lr.predict(_pd.DataFrame([[3.5, 2, 1], [8.0, 4, 0]], columns=X0.columns)).round(1)
+ assert _np.allclose(need('pred_new'), pn), f'pred_new = {need("pred_new")}, а нужно {pn}.'
++
++_X=_np.array([[0.,0.],[1.,0.],[0.,1.],[1.,1.],[2.,-1.]])
++_y=2+3*_X[:,0]-4*_X[:,1]
++_m=C(); assert _m.fit(_X,_y) is _m, 'fit возвращает self и при другом числе признаков.'
++assert _np.allclose(_m.predict(_np.array([[2.,3.],[-1.,2.]])),[-4.,-9.]), 'После fit на новых данных predict использует все выученные веса и свободный член.'
++_m.fit(_X,10-_X[:,0]+2*_X[:,1])
++assert _np.allclose(_m.predict(_np.array([[2.,3.],[-1.,2.]])),[14.,15.]), 'Повторный fit должен заменить сохранённые веса.'
+ ```
+ 
+ ### hint
+--- content/ch09/04-transform.md
++++ content/ch09/04-transform.md
+@@ -477,7 +477,7 @@
+ 
+ ## task: same-quality | Регрессия не замечает | base
+ 
+-На доставках (признаки `distance_km`, `items`, `walk`; цель `actual_min`, время 1–299) возьмите `P = np.random.default_rng(7).normal(size=(3, 3))`. Обучите `LinearRegression` на `X` и на `X @ P`. Сохраните `r2_x`, `r2_p` (4 знака) и `max_pred_diff` — наибольшую разницу прогнозов двух моделей.
++На доставках (признаки `distance_km`, `items`, `walk`; цель `actual_min`, время 1–299) возьмите `P = np.random.default_rng(7).normal(size=(3, 3))`. Обучите `LinearRegression` на `X` и на `X @ P`. Сохраните `pred_x` — массив прогнозов обученной на X модели для X, и `pred_p` — массив прогнозов обученной на X @ P модели для X @ P (в исходном порядке строк). По этим массивам посчитайте `r2_x`, `r2_p` (4 знака) и `max_pred_diff` — максимальную абсолютную разницу. Максимальная абсолютная разница — конечное неотрицательное число.
+ 
+ ### starter
+ ```python
+@@ -507,6 +507,14 @@
+ a = _LR().fit(X0, y0).predict(X0); b = _LR().fit(X0 @ P0, y0).predict(X0 @ P0)
+ assert close(need('r2_x'), round(_r2(y0, a), 4)) and close(need('r2_p'), round(_r2(y0, b), 4)), f'r2_x, r2_p = {need("r2_x")}, {need("r2_p")}.'
+ assert need('max_pred_diff') < 1e-6, f'max_pred_diff = {need("max_pred_diff")} — прогнозы должны совпасть.'
++
++_submitted_x=_np.asarray(need('pred_x'),dtype=float)
++_submitted_p=_np.asarray(need('pred_p'),dtype=float)
++assert _submitted_x.shape==y0.shape and _submitted_p.shape==y0.shape, 'pred_x и pred_p — по одному прогнозу на каждую исходную строку X.'
++assert _np.allclose(_submitted_x,a,rtol=1e-8,atol=1e-8) and _np.allclose(_submitted_p,b,rtol=1e-8,atol=1e-8), 'pred_x и pred_p должны содержать прогнозы двух обученных моделей на X и X @ P в исходном порядке строк.'
++_actual=float(_np.abs(_submitted_x-_submitted_p).max()); _claim=float(need('max_pred_diff'))
++assert _np.isfinite(_claim) and _claim>=0 and _np.isclose(_claim,_actual,rtol=0,atol=1e-9), 'max_pred_diff — максимальная абсолютная разница переданных pred_x и pred_p, конечное неотрицательное число.'
++assert close(need('r2_x'),round(_r2(y0,_submitted_x),4)) and close(need('r2_p'),round(_r2(y0,_submitted_p),4)), 'r2_x и r2_p пересчитываются по переданным массивам прогнозов.'
+ ```
+ 
+ ### hint
+@@ -632,6 +640,11 @@
+ assert _np.allclose(need('restored'), X0), 'restored должна совпасть с X.'
+ assert need('max_err') < 1e-6, f'max_err = {need("max_err")}.'
+ assert need('leaked') == True, 'leaked должно быть True.'
++
++_actual=float(_np.abs(_np.asarray(need('restored'),dtype=float)-X0).max())
++_claim=float(need('max_err'))
++assert _np.isfinite(_claim) and _claim>=0 and _np.isclose(_claim,_actual,rtol=0,atol=1e-10), 'max_err — максимум модулей ошибок restored относительно X, конечный и неотрицательный.'
++assert bool(need('leaked'))==bool(_actual<1e-6), 'leaked сравнивает max_err с 1e-6.'
+ ```
+ 
+ ### hint
+--- content/ch09/05-project.md
++++ content/ch09/05-project.md
+@@ -288,9 +288,9 @@
+ 
+ ## task: hidden-quality | Шаг 4. Качество на спрятанных данных | base
+ 
+-Сохраните `hidden_model` — действительно обученную модель на преобразованных признаках. Она понадобится для прогноза по тестовым строкам и новой анкете.
+-
+-Обучите `LinearRegression` на `X_train @ P` и проверьте на `X_test @ P`. Сначала сравните две **исходные** оценки R² до округления. В `same` сохраните результат проверки, что разность по модулю не превышает 1e−9. Эталонная оценка `r2_base` уже посчитана в заготовке. Затем округлите оценку для преобразованных данных до четырёх знаков и запишите её в `r2_hidden` для отчёта.
++Напишите функцию `quality_equal(base, hidden, tol=1e-9)`: она возвращает True, если абсолютная разность двух исходных оценок не превышает tol. Не округляйте оценки внутри функции; она должна работать в обоих порядках аргументов и с другим tol. Затем сохраните `hidden_model` — действительно обученную модель на преобразованных признаках. Она понадобится для прогноза по тестовым строкам и новой анкете.
++
++Обучите `LinearRegression` на `X_train @ P` и проверьте на `X_test @ P`. Сначала сравните две **исходные** оценки R² до округления. В `same` сохраните `quality_equal(r2_base, r2_full)`, где `r2_full` — исходный R² спрятанной модели до округления. Эталонная оценка `r2_base` уже посчитана в заготовке. Затем округлите оценку для преобразованных данных до четырёх знаков и запишите её в `r2_hidden` для отчёта.
+ 
+ ### starter
+ ```python
+@@ -306,6 +306,10 @@
+ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+ r2_base = r2_score(y_test, LinearRegression().fit(X_train, y_train).predict(X_test))
+ P = np.random.default_rng(42).normal(size=(4, 4))
++
++
++def quality_equal(base, hidden, tol=1e-9):
++    ...
+ 
+ ```
+ 
+@@ -328,16 +332,26 @@
+ _new = _np.array([[0,22,50,1],[1,65,120,4]])
+ assert _np.allclose(_model.predict(_new @ P0), _LR().fit(a @ P0,c).predict(_new @ P0)), 'На новых строках hidden_model не соответствует обучению с данным ключом.'
+ 
++
++_equal=need('quality_equal')
++_pairs=[(0.,0.,True),(0.,1e-9,True),(0.,_np.nextafter(1e-9,_np.inf),False),(.81234561,.8123456103,True),(.81234499,.81234501,False)]
++for _a,_b,_expected in _pairs:
++    assert bool(_equal(_a,_b)) is _expected and bool(_equal(_b,_a)) is _expected, 'quality_equal сравнивает исходную абсолютную разность с включённой границей tol; не округляйте R².'
++for _a,_b,_tol,_expected in [(0.,5e-10,1e-12,False),(.2,.2000001,1e-5,True),(1.,1.,0.,True)]:
++    assert bool(_equal(_a,_b,_tol)) is _expected and bool(_equal(_b,_a,tol=_tol)) is _expected, 'quality_equal должна использовать переданный tol, в том числе по имени.'
+ ```
+ 
+ ### hint
+ Важно умножить на P и обучающие, и тестовые признаки — подрядчик получает всё в спрятанном виде.
+ 
+ ### hint
+-Для `same` сравнивайте с `r2_base` неокруглённый R² спрятанной модели, а не `r2_hidden`: `abs(r2 - r2_base) < 1e-9`, где `r2` — результат `r2_score` до `round`.
+-
+-### solution
+-```python
++В quality_equal верните `bool(abs(hidden - base) <= tol)`. Для `same` передайте `r2_base` и неокруглённый R² спрятанной модели, а не `r2_hidden`: `abs(r2 - r2_base) <= 1e-9`, где `r2` — результат `r2_score` до `round`.
++
++### solution
++```python
++def quality_equal(base, hidden, tol=1e-9):
++    return bool(abs(hidden - base) <= tol)
++
+ import numpy as np
+ import pandas as pd
+ from sklearn.model_selection import train_test_split
+@@ -354,7 +368,7 @@
+ hidden_model = LinearRegression().fit(X_train @ P, y_train)
+ r2_full = r2_score(y_test, hidden_model.predict(X_test @ P))
+ r2_hidden = round(r2_full, 4)
+-same = bool(abs(r2_full - r2_base) < 1e-9)
++same = quality_equal(r2_base, r2_full)
+ ```
+ 
+ ### explain
+--- content/ch09/02b-vectorize.md
++++ content/ch09/02b-vectorize.md
+@@ -250,16 +250,26 @@
+ assert len(_calls) == 5, f'Без второго аргумента best_time вызвала f {len(_calls)} раз, а по умолчанию повторов 5.'
+ ts = need('t_sum')
+ assert isinstance(ts, float) and 0 <= ts < 60, f't_sum = {ts!r}: время в секундах от best_time(lambda: sum(range(1_000_000))).'
+-_original_clock = _t.perf_counter
+-try:
+-    for _durations, _expected in [([.004,0,.002,.003],0.0),([.004,.001,.002,.003],.001)]:
+-        _ticks = iter([tick for i,duration in enumerate(_durations) for tick in (float(i),float(i)+duration)])
+-        _t.perf_counter = lambda: next(_ticks)
+-        _count = []
+-        _measured = f(lambda: _count.append(1),4)
+-        assert len(_count)==4 and close(_measured,_expected,1e-10), 'best_time должен вернуть реальный минимум; нулевой минимум допустим, постоянный ноль не подходит.'
+-finally:
+-    _t.perf_counter = _original_clock
++def _check_clock_minimum(_candidate):
++    # Originals stay in locals; rebinding a learner global cannot replace them.
++    _original = _t.perf_counter
++    _globals = getattr(_candidate, '__globals__', {})
++    _aliases = {name:value for name,value in list(_globals.items()) if value is _original}
++    try:
++        for _durations,_expected in [([.004,0,.002,.003],0.0),([.004,.001,.002,.003],.001)]:
++            _ticks=iter([tick for i,duration in enumerate(_durations) for tick in (float(i),float(i)+duration)])
++            def _clock():
++                return next(_ticks)
++            _t.perf_counter=_clock
++            for _name in _aliases:
++                _globals[_name]=_clock
++            _count=[]
++            _measured=_candidate(lambda:_count.append(1),4)
++            assert len(_count)==4 and close(_measured,_expected,1e-10), 'best_time должен вернуть реальный минимум; нулевой минимум допустим, постоянный ноль не подходит.'
++    finally:
++        _t.perf_counter=_original
++        _globals.update(_aliases)
++_check_clock_minimum(f)
+ 
+ ```
+ 
+@@ -345,7 +355,7 @@
+ 
+ ## task: apply-col | apply или столбцы | base
+ 
+-Сбор за упаковку: 15 ₽ за каждую позицию, но если позиций 4 и больше — фиксированно 60 ₽; заказы дороже 1500 ₽ упаковываются бесплатно. В заготовке — таблица доставок `d` (из `deliveries.csv`), функция `fee_apply` для `d.apply(fee_apply, axis=1)` и секундомер `best_time` из задачи «Секундомер с повторами». Напишите `fee_col(d)` — тот же расчёт через столбцы и `np.where`, без `apply` и циклов. Замерьте обе версии через `best_time`: `t_apply`, `t_col`; сохраните `speedup = t_apply / t_col` и `total` — сумму сборов по всем доставкам (`int`).
++Сбор за упаковку: 15 ₽ за каждую позицию, но если позиций 4 и больше — фиксированно 60 ₽; заказы дороже 1500 ₽ упаковываются бесплатно. В заготовке — таблица доставок `d` (из `deliveries.csv`), функция `fee_apply` для `d.apply(fee_apply, axis=1)` и секундомер `best_time` из задачи «Секундомер с повторами». Напишите `fee_col(d)` — тот же расчёт через столбцы и `np.where`, без `apply` и циклов. Для контрольного замера используйте выданный `timed_call(label, function, *args)`: он возвращает `(результат, секунды)` и сохраняет полный вход и результат вызова. Копирование выполняется вне измеряемого интервала. Вызовите `a, t_apply = timed_call("apply", lambda table: table.apply(fee_apply, axis=1), d)` и `b, t_col = timed_call("col", fee_col, d)`. Собственная обёртка может повторять такие вызовы и выбирать минимум. Функция best_time остаётся для самостоятельных последующих замеров. Сохраните `speedup = t_apply / t_col` (при нулевом `t_col` — `None`; фиксированного ускорения на любой машине нет) и `total` — сумму сборов по всем доставкам (`int`).
+ 
+ ### setup
+ ```python
+@@ -361,6 +371,21 @@
+         f()
+         times.append(time.perf_counter() - t0)
+     return min(times)
++import time as _timer_time
++import copy as _timing_copy
++_measurement_clock = lambda: _timer_time.perf_counter()
++_timing_records = []
++
++def timed_call(label, function, *args):
++    # Copying is outside the measured interval: only the actual call is timed.
++    inputs = _timing_copy.deepcopy(args)
++    start = _measurement_clock()
++    result = function(*args)
++    elapsed = float(_measurement_clock() - start)
++    snapshot = _timing_copy.deepcopy(result)
++    _timing_records.append(dict(label=label, seconds=elapsed, inputs=inputs, result=snapshot))
++    return result, elapsed
++
+ ```
+ 
+ ### starter
+@@ -391,17 +416,39 @@
+ _names = need('fee_col').__code__.co_names
+ assert not {'apply', 'iterrows', 'itertuples'} & set(_names), 'Внутри fee_col не должно быть apply и перебора строк — только столбцы и np.where.'
+ ta, tc = need('t_apply'), need('t_col')
+-assert ta > 0 and tc > 0, 't_apply и t_col — положительные времена в секундах от best_time.'
+-assert close(need('speedup'), ta / tc, max(0.02 * ta / tc, 0.6)), f'speedup = {need("speedup")}, а t_apply / t_col = {ta / tc:.1f}.'
+-assert ta / tc > 2, f'Версия через столбцы быстрее всего в {ta / tc:.1f} раза. Замеряете ли вы именно fee_col(d) и d.apply(fee_apply, axis=1)?'
++assert _np.isfinite(ta) and _np.isfinite(tc) and ta>=0 and tc>=0, 't_apply и t_col — конечные неотрицательные времена; нулевой отсчёт допустим.'
++assert (close(need('speedup'),ta/tc,max(.02*ta/tc,.6)) if tc>0 else need('speedup') is None), 'speedup — отношение времен, при нулевом t_col None.'
+ assert need('total') == int(_f.sum()), f'total = {need("total")}.'
++
++import pandas as _timing_pd
++def _timing_equal(actual, expected):
++    if isinstance(expected, (_timing_pd.DataFrame, _timing_pd.Series)):
++        return isinstance(actual, type(expected)) and actual.equals(expected)
++    actual, expected = _np.asarray(actual), _np.asarray(expected)
++    return actual.shape == expected.shape and _np.array_equal(actual, expected)
++def _timing_matches(label, seconds, inputs, output):
++    for record in _timing_records:
++        if record['label'] != label or not close(record['seconds'], seconds, 1e-12):
++            continue
++        if len(record['inputs']) != len(inputs) or not all(_timing_equal(got,want) for got,want in zip(record['inputs'],inputs)):
++            continue
++        got, want = _np.asarray(record['result']), _np.asarray(output)
++        if got.shape == want.shape and _np.allclose(got, want):
++            return True
++    return False
++for _label,_seconds,_inputs,_output in [('apply',need('t_apply'),(d0,),_f),('col',need('t_col'),(d0,),_f)]:
++    assert _timing_matches(_label,_seconds,_inputs,_output), 'Измерьте требуемую операцию на полном входе через timed_call: вход, результат и сохранённое время должны относиться к одному реальному вызову.'
++
++import pandas as _pd
++_test=_pd.DataFrame({'items':[1,4,5,3], 'amount':[1500,1501,300,2000]},index=[7,2,9,5])
++assert _np.array_equal(_np.asarray(need('fee_col')(_test)),[15,0,60,0]), 'fee_col должна считать на новой таблице и границе 1500 рублей.'
+ ```
+ 
+ ### hint
+ Условия те же, что в `fee_apply`, только для целых столбцов: `d["amount"] > 1500`, `d["items"] >= 4`. Цепочка `if … return` — это вложенный `np.where`, самое первое условие — снаружи.
+ 
+ ### hint
+-`np.where(d["amount"] > 1500, 0, np.where(d["items"] >= 4, 60, 15 * d["items"]))`. Замер: `t_apply = best_time(lambda: d.apply(fee_apply, axis=1))`, `t_col = best_time(lambda: fee_col(d))`.
++`np.where(d["amount"] > 1500, 0, np.where(d["items"] >= 4, 60, 15 * d["items"]))`. Замер: `a, t_apply = timed_call("apply", lambda table: table.apply(fee_apply, axis=1), d)`, `b, t_col = timed_call("col", fee_col, d)`.
+ 
+ ### solution
+ ```python
+@@ -418,11 +465,11 @@
+     return np.where(d["amount"] > 1500, 0,
+                     np.where(d["items"] >= 4, 60, 15 * d["items"]))
+ 
+-t_apply = best_time(lambda: d.apply(fee_apply, axis=1))
+-t_col = best_time(lambda: fee_col(d))
+-speedup = t_apply / t_col
++a, t_apply = timed_call("apply", lambda table: table.apply(fee_apply, axis=1), d)
++b, t_col = timed_call("col", fee_col, d)
++speedup = t_apply / t_col if t_col > 0 else None
+ total = int(fee_col(d).sum())
+-print(f"apply {t_apply:.4f} с, столбцы {t_col:.5f} с, быстрее в {speedup:.0f} раз; сборов {total} ₽")
++print(f"apply {t_apply:.4f} с, столбцы {t_col:.5f} с, быстрее в {speedup} раз; сборов {total} ₽")
+ ```
+ 
+ ### explain
+@@ -430,7 +477,25 @@
+ 
+ ## task: vectorize | Оплата курьеров без цикла | base
+ 
+-За каждую доставку курьер получает 60 ₽ плюс 14 ₽ за километр. За дальнюю доставку (больше 8 км) добавляется 100 ₽, а в дождь вся сумма умножается на 1.3. В заготовке — 100 000 доставок (`km`, `rain`) и функция `pay_loop`, которая считает оплату циклом. Напишите функцию `pay_vec(km, rain)`, которая считает то же без цикла. Замерьте обе функции через `time.perf_counter()`: время в секундах — `t_loop` и `t_vec`. Сохраните `same` — совпадают ли ответы (`np.allclose`), `speedup` — во сколько раз векторный вариант быстрее (`t_loop / t_vec`), и `total` — общую сумму выплат, округлённую до рубля (`int`).
++За каждую доставку курьер получает 60 ₽ плюс 14 ₽ за километр. За дальнюю доставку (больше 8 км) добавляется 100 ₽, а в дождь вся сумма умножается на 1.3. В заготовке — 100 000 доставок (`km`, `rain`) и функция `pay_loop`, которая считает оплату циклом. Напишите функцию `pay_vec(km, rain)`, которая считает то же без цикла. Выданный `timed_call(label, function, *args)` вызывает функцию на переданном полном входе, измеряет её через `time.perf_counter()` и возвращает `(результат, секунды)`. Он сохраняет вход и результат для проверки операции; их копирование выполняется вне измеряемого интервала. Собственная обёртка может вызывать этот помощник и выбирать минимум повторов. Замерьте `a, t_loop = timed_call("loop", pay_loop, km, rain)` и `b, t_vec = timed_call("vec", pay_vec, km, rain)`: время в секундах — `t_loop` и `t_vec`. Сохраните `same` — совпадают ли ответы (`np.allclose`), `speedup` — во сколько раз векторный вариант быстрее (`t_loop / t_vec`, а при нулевом `t_vec` — `None`), и `total` — общую сумму выплат, округлённую до рубля (`int`).
++
++### setup
++```python
++import time as _timer_time
++import copy as _timing_copy
++_measurement_clock = lambda: _timer_time.perf_counter()
++_timing_records = []
++
++def timed_call(label, function, *args):
++    # Copying is outside the measured interval: only the actual call is timed.
++    inputs = _timing_copy.deepcopy(args)
++    start = _measurement_clock()
++    result = function(*args)
++    elapsed = float(_measurement_clock() - start)
++    snapshot = _timing_copy.deepcopy(result)
++    _timing_records.append(dict(label=label, seconds=elapsed, inputs=inputs, result=snapshot))
++    return result, elapsed
++```
+ 
+ ### starter
+ ```python
+@@ -470,7 +535,7 @@
+ assert _np.allclose(got, _p), 'pay_vec считает не так, как pay_loop. Сравните на первых строках: pay_loop(km[:5], rain[:5]) и pay_vec(km[:5], rain[:5]).'
+ assert need('same') is True or need('same') == True, 'same должно быть True: сравните ответы двух функций через np.allclose.'
+ tl, tv = need('t_loop'), need('t_vec')
+-assert tl >= 0 and tv >= 0, 't_loop и t_vec — положительные длительности в секундах: perf_counter() после минус perf_counter() до.'
++assert _np.isfinite(tl) and _np.isfinite(tv) and tl>=0 and tv>=0, 'Длительности конечные и неотрицательные.'
+ assert tl < 600 and tv < 600, 'Время похоже не на секунды. Это разность двух показаний time.perf_counter().'
+ assert (close(need('speedup'), tl/tv,max(0.02*tl/tv,.6)) if tv>0 else need('speedup') is None), 'speedup — отношение времен, при нулевом знаменателе None.'
+ 
+@@ -485,8 +550,27 @@
+     for _ in range(3):
+         _start=_time.perf_counter(); _actual=f(_kms,_rr); _times.append(_time.perf_counter()-_start)
+     assert _np.allclose(_actual,_want), 'pay_vec неверна на другой длине или на границе8км.'
+-assert calls('perf_counter') >= 4, 'Замерьте реальные вызовы обеих функций через perf_counter; ускорение диагностическое.'
+-
++
++
++
++import pandas as _timing_pd
++def _timing_equal(actual, expected):
++    if isinstance(expected, (_timing_pd.DataFrame, _timing_pd.Series)):
++        return isinstance(actual, type(expected)) and actual.equals(expected)
++    actual, expected = _np.asarray(actual), _np.asarray(expected)
++    return actual.shape == expected.shape and _np.array_equal(actual, expected)
++def _timing_matches(label, seconds, inputs, output):
++    for record in _timing_records:
++        if record['label'] != label or not close(record['seconds'], seconds, 1e-12):
++            continue
++        if len(record['inputs']) != len(inputs) or not all(_timing_equal(got,want) for got,want in zip(record['inputs'],inputs)):
++            continue
++        got, want = _np.asarray(record['result']), _np.asarray(output)
++        if got.shape == want.shape and _np.allclose(got, want):
++            return True
++    return False
++for _label,_seconds,_inputs,_output in [('loop',need('t_loop'),(_km,_rain),_p),('vec',need('t_vec'),(_km,_rain),_p)]:
++    assert _timing_matches(_label,_seconds,_inputs,_output), 'Измерьте требуемую операцию на полном входе через timed_call: вход, результат и сохранённое время должны относиться к одному реальному вызову.'
+ ```
+ 
+ ### hint
+@@ -496,7 +580,7 @@
+ `np.where(km > 8, 100, 0)` — надбавка 100 там, где доставка дальняя, иначе 0. Дождь: `np.where(rain, p * 1.3, p)`.
+ 
+ ### hint
+-Замер: `t0 = time.perf_counter()`, затем `a = pay_loop(km, rain)`, затем `t_loop = time.perf_counter() - t0`. То же для `pay_vec`.
++Замеры: `a, t_loop = timed_call("loop", pay_loop, km, rain)` и `b, t_vec = timed_call("vec", pay_vec, km, rain)`. При `t_vec == 0` запишите `speedup = None`. Фиксированного ускорения на любой машине нет.
+ 
+ ### solution
+ ```python
+@@ -523,13 +607,8 @@
+     p = 60 + 14 * km + np.where(km > 8, 100, 0)
+     return np.where(rain, p * 1.3, p)
+ 
+-t0 = time.perf_counter()
+-a = pay_loop(km, rain)
+-t_loop = time.perf_counter() - t0
+-
+-t0 = time.perf_counter()
+-b = pay_vec(km, rain)
+-t_vec = time.perf_counter() - t0
++a, t_loop = timed_call("loop", pay_loop, km, rain)
++b, t_vec = timed_call("vec", pay_vec, km, rain)
+ 
+ same = bool(np.allclose(a, b))
+ speedup = t_loop / t_vec if t_vec > 0 else None
+@@ -542,7 +621,25 @@
+ 
+ ## task: nearest-shop | Ближайшая кофейня для 30 тысяч заказов | plus
+ 
+-Каждый заказ доставки отдаём ближайшей кофейне по манхэттенскому расстоянию (урок «Векторы»). В заготовке 30 000 заказов (`orders`, координаты в км), 6 кофеен (`shops`) и функция `nearest_loop` с двумя вложенными циклами. Напишите `nearest_vec(orders, shops)` без цикла по заказам. Цикл по шести кофейням оставить можно: короткий цикл не страшен, медленно работает длинный. Функция возвращает номер ближайшей кофейни для каждого заказа. Замерьте обе функции (`t_loop`, `t_vec`, секунды) и сохраните `speedup`. Ещё сохраните `load` — сколько заказов досталось каждой кофейне (массив из 6 чисел), и `busiest` — номер самой загруженной кофейни.
++Каждый заказ доставки отдаём ближайшей кофейне по манхэттенскому расстоянию (урок «Векторы»). В заготовке 30 000 заказов (`orders`, координаты в км), 6 кофеен (`shops`) и функция `nearest_loop` с двумя вложенными циклами. Напишите `nearest_vec(orders, shops)` без цикла по заказам. Цикл по шести кофейням оставить можно: короткий цикл не страшен, медленно работает длинный. Функция возвращает номер ближайшей кофейни для каждого заказа. При равной дистанции выбирайте кофейню с меньшим номером. Выданный `timed_call(label, function, *args)` вызывает функцию на переданном полном входе, измеряет её через `time.perf_counter()` и возвращает `(результат, секунды)`. Он сохраняет вход и результат для проверки операции; их копирование выполняется вне измеряемого интервала. Собственная обёртка может вызывать этот помощник и выбирать минимум повторов. Вызовите `a, t_loop = timed_call("loop", nearest_loop, orders, shops)` и `b, t_vec = timed_call("vec", nearest_vec, orders, shops)`. Сохраните `speedup = t_loop / t_vec`, а при нулевом `t_vec` — `None`. Ещё сохраните `load` — сколько заказов досталось каждой кофейне (массив из 6 чисел), и `busiest` — номер самой загруженной кофейни.
++
++### setup
++```python
++import time as _timer_time
++import copy as _timing_copy
++_measurement_clock = lambda: _timer_time.perf_counter()
++_timing_records = []
++
++def timed_call(label, function, *args):
++    # Copying is outside the measured interval: only the actual call is timed.
++    inputs = _timing_copy.deepcopy(args)
++    start = _measurement_clock()
++    result = function(*args)
++    elapsed = float(_measurement_clock() - start)
++    snapshot = _timing_copy.deepcopy(result)
++    _timing_records.append(dict(label=label, seconds=elapsed, inputs=inputs, result=snapshot))
++    return result, elapsed
++```
+ 
+ ### starter
+ ```python
+@@ -581,12 +678,34 @@
+ assert (got == _w).all() or not (got == _De.argmin(axis=1)).all(), 'Номера совпадают с ближайшими по прямой. Нужно манхэттенское расстояние: сумма модулей разностей.'
+ assert (got == _w).all(), f'Не совпало у {int((got != _w).sum())} заказов из 30 000. Сравните с nearest_loop на первых 10 заказах.'
+ tl, tv = need('t_loop'), need('t_vec')
+-assert tl > 0 and tv > 0, 't_loop и t_vec — положительные длительности в секундах.'
+-assert close(need('speedup'), tl / tv, max(0.02 * tl / tv, 0.6)), f'speedup = {need("speedup")}, а t_loop / t_vec = {tl / tv:.1f}.'
+-assert tl / tv > 2, f'Ускорение всего {tl / tv:.1f} раза. Похоже, в nearest_vec остался цикл по заказам.'
++assert _np.isfinite(tl) and _np.isfinite(tv) and tl >= 0 and tv >= 0, 'Длительности конечные и неотрицательные; ноль возможен у короткого вызова.'
++assert (close(need('speedup'),tl/tv,max(.02*tl/tv,.6)) if tv>0 else need('speedup') is None), 'speedup — отношение времен, при нулевом t_vec None.'
+ ld = _np.bincount(_w, minlength=6)
+ assert _np.array_equal(_np.asarray(need('load')), ld), f'load = {need("load")}, а нужно {ld.tolist()}: число заказов у каждой из 6 кофеен.'
+ assert need('busiest') == int(ld.argmax()), f'busiest = {need("busiest")}.'
++
++for _orders,_shops in [(_np.array([[0.,0.],[1.,2.],[8.,3.]]),_np.array([[0.,1.],[7.,2.]])),(_np.array([[3.,4.]]),_np.array([[2.,4.],[4.,4.],[10.,10.]]))]:
++    _want=_np.abs(_orders[:,None,:]-_shops[None,:,:]).sum(axis=2).argmin(axis=1)
++    assert _np.array_equal(need('nearest_vec')(_orders,_shops),_want), 'nearest_vec должна работать на новых заказах и другом числе кофеен.'
++
++import pandas as _timing_pd
++def _timing_equal(actual, expected):
++    if isinstance(expected, (_timing_pd.DataFrame, _timing_pd.Series)):
++        return isinstance(actual, type(expected)) and actual.equals(expected)
++    actual, expected = _np.asarray(actual), _np.asarray(expected)
++    return actual.shape == expected.shape and _np.array_equal(actual, expected)
++def _timing_matches(label, seconds, inputs, output):
++    for record in _timing_records:
++        if record['label'] != label or not close(record['seconds'], seconds, 1e-12):
++            continue
++        if len(record['inputs']) != len(inputs) or not all(_timing_equal(got,want) for got,want in zip(record['inputs'],inputs)):
++            continue
++        got, want = _np.asarray(record['result']), _np.asarray(output)
++        if got.shape == want.shape and _np.allclose(got, want):
++            return True
++    return False
++for _label,_seconds,_inputs,_output in [('loop',need('t_loop'),(_o,_s),_w),('vec',need('t_vec'),(_o,_s),_w)]:
++    assert _timing_matches(_label,_seconds,_inputs,_output), 'Измерьте требуемую операцию на полном входе через timed_call: вход, результат и сохранённое время должны относиться к одному реальному вызову.'
+ ```
+ 
+ ### hint
+@@ -622,18 +741,13 @@
+     D = np.column_stack([np.abs(orders - s).sum(axis=1) for s in shops])   # 30 000 × 6
+     return D.argmin(axis=1)
+ 
+-t0 = time.perf_counter()
+-a = nearest_loop(orders, shops)
+-t_loop = time.perf_counter() - t0
+-
+-t0 = time.perf_counter()
+-b = nearest_vec(orders, shops)
+-t_vec = time.perf_counter() - t0
+-
+-speedup = t_loop / t_vec
++a, t_loop = timed_call("loop", nearest_loop, orders, shops)
++b, t_vec = timed_call("vec", nearest_vec, orders, shops)
++
++speedup = t_loop / t_vec if t_vec > 0 else None
+ load = np.bincount(b, minlength=6)
+ busiest = int(load.argmax())
+-print(f"совпадает: {(a == b).all()}, быстрее в {speedup:.0f} раз")
++print(f"совпадает: {(a == b).all()}, быстрее в {speedup} раз")
+ print("заказов по кофейням:", load, "| самая загруженная:", busiest)
+ ```
+ 

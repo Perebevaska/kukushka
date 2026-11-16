@@ -14,7 +14,7 @@ recap:
 
 Нормальное уравнение уложилось в три строки. Но чтобы пользоваться им как `LinearRegression`, этого мало. Нужно обучить модель один раз, потом прогнозировать на новых заказах, а ещё отдать её в `cross_val_score` или `Pipeline`. Для этого веса надо где-то хранить, а у модели должны быть те же «кнопки», что у моделей sklearn: `fit(X, y)` учит и запоминает, `predict(X)` применяет выученное.
 
-Вы это уже делали. В уроке «Свои шаги конвейера: порядок категорий, функции и свой класс» главы 7 был раздел «Класс за пять минут» (класс, объект, атрибут, метод, `self`, родитель), а потом свой трансформер `(TransformerMixin, BaseEstimator)`: `fit` запоминал средние по городам в атрибуты с `_` на конце и возвращал `self`. Модель устроена так же, только вместо `transform` у неё `predict`, а вместо `TransformerMixin` — `RegressorMixin`. Заодно станет видно, что внутри `LinearRegression` нет ничего, кроме формулы нормального уравнения и аккуратной упаковки.
+Вы это уже делали. В уроке «Свои шаги конвейера: порядок категорий, функции и свой класс» главы 7 был раздел «Класс за пять минут» (класс, объект, атрибут, метод, `self`, родитель), а потом свой трансформер `(TransformerMixin, BaseEstimator)`: `fit` запоминал средние по городам в атрибуты с `_` на конце и возвращал `self`. Модель устроена так же, только вместо `transform` у неё `predict`, а вместо `TransformerMixin` — `RegressorMixin`. Численно будем решать МНК на самой матрице признаков. Для плотных данных обычная `LinearRegression` в scikit-learn тоже использует решатель наименьших квадратов.
 
 ### Сначала на игрушке
 
@@ -30,7 +30,7 @@ class MyLinearRegression:
     def fit(self, X, y):
         X = np.asarray(X, dtype=float)
         X1 = np.column_stack([np.ones(len(X)), X])                 # столбец единиц
-        w = np.linalg.solve(X1.T @ X1, X1.T @ np.asarray(y, dtype=float))
+        w = np.linalg.lstsq(X1, np.asarray(y, dtype=float), rcond=None)[0]
         self.intercept_ = w[0]               # запомнили свободный член
         self.coef_ = w[1:]                   # и веса признаков
         return self                          # чтобы писать .fit(...).predict(...)
@@ -46,7 +46,7 @@ print(round(model.intercept_, 3), model.coef_.round(3))
 print(model.predict(np.array([[5.0], [0.0]])).round(2))
 ```
 
-**Что здесь происходит:** всё как в трансформере из главы 7. `fit` решает нормальное уравнение и кладёт результат в атрибуты `self.intercept_` и `self.coef_`, `predict` их читает, `return self` позволяет писать цепочкой `MyLinearRegression().fit(X, y).predict(X_new)`. `np.asarray(X, dtype=float)` нужен, чтобы модель принимала и DataFrame, и список, и массив numpy.
+**Что здесь происходит:** всё как в трансформере из главы 7. `fit` находит веса МНК и кладёт результат в атрибуты `self.intercept_` и `self.coef_`, `predict` их читает, `return self` позволяет писать цепочкой `MyLinearRegression().fit(X, y).predict(X_new)`. `np.asarray(X, dtype=float)` нужен, чтобы модель принимала и DataFrame, и список, и массив numpy.
 
 ::: note Если подзабыли, как устроен класс
 Подробно с примером чека — в разделе «Класс за пять минут» урока «Свои шаги конвейера: порядок категорий, функции и свой класс» главы 7. Здесь — коротко, на нашей модели:
@@ -65,7 +65,11 @@ print(model.predict(np.array([[5.0], [0.0]])).round(2))
 Один класс — много объектов. `a.fit` записывает выученное в атрибуты объекта `a`; объект `b` собран по тому же чертежу, но его не обучали, и атрибутов у него нет.
 :::
 
-{{practice: p-class, my-class}}
+{{practice: p-class, fix-class}}
+
+Перед реализацией своего класса выпишите состояние после fit: свободный член и массив весов. Затем примените его к новой заявке, у которой ещё нет ответа y.
+
+{{practice: my-class}}
 
 ### Совместимость со sklearn
 
@@ -86,7 +90,7 @@ class MyLinearRegression(RegressorMixin, BaseEstimator):     # родители 
     def fit(self, X, y):
         X = np.asarray(X, dtype=float)
         X1 = np.column_stack([np.ones(len(X)), X])
-        w = np.linalg.solve(X1.T @ X1, X1.T @ np.asarray(y, dtype=float))
+        w = np.linalg.lstsq(X1, np.asarray(y, dtype=float), rcond=None)[0]
         self.intercept_, self.coef_ = w[0], w[1:]
         return self
 
@@ -137,7 +141,7 @@ print("MAE по фолдам, sklearn:", cv_sk.round(2))
 - **`fit` ничего не возвращает.** Тогда `MyLinearRegression().fit(X, y).predict(X)` падает с `AttributeError: 'NoneType' object has no attribute 'predict'`. Последняя строка `fit` — `return self`.
 :::
 
-{{practice: fix-class, class-cv}}
+{{practice: class-cv}}
 
 ## Правило бизнеса — тоже модель
 
@@ -266,10 +270,10 @@ print(pred)
 
 Напишите класс `MyLinearRegression` с двумя методами:
 
-- `fit(self, X, y)` — добавляет столбец единиц, решает нормальное уравнение через `np.linalg.solve`, сохраняет свободный член в `self.intercept_`, веса признаков — в `self.coef_` и возвращает `self`;
+- `fit(self, X, y)` — добавляет столбец единиц, находит решение МНК непосредственно на расширенной матрице (например, через `np.linalg.lstsq`), сохраняет свободный член в `self.intercept_`, веса признаков — в `self.coef_` и возвращает `self`;
 - `predict(self, X)` — возвращает `X @ coef_ + intercept_`.
 
-Обучите модель на доставках из заготовки (`X` — три признака, `y` — минуты) и сохраните объект в `model`. В `w_all` сохраните свободный член и веса одним массивом (`np.r_[...]`, 3 знака). В `pred_new` — прогнозы для двух новых заказов из `new` (1 знак). Готовый `LinearRegression` не используйте.
+Обучите модель на доставках из заготовки (`X` — три признака, `y` — минуты) и сохраните объект в `model`. В `w_all` сохраните свободный член и веса одним массивом (`np.r_[...]`, 3 знака). В `pred_new` — прогнозы для двух новых заказов из `new` (1 знак). Готовый `LinearRegression` не используйте. Класс должен получать число признаков из X и переобучаться при новом вызове fit. Решение должно сохранять точность на почти постоянном признаке и работать при точно дублирующихся столбцах: в таких случаях проверяется прогноз, а не конкретный выбор неоднозначных коэффициентов.
 
 ### starter
 ```python
@@ -292,7 +296,7 @@ class MyLinearRegression:
 ```python
 import numpy as _np, pandas as _pd
 from sklearn.linear_model import LinearRegression as _LR
-assert 'LinearRegression(' not in _code.replace('MyLinearRegression(', ''), 'Здесь нужен свой класс: готовый LinearRegression не используйте, решите нормальное уравнение через np.linalg.solve.'
+assert 'LinearRegression(' not in _code.replace('MyLinearRegression(', ''), 'Здесь нужен свой класс: готовый LinearRegression не используйте, найдите веса МНК на расширенной матрице.'
 C = need('MyLinearRegression')
 _m = C()
 assert hasattr(_m, 'fit') and hasattr(_m, 'predict'), 'У класса должны быть методы fit и predict.'
@@ -309,10 +313,26 @@ assert _np.allclose(_np.r_[mm.intercept_, mm.coef_], _np.r_[lr.intercept_, lr.co
 assert _np.allclose(need('w_all'), _np.round(_np.r_[lr.intercept_, lr.coef_], 3)), f'w_all = {need("w_all")}. Свободный член первым, затем веса, 3 знака.'
 pn = lr.predict(_pd.DataFrame([[3.5, 2, 1], [8.0, 4, 0]], columns=X0.columns)).round(1)
 assert _np.allclose(need('pred_new'), pn), f'pred_new = {need("pred_new")}, а нужно {pn}.'
+
+_X=_np.array([[0.,0.],[1.,0.],[0.,1.],[1.,1.],[2.,-1.]])
+_y=2+3*_X[:,0]-4*_X[:,1]
+_m=C(); assert _m.fit(_X,_y) is _m, 'fit возвращает self и при другом числе признаков.'
+assert _np.allclose(_m.predict(_np.array([[2.,3.],[-1.,2.]])),[-4.,-9.]), 'После fit на новых данных predict использует все выученные веса и свободный член.'
+_m.fit(_X,10-_X[:,0]+2*_X[:,1])
+assert _np.allclose(_m.predict(_np.array([[2.,3.],[-1.,2.]])),[14.,15.]), 'Повторный fit должен заменить сохранённые веса.'
+
+# The public direct-least-squares contract includes small variation and rank deficiency.
+for _train,_target,_new,_expected in [(_np.array([[1.],[1.+1e-8],[1.-1e-8]]),1.-_np.array([1.,1.+1e-8,1.-1e-8]),_np.array([[2.]]),_np.array([-1.])),(_np.array([[0.,0.],[1.,1.],[2.,2.]]),_np.array([0.,1.,2.]),_np.array([[3.,3.]]),_np.array([3.]))]:
+    try:
+        _stable=C().fit(_train,_target)
+        _forecast=_np.asarray(_stable.predict(_new),dtype=float)
+    except Exception as _error:
+        raise AssertionError('fit должен находить решение МНК и при почти постоянном признаке или дублирующихся столбцах; используйте устойчивое решение на расширенной матрице.') from _error
+    assert _forecast.shape==_expected.shape and _np.allclose(_forecast,_expected,rtol=0,atol=1e-6), 'Проверьте прогноз при малом изменении признака и при точном дублировании; нормальные уравнения могут потерять точность.'
 ```
 
 ### hint
-Тело `fit` — код из раздела «Откуда берутся веса»: `X1` со столбцом единиц и `np.linalg.solve(X1.T @ X1, X1.T @ y)`. Результат разложите по атрибутам через `self.`.
+Тело `fit` — код из раздела «Откуда берутся веса»: `X1` со столбцом единиц и `np.linalg.lstsq(X1, y, rcond=None)[0]`. Результат разложите по атрибутам через `self.`.
 
 ### hint
 `self.intercept_ = w[0]`, `self.coef_ = w[1:]`, `return self`. В начале `fit` и `predict` превратите вход в массив: `np.asarray(X, dtype=float)`.
@@ -336,7 +356,7 @@ class MyLinearRegression:
     def fit(self, X, y):
         X = np.asarray(X, dtype=float)
         X1 = np.column_stack([np.ones(len(X)), X])
-        w = np.linalg.solve(X1.T @ X1, X1.T @ np.asarray(y, dtype=float))
+        w = np.linalg.lstsq(X1, np.asarray(y, dtype=float), rcond=None)[0]
         self.intercept_ = w[0]
         self.coef_ = w[1:]
         return self
@@ -473,13 +493,13 @@ _m = C().fit(_tx, _ty)
 assert hasattr(_m, 'means_'), 'После fit должен появиться атрибут means_: self.means_ = ...'
 _p = _np.asarray(_m.predict(_pd.DataFrame({'courier': ['б', 'а']})), dtype=float)
 assert _np.allclose(_p, [40.0, 15.0]), f'На игрушке (а: 10 и 20, б: 30 и 50) predict для [б, а] должен дать [40.0, 15.0], а дал {_p.tolist()}.'
-X0, y0 = need('Xc'), need('y')
+X0, y0 = need('Xc'), _np.asarray(need('y'), dtype=float)
 def _ref_cv():
     out = []
     from sklearn.model_selection import KFold as _KF
     for tr, te in _KF(5).split(X0):
-        mm = _pd.Series(y0.values[tr]).groupby(X0['courier'].values[tr]).mean()
-        out.append(_np.abs(X0['courier'].iloc[te].map(mm).values - y0.values[te]).mean())
+        mm = _pd.Series(y0[tr]).groupby(X0['courier'].values[tr]).mean()
+        out.append(_np.abs(X0['courier'].iloc[te].map(mm).values - y0[te]).mean())
     return _np.array(out)
 ref = _ref_cv()
 cc = _np.asarray(need('cv_courier'), dtype=float)
@@ -552,7 +572,7 @@ class MyLinearRegression:
     def fit(self, X, y):
         X = np.asarray(X, dtype=float)
         X1 = np.column_stack([np.ones(len(X)), X])
-        w = np.linalg.solve(X1.T @ X1, X1.T @ np.asarray(y, dtype=float))
+        w = np.linalg.lstsq(X1, np.asarray(y, dtype=float), rcond=None)[0]
         self.intercept_, self.coef_ = w[0], w[1:]
         return self
 
@@ -617,7 +637,7 @@ class MyLinearRegression(RegressorMixin, BaseEstimator):
     def fit(self, X, y):
         X = np.asarray(X, dtype=float)
         X1 = np.column_stack([np.ones(len(X)), X])
-        w = np.linalg.solve(X1.T @ X1, X1.T @ np.asarray(y, dtype=float))
+        w = np.linalg.lstsq(X1, np.asarray(y, dtype=float), rcond=None)[0]
         self.intercept_, self.coef_ = w[0], w[1:]
         return self
 
