@@ -1,0 +1,4 @@
+# Итог ученика
+Весь публичный охват завершён:6 уроков,16 PNG,79ID; первый event73/79 accepted,1 format browserError,5 graded отказов; первые graded74/79 accepted. Все79 имеют итоговый accepted, но select принят только в отдельном probe без честной cutoff, две карточки с hint1. Исходные отказы не стёрты. Подробно report.md/ownfindings.md, все raw в поурочных JSONL.
+Собственный notebook реально исполнен nbclient, outputs сохранены, статический публичный checker0/0. Native RMSE4.374 не проходит≤4.3 и хуже baseline4.353; после августа настройки не менялись. Квантиль на496 рабочих часах short16.73%,deficit103,extra282,coverage_work68.75%. Числа и ограничения в native-metrics.json/native-conclusion.md.
+CPU освобождён. Исходники, outputs и logs заморожены SHA256 manifest; пересдача только новым разрешённым раундом, исходные файлы не переписывать.

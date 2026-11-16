@@ -1,0 +1,81 @@
+[IPKernelApp] WARNING | Kernel is running over TCP without encryption. All communication (including code and outputs) is sent in plain text and is susceptible to eavesdropping. Use IPC transport or launch with kernel manager-provisioned CurveZMQ keys to enable transport encryption.
+Traceback (most recent call last):
+  File "/Users/dmitriikormin/Documents/Projects/ds-course/docs/reaudit-2026-11-16/ch12/student/execute_native.py", line 9, in <module>
+    client.execute()
+  File "/private/tmp/ku-audit/nb-env/lib/python3.12/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dmitriikormin/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/private/tmp/ku-audit/nb-env/lib/python3.12/site-packages/nbclient/client.py", line 709, in async_execute
+    await self.async_execute_cell(
+  File "/private/tmp/ku-audit/nb-env/lib/python3.12/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/private/tmp/ku-audit/nb-env/lib/python3.12/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+promo_days=pd.to_datetime(['2026-04-17','2026-05-22','2026-06-19','2026-07-24'])
+def build_X(history,index):
+    # index включает будущий день; неизвестные y остаются NaN, не удаляются
+    z=history.reindex(history.index.union(index)).sort_index()
+    f=pd.DataFrame(index=z.index)
+    f['hour']=f.index.hour
+    f['dow']=f.index.dayofweek
+    f['weekend']=(f.dow>=5).astype(int)
+    f['promo']=(f.index.normalize().isin(promo_days)&(f.index.hour>=10)&(f.index.hour<=20)).astype(int)
+    for k in (48,168): f[f'lag_{k}']=z.shift(k)
+    f['roll_28']=z.shift(28).rolling(24).mean()
+    weeks=pd.concat([z.shift(168*k) for k in range(1,5)],axis=1)
+    f['mean4w']=weeks.mean(axis=1).where(weeks.notna().all(axis=1))
+    return f.reindex(index)
+X=build_X(s,s.index).dropna()
+y=s.reindex(X.index)
+train=X.index<'2026-07-01'
+valid=(X.index>='2026-07-01')&(X.index<'2026-08-01')
+test=X.index>='2026-08-01'
+fit_valid=train&(X.index<'2026-06-30 20:00')
+fit_final=(train|valid)&(X.index<'2026-07-31 20:00')
+sizes={k:int(v.sum()) for k,v in [('train',train),('valid',valid),('test',test)]}
+print(sizes,'fit last',y[fit_valid].index.max(),y[fit_final].index.max())
+# Выпуск первого августа из доступного префикса, без будущей цели
+future=pd.date_range('2026-08-01',periods=24,freq='h')
+prefix=s.loc[:'2026-07-31 19:00']
+future_X=build_X(prefix,future)
+assert len(future_X)==24 and future_X.notna().all().all()
+print('future rows',len(future_X),'first/last',future_X.index.min(),future_X.index.max())
+# Независимая порча всего неизвестного хвоста не меняет ни один признак выпуска
+spoiled=s.astype(float).copy()
+unknown=spoiled.index>prefix.index.max()
+spoiled.loc[unknown]=np.random.default_rng(17).normal(1000,300,unknown.sum())
+assert np.allclose(build_X(spoiled,future),future_X)
+assert np.allclose(build_X(s,future),future_X)
+# Отрицательные контрпримеры не должны проходить эту же проверку
+bad=lambda z: pd.DataFrame({'current':z,'future':z.shift(-1),'future_difference':z.shift(-1)-z.shift(-2)})
+assert (bad(spoiled).loc[future]!=bad(s).loc[future]).any().all()
+for t in future:
+    for lag in [48,168,28]: assert t-pd.Timedelta(hours=lag)<=prefix.index.max()
+print('Положительный и три отрицательных теста доступности пройдены')
+
+------------------
+
+----- stdout -----
+{'train': 2256, 'valid': 744, 'test': 744} fit last 2026-06-30 19:00:00 2026-07-31 19:00:00
+future rows 24 first/last 2026-08-01 00:00:00 2026-08-01 23:00:00
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mAssertionError[39m                            Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[3][39m[32m, line 34[39m
+[32m     30[39m [38;5;66;03m# Независимая порча всего неизвестного хвоста не меняет ни один признак выпуска[39;00m
+[32m     31[39m spoiled=s.astype(float).copy()
+[32m     32[39m unknown=spoiled.index>prefix.index.max()
+[32m     33[39m spoiled.loc[unknown]=np.random.default_rng([32m17[39m).normal([32m1000[39m,[32m300[39m,unknown.sum())
+[32m---> [39m[32m34[39m [38;5;28;01massert[39;00m np.allclose(build_X(spoiled,future),future_X)
+[32m     35[39m [38;5;28;01massert[39;00m np.allclose(build_X(s,future),future_X)
+[32m     36[39m [38;5;66;03m# Отрицательные контрпримеры не должны проходить эту же проверку[39;00m
+[32m     37[39m bad=[38;5;28;01mlambda[39;00m z: pd.DataFrame({[33m'current'[39m:z,[33m'future'[39m:z.shift(-[32m1[39m),[33m'future_difference'[39m:z.shift(-[32m1[39m)-z.shift(-[32m2[39m)})
+
+[31mAssertionError[39m: 
+

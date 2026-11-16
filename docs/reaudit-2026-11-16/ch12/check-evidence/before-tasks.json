@@ -1,0 +1,652 @@
+[
+  {
+    "lesson": "ch12/01-resample",
+    "kind": "task",
+    "id": "load",
+    "starter": "import pandas as pd",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\ns1 = need('s', _pd.Series)\nassert isinstance(s1.index, _pd.DatetimeIndex), 'Индекс s должен быть датами: parse_dates и index_col.'\nassert need('n') == len(s0), f'n = {need(\"n\")}.'\nassert need('start') == s0.index.min() and need('end') == s0.index.max(), f'start, end = {need(\"start\")}, {need(\"end\")}.'\nassert need('zero_hours') == int((s0 == 0).sum()), f'zero_hours = {need(\"zero_hours\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\nn = len(s)\nstart, end = s.index.min(), s.index.max()\nzero_hours = int((s == 0).sum())",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "kind": "task",
+    "id": "slice",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nd, m = int(s0['2026-05-22'].sum()), int(s0['2026-05-22 08:00':'2026-05-22 10:00'].sum())\nassert need('day_total') == d, f'day_total = {need(\"day_total\")}, а нужно {d}.'\nassert need('morning') == m, f'morning = {need(\"morning\")}, а нужно {m}: срез по датам включает правую границу 10:00.'\nassert close(need('share_morning'), round(m / d, 3), 0.0011), f'share_morning = {need(\"share_morning\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\nday_total = int(s[\"2026-05-22\"].sum())\nmorning = int(s[\"2026-05-22 08:00\":\"2026-05-22 10:00\"].sum())\nshare_morning = round(morning / day_total, 3)\nprint(day_total, morning, share_morning)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "kind": "task",
+    "id": "daily",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nd0 = s0.resample('D').sum(); w0 = d0.resample('W').mean()\nassert need('daily', _pd.Series).equals(d0), 'daily — s.resample(\"D\").sum().'\nassert _pd.Series(need('weekly_mean')).round(6).equals(w0.round(6)), 'weekly_mean — daily.resample(\"W\").mean().'\nc0 = d0.resample('W').count()\nassert list(_pd.Series(need('week_days')).values) == list(c0.values), 'week_days — daily.resample(\"W\").count().'\nfull = w0[c0 == 7]\nassert need('best_week') != w0.idxmax(), f'best_week = {need(\"best_week\")}: в эту «неделю» попал один день, 31 августа. Нужна лучшая полная неделя: week_days == 7.'\nassert need('best_week') == full.idxmax(), f'best_week = {need(\"best_week\")}, а нужно {full.idxmax().date()}.'\nassert close(need('best_mean'), round(full.max(), 1), 0.06), f'best_mean = {need(\"best_mean\")}, а нужно {round(float(full.max()), 1)}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\nweekly_mean = daily.resample(\"W\").mean()\nweek_days = daily.resample(\"W\").count()\nfull = weekly_mean[week_days == 7]\nbest_week = full.idxmax()\nbest_mean = round(full.max(), 1)\nprint(weekly_mean.idxmax(), week_days[weekly_mean.idxmax()], best_week, best_mean)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "kind": "task",
+    "id": "p-roll",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == ['6'], f'Сейчас: {_lines}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\ntrend = daily.rolling(7).mean()\nprint(int(trend.isna().sum()))",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "kind": "task",
+    "id": "by-hour",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nwe = s0.index.dayofweek >= 5\nwd = s0[~we].groupby(s0[~we].index.hour).mean().round(1); wk = s0[we].groupby(s0[we].index.hour).mean().round(1)\np = need('profile', _pd.DataFrame)\nassert list(p.index) == list(range(24)), 'Индекс profile — часы 0–23.'\nassert all(close(p.loc[h, 'будни'], wd[h], 0.06) and close(p.loc[h, 'выходные'], wk[h], 0.06) for h in range(24)), 'Средние по часам не совпадают. Будни — dayofweek < 5.'\nassert need('peak_weekday') == int(wd.idxmax()) and need('peak_weekend') == int(wk.idxmax()), f'peak_weekday, peak_weekend = {need(\"peak_weekday\")}, {need(\"peak_weekend\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\nweekend = s.index.dayofweek >= 5\nwd = s[~weekend]\nwe = s[weekend]\nprofile = pd.DataFrame({\n    \"будни\": wd.groupby(wd.index.hour).mean(),\n    \"выходные\": we.groupby(we.index.hour).mean(),\n}).round(1)\npeak_weekday = int(profile[\"будни\"].idxmax())\npeak_weekend = int(profile[\"выходные\"].idxmax())",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "kind": "task",
+    "id": "growth",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nt = s0.resample('D').sum().rolling(28).mean().dropna()\nf, l = round(t.iloc[0]), round(t.iloc[-1])\nassert need('first_value') == f and need('last_value') == l, f'first_value, last_value = {need(\"first_value\")}, {need(\"last_value\")}, а нужно {f}, {l}.'\nassert close(need('growth_pct'), round((t.iloc[-1] / t.iloc[0] - 1) * 100, 1), 0.06), f'growth_pct = {need(\"growth_pct\")}, а нужно {round(float((t.iloc[-1] / t.iloc[0] - 1) * 100), 1)}: считайте по неокруглённым t.iloc[0] и t.iloc[-1].'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\ntrend28 = daily.rolling(28).mean()\nt = trend28.dropna()\nfirst_value, last_value = round(t.iloc[0]), round(t.iloc[-1])\ngrowth_pct = round((t.iloc[-1] / t.iloc[0] - 1) * 100, 1)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "kind": "task",
+    "id": "months",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nm = s0.resample('MS').sum(); g = (m.pct_change() * 100).round(1)\n_raw_daily=s0.resample('D').sum().resample('MS').mean(); pdm=_raw_daily.round(1); gp=(_raw_daily.pct_change()*100).round(1)\nassert list(need('monthly').values) == list(m.values), 'monthly — s.resample(\"MS\").sum().'\nassert all(close(a, b, 0.06) for a, b in zip(need('growth').dropna().values, g.dropna().values)), f'growth = {list(need(\"growth\").round(1))}, а нужно {list(g)}.'\nassert all(close(a, b, 0.06) for a, b in zip(need('per_day').values, pdm.values)), f'per_day = {list(need(\"per_day\"))}, а нужно {list(pdm)}.'\nassert all(close(a, b, 0.06) for a, b in zip(need('growth_per_day').dropna().values, gp.dropna().values)), f'growth_per_day = {list(need(\"growth_per_day\"))}.'\nassert need('slowest_month') == g.idxmin().month and need('slowest_month_per_day') == gp.idxmin().month, f'slowest_month = {need(\"slowest_month\")}, slowest_month_per_day = {need(\"slowest_month_per_day\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\nmonthly = s.resample(\"MS\").sum()\ngrowth = (monthly.pct_change() * 100).round(1)\nper_day = s.resample(\"D\").sum().resample(\"MS\").mean().round(1)\ngrowth_per_day = (s.resample(\"D\").sum().resample(\"MS\").mean().pct_change() * 100).round(1)\nslowest_month = growth.idxmin().month\nslowest_month_per_day = growth_per_day.idxmin().month\nprint(pd.DataFrame({\"заказов\": monthly, \"рост %\": growth, \"в день\": per_day, \"рост в день %\": growth_per_day}))\nprint(slowest_month, slowest_month_per_day)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "kind": "task",
+    "id": "zeros",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nz = (s0 == 0).groupby(s0.index.hour).mean().round(2)\ng = need('zero_by_hour', _pd.Series)\nassert list(g.index) == list(range(24)) and all(close(g[h], z[h], 0.006) for h in range(24)), 'zero_by_hour — доля нулей по s.index.hour.'\nassert list(need('night_hours', list)) == [h for h in range(24) if z[h] > 0.3], f'night_hours = {need(\"night_hours\")}.'\nday = s0[(s0.index.hour >= 8) & (s0.index.hour <= 20)]; zz = day[day == 0]\nassert need('n_day_zeros') == len(zz), f'n_day_zeros = {need(\"n_day_zeros\")}.'\nassert list(need('outage_dates', list)) == sorted(set(zz.index.date)), f'outage_dates = {need(\"outage_dates\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\nzero_by_hour = (s == 0).groupby(s.index.hour).mean().round(2)\nnight_hours = [h for h in range(24) if zero_by_hour[h] > 0.3]\nday = s[(s.index.hour >= 8) & (s.index.hour <= 20)]\nday_zeros = day[day == 0]\nn_day_zeros = len(day_zeros)\noutage_dates = sorted(set(day_zeros.index.date))\nprint(night_hours, n_day_zeros, outage_dates)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "kind": "task",
+    "id": "anomalies",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nusual = _pd.concat([s0.shift(168 * k) for k in range(1, 5)], axis=1).median(axis=1)\nh = s0.index.hour\nm = (h >= 10) & (h <= 20) & (usual >= 8) & (s0 < 0.2 * usual)\nwant = list(s0.index[m])\nassert list(need('bad_hours')) == want, f'bad_hours: найдено {len(need(\"bad_hours\"))} часов, а нужно {len(want)}.'\nassert list(need('bad_days')) == sorted({t.date() for t in want}), f'bad_days = {need(\"bad_days\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\nusual = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).median(axis=1)\nhour = s.index.hour\nmask = (hour >= 10) & (hour <= 20) & (usual >= 8) & (s < 0.2 * usual)\nbad_hours = list(s.index[mask])\nbad_days = sorted({t.date() for t in bad_hours})",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "kind": "task",
+    "id": "friday",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nd0 = s0.resample('D').sum()\ndm = d0.groupby(d0.index.dayofweek).mean().round(1)\nassert all(close(need('dow_mean')[k], dm[k], 0.06) for k in range(7)), f'dow_mean: ожидалось {dm.to_dict()}.'\nratio = (d0 / d0.shift(1).rolling(7).mean()).dropna()\ntop = [t.date() for t in ratio.nlargest(5).index]\nassert list(need('spikes')) == top, f'spikes = {need(\"spikes\")}, а нужно {top}.'\nassert need('all_fridays') == all(t.weekday() == 4 for t in top), f'all_fridays = {need(\"all_fridays\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\n\ndow_mean = daily.groupby(daily.index.dayofweek).mean().round(1)\nratio = (daily / daily.shift(1).rolling(7).mean()).dropna()\nspikes = [t.date() for t in ratio.nlargest(5).index]\nall_fridays = all(t.weekday() == 4 for t in spikes)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "kind": "task",
+    "id": "decompose",
+    "starter": "import pandas as pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose as _sd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\np = _sd(s0.resample('D').sum(), model='additive', period=7)\nt = p.trend.dropna()\nassert close(need('trend_growth'), round(t.iloc[-1] - t.iloc[0], 1), 0.06), f'trend_growth = {need(\"trend_growth\")}.'\nse = p.seasonal[:7]\nassert need('best_dow') == int(se.idxmax().dayofweek), f'best_dow = {need(\"best_dow\")}.'",
+    "solution": "import pandas as pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\n\nparts = seasonal_decompose(daily, model=\"additive\", period=7)\nt = parts.trend.dropna()\ntrend_growth = round(t.iloc[-1] - t.iloc[0], 1)\nbest_dow = int(parts.seasonal[:7].idxmax().dayofweek)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "kind": "task",
+    "id": "toy-trend",
+    "starter": "import pandas as pd",
+    "setup": "import numpy as np\nimport pandas as pd\ntoy = pd.Series(50 + 3 * np.arange(21) + np.tile([2, 2, 2, 2, 8, -8, -8], 3),\n                index=pd.date_range(\"2026-06-01\", periods=21, freq=\"D\"))",
+    "check": "import pandas as _pd\nt0 = need('toy')\ntr = t0.rolling(7, center=True).mean()\nassert _pd.Series(need('trend7')).round(6).equals(tr.round(6)), 'trend7 — toy.rolling(7, center=True).mean().'\nsw = (t0 - tr).groupby(t0.index.dayofweek).mean().round(1)\ng = need('seasonal_week', _pd.Series)\nassert list(g.index) == list(range(7)) and all(close(g[k], sw[k], 0.051) for k in range(7)), f'seasonal_week = {g.tolist()}, а нужно {sw.tolist()}.'\nassert close(need('pattern_sum'), round(sw.sum(), 1), 0.051), f'pattern_sum = {need(\"pattern_sum\")}.'",
+    "solution": "import pandas as pd\n\ntrend7 = toy.rolling(7, center=True).mean()\nseasonal_week = (toy - trend7).groupby(toy.index.dayofweek).mean().round(1)\npattern_sum = round(seasonal_week.sum(), 1)\nprint(trend7.round(1).tolist(), seasonal_week.tolist(), pattern_sum)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "kind": "task",
+    "id": "p-acf",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == ['168'], f'Сейчас: {_lines}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\nlags = [1, 24, 168]\nvalues = [s.autocorr(lag) for lag in lags]\nbest = lags[values.index(max(values))]\nprint(best)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "kind": "task",
+    "id": "diff",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nd0 = s0.resample('D').sum()\nassert close(need('mean_d1'), round(d0.diff().mean(), 2), 0.006) and close(need('mean_d7'), round(d0.diff(7).mean(), 2), 0.006), f'mean_d1, mean_d7 = {need(\"mean_d1\")}, {need(\"mean_d7\")}.'\nassert close(need('std_ratio'), round(d0.std() / d0.diff().std(), 2), 0.006), f'std_ratio = {need(\"std_ratio\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\n\nd1 = daily.diff()\nd7 = daily.diff(7)\nmean_d1 = round(d1.mean(), 2)\nmean_d7 = round(d7.mean(), 2)\nstd_ratio = round(daily.std() / d1.std(), 2)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "kind": "task",
+    "id": "adf",
+    "starter": "import pandas as pd\nfrom statsmodels.tsa.stattools import adfuller\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom statsmodels.tsa.stattools import adfuller as _adf\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\na = s0['2026-08']; w = {'часы август': _adf(a)[1], 'часы разность 24': _adf(a.diff(24).dropna())[1], 'дни': _adf(s0.resample('D').sum())[1]}\nassert close(need('p_hour_aug'), round(w['часы август'], 4), 2e-4) and close(need('p_hour_diff24'), round(w['часы разность 24'], 4), 2e-4) and close(need('p_daily'), round(w['дни'], 4), 2e-4), 'p-value не совпадают — проверьте ряды и dropna у разности.'\nassert list(need('stationary')) == [k for k, v in w.items() if v < 0.05], f'stationary = {need(\"stationary\")}.'",
+    "solution": "import pandas as pd\nfrom statsmodels.tsa.stattools import adfuller\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\naug = s[\"2026-08\"]\np_hour_aug = round(adfuller(aug)[1], 4)\np_hour_diff24 = round(adfuller(aug.diff(24).dropna())[1], 4)\np_daily = round(adfuller(s.resample(\"D\").sum())[1], 4)\nres = {\"часы август\": p_hour_aug, \"часы разность 24\": p_hour_diff24, \"дни\": p_daily}\nstationary = [k for k, v in res.items() if v < 0.05]",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "kind": "task",
+    "id": "hour-season",
+    "starter": "import pandas as pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose as _sd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nse = _sd(s0['2026-08-03':'2026-08-16'], period=24).seasonal[:24]\ngot = need('season24', _pd.Series)\nassert list(got.index) == list(range(24)), 'Индекс season24 — часы 0–23 (например, .index.hour).'\nassert all(close(got[h], round(se.iloc[h], 1), 0.06) for h in range(24)), 'Значения сезонной части не совпадают.'\n_r = se.round(1).values; _ok = [h for h in range(24) if _r[h] == _r.min()]\nassert need('night_min') in _ok, f'night_min = {need(\"night_min\")}, а подходит {\" или \".join(str(h) for h in _ok)}: час с наименьшей сезонной поправкой.'\nassert close(need('amplitude'), round(se.max() - se.min(), 1), 0.11), f'amplitude = {need(\"amplitude\")}.'",
+    "solution": "import pandas as pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\nparts = seasonal_decompose(s[\"2026-08-03\":\"2026-08-16\"], period=24)\nfirst_day = parts.seasonal[:24]\nseason24 = pd.Series(first_day.values, index=first_day.index.hour).round(1)\nnight_min = int(first_day.values.argmin())\namplitude = round(first_day.max() - first_day.min(), 1)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "kind": "task",
+    "id": "seasonal-diff",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nw = {k: round(float(s0.diff(k).std()), 2) for k in [1, 24, 168]}\ng = {int(k): v for k, v in need('std_by_lag', dict).items()}\nassert all(close(g[k], w[k], 0.006) for k in w), f'std_by_lag = {g}, а нужно {w}.'\nassert close(need('std_level'), round(float(s0.std()), 2), 0.006), f'std_level = {need(\"std_level\")}.'\nb = min(w, key=w.get)\nassert need('best_lag') == b, f'best_lag = {need(\"best_lag\")}.'\nassert close(need('gain'), round(s0.std() / s0.diff(b).std(), 2), 0.011), f'gain = {need(\"gain\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\nstd_level = round(float(s.std()), 2)\nstd_by_lag = {k: round(float(s.diff(k).std()), 2) for k in [1, 24, 168]}\nbest_lag = min(std_by_lag, key=std_by_lag.get)\ngain = round(s.std() / s.diff(best_lag).std(), 2)\nprint(std_level, std_by_lag, best_lag, gain)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "kind": "task",
+    "id": "multiplicative",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\na, l = {}, {}\nfor m in ['03', '08']:\n    x = s0['2026-' + m]; p = x.groupby(x.index.hour).mean()\n    a[m] = round(float(p.max() - p.min()), 1); l[m] = round(float(x.mean()), 2)\nga = {str(k): v for k, v in need('amp', dict).items()}; gl = {str(k): v for k, v in need('level', dict).items()}\nassert all(close(ga[m], a[m], 0.051) for m in a), f'amp = {ga}, а нужно {a}.'\nassert all(close(gl[m], l[m], 0.006) for m in l), f'level = {gl}, а нужно {l}.'\nag, lg = a['08'] / a['03'], l['08'] / l['03']\nassert close(need('amp_growth'), round(ag, 2), 0.011) and close(need('level_growth'), round(lg, 2), 0.011), 'amp_growth, level_growth — август / март.'\nmt = 'multiplicative' if abs(ag / lg - 1) < 0.1 else 'additive'\nassert need('model_type') == mt, f'model_type = {need(\"model_type\")!r}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\namp, level = {}, {}\nfor m in [\"03\", \"08\"]:\n    x = s[\"2026-\" + m]\n    profile = x.groupby(x.index.hour).mean()\n    amp[m] = round(float(profile.max() - profile.min()), 1)\n    level[m] = round(float(x.mean()), 2)\namp_growth = round(amp[\"08\"] / amp[\"03\"], 2)\nlevel_growth = round(level[\"08\"] / level[\"03\"], 2)\nmodel_type = \"multiplicative\" if abs(amp_growth / level_growth - 1) < 0.1 else \"additive\"\nprint(amp, level, amp_growth, level_growth, model_type)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "kind": "task",
+    "id": "acf-plot",
+    "starter": "import pandas as pd\nimport matplotlib.pyplot as plt\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nv = [s0.autocorr(l) for l in range(1, 201)]\nassert _np.allclose(need('acf_vals'), v), 'acf_vals — автокорреляция для лагов 1…200.'\ntop = [int(i) + 1 for i in _np.argsort(v)[::-1][:3]]\nassert [int(x) for x in need('top3')] == top, f'top3 = {need(\"top3\")}, а нужно {top}.'\nassert need('near_day') == 20 + int(_np.argmax(v[19:28])), f'near_day = {need(\"near_day\")}.'\nax = ax_of(0)\nassert len(ax.patches) == 200, f'Столбцов на графике {len(ax.patches)}, нужно 200.'\nassert ax.get_xlabel() == 'лаг, часов', 'Подпишите ось X: «лаг, часов».'",
+    "solution": "import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\nlags = list(range(1, 201))\nacf_vals = [s.autocorr(l) for l in lags]\ntop3 = [int(i) + 1 for i in np.argsort(acf_vals)[::-1][:3]]\nnear_day = 20 + int(np.argmax(acf_vals[19:28]))\n\nfig, ax = plt.subplots(figsize=(8, 3))\nax.bar(lags, acf_vals)\nax.set_xlabel(\"лаг, часов\")\nax.set_ylabel(\"автокорреляция\")\nplt.show()",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "kind": "task",
+    "id": "residual-days",
+    "starter": "import pandas as pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose as _sd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nr = _sd(s0.resample('D').sum(), model='additive', period=7).resid.dropna()\nm = r[r.abs() > 3 * r.std()]\nassert list(need('outliers')) == [t.date() for t in m.index], f'outliers = {need(\"outliers\")}, а нужно {[t.date() for t in m.index]}.'\nassert list(need('kinds')) == ['всплеск' if v > 0 else 'провал' for v in m.values], f'kinds = {need(\"kinds\")}.'",
+    "solution": "import pandas as pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\n\nr = seasonal_decompose(daily, model=\"additive\", period=7).resid.dropna()\nbig = r[r.abs() > 3 * r.std()]\noutliers = [t.date() for t in big.index]\nkinds = [\"всплеск\" if v > 0 else \"провал\" for v in big.values]",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03-features",
+    "kind": "task",
+    "id": "calendar",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\ns0 = s0[s0.index < '2026-08-01']\nd = need('df', _pd.DataFrame)\nassert {'y', 'hour', 'dow', 'weekend'} <= set(d.columns), f'Столбцы df: {list(d.columns)}.'\nassert d.index.equals(s0.index), 'Проверьте календарь и порядок строк: здесь нужны все часы до 1 августа, август в таблицу не входит.'\nassert _pd.Series(d['y'], index=d.index).eq(s0).all(), 'Сохраните фактические заказы каждого часа в колонке y.'\nassert d['weekend'].eq((d.index.dayofweek >= 5).astype(int)).all(), 'Проверьте weekend для каждого часа субботы и воскресенья.'\nassert (d['hour'].values == s0.index.hour).all() and (d['dow'].values == s0.index.dayofweek).all(), 'hour и dow — из индекса: .index.hour, .index.dayofweek.'\nassert close(need('weekend_share'), round((s0.index.dayofweek >= 5).mean(), 3)), f'weekend_share = {need(\"weekend_share\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ndf = pd.DataFrame({\"y\": s})\ndf[\"hour\"] = df.index.hour\ndf[\"dow\"] = df.index.dayofweek\ndf[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\nweekend_share = round(df[\"weekend\"].mean(), 3)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03-features",
+    "kind": "task",
+    "id": "p-lags",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == ['4392'], f'Сейчас: {_lines}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = pd.DataFrame({\"y\": s})\ndf[\"lag_1\"] = s.shift(1)\ndf[\"lag_24\"] = s.shift(24)\ndf = df.dropna()\nprint(len(df))",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03-features",
+    "kind": "task",
+    "id": "leak-check",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\nfeatures = {\n    \"a\": s.shift(1),\n    \"b\": s.rolling(3).mean(),\n    \"c\": s.shift(1).rolling(3).mean(),\n    \"d\": s.shift(-1),\n}",
+    "setup": "",
+    "check": "assert sorted(need('leaky')) == ['b', 'd'], f'leaky = {need(\"leaky\")}. b включает текущий час, d — следующий.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\nfeatures = {\n    \"a\": s.shift(1),\n    \"b\": s.rolling(3).mean(),\n    \"c\": s.shift(1).rolling(3).mean(),\n    \"d\": s.shift(-1),\n}\nleaky = [\"b\", \"d\"]",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03-features",
+    "kind": "task",
+    "id": "make-features",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\ns0 = s0[s0.index < '2026-08-01']\nd = need('make_features')(s0)\ncols = ['y', 'hour', 'dow', 'weekend', 'lag_1', 'lag_24', 'lag_168', 'roll_24']\nassert set(cols) <= set(d.columns), f'Столбцы: {list(d.columns)}.'\nassert not d.isna().any().any(), 'В результате не должно быть пропусков — dropna().'\nt = d.index[0]\nassert t == s0.index[168], f'Первая строка должна быть {s0.index[168]} (после недели истории), а у вас {t}.'\nassert close(d.loc[t, 'roll_24'], s0.iloc[144:168].mean()), 'roll_24 — среднее 24 часов ДО текущего: s.shift(1).rolling(24).mean().'\nassert d.loc[t, 'lag_168'] == s0.iloc[0], 'lag_168 — значение неделю назад: s.shift(168).'\nassert need('first_ts') == s0.index[168], f'first_ts = {need(\"first_ts\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\n\ndef make_features(s):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"lag_1\"] = s.shift(1)\n    df[\"lag_24\"] = s.shift(24)\n    df[\"lag_168\"] = s.shift(168)\n    df[\"roll_24\"] = s.shift(1).rolling(24).mean()\n    return df.dropna()\n\ndf = make_features(s)\nfirst_ts = df.index[0]",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03-features",
+    "kind": "task",
+    "id": "feature-sets",
+    "starter": "# уже есть: make_features(s) из прошлой задачи\nimport numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ndf = make_features(s)\ntrain = df.index < \"2026-07-01\"",
+    "setup": "import pandas as pd\ndef make_features(s):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"lag_1\"] = s.shift(1)\n    df[\"lag_24\"] = s.shift(24)\n    df[\"lag_168\"] = s.shift(168)\n    df[\"roll_24\"] = s.shift(1).rolling(24).mean()\n    return df.dropna()",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\ns0 = s0[s0.index < '2026-08-01']\nd = make_features(s0); tr = d.index < '2026-07-01'; y = d['y']\nsets = {'календарь': ['hour', 'dow', 'weekend'], 'лаги': ['hour', 'dow', 'weekend', 'lag_1', 'lag_24', 'lag_168'],\n        'всё': ['hour', 'dow', 'weekend', 'lag_1', 'lag_24', 'lag_168', 'roll_24']}\ngot = need('rmse', dict)\nfor k, c in sets.items():\n    p = _H(random_state=0).fit(d.loc[tr, c], y[tr]).predict(d.loc[~tr, c])\n    w = round(float(_np.sqrt(((y[~tr] - p) ** 2).mean())), 3)\n    assert k in got and close(got[k], w, 0.002), f'rmse[{k!r}] = {got.get(k)}, а нужно {w}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ndf = make_features(s)\ntrain = df.index < \"2026-07-01\"\n\nsets = {\n    \"календарь\": [\"hour\", \"dow\", \"weekend\"],\n    \"лаги\": [\"hour\", \"dow\", \"weekend\", \"lag_1\", \"lag_24\", \"lag_168\"],\n    \"всё\": [\"hour\", \"dow\", \"weekend\", \"lag_1\", \"lag_24\", \"lag_168\", \"roll_24\"],\n}\ny = df[\"y\"]\nrmse = {}\nfor name, cols in sets.items():\n    p = HistGradientBoostingRegressor(random_state=0).fit(df.loc[train, cols], y[train]).predict(df.loc[~train, cols])\n    rmse[name] = round(float(np.sqrt(((y[~train] - p) ** 2).mean())), 3)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03-features",
+    "kind": "task",
+    "id": "leak-test",
+    "starter": "import pandas as pd\n\ndef leak_test(features, s, t):\n    ...",
+    "setup": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ndef features(s):\n    df = pd.DataFrame(index=s.index)\n    df[\"lag_24\"] = s.shift(24)                                   # то же время вчера\n    df[\"change\"] = s - s.shift(1)                                 # изменение к прошлому часу\n    df[\"max_so_far\"] = s.expanding().max()                        # максимум от начала ряда до этой строки\n    df[\"ewm_prev\"] = s.shift(1).ewm(span=12).mean()               # среднее с затухающими весами по прошлым часам\n    df[\"hour_mean_prev_days\"] = s.groupby(s.index.hour).transform(lambda x: x.shift(1).rolling(7).mean())  # этот час за 7 прошлых дней\n    df[\"share_of_day\"] = s / s.groupby(s.index.date).transform(\"sum\")  # доля часа в сумме своего дня\n    return df",
+    "check": "import pandas as _pd\nimport numpy as _np\ns0,f0=need('s'),need('features')\ndef _expected(features,t):\n    original=features(s0).loc[t]; changed=set()\n    for sign in (1,-1):\n        spoiled=s0.copy(); tail=spoiled.index>=t\n        spoiled.loc[tail]+=sign*(1000+_np.arange(int(tail.sum()))**2)\n        altered=features(spoiled).loc[t]\n        same=(altered==original)|(altered.isna()&original.isna())\n        changed.update(same.index[~same])\n    return sorted(changed)\nassert need('leaking')==_expected(f0,_pd.Timestamp('2026-07-15 12:00')), 'Проверяйте весь неизвестный хвост, включая следующий час.'\nlt=need('leak_test')\nfor t in [_pd.Timestamp('2026-05-10 09:00'),_pd.Timestamp('2026-07-15 12:00')]:\n    assert lt(f0,s0.copy(),t)==_expected(f0,t), 'Проверка должна работать для другого момента.'\n    def _toy(z):\n        return _pd.DataFrame(dict(prev=z.shift(1),now=z,next=z.shift(-1),future_difference=z.shift(-1)-z.shift(-2)))\n    assert lt(_toy,s0.copy(),t)==['future_difference','next','now'], 'Честный prev сохраняется; текущее, будущее и разность двух будущих часов должны обнаруживаться.'",
+    "solution": "import pandas as pd\nimport numpy as np\n\ndef leak_test(features, s, t):\n    original=features(s).loc[t]\n    changed=set()\n    for sign in (1,-1):\n        spoiled=s.copy()\n        tail=spoiled.index>=t\n        spoiled.loc[tail]=spoiled.loc[tail]+sign*(1000+np.arange(int(tail.sum()))**2)\n        altered=features(spoiled).loc[t]\n        same=(altered==original)|(altered.isna()&original.isna())\n        changed.update(same.index[~same])\n    return sorted(changed)\n\nleaking=leak_test(features,s,pd.Timestamp('2026-07-15 12:00'))",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03-features",
+    "kind": "task",
+    "id": "onehot-hours",
+    "starter": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\n\ndef rmse(a, b):\n    return round(float(np.sqrt(((a - b) ** 2).mean())), 3)",
+    "setup": "import numpy as np\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ndf = pd.DataFrame({\"y\": s})\ndf[\"hour\"] = df.index.hour\ndf[\"dow\"] = df.index.dayofweek\ntrain = df.index < \"2026-07-01\"",
+    "check": "import numpy as _np\nimport pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\nd0, tr = need('df'), need('train')\ny = d0['y']\ndef _r(X):\n    p = _LR().fit(X[tr], y[tr]).predict(X[~tr]); return round(float(_np.sqrt(((y[~tr] - p) ** 2).mean())), 3)\nX1 = d0[['hour', 'dow']]; X2 = _pd.get_dummies(d0[['hour', 'dow']].astype(str)); X3 = X2.assign(t=_np.arange(len(d0)))\nw = {'num': _r(X1), 'onehot': _r(X2), 'onehot_trend': _r(X3)}\ng = need('rmse', dict)\nassert all(close(g[k], w[k], 0.006) for k in w), f'rmse = {g}, а нужно {w}.'\nassert need('n_onehot_cols') == X2.shape[1], f'n_onehot_cols = {need(\"n_onehot_cols\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\n\ndef rmse(a, b):\n    return round(float(np.sqrt(((a - b) ** 2).mean())), 3)\n\ny = df[\"y\"]\ndef score(X):\n    p = LinearRegression().fit(X[train], y[train]).predict(X[~train])\n    return rmse(y[~train], p)\n\nX_num = df[[\"hour\", \"dow\"]]\nX_onehot = pd.get_dummies(df[[\"hour\", \"dow\"]].astype(str))\nX_trend = X_onehot.assign(t=np.arange(len(df)))\nrmse_vals = {\"num\": score(X_num), \"onehot\": score(X_onehot), \"onehot_trend\": score(X_trend)}\nrmse = rmse_vals\nn_onehot_cols = X_onehot.shape[1]\nprint(rmse, n_onehot_cols)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03-features",
+    "kind": "task",
+    "id": "promo-feature",
+    "starter": "# уже есть: make_features(s)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\npromo_days = pd.to_datetime([\"2026-04-17\", \"2026-05-22\", \"2026-06-19\", \"2026-07-24\", \"2026-07-24\"])",
+    "setup": "import pandas as pd\ndef make_features(s):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"lag_1\"] = s.shift(1)\n    df[\"lag_24\"] = s.shift(24)\n    df[\"lag_168\"] = s.shift(168)\n    df[\"roll_24\"] = s.shift(1).rolling(24).mean()\n    return df.dropna()",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\ns0 = s0[s0.index < '2026-08-01']\npdays = _pd.to_datetime(['2026-04-17', '2026-05-22', '2026-06-19', '2026-07-24', '2026-07-24'])\nd = make_features(s0)\nd['promo'] = (d.index.normalize().isin(pdays) & (d.index.hour >= 10) & (d.index.hour <= 20)).astype(int)\ntr = d.index < '2026-07-01'; y = d['y']\npm = (d.index[~tr].normalize() == _pd.Timestamp('2026-07-24')) & (d.index[~tr].hour >= 10) & (d.index[~tr].hour <= 20)\nr = lambda a, b: float(_np.sqrt(((a - b) ** 2).mean()))\nc0 = [c for c in d.columns if c not in ('y', 'promo')]\np0 = _H(random_state=0).fit(d.loc[tr, c0], y[tr]).predict(d.loc[~tr, c0])\np1 = _H(random_state=0).fit(d.loc[tr, c0 + ['promo']], y[tr]).predict(d.loc[~tr, c0 + ['promo']])\nyt = y[~tr].values\nw = {'rmse_without': r(yt, p0), 'rmse_with': r(yt, p1), 'promo_without': r(yt[pm], p0[pm]), 'promo_with': r(yt[pm], p1[pm])}\nfor k, v in w.items():\n    assert close(need(k), round(v, 3), 0.002), f'{k} = {need(k)}, а нужно {round(v, 3)}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\npromo_days = pd.to_datetime([\"2026-04-17\", \"2026-05-22\", \"2026-06-19\", \"2026-07-24\", \"2026-07-24\"])\n\ndf = make_features(s)\nhours = df.index.hour\ndf[\"promo\"] = (df.index.normalize().isin(promo_days) & (hours >= 10) & (hours <= 20)).astype(int)\ntrain = df.index < \"2026-07-01\"\ny = df[\"y\"]\nbase_cols = [c for c in df.columns if c not in (\"y\", \"promo\")]\n\ndef rmse(a, b):\n    return float(np.sqrt(((a - b) ** 2).mean()))\n\np_without = HistGradientBoostingRegressor(random_state=0).fit(df.loc[train, base_cols], y[train]).predict(df.loc[~train, base_cols])\np_with = HistGradientBoostingRegressor(random_state=0).fit(df.loc[train, base_cols + [\"promo\"]], y[train]).predict(df.loc[~train, base_cols + [\"promo\"]])\ny_test = y[~train].values\ntest_idx = df.index[~train]\npromo_mask = (test_idx.normalize() == pd.Timestamp(\"2026-07-24\")) & (test_idx.hour >= 10) & (test_idx.hour <= 20)\nrmse_without = round(rmse(y_test, p_without), 3)\nrmse_with = round(rmse(y_test, p_with), 3)\npromo_without = round(rmse(y_test[promo_mask], p_without[promo_mask]), 3)\npromo_with = round(rmse(y_test[promo_mask], p_with[promo_mask]), 3)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "kind": "task",
+    "id": "noshuffle",
+    "starter": "# уже есть: make_features(s)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]",
+    "setup": "import pandas as pd\ndef make_features(s):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"lag_1\"] = s.shift(1)\n    df[\"lag_24\"] = s.shift(24)\n    df[\"lag_168\"] = s.shift(168)\n    df[\"roll_24\"] = s.shift(1).rolling(24).mean()\n    return df.dropna()",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders'].loc[:\"2026-07-31\"]\nd = make_features(s0); X0, y0 = d.drop(columns='y'), d['y']\ndef _r(**kw):\n    a, b, c, e = _tts(X0, y0, test_size=0.2, **kw)\n    return b.index.min(), round(float(_np.sqrt(((e - _H(random_state=0).fit(a, c).predict(b)) ** 2).mean())), 3)\nt0, rt = _r(shuffle=False)\n_, rs = _r(random_state=0)\nassert _pd.Timestamp(need('test_start')) == t0, f'test_start = {need(\"test_start\")}. Без перемешивания тест — последние 20 % строк; первая из них — X_test.index.min().'\nassert close(need('rmse_time'), rt, 0.002), f'rmse_time = {need(\"rmse_time\")}, а нужно {rt}. Модель — HistGradientBoostingRegressor(random_state=0), обучение на первых 80 %.'\nassert close(need('rmse_shuffled'), rs, 0.002), f'rmse_shuffled = {need(\"rmse_shuffled\")}, а нужно {rs}. Перемешанное разбиение — random_state=0 без shuffle=False.'\nassert close(need('gap'), round(rt - rs, 3), 0.003), f'gap = {need(\"gap\")}: разность rmse_time − rmse_shuffled.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\ndef rmse_for(**kw):\n    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, **kw)\n    p = HistGradientBoostingRegressor(random_state=0).fit(X_tr, y_tr).predict(X_te)\n    return X_te.index.min(), round(float(np.sqrt(((y_te - p) ** 2).mean())), 3)\n\ntest_start, rmse_time = rmse_for(shuffle=False)\n_, rmse_shuffled = rmse_for(random_state=0)\ngap = round(rmse_time - rmse_shuffled, 3)\nprint(test_start, rmse_time, rmse_shuffled, gap)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "kind": "task",
+    "id": "check-order",
+    "starter": "# уже есть: make_features(s)\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\ndef is_time_split(X_tr, X_te):\n    ...",
+    "setup": "import pandas as pd\ndef make_features(s):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"lag_1\"] = s.shift(1)\n    df[\"lag_24\"] = s.shift(24)\n    df[\"lag_168\"] = s.shift(168)\n    df[\"roll_24\"] = s.shift(1).rolling(24).mean()\n    return df.dropna()",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nf = need('is_time_split')\n_i = _pd.date_range('2026-01-01', periods=6, freq='h')\n_a = _pd.DataFrame({'v': range(6)}, index=_i)\nassert f(_a.iloc[:4], _a.iloc[4:]) is not None, 'is_time_split ничего не возвращает: нужен return.'\nassert bool(f(_a.iloc[:4], _a.iloc[4:])) is True, 'Обучение — первые 4 часа, тест — последние 2: функция должна вернуть True.'\nassert bool(f(_a.iloc[[0, 1, 5]], _a.iloc[[2, 3, 4]])) is False, 'Час 05:00 в обучении позже тестовых 02:00–04:00: функция должна вернуть False.'\nassert bool(f(_a.iloc[[3, 1, 0]], _a.iloc[[5, 4]])) is True, 'Порядок строк внутри частей не важен — сравнивайте максимум обучения и минимум теста.'\nd = make_features(need('s')); X0 = d.drop(columns='y')\na, b = _tts(X0, test_size=0.2, random_state=0)\nnl = int((a.index > b.index.min()).sum())\nassert need('honest_ok') == True, f'honest_ok = {need(\"honest_ok\")}: разбиение с shuffle=False честное.'\nassert need('shuffled_ok') == False, f'shuffled_ok = {need(\"shuffled_ok\")}: перемешанное разбиение кладёт будущее в обучение.'\nassert int(need('n_later')) == nl, f'n_later = {need(\"n_later\")}, а нужно {nl}: (X_tr.index > X_te.index.min()).sum() для перемешанного разбиения.'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\ndef is_time_split(X_tr, X_te):\n    return bool(X_tr.index.max() < X_te.index.min())\n\nX_tr, X_te = train_test_split(X, test_size=0.2, shuffle=False)\nhonest_ok = is_time_split(X_tr, X_te)\nX_tr_s, X_te_s = train_test_split(X, test_size=0.2, random_state=0)\nshuffled_ok = is_time_split(X_tr_s, X_te_s)\nn_later = int((X_tr_s.index > X_te_s.index.min()).sum())\nprint(honest_ok, shuffled_ok, n_later, len(X_tr_s))",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "kind": "task",
+    "id": "same-period",
+    "starter": "# уже есть: make_features(s)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]",
+    "setup": "import pandas as pd\ndef make_features(s):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"lag_1\"] = s.shift(1)\n    df[\"lag_24\"] = s.shift(24)\n    df[\"lag_168\"] = s.shift(168)\n    df[\"roll_24\"] = s.shift(1).rolling(24).mean()\n    return df.dropna()",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.model_selection import train_test_split as _tts\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nd = make_features(need('s')); X0, y0 = d.drop(columns='y'), d['y']\n_r = lambda a, b: float(_np.sqrt(((a - b) ** 2).mean()))\na, b, c, e = _tts(X0, y0, test_size=0.2, shuffle=False); rt = _r(e, _H(random_state=0).fit(a, c).predict(b)); t0 = b.index.min()\na, b, c, e = _tts(X0, y0, test_size=0.2, random_state=0); pb = _H(random_state=0).fit(a, c).predict(b); rs = _r(e, pb)\nm = b.index >= t0; rtail = _r(e[m], pb[m])\nassert close(need('rmse_time'), round(rt, 3), 0.002) and close(need('rmse_shuffled'), round(rs, 3), 0.002), f'rmse_time, rmse_shuffled = {need(\"rmse_time\")}, {need(\"rmse_shuffled\")}, а нужно {round(rt, 3)}, {round(rs, 3)}.'\nassert int(need('n_tail')) == int(m.sum()), f'n_tail = {need(\"n_tail\")}, а нужно {int(m.sum())}: тестовые строки перемешанного разбиения с индексом >= первой строки честного теста.'\nassert close(need('rmse_shuffled_tail'), round(rtail, 3), 0.002), f'rmse_shuffled_tail = {need(\"rmse_shuffled_tail\")}, а нужно {round(rtail, 3)}.'\nassert close(need('part_period'), round(rtail - rs, 3), 0.004) and close(need('part_shuffle'), round(rt - rtail, 3), 0.004), f'part_period, part_shuffle = {need(\"part_period\")}, {need(\"part_shuffle\")}, а нужно {round(rtail - rs, 3)}, {round(rt - rtail, 3)}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\ndef rmse(a, b):\n    return float(np.sqrt(((a - b) ** 2).mean()))\n\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, shuffle=False)\np = HistGradientBoostingRegressor(random_state=0).fit(X_tr, y_tr).predict(X_te)\nrmse_time = round(rmse(y_te, p), 3)\ntest_start = X_te.index.min()\n\nX_tr_s, X_te_s, y_tr_s, y_te_s = train_test_split(X, y, test_size=0.2, random_state=0)\np_s = HistGradientBoostingRegressor(random_state=0).fit(X_tr_s, y_tr_s).predict(X_te_s)\nrmse_shuffled = round(rmse(y_te_s, p_s), 3)\n\ntail = X_te_s.index >= test_start\nn_tail = int(tail.sum())\nrmse_shuffled_tail = round(rmse(y_te_s[tail], p_s[tail]), 3)\npart_period = round(rmse_shuffled_tail - rmse_shuffled, 3)\npart_shuffle = round(rmse_time - rmse_shuffled_tail, 3)\nprint(rmse_time, rmse_shuffled, n_tail, rmse_shuffled_tail, part_period, part_shuffle)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "kind": "task",
+    "id": "folds",
+    "starter": "import pandas as pd\nfrom sklearn.model_selection import TimeSeriesSplit\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]",
+    "setup": "",
+    "check": "import pandas as _pd\nfrom sklearn.model_selection import TimeSeriesSplit as _TS\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders'].loc[:\"2026-07-31\"]\nsp = list(_TS(n_splits=4).split(s0))\nws = [int(len(a)) for a, b in sp]; wt = [s0.index[b[0]] for a, b in sp]\ngs = [int(v) for v in need('train_sizes')]\nassert gs == ws, f'train_sizes = {gs}, а нужно {ws}: длина tr в каждом фолде.'\ngt = [_pd.Timestamp(v) for v in need('test_starts')]\nassert gt == wt, f'test_starts = {[str(v) for v in gt]}, а нужно {[str(v) for v in wt]}: s.index[te[0]].'",
+    "solution": "import pandas as pd\nfrom sklearn.model_selection import TimeSeriesSplit\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\n\ntrain_sizes, test_starts = [], []\nfor tr, te in TimeSeriesSplit(n_splits=4).split(s):\n    train_sizes.append(len(tr))\n    test_starts.append(s.index[te[0]])\nprint(train_sizes, test_starts)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "kind": "task",
+    "id": "tscv",
+    "starter": "# уже есть: make_features(s)\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.model_selection import TimeSeriesSplit, KFold, cross_val_score\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]",
+    "setup": "import pandas as pd\ndef make_features(s):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"lag_1\"] = s.shift(1)\n    df[\"lag_24\"] = s.shift(24)\n    df[\"lag_168\"] = s.shift(168)\n    df[\"roll_24\"] = s.shift(1).rolling(24).mean()\n    return df.dropna()",
+    "check": "import pandas as _pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nfrom sklearn.model_selection import TimeSeriesSplit as _TS, KFold as _KF, cross_val_score as _cvs\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders'].loc[:\"2026-07-31\"]\nd = make_features(s0); X0, y0 = d.drop(columns='y'), d['y']\na = -_cvs(_H(random_state=0), X0, y0, cv=_TS(n_splits=5), scoring='neg_root_mean_squared_error')\nb = -_cvs(_H(random_state=0), X0, y0, cv=_KF(5, shuffle=True, random_state=0), scoring='neg_root_mean_squared_error')\nassert [round(float(v), 2) for v in need('scores')] == [round(float(v), 2) for v in a], f'scores = {need(\"scores\")}, а нужно {a.round(2)}.'\nassert close(need('mean_rmse'), round(a.mean(), 3), 0.002), f'mean_rmse = {need(\"mean_rmse\")}.'\nassert close(need('mean_rmse_kfold'), round(b.mean(), 3), 0.002), f'mean_rmse_kfold = {need(\"mean_rmse_kfold\")}.'",
+    "solution": "import pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.model_selection import TimeSeriesSplit, KFold, cross_val_score\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\nraw = -cross_val_score(HistGradientBoostingRegressor(random_state=0), X, y,\n                       cv=TimeSeriesSplit(n_splits=5), scoring=\"neg_root_mean_squared_error\")\nscores = [round(float(v), 2) for v in raw]\nmean_rmse = round(raw.mean(), 3)\nkf = -cross_val_score(HistGradientBoostingRegressor(random_state=0), X, y,\n                      cv=KFold(5, shuffle=True, random_state=0), scoring=\"neg_root_mean_squared_error\")\nmean_rmse_kfold = round(kf.mean(), 3)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "kind": "task",
+    "id": "month-folds",
+    "starter": "# уже есть: make_features(s)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]",
+    "setup": "import pandas as pd\ndef make_features(s):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"lag_1\"] = s.shift(1)\n    df[\"lag_24\"] = s.shift(24)\n    df[\"lag_168\"] = s.shift(168)\n    df[\"roll_24\"] = s.shift(1).rolling(24).mean()\n    return df.dropna()",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nd = make_features(need('s')); X0, y0 = d.drop(columns='y'), d['y']\nw_r, w_m, w_e = {}, {}, {}\nfor k in ('05', '06', '07'):\n    st = _pd.Timestamp(f'2026-{k}-01'); en = st + _pd.offsets.MonthBegin(1)\n    tr = X0.index < st; te = (X0.index >= st) & (X0.index < en)\n    p = _H(random_state=0).fit(X0[tr], y0[tr]).predict(X0[te]); r = float(_np.sqrt(((y0[te] - p) ** 2).mean()))\n    w_r[k], w_m[k], w_e[k] = round(r, 3), round(float(y0[te].mean()), 2), round(r / float(y0[te].mean()), 3)\ng_r, g_m, g_e = need('month_rmse', dict), need('month_mean', dict), need('rel_error', dict)\nassert sorted(g_r) == ['05', '06', '07'], f'Ключи month_rmse: {sorted(g_r)}, а нужны \"05\", \"06\", \"07\".'\nassert all(close(g_m[k], w_m[k], 0.006) for k in w_m), f'month_mean = {g_m}, а нужно {w_m}: среднее y в строках месяца.'\nassert all(close(g_r[k], w_r[k], 0.002) for k in w_r), f'month_rmse = {g_r}, а нужно {w_r}: обучение — все строки до 1-го числа месяца, тест — строки месяца.'\nassert all(close(g_e[k], w_e[k], 0.002) for k in w_e), f'rel_error = {g_e}, а нужно {w_e}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\nmonth_rmse, month_mean, rel_error = {}, {}, {}\nfor m in [\"05\", \"06\", \"07\"]:\n    start = pd.Timestamp(f\"2026-{m}-01\")\n    end = start + pd.offsets.MonthBegin(1)\n    train = X.index < start\n    test = (X.index >= start) & (X.index < end)\n    p = HistGradientBoostingRegressor(random_state=0).fit(X[train], y[train]).predict(X[test])\n    r = float(np.sqrt(((y[test] - p) ** 2).mean()))\n    month_rmse[m] = round(r, 3)\n    month_mean[m] = round(float(y[test].mean()), 2)\n    rel_error[m] = round(r / float(y[test].mean()), 3)\nprint(month_rmse, month_mean, rel_error)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "kind": "task",
+    "id": "naive",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ntest = s[\"2026-07-01\":]",
+    "setup": "",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']; s0 = s0[s0.index < '2026-08-01']; t = s0['2026-07-01':]\ns0 = s0[s0.index < '2026-08-01']\nw = {k: round(float((t - s0.shift(k)[t.index]).abs().mean()), 3) for k in (1, 24, 168)}\ngot = need('mae', dict)\nassert all(k in got and close(got[k], v, 0.002) for k, v in w.items()), f'mae = {got}, а нужно {w}.'\nassert need('best_lag') == min(w, key=w.get), f'best_lag = {need(\"best_lag\")}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ntest = s[\"2026-07-01\":]\nmae = {k: round(float((test - s.shift(k)[test.index]).abs().mean()), 3) for k in (1, 24, 168)}\nbest_lag = min(mae, key=mae.get)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "kind": "task",
+    "id": "metrics",
+    "starter": "import numpy as np\n\ndef mae(fact, pred):\n    ...\n\ndef rmse(fact, pred):\n    ...\n\ndef wape(fact, pred):\n    ...",
+    "setup": "import numpy as np\nfact = np.array([10, 0, 20, 14, 6])\npred = np.array([12, 1, 18, 9, 6])",
+    "check": "import numpy as _np\na, b = _np.array([3.0, 5.0]), _np.array([1.0, 5.0])\nassert close(need('mae')(a, b), 1.0) and close(need('rmse')(a, b), _np.sqrt(2)) and close(need('wape')(a, b), 0.25), 'Проверьте формулы на [3, 5] и [1, 5]: MAE 1, RMSE √2, WAPE 2/8.'\nf, p = need('fact'), need('pred')\nw = {'mae': round(float(_np.abs(f - p).mean()), 3), 'rmse': round(float(_np.sqrt(((f - p) ** 2).mean())), 3), 'wape': round(float(_np.abs(f - p).sum() / f.sum()), 3)}\ng = need('m', dict)\nassert all(close(g[k], w[k], 0.0011) for k in w), f'm = {g}, а нужно {w}.'",
+    "solution": "import numpy as np\n\ndef mae(fact, pred):\n    return float(np.abs(fact - pred).mean())\n\ndef rmse(fact, pred):\n    return float(np.sqrt(((fact - pred) ** 2).mean()))\n\ndef wape(fact, pred):\n    return float(np.abs(fact - pred).sum() / fact.sum())\n\nm = {\"mae\": round(mae(fact, pred), 3), \"rmse\": round(rmse(fact, pred), 3), \"wape\": round(wape(fact, pred), 3)}\nprint(m)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "kind": "task",
+    "id": "wape",
+    "starter": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ntest = s[\"2026-07-01\":]\npred = s.shift(168)[test.index]",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\nf = need('wape')\nassert close(f(_np.array([10, 0, 20]), _np.array([12, 1, 18])), 5 / 30), 'wape([10, 0, 20], [12, 1, 18]) должна быть 5/30.'\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']; s0 = s0[s0.index < '2026-08-01']; t = s0['2026-07-01':]; p = s0.shift(168)[t.index]\ns0 = s0[s0.index < '2026-08-01']\nassert close(need('w'), round(float((t - p).abs().sum() / t.sum()), 3), 0.002), f'w = {need(\"w\")}.'\nassert need('zeros') == int((t == 0).sum()), f'zeros = {need(\"zeros\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ntest = s[\"2026-07-01\":]\npred = s.shift(168)[test.index]\n\ndef wape(fact, pred):\n    return np.abs(fact - pred).sum() / fact.sum()\n\nw = round(float(wape(test, pred)), 3)\nzeros = int((test == 0).sum())",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "kind": "task",
+    "id": "p-horizon",
+    "starter": "",
+    "setup": "",
+    "check": "assert _lines == [\"['lag_24', 'lag_48', 'lag_168', 'roll']\"], f'Сейчас: {_lines}.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = pd.DataFrame({\"y\": s})\nfor k in (24, 48, 168):\n    df[f\"lag_{k}\"] = s.shift(k)\ndf[\"roll\"] = s.shift(24).rolling(24).mean()\nprint(list(df.columns[1:]))",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "kind": "task",
+    "id": "bias",
+    "starter": "import numpy as np",
+    "setup": "import numpy as np\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ntest = s[\"2026-07-01\":]\n_m4 = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)\nm4 = _m4[test.index]\n# _k: средний факт за последнюю неделю / средний прогноз m4 за ту же неделю (shift(1) — только прошлое)\n_k = s.rolling(168).mean().shift(1) / _m4.rolling(168).mean().shift(1)\nadj = m4 * _k[test.index]",
+    "check": "import numpy as _np\nt, a, b = need('test'), need('m4'), need('adj')\ne, e2 = t - a, t - b\nassert close(need('bias'), round(float(e.mean()), 3), 0.0011), f'bias = {need(\"bias\")}.'\nassert close(need('share_under'), round(float((a < t).mean()), 3), 0.0011), f'share_under = {need(\"share_under\")}.'\nassert close(need('ratio'), round(float(t.sum() / a.sum()), 3), 0.0011), f'ratio = {need(\"ratio\")}.'\nassert close(need('bias_adj'), round(float(e2.mean()), 3), 0.0011), f'bias_adj = {need(\"bias_adj\")}.'\nassert close(need('rmse_m4'), round(float(_np.sqrt((e ** 2).mean())), 3), 0.0011) and close(need('rmse_adj'), round(float(_np.sqrt((e2 ** 2).mean())), 3), 0.0011), 'rmse_m4, rmse_adj — RMSE двух прогнозов.'",
+    "solution": "import numpy as np\n\ne = test - m4\nbias = round(float(e.mean()), 3)\nshare_under = round(float((m4 < test).mean()), 3)\nratio = round(float(test.sum() / m4.sum()), 3)\ne2 = test - adj\nbias_adj = round(float(e2.mean()), 3)\nrmse_m4 = round(float(np.sqrt((e ** 2).mean())), 3)\nrmse_adj = round(float(np.sqrt((e2 ** 2).mean())), 3)\nprint(bias, share_under, ratio, bias_adj, rmse_m4, rmse_adj)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "kind": "task",
+    "id": "mean4w",
+    "starter": "import numpy as np\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ntest = s[\"2026-07-01\":]",
+    "setup": "",
+    "check": "import numpy as _np, pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']; s0 = s0[s0.index < '2026-08-01']; t = s0['2026-07-01':]\ns0 = s0[s0.index < '2026-08-01']\nw = {}\nfor k in (1, 2, 4, 8):\n    p = _pd.concat([s0.shift(168 * j) for j in range(1, k + 1)], axis=1).mean(axis=1)\n    w[k] = round(float(_np.sqrt(((t - p[t.index]) ** 2).mean())), 3)\ngot = need('rmse_k', dict)\nassert all(k in got and close(got[k], v, 0.002) for k, v in w.items()), f'rmse_k = {got}, а нужно {w}.'\nassert need('best_k') == min(w, key=w.get), f'best_k = {need(\"best_k\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ntest = s[\"2026-07-01\":]\n\nrmse_k = {}\nfor k in (1, 2, 4, 8):\n    pred = pd.concat([s.shift(168 * j) for j in range(1, k + 1)], axis=1).mean(axis=1)\n    rmse_k[k] = round(float(np.sqrt(((test - pred[test.index]) ** 2).mean())), 3)\nbest_k = min(rmse_k, key=rmse_k.get)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "kind": "task",
+    "id": "horizon-gap",
+    "starter": "# уже есть: make(s, lags, roll_shift) из теории\nimport numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']",
+    "setup": "import pandas as pd\ndef make(s, lags, roll_shift):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    for k in lags:\n        df[f\"lag_{k}\"] = s.shift(k)\n    df[\"roll\"] = s.shift(roll_shift).rolling(24).mean()\n    df[\"mean4w\"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)\n    return df.dropna()",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\ns0 = s0[s0.index < '2026-08-01']\nw = {}\nfor k, lags, rs in [('h', (1, 24, 168), 1), ('d', (24, 48, 168), 24)]:\n    d = make(s0, lags, rs); tr = d.index < '2026-07-01'; X, y = d.drop(columns='y'), d['y']\n    p = _H(random_state=0).fit(X[tr], y[tr]).predict(X[~tr]); w[k] = float(_np.sqrt(((y[~tr] - p) ** 2).mean()))\nassert close(need('rmse_hour'), round(w['h'], 3), 0.002) and close(need('rmse_day'), round(w['d'], 3), 0.002), f'rmse_hour, rmse_day = {need(\"rmse_hour\")}, {need(\"rmse_day\")}.'\nassert close(need('gap_pct'), round((w['d'] / w['h'] - 1) * 100, 1), 0.15), f'gap_pct = {need(\"gap_pct\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\n\nres = {}\nfor name, lags, roll_shift in [(\"hour\", (1, 24, 168), 1), (\"day\", (24, 48, 168), 24)]:\n    df = make(s, lags, roll_shift)\n    train = df.index < \"2026-07-01\"\n    X, y = df.drop(columns=\"y\"), df[\"y\"]\n    p = HistGradientBoostingRegressor(random_state=0).fit(X[train], y[train]).predict(X[~train])\n    res[name] = float(np.sqrt(((y[~train] - p) ** 2).mean()))\nrmse_hour, rmse_day = round(res[\"hour\"], 3), round(res[\"day\"], 3)\ngap_pct = round((res[\"day\"] / res[\"hour\"] - 1) * 100, 1)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "kind": "task",
+    "id": "leak-horizon",
+    "starter": "# уже есть: make(s, lags, roll_shift)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']",
+    "setup": "import pandas as pd\ndef make(s, lags, roll_shift):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    for k in lags:\n        df[f\"lag_{k}\"] = s.shift(k)\n    df[\"roll\"] = s.shift(roll_shift).rolling(24).mean()\n    df[\"mean4w\"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)\n    return df.dropna()",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\ns0 = s0[s0.index < '2026-08-01']\nw = {}\nfor k, lags, rs in [('leak', (1, 24, 48, 168), 1), ('fair', (24, 48, 168), 24)]:\n    d = make(s0, lags, rs); tr = d.index < '2026-07-01'; X, y = d.drop(columns='y'), d['y']\n    p = _LR().fit(X[tr], y[tr]).predict(X[~tr]); w[k] = round(float(_np.sqrt(((y[~tr] - p) ** 2).mean())), 3)\nassert close(need('rmse_leak'), w['leak'], 0.002) and close(need('rmse_fair'), w['fair'], 0.002), f'rmse_leak, rmse_fair = {need(\"rmse_leak\")}, {need(\"rmse_fair\")}, а нужно {w[\"leak\"]}, {w[\"fair\"]}.'\nassert need('fooled') == (w['leak'] < w['fair']), f'fooled = {need(\"fooled\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\n\nres = {}\nfor name, lags, roll_shift in [(\"leak\", (1, 24, 48, 168), 1), (\"fair\", (24, 48, 168), 24)]:\n    df = make(s, lags, roll_shift)\n    train = df.index < \"2026-07-01\"\n    X, y = df.drop(columns=\"y\"), df[\"y\"]\n    p = LinearRegression().fit(X[train], y[train]).predict(X[~train])\n    res[name] = round(float(np.sqrt(((y[~train] - p) ** 2).mean())), 3)\nrmse_leak, rmse_fair = res[\"leak\"], res[\"fair\"]\nfooled = rmse_leak < rmse_fair",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "kind": "task",
+    "id": "by-hour-error",
+    "starter": "# уже есть: make(s, lags, roll_shift)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']",
+    "setup": "import pandas as pd\ndef make(s, lags, roll_shift):\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    for k in lags:\n        df[f\"lag_{k}\"] = s.shift(k)\n    df[\"roll\"] = s.shift(roll_shift).rolling(24).mean()\n    df[\"mean4w\"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)\n    return df.dropna()",
+    "check": "import numpy as _np, pandas as _pd\nfrom sklearn.linear_model import LinearRegression as _LR\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\ns0 = s0[s0.index < '2026-08-01']\nd = make(s0, (24, 48, 168), 24); tr = d.index < '2026-07-01'; X, y = d.drop(columns='y'), d['y']\ne = (y[~tr] - _LR().fit(X[tr], y[tr]).predict(X[~tr])).abs()\nmh = e.groupby(e.index.hour).mean()\ngot = need('mae_by_hour', _pd.Series)\nassert all(close(got[h], round(mh[h], 2), 0.006) for h in range(24)), 'MAE по часам не совпадает.'\nassert need('worst_hour') == int(mh.idxmax()), f'worst_hour = {need(\"worst_hour\")}.'\nassert close(need('night_share'), round(e[e.index.hour <= 5].sum() / e.sum(), 3), 0.002), f'night_share = {need(\"night_share\")}.'",
+    "solution": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\n\ndf = make(s, (24, 48, 168), 24)\ntrain = df.index < \"2026-07-01\"\nX, y = df.drop(columns=\"y\"), df[\"y\"]\np = LinearRegression().fit(X[train], y[train]).predict(X[~train])\nerr = (y[~train] - p).abs()\nmae_by_hour = err.groupby(err.index.hour).mean().round(2)\nworst_hour = int(err.groupby(err.index.hour).mean().idxmax())\nnight_share = round(err[err.index.hour <= 5].sum() / err.sum(), 3)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/05-project",
+    "kind": "task",
+    "id": "split",
+    "starter": "# уже есть: make(s) — таблица признаков для прогноза на завтра\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]",
+    "setup": "import pandas as pd\n_promo_days = pd.to_datetime([\"2026-04-17\", \"2026-05-22\", \"2026-06-19\", \"2026-07-24\", \"2026-08-21\"])\ndef make(s):\n    s = s.asfreq(\"h\")\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"promo\"] = (df.index.normalize().isin(_promo_days) & (df.index.hour >= 10) & (df.index.hour <= 20)).astype(int)\n    for k in (48, 168):\n        df[f\"lag_{k}\"] = s.shift(k)\n    df[\"roll\"] = s.shift(28).rolling(24).mean()\n    df[\"mean4w\"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)\n    return df.dropna(subset=df.columns.drop(\"y\"))",
+    "check": "import pandas as _pd\ns0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']\nd = make(s0)\nw = {'train': int((d.index < '2026-07-01').sum()), 'valid': int(((d.index >= '2026-07-01') & (d.index < '2026-08-01')).sum()), 'test': int((d.index >= '2026-08-01').sum())}\nassert dict(need('sizes')) == w, f'sizes = {need(\"sizes\")}, а нужно {w}.'\n_df = need('df'); _X = need('X'); _y = need('y')\nassert _X.index.equals(d.index) and list(_X.columns)==list(d.columns.drop('y')), 'X: сверяем схему и даты, target не должен быть признаком.'\nassert _X.equals(d.drop(columns='y')) and _y.equals(d['y']), 'Сверьте все значения признаков/меток по времени.'\nfor _name,_mask in [('train',d.index<'2026-07-01'),('valid',(d.index>='2026-07-01')&(d.index<'2026-08-01')),('test',d.index>='2026-08-01')]:\n    assert (need(_name)==_mask).all(), f'{_name}: состав строк не соответствует временной границе.'\n_hidden=s0.copy(); _hidden.loc[_hidden.index>='2026-07-31 20:00']=float('nan')\n_future=make(_hidden).loc['2026-08-01':'2026-08-01 23:00']\nassert len(_future)==24 and _future.drop(columns='y').notna().all().all(), 'make должен строить24 будущие строки без y на1августа.'",
+    "solution": "import pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\ndf = make(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\ntrain = df.index < \"2026-07-01\"\nvalid = (df.index >= \"2026-07-01\") & (df.index < \"2026-08-01\")\ntest = df.index >= \"2026-08-01\"\nsizes = {\"train\": int(train.sum()), \"valid\": int(valid.sum()), \"test\": int(test.sum())}",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/05-project",
+    "kind": "task",
+    "id": "baseline",
+    "starter": "# уже есть: df, X, y и маски train, valid, test\nimport numpy as np",
+    "setup": "import pandas as pd\n_promo_days = pd.to_datetime([\"2026-04-17\", \"2026-05-22\", \"2026-06-19\", \"2026-07-24\", \"2026-08-21\"])\ndef make(s):\n    s = s.asfreq(\"h\")\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"promo\"] = (df.index.normalize().isin(_promo_days) & (df.index.hour >= 10) & (df.index.hour <= 20)).astype(int)\n    for k in (48, 168):\n        df[f\"lag_{k}\"] = s.shift(k)\n    df[\"roll\"] = s.shift(28).rolling(24).mean()\n    df[\"mean4w\"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)\n    return df.dropna(subset=df.columns.drop(\"y\"))\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\ntrain = df.index < \"2026-07-01\"\nvalid = (df.index >= \"2026-07-01\") & (df.index < \"2026-08-01\")\ntest = df.index >= \"2026-08-01\"",
+    "check": "import numpy as _np\nw = round(float(_np.sqrt(((y[test] - X.loc[test, 'mean4w']) ** 2).mean())), 3)\nassert close(need('rmse_base'), w, 0.002), f'rmse_base = {need(\"rmse_base\")}, а нужно {w}.'\nassert need('base_meets') == (w <= 4.3), f'base_meets = {need(\"base_meets\")}.'",
+    "solution": "import numpy as np\nrmse_base = round(float(np.sqrt(((y[test] - X.loc[test, \"mean4w\"]) ** 2).mean())), 3)\nbase_meets = rmse_base <= 4.3",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/05-project",
+    "kind": "task",
+    "id": "select",
+    "starter": "# уже есть: df, X, y и маски train, valid, test\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import HistGradientBoostingRegressor",
+    "setup": "import pandas as pd\n_promo_days = pd.to_datetime([\"2026-04-17\", \"2026-05-22\", \"2026-06-19\", \"2026-07-24\", \"2026-08-21\"])\ndef make(s):\n    s = s.asfreq(\"h\")\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"promo\"] = (df.index.normalize().isin(_promo_days) & (df.index.hour >= 10) & (df.index.hour <= 20)).astype(int)\n    for k in (48, 168):\n        df[f\"lag_{k}\"] = s.shift(k)\n    df[\"roll\"] = s.shift(28).rolling(24).mean()\n    df[\"mean4w\"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)\n    return df.dropna(subset=df.columns.drop(\"y\"))\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\ntrain = df.index < \"2026-07-01\"\nvalid = (df.index >= \"2026-07-01\") & (df.index < \"2026-08-01\")\ntest = df.index >= \"2026-08-01\"",
+    "check": "import numpy as _np\nfrom sklearn.linear_model import LinearRegression as _LR\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nms = {'linear': _LR(), 'hgb': _H(random_state=0), 'hgb_depth3': _H(max_depth=3, random_state=0), 'hgb_l2': _H(l2_regularization=1.0, random_state=0)}\nw = {k: round(float(_np.sqrt(((y[valid] - m.fit(X[train], y[train]).predict(X[valid])) ** 2).mean())), 3) for k, m in ms.items()}\ngot = need('valid_rmse', dict)\nassert all(k in got and close(got[k], v, 0.002) for k, v in w.items()), f'valid_rmse = {got}, а нужно {w}.'\nassert need('best') == min(w, key=w.get), f'best = {need(\"best\")!r}.'",
+    "solution": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import HistGradientBoostingRegressor\n\nmodels = {\n    \"linear\": LinearRegression(),\n    \"hgb\": HistGradientBoostingRegressor(random_state=0),\n    \"hgb_depth3\": HistGradientBoostingRegressor(max_depth=3, random_state=0),\n    \"hgb_l2\": HistGradientBoostingRegressor(l2_regularization=1.0, random_state=0),\n}\nvalid_rmse = {}\nfor name, m in models.items():\n    p = m.fit(X[train], y[train]).predict(X[valid])\n    valid_rmse[name] = round(float(np.sqrt(((y[valid] - p) ** 2).mean())), 3)\nbest = min(valid_rmse, key=valid_rmse.get)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/05-project",
+    "kind": "task",
+    "id": "grid",
+    "starter": "# уже есть: df, X, y и маски train, valid, test\nimport numpy as np\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.model_selection import GridSearchCV, TimeSeriesSplit\n\nfit_mask = ((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna())",
+    "setup": "import pandas as pd\n_promo_days = pd.to_datetime([\"2026-04-17\", \"2026-05-22\", \"2026-06-19\", \"2026-07-24\", \"2026-08-21\"])\ndef make(s):\n    s = s.asfreq(\"h\")\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"promo\"] = (df.index.normalize().isin(_promo_days) & (df.index.hour >= 10) & (df.index.hour <= 20)).astype(int)\n    for k in (48, 168):\n        df[f\"lag_{k}\"] = s.shift(k)\n    df[\"roll\"] = s.shift(28).rolling(24).mean()\n    df[\"mean4w\"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)\n    return df.dropna(subset=df.columns.drop(\"y\"))\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\ntrain = df.index < \"2026-07-01\"\nvalid = (df.index >= \"2026-07-01\") & (df.index < \"2026-08-01\")\ntest = df.index >= \"2026-08-01\"",
+    "check": "import numpy as _np\nfrom sklearn.model_selection import GridSearchCV as _GS, TimeSeriesSplit as _TS, cross_val_score as _cvs\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\ng = need('gs', _GS)\nassert hasattr(g, 'best_params_'), 'gs ещё не обучен: вызовите gs.fit(X[fit_mask], y[fit_mask]).'\nassert isinstance(g.cv, _TS) and g.cv.n_splits == 3 and g.cv.gap >= 28, f'cv = {g.cv!r}. Для ряда нужен TimeSeriesSplit(n_splits=3, gap=28), а не число фолдов: cv=3 означает обычный KFold без учёта времени.'\nassert g.scoring == 'neg_root_mean_squared_error', f'scoring = {g.scoring!r}; нужен \"neg_root_mean_squared_error\".'\npg = {k: list(v) for k, v in g.param_grid.items()}\nassert pg == {'max_depth': [2, 3, None], 'learning_rate': [0.05, 0.1]}, f'Сетка параметров: {pg}.'\nfm = ((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna())\nassert g.n_features_in_ == X.shape[1] and len(g.cv_results_['split0_test_score']) == 6, 'Обучайте gs на X[fit_mask], y[fit_mask].'\nbp = dict(g.best_params_)\nref = -_cvs(_H(random_state=0, **bp), X[fm], y[fm], cv=_TS(n_splits=3,gap=28), scoring='neg_root_mean_squared_error').mean()\nassert close(-g.best_score_, ref, 1e-6), 'gs обучен не на ((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna()): лучший результат не совпадает с пересчётом на марте–июле.'\nassert dict(need('best_params', dict)) == bp, f'best_params = {need(\"best_params\")}, а у gs — {bp}.'\nassert close(need('cv_rmse'), round(float(ref), 3), 0.002), f'cv_rmse = {need(\"cv_rmse\")}, а нужно {ref:.3f}. best_score_ отрицательный — поменяйте знак.'\npt = _np.clip(_H(random_state=0, **bp).fit(X[fm], y[fm]).predict(X[test]), 0, None)\nrt = round(float(_np.sqrt(((y[test] - pt) ** 2).mean())), 3)\nassert close(need('rmse_test_grid'), rt, 0.002), f'rmse_test_grid = {need(\"rmse_test_grid\")}, а нужно {rt}. Прогноз gs.predict(X[test]) обрежьте нулём.'",
+    "solution": "import numpy as np\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.model_selection import GridSearchCV, TimeSeriesSplit\n\nfit_mask = ((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna())\ngs = GridSearchCV(\n    HistGradientBoostingRegressor(random_state=0),\n    {\"max_depth\": [2, 3, None], \"learning_rate\": [0.05, 0.1]},\n    cv=TimeSeriesSplit(n_splits=3, gap=28),\n    scoring=\"neg_root_mean_squared_error\",\n)\ngs.fit(X[fit_mask], y[fit_mask])\nbest_params = gs.best_params_\ncv_rmse = round(float(-gs.best_score_), 3)\np = np.clip(gs.predict(X[test]), 0, None)\nrmse_test_grid = round(float(np.sqrt(((y[test] - p) ** 2).mean())), 3)\nprint(best_params, cv_rmse, rmse_test_grid)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/05-project",
+    "kind": "task",
+    "id": "final",
+    "starter": "# уже есть: X, y, маски train/valid/test, rmse_base и best_params из шага 3б\nimport numpy as np\nfrom sklearn.ensemble import HistGradientBoostingRegressor",
+    "setup": "import numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import HistGradientBoostingRegressor\n_promo_days = pd.to_datetime([\"2026-04-17\", \"2026-05-22\", \"2026-06-19\", \"2026-07-24\", \"2026-08-21\"])\ndef make(s):\n    s = s.asfreq(\"h\")\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"promo\"] = (df.index.normalize().isin(_promo_days) & (df.index.hour >= 10) & (df.index.hour <= 20)).astype(int)\n    for k in (48, 168):\n        df[f\"lag_{k}\"] = s.shift(k)\n    df[\"roll\"] = s.shift(28).rolling(24).mean()\n    df[\"mean4w\"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)\n    return df.dropna(subset=df.columns.drop(\"y\"))\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\ntrain = df.index < \"2026-07-01\"\nvalid = (df.index >= \"2026-07-01\") & (df.index < \"2026-08-01\")\ntest = df.index >= \"2026-08-01\"\nrmse_base = float(np.sqrt(((y[test] - X.loc[test, \"mean4w\"]) ** 2).mean()))\nbest_params = {\"learning_rate\": 0.05, \"max_depth\": 3}   # результат шага 3б\n_ref_model = HistGradientBoostingRegressor(random_state=0, learning_rate=0.05, max_depth=3)",
+    "check": "import numpy as _np\nfit = ((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna())\np = _np.clip(_ref_model.fit(X[fit], y[fit]).predict(X[test]), 0, None)\nr = round(float(_np.sqrt(((y[test] - p) ** 2).mean())), 3)\nassert _np.allclose(need('pred_test'), p, atol=1e-6), 'pred_test — прогноз HistGradientBoostingRegressor(random_state=0, **best_params), обученного на ((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna()), обрезанный нулём.'\nassert close(need('rmse_final'), r, 0.002), f'rmse_final = {need(\"rmse_final\")}, а нужно {r}.'\nassert need('meets') == (r <= 4.3 and r < rmse_base), f'meets = {need(\"meets\")}.'",
+    "solution": "import numpy as np\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfit_mask = ((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna())\nmodel = HistGradientBoostingRegressor(random_state=0, **best_params)\npred_test = np.clip(model.fit(X[fit_mask], y[fit_mask]).predict(X[test]), 0, None)\nrmse_final = round(float(np.sqrt(((y[test] - pred_test) ** 2).mean())), 3)\nmeets = (rmse_final <= 4.3) and (rmse_final < rmse_base)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/05-project",
+    "kind": "task",
+    "id": "staffing",
+    "starter": "# уже есть: X, y, маски и pred_test — прогноз модели на август\nimport numpy as np\n\ny_test = y[test]\nopen_hours = (y_test.index.hour >= 7) & (y_test.index.hour <= 22)",
+    "setup": "import numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\n_promo_days = pd.to_datetime([\"2026-04-17\", \"2026-05-22\", \"2026-06-19\", \"2026-07-24\", \"2026-08-21\"])\ndef make(s):\n    s = s.asfreq(\"h\")\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"promo\"] = (df.index.normalize().isin(_promo_days) & (df.index.hour >= 10) & (df.index.hour <= 20)).astype(int)\n    for k in (48, 168):\n        df[f\"lag_{k}\"] = s.shift(k)\n    df[\"roll\"] = s.shift(28).rolling(24).mean()\n    df[\"mean4w\"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)\n    return df.dropna(subset=df.columns.drop(\"y\"))\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\ntrain = df.index < \"2026-07-01\"\nvalid = (df.index >= \"2026-07-01\") & (df.index < \"2026-08-01\")\ntest = df.index >= \"2026-08-01\"\nbest_params = {\"learning_rate\": 0.05, \"max_depth\": 3}   # результат шага 3б\npred_test = np.clip(HistGradientBoostingRegressor(random_state=0, **best_params).fit(X[((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna())], y[((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna())]).predict(X[test]), 0, None)\n_ref_pred = pred_test.copy()",
+    "check": "import numpy as _np\nyt = y[test]; oh = (yt.index.hour >= 7) & (yt.index.hour <= 22)\nnd = _np.maximum(1, _np.ceil(yt.values / 6))\nassert _np.array_equal(need('needed'), nd), 'Проверьте needed для каждого часа теста по порядку: фактические заказы делим на шесть, округляем вверх и берём не меньше одного.'\nw = {}\nfor k, p in [('модель', _ref_pred), ('ориентир', X.loc[test, 'mean4w'].values)]:\n    pl = _np.maximum(1, _np.ceil(p / 6))\n    w[k] = (round(float(((pl < nd) & oh).sum() / oh.sum()), 3), float(_np.clip(pl - nd, 0, None)[oh].sum()))\ngot = need('plans', dict)\nfor k, (sh, ex) in w.items():\n    assert k in got, f'Нет ключа {k!r} в plans.'\n    assert close(got[k]['short'], sh, 0.002) and close(got[k]['extra'], ex, 0.5), f'{k}: short, extra = {got[k][\"short\"]}, {got[k][\"extra\"]}, а нужно {sh}, {ex}.'\nfor _name,_p in [('модель',_ref_pred),('ориентир',X.loc[test,'mean4w'].values)]:\n    _plan=_np.maximum(1,_np.ceil(_p/6))\n    assert close(got[_name]['deficit'],float(_np.clip(nd-_plan,0,None)[oh].sum())), 'deficit: нехватка человеко-часов в рабочее время.'\n    assert close(got[_name]['coverage_work'],round(float((yt.values[oh]<=_p[oh]).mean()),3)), 'coverage_work: покрытие спроса прогнозом в рабочие часы.'",
+    "solution": "import numpy as np\n\ny_test = y[test]\nopen_hours = (y_test.index.hour >= 7) & (y_test.index.hour <= 22)\nneeded = np.maximum(1, np.ceil(y_test.values / 6))\nplans = {}\nfor name, p in [(\"модель\", pred_test), (\"ориентир\", X.loc[test, \"mean4w\"].values)]:\n    plan = np.maximum(1, np.ceil(p / 6))\n    short = round(float(((plan < needed) & open_hours).sum() / open_hours.sum()), 3)\n    extra = float(np.clip(plan - needed, 0, None)[open_hours].sum())\n    plans[name] = {\"short\": short, \"extra\": extra, \"deficit\": float(np.clip(needed-plan,0,None)[open_hours].sum()), \"coverage_work\": round(float((y_test.values[open_hours]<=p[open_hours]).mean()),3)}",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  },
+  {
+    "lesson": "ch12/05-project",
+    "kind": "task",
+    "id": "quantile",
+    "starter": "# уже есть: X, y, маски train, valid, test и best_params\nimport numpy as np\nfrom sklearn.ensemble import HistGradientBoostingRegressor",
+    "setup": "import numpy as np\nimport pandas as pd\n_promo_days = pd.to_datetime([\"2026-04-17\", \"2026-05-22\", \"2026-06-19\", \"2026-07-24\", \"2026-08-21\"])\ndef make(s):\n    s = s.asfreq(\"h\")\n    df = pd.DataFrame({\"y\": s})\n    df[\"hour\"] = df.index.hour\n    df[\"dow\"] = df.index.dayofweek\n    df[\"weekend\"] = (df[\"dow\"] >= 5).astype(int)\n    df[\"promo\"] = (df.index.normalize().isin(_promo_days) & (df.index.hour >= 10) & (df.index.hour <= 20)).astype(int)\n    for k in (48, 168):\n        df[f\"lag_{k}\"] = s.shift(k)\n    df[\"roll\"] = s.shift(28).rolling(24).mean()\n    df[\"mean4w\"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)\n    return df.dropna(subset=df.columns.drop(\"y\"))\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf = make(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\ntrain = df.index < \"2026-07-01\"\nvalid = (df.index >= \"2026-07-01\") & (df.index < \"2026-08-01\")\ntest = df.index >= \"2026-08-01\"\nbest_params = {\"learning_rate\": 0.05, \"max_depth\": 3}   # результат шага 3б",
+    "check": "import numpy as _np\nfrom sklearn.ensemble import HistGradientBoostingRegressor as _H\nfm = ((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna())\npq = _np.clip(_H(loss='quantile', quantile=0.8, learning_rate=0.05, max_depth=3, random_state=0).fit(X[fm], y[fm]).predict(X[test]), 0, None)\nyt = y[test]; oh = (yt.index.hour >= 7) & (yt.index.hour <= 22)\nnd = _np.maximum(1, _np.ceil(yt.values / 6)); pl = _np.maximum(1, _np.ceil(pq / 6))\nassert close(need('coverage'), round(float((yt.values <= pq).mean()), 3), 0.002), f'coverage = {need(\"coverage\")}.'\nassert close(need('short_q'), round(float(((pl < nd) & oh).sum() / oh.sum()), 3), 0.002), f'short_q = {need(\"short_q\")}.'\nassert close(need('extra_q'), float(_np.clip(pl - nd, 0, None)[oh].sum()), 0.5), f'extra_q = {need(\"extra_q\")}.'\nassert close(need('deficit_q'),float(_np.clip(nd-pl,0,None)[oh].sum())), 'deficit_q — нехватка человеко-часов.'\nassert close(need('coverage_work'),round(float((yt.values[oh]<=pq[oh]).mean()),3)), 'coverage_work — рабочие часы, а не все24.'",
+    "solution": "import numpy as np\nfrom sklearn.ensemble import HistGradientBoostingRegressor\n\nfit_mask = ((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna())\nq = HistGradientBoostingRegressor(loss=\"quantile\", quantile=0.8, random_state=0, **best_params)\np = np.clip(q.fit(X[fit_mask], y[fit_mask]).predict(X[test]), 0, None)\ny_test = y[test]\nopen_hours = (y_test.index.hour >= 7) & (y_test.index.hour <= 22)\ncoverage = round(float((y_test.values <= p).mean()), 3)\nneeded = np.maximum(1, np.ceil(y_test.values / 6))\nplan = np.maximum(1, np.ceil(p / 6))\nshort_q = round(float(((plan < needed) & open_hours).sum() / open_hours.sum()), 3)\nextra_q = float(np.clip(plan - needed, 0, None)[open_hours].sum())\ndeficit_q = float(np.clip(needed-plan,0,None)[open_hours].sum())\ncoverage_work = round(float((y_test.values[open_hours]<=p[open_hours]).mean()),3)",
+    "files": [
+      "app_orders.csv"
+    ],
+    "display": true
+  }
+]

@@ -1,0 +1,352 @@
+[
+  {
+    "lesson": "ch12/01-resample",
+    "id": "load",
+    "title": "Ряд из файла | warmup",
+    "visible": "Загрузите `app_orders.csv` как Series `s` с индексом-датой. Сохраните `n` — число часов в ряду, `start` и `end` — первую и последнюю дату (значения индекса), `zero_hours` — сколько часов с нулём заказов.",
+    "starter": "```python\nimport pandas as pd\n\n```"
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "id": "slice",
+    "title": "Один день акции | warmup",
+    "visible": "Ряд `s` загружен в заготовке. Сохраните `day_total` — сколько заказов было 22 мая 2026 года за весь день, `morning` — с 08:00 до 10:00 включительно и `share_morning` — долю утра в дне (3 знака).",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "id": "daily",
+    "title": "Дни и недели | warmup",
+    "visible": "Сохраните `daily` — заказы по дням (сумма), `weekly_mean` — среднее число заказов в день по неделям (сначала дни, потом среднее по неделям: `daily.resample(\"W\").mean()`) и `week_days` — сколько дней попало в каждую неделю (`daily.resample(\"W\").count()`). В `best_week` — метку (воскресенье, конец недели) **полной** недели (7 дней) с наибольшим средним, в `best_mean` — это среднее (1 знак).",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "id": "p-roll",
+    "title": "Скользящее среднее | warmup",
+    "visible": "Соберите код, который считает 7-дневное скользящее среднее и печатает число пропусков в нём.\n\n\nДоступные строки для сборки с отступами:\nprint(int(trend.isna().sum()))\ntrend = daily.rolling(7).mean()\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\nimport pandas as pd",
+    "starter": "Соберите код, который считает 7-дневное скользящее среднее и печатает число пропусков в нём.\n\n\nДоступные строки для сборки с отступами:\nprint(int(trend.isna().sum()))\ntrend = daily.rolling(7).mean()\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\nimport pandas as pd"
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "id": "by-hour",
+    "title": "Суточный профиль | base",
+    "visible": "Посчитайте средний заказ по часу суток отдельно для будней и выходных: DataFrame `profile` (индекс — час 0–23, столбцы `будни` и `выходные`, 1 знак). Сохраните `peak_weekday`, `peak_weekend` — час максимума в каждом столбце.",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "id": "growth",
+    "title": "Рост по скользящему среднему | base",
+    "visible": "По дневному ряду посчитайте 28-дневное скользящее среднее `trend28`. Сохраните `first_value` — его первое непустое значение, `last_value` — последнее (оба целые, округлением) и `growth_pct` — рост в процентах (1 знак). Рост считайте по неокруглённым значениям скользящего среднего, а не по `first_value` и `last_value`.",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\n\n```"
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "id": "months",
+    "title": "Рост по месяцам | base",
+    "visible": "Посчитайте `monthly` — сумму заказов по месяцам (`\"MS\"`) и `growth` — рост к предыдущему месяцу в процентах (`pct_change() * 100`, 1 знак). Месяцы разной длины, поэтому посчитайте и `per_day` — среднее число заказов в день по месяцам (1 знак) и `growth_per_day` — его рост в процентах (1 знак). В `slowest_month` — месяц (число 1–12) с наименьшим ростом `growth`, а в `slowest_month_per_day` — с наименьшим ростом `growth_per_day`.",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "id": "zeros",
+    "title": "Ночь или сбой | plus",
+    "visible": "Нули в часовом ряду бывают двух видов: ночью заказов просто нет, а днём ноль — подозрение на сбой. Посчитайте `zero_by_hour` — долю нулевых часов для каждого часа суток (Series с индексом 0–23, 2 знака) и `night_hours` — список часов, где эта доля больше 0.3. Затем найдите **дневные** нули — часы с 8 до 20 включительно с нулём заказов: `n_day_zeros` — их число и `outage_dates` — отсортированный список дат (`datetime.date`), когда они были.",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "id": "anomalies",
+    "title": "Поиск аномальных часов | plus",
+    "visible": "Найдите часы, где заказов намного меньше обычного для этого часа и типа дня. «Обычное» — медиана заказов за этот час суток в этот же день недели за 4 предыдущие недели: `s.shift(168 * k)` для k = 1…4, медиана по строке. Отметьте часы с 10 до 20 включительно, где обычное значение не меньше 8, а фактическое меньше 20 % обычного. Сохраните список `bad_hours` (значения индекса) и `bad_days` — отсортированный список уникальных дат этих часов (как `datetime.date`).",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/01-resample",
+    "id": "friday",
+    "title": "Почему пятницы | star",
+    "visible": "Пятницы выделяются: посчитайте среднее число заказов в день по дням недели (`daily.groupby(daily.index.dayofweek).mean()`) и сохраните `dow_mean` (Series, 1 знак). Затем найдите 5 дней с наибольшим отношением «заказы / 7-дневное скользящее среднее, сдвинутое на 1 день» (`daily.shift(1).rolling(7).mean()`) — это всплески относительно недавнего уровня. Сохраните их даты `spikes` (список `datetime.date` в порядке убывания отношения) и `all_fridays` — `True`, если все они пятницы.",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\n\n```"
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "id": "decompose",
+    "title": "Разложение дневного ряда | warmup",
+    "visible": "Разложите дневные заказы с `period=7` и сохраните `trend_growth` — разницу между последним и первым непустыми значениями тренда (1 знак) и `best_dow` — номер дня недели (0 — понедельник) с наибольшей сезонной поправкой.",
+    "starter": "```python\nimport pandas as pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\n\n```"
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "id": "toy-trend",
+    "title": "Тренд скользящим средним | warmup",
+    "visible": "В заготовке — ряд `toy` из 21 дня: тренд «50 + 3 в день» и недельный узор. Посчитайте `trend7` — центрированное скользящее среднее за 7 дней и `seasonal_week` — среднее отклонение `toy − trend7` по дням недели (Series с индексом 0–6, 1 знак). В `pattern_sum` — сумму `seasonal_week` (1 знак).",
+    "starter": "```python\nimport pandas as pd\n\n```"
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "id": "p-acf",
+    "title": "Автокорреляция по лагам | warmup",
+    "visible": "Соберите код, который печатает лаг с наибольшей автокорреляцией среди 1, 24 и 168.\n\n\nДоступные строки для сборки с отступами:\nimport pandas as pd\nlags = [1, 24, 168]\nprint(best)\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\nvalues = [s.autocorr(lag) for lag in lags]\nbest = lags[values.index(max(values))]",
+    "starter": "Соберите код, который печатает лаг с наибольшей автокорреляцией среди 1, 24 и 168.\n\n\nДоступные строки для сборки с отступами:\nimport pandas as pd\nlags = [1, 24, 168]\nprint(best)\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\nvalues = [s.autocorr(lag) for lag in lags]\nbest = lags[values.index(max(values))]"
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "id": "diff",
+    "title": "Разности | warmup",
+    "visible": "Посчитайте для дневного ряда разность `d1 = daily.diff()` и недельную разность `d7 = daily.diff(7)`. Сохраните средние значения `mean_d1`, `mean_d7` (2 знака, без пропусков) и `std_ratio` — отношение стандартного отклонения `daily` к стандартному отклонению `d1` (2 знака).",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\n\n```"
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "id": "adf",
+    "title": "Тест на стационарность | base",
+    "visible": "Проверьте тестом Дики — Фуллера часовой ряд за август (`s[\"2026-08\"]`), его суточную разность (`diff(24)`) и дневной ряд за всё время. Сохраните p-value `p_hour_aug`, `p_hour_diff24`, `p_daily` (4 знака) и список `stationary` — названия рядов (`\"часы август\"`, `\"часы разность 24\"`, `\"дни\"`), для которых p < 0.05.",
+    "starter": "```python\nimport pandas as pd\nfrom statsmodels.tsa.stattools import adfuller\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "id": "hour-season",
+    "title": "Сезонная поправка по часам | base",
+    "visible": "Разложите две недели (`s[\"2026-08-03\":\"2026-08-16\"]`) с `period=24`. Сохраните `season24` — 24 значения сезонной части за первые сутки (Series с индексом-часом 0–23, 1 знак), `night_min` — час с наименьшей поправкой (если после округления до 1 знака минимумов несколько, подойдёт любой из них) и `amplitude` — разницу максимума и минимума (1 знак).",
+    "starter": "```python\nimport pandas as pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "id": "seasonal-diff",
+    "title": "Какая разность лучше | base",
+    "visible": "Для часового ряда посчитайте стандартные отклонения: `std_level` — самого ряда, `std_by_lag` — словарь `{1: …, 24: …, 168: …}` для разностей с этими лагами (все — 2 знака). Сохраните `best_lag` — лаг с наименьшим разбросом, и `gain` — во сколько раз разброс лучшей разности меньше разброса ряда (2 знака).",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "id": "multiplicative",
+    "title": "Растёт ли размах | plus",
+    "visible": "Аддитивная модель предполагает, что суточные колебания одинаковы при любом уровне, мультипликативная — что они растут вместе с уровнем. Для марта и августа посчитайте средний суточный профиль (среднее по часу суток), его размах (`max − min`) и средний уровень (среднее заказов в час). Сохраните `amp` — словарь `{\"03\": размах, \"08\": размах}` (1 знак), `level` — то же для уровня (2 знака), `amp_growth` и `level_growth` — во сколько раз август больше марта (2 знака), и `model_type` — `\"multiplicative\"`, если отношения размахов и уровней отличаются меньше чем на 10 %, иначе `\"additive\"`.",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "id": "acf-plot",
+    "title": "Автокорреляция по лагам | plus",
+    "visible": "Посчитайте автокорреляцию часового ряда для лагов 1…200 (`[s.autocorr(l) for l in range(1, 201)]`) и нарисуйте её столбцами (`ax.bar`), ось X — `\"лаг, часов\"`. Сохраните список `acf_vals`, `top3` — три лага с наибольшей автокорреляцией (по убыванию значения) и `near_day` — лаг с максимумом среди лагов 20–28.",
+    "starter": "```python\nimport pandas as pd\nimport matplotlib.pyplot as plt\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/02-decompose",
+    "id": "residual-days",
+    "title": "Остаток показывает аномалии | star",
+    "visible": "По разложению дневного ряда (`period=7`) найдите дни, где остаток по модулю больше трёх стандартных отклонений остатка. Сохраните список дат `outliers` (как `datetime.date`, по возрастанию) и `kinds` — для каждой даты `\"всплеск\"`, если остаток положительный, иначе `\"провал\"`.",
+    "starter": "```python\nimport pandas as pd\nfrom statsmodels.tsa.seasonal import seasonal_decompose\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndaily = s.resample(\"D\").sum()\n\n```"
+  },
+  {
+    "lesson": "ch12/03-features",
+    "id": "calendar",
+    "title": "Календарные признаки | warmup",
+    "visible": "Используйте часы до 1 августа из заготовки. Август отложен для итоговой проверки модели. Соберите DataFrame `df` со столбцами `y` (заказы), `hour`, `dow`, `weekend` (1 для субботы и воскресенья). Сохраните `weekend_share` — долю выходных часов (3 знака).",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\n```"
+  },
+  {
+    "lesson": "ch12/03-features",
+    "id": "p-lags",
+    "title": "Лаги | warmup",
+    "visible": "Соберите код, который добавляет лаги 1 и 24 и печатает, сколько строк остаётся после удаления пропусков.\n\n\nДоступные строки для сборки с отступами:\ndf = df.dropna()\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\nimport pandas as pd\ndf[\"lag_24\"] = s.shift(24)\ndf = pd.DataFrame({\"y\": s})\nprint(len(df))\ndf[\"lag_1\"] = s.shift(1)",
+    "starter": "Соберите код, который добавляет лаги 1 и 24 и печатает, сколько строк остаётся после удаления пропусков.\n\n\nДоступные строки для сборки с отступами:\ndf = df.dropna()\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\nimport pandas as pd\ndf[\"lag_24\"] = s.shift(24)\ndf = pd.DataFrame({\"y\": s})\nprint(len(df))\ndf[\"lag_1\"] = s.shift(1)"
+  },
+  {
+    "lesson": "ch12/03-features",
+    "id": "leak-check",
+    "title": "Найти утечку | warmup",
+    "visible": "Ниже — четыре признака для строки «час t». Сохраните список `leaky` — названия тех, в которые попадают данные часа t или позже.",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\nfeatures = {\n    \"a\": s.shift(1),\n    \"b\": s.rolling(3).mean(),\n    \"c\": s.shift(1).rolling(3).mean(),\n    \"d\": s.shift(-1),\n}\n```"
+  },
+  {
+    "lesson": "ch12/03-features",
+    "id": "make-features",
+    "title": "Функция признаков | base",
+    "visible": "Напишите функцию `make_features(s)`, которая возвращает DataFrame без пропусков со столбцами: `y`, `hour`, `dow`, `weekend`, `lag_1`, `lag_24`, `lag_168`, `roll_24` (среднее за предыдущие 24 часа). Сохраните `df = make_features(s)` и `first_ts` — время первой строки.",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\n```"
+  },
+  {
+    "lesson": "ch12/03-features",
+    "id": "feature-sets",
+    "title": "Какие признаки помогают | base",
+    "visible": "С помощью `make_features` из заготовки сравните `HistGradientBoostingRegressor(random_state=0)` на трёх наборах признаков: только календарь (`hour`, `dow`, `weekend`), календарь + лаги (`lag_1`, `lag_24`, `lag_168`), всё. Обучение — до 1 июля, валидация — июль. Сохраните словарь `rmse` (`{\"календарь\": ..., \"лаги\": ..., \"всё\": ...}`, 3 знака).",
+    "starter": "```python\n# уже есть: make_features(s) из прошлой задачи\nimport numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ndf = make_features(s)\ntrain = df.index < \"2026-07-01\"\n```"
+  },
+  {
+    "lesson": "ch12/03-features",
+    "id": "leak-test",
+    "title": "Автоматический тест на утечку | base",
+    "visible": "Функция `features(s)` из заготовки строит шесть признаков, и часть из них подглядывает в ответ. Три приёма в ней вам пока не встречались:\n\n- `s.expanding().max()` — окно, которое начинается в начале ряда и растёт до текущей строки включительно: «максимум до сих пор»;\n- `s.ewm(span=12).mean()` — экспоненциальное среднее: среднее по всему прошлому, где у свежих значений вес больше, а старые затухают; `span=12` задаёт скорость затухания: чем больше `span`, тем дольше помнится прошлое;\n- `s.groupby(s.index.hour).transform(f)` — применяет `f` отдельно к ряду каждого часа суток (все 9:00 подряд, все 10:00 подряд…) и возвращает результат на места исходных строк.\n\nЧестны ли признаки по смыслу, определит ваш тест. Напишите `leak_test(features, s, t)`: испортите ряд в момент `t` (прибавьте 1000), постройте признаки по исходному и испорченному ряду и верните отсортированный список названий признаков, у которых значение **в строке `t`** изменилось. Примените к `t = pd.Timestamp(\"2026-07-15 12:00\")` — результат в `leaking`.",
+    "starter": "```python\nimport pandas as pd\n\ndef leak_test(features, s, t):\n    ...\n```"
+  },
+  {
+    "lesson": "ch12/03-features",
+    "id": "onehot-hours",
+    "title": "Час как число и как категория | plus",
+    "visible": "Линейная регрессия на признаке «час» как числе не может описать суточный профиль с несколькими пиками. Сравните три линейные регрессии (обучение — до 1 июля, валидация — июль): `num` — признаки `hour` и `dow` числами; `onehot` — те же признаки, закодированные `pd.get_dummies(df[[\"hour\", \"dow\"]].astype(str))`; `onehot_trend` — `onehot` плюс номер часа от начала ряда `t = np.arange(len(df))`. Сохраните `rmse` — словарь `{\"num\": …, \"onehot\": …, \"onehot_trend\": …}` (3 знака) и `n_onehot_cols` — число столбцов после кодирования.",
+    "starter": "```python\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\n\ndef rmse(a, b):\n    return round(float(np.sqrt(((a - b) ** 2).mean())), 3)\n```"
+  },
+  {
+    "lesson": "ch12/03-features",
+    "id": "promo-feature",
+    "title": "Признак «день акции» | star",
+    "visible": "В уроке «Временной ряд: индекс-дата, resample и скользящие окна» (задача «Почему пятницы») выяснилось, что всплески — пятничные акции, о которых известно заранее: 17 апреля, 22 мая, 19 июня, 24 июля, с 10 до 20 часов. Добавьте к `make_features(s)` признак `promo` (1 в эти часы) и сравните RMSE бустинга на июле с ним и без него. Отдельно посчитайте RMSE только на часах акции 24 июля. Сохраните `rmse_without`, `rmse_with`, `promo_without`, `promo_with` (3 знака).",
+    "starter": "```python\n# уже есть: make_features(s)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\npromo_days = pd.to_datetime([\"2026-04-17\", \"2026-05-22\", \"2026-06-19\", \"2026-07-24\", \"2026-07-24\"])\n```"
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "id": "noshuffle",
+    "title": "Хвост ряда в тест | base",
+    "visible": "Таблица признаков `df = make_features(s)` готова. Отложите последние 20 % строк функцией `train_test_split(X, y, test_size=0.2, shuffle=False)`, обучите `HistGradientBoostingRegressor(random_state=0)` и сохраните `test_start` — время первой тестовой строки (`Timestamp`) и `rmse_time` — RMSE на тесте (3 знака). Затем повторите с перемешиванием (`random_state=0` вместо `shuffle=False`) — `rmse_shuffled` (3 знака). В `gap` сохраните, на сколько перемешанная оценка оптимистичнее: `rmse_time - rmse_shuffled` (3 знака).",
+    "starter": "```python\n# уже есть: make_features(s)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "id": "check-order",
+    "title": "Проверка честности разбиения | warmup",
+    "visible": "Напишите функцию `is_time_split(X_tr, X_te)`: она возвращает `True`, если все обучающие строки раньше всех тестовых (по индексу-времени), иначе `False`. Примените её к двум разбиениям таблицы `X` с `test_size=0.2`: по времени (`shuffle=False`) — результат в `honest_ok`, с перемешиванием (`random_state=0`) — в `shuffled_ok`. В `n_later` сохраните, сколько обучающих строк перемешанного разбиения идут позже его первой тестовой строки.",
+    "starter": "```python\n# уже есть: make_features(s)\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\ndef is_time_split(X_tr, X_te):\n    ...\n\n```"
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "id": "same-period",
+    "title": "Тот же период — другая оценка | plus",
+    "visible": "Разница между двумя рассчитанными RMSE в задаче «Хвост ряда в тест» смешивает две причины: перемешивание и изменение масштаба ряда. Разделите их. Обучите бустинг `HistGradientBoostingRegressor(random_state=0)` на двух разбиениях `test_size=0.2` — по времени (`shuffle=False`) и перемешанном (`random_state=0`). Сохраните `rmse_time` и `rmse_shuffled` (3 знака) как раньше. Затем у перемешанной модели возьмите только те её тестовые строки, что попадают в период честного теста (не раньше его первой строки): `n_tail` — их число, `rmse_shuffled_tail` — RMSE на них (3 знака). Наконец, `part_period = rmse_shuffled_tail - rmse_shuffled` — вклад трудного периода и `part_shuffle = rmse_time - rmse_shuffled_tail` — вклад перемешивания (оба 3 знака).",
+    "starter": "```python\n# уже есть: make_features(s)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "id": "folds",
+    "title": "Границы фолдов | warmup",
+    "visible": "Разбейте часовой ряд `s` с помощью `TimeSeriesSplit(n_splits=4)`. Сохраните `train_sizes` — список длин обучающей части в каждом фолде и `test_starts` — список первых тестовых часов (значения индекса `s`). Проверьте себя: каждый тест должен начинаться ровно через час после конца своего обучения.",
+    "starter": "```python\nimport pandas as pd\nfrom sklearn.model_selection import TimeSeriesSplit\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "id": "tscv",
+    "title": "Кросс-валидация по времени | plus",
+    "visible": "Оцените бустинг на всех признаках `make_features(s)` кросс-валидацией `TimeSeriesSplit(n_splits=5)` по RMSE (`scoring=\"neg_root_mean_squared_error\"`). Сохраните `scores` — RMSE на фолдах (положительные числа, 2 знака) и `mean_rmse` (3 знака). Затем посчитайте то же с обычным `KFold(5, shuffle=True, random_state=0)` — `mean_rmse_kfold` (3 знака).",
+    "starter": "```python\n# уже есть: make_features(s)\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.model_selection import TimeSeriesSplit, KFold, cross_val_score\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/03b-time-split",
+    "id": "month-folds",
+    "title": "Тесты по месяцам | plus",
+    "visible": "`TimeSeriesSplit` режет ряд по номерам строк, а отчитываться удобнее по месяцам. Сделайте проверку «по месяцам» вручную: для каждого из месяцев май, июнь, июль обучите `HistGradientBoostingRegressor(random_state=0)` на всех строках таблицы до начала месяца и проверьте на строках этого месяца. Сохраните словари с ключами `\"06\"`, `\"07\"`, `\"08\"`: `month_rmse` — RMSE (3 знака), `month_mean` — среднее число заказов в час в тесте (2 знака) и `rel_error` — отношение RMSE к среднему (3 знака).",
+    "starter": "```python\n# уже есть: make_features(s)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"].loc[:\"2026-07-31\"]\ndf = make_features(s)\nX, y = df.drop(columns=\"y\"), df[\"y\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "id": "naive",
+    "title": "Наивные прогнозы | warmup",
+    "visible": "Посчитайте на июльской валидации MAE трёх наивных прогнозов: `s.shift(1)`, `s.shift(24)`, `s.shift(168)`. Сохраните словарь `mae` (`{1: ..., 24: ..., 168: ...}`, 3 знака) и `best_lag`.",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ntest = s[\"2026-07-01\":]\n```"
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "id": "metrics",
+    "title": "Метрики своими руками | warmup",
+    "visible": "Напишите функции `mae(fact, pred)`, `rmse(fact, pred)` и `wape(fact, pred)` для массивов numpy. Посчитайте их для `fact` и `pred` из заготовки: `m` — словарь `{\"mae\": …, \"rmse\": …, \"wape\": …}` (3 знака).",
+    "starter": "```python\nimport numpy as np\n\ndef mae(fact, pred):\n    ...\n\ndef rmse(fact, pred):\n    ...\n\ndef wape(fact, pred):\n    ...\n```"
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "id": "wape",
+    "title": "WAPE против MAPE | warmup",
+    "visible": "Напишите функцию `wape(fact, pred)`. Для прогноза «неделю назад» на июле сохраните `w` (3 знака) и `zeros` — число часов теста с нулевым фактом (на них MAPE не определена).",
+    "starter": "```python\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ntest = s[\"2026-07-01\":]\npred = s.shift(168)[test.index]\n```"
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "id": "p-horizon",
+    "title": "Признаки на завтра | warmup",
+    "visible": "Соберите признаки для прогноза на сутки вперёд (только лаги от 24) и напечатайте их названия.\n\n\nДоступные строки для сборки с отступами:\ndf[\"roll\"] = s.shift(24).rolling(24).mean()\nfor k in (24, 48, 168):\nimport pandas as pd\ndf = pd.DataFrame({\"y\": s})\nprint(list(df.columns[1:]))\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf[f\"lag_{k}\"] = s.shift(k)",
+    "starter": "Соберите признаки для прогноза на сутки вперёд (только лаги от 24) и напечатайте их названия.\n\n\nДоступные строки для сборки с отступами:\ndf[\"roll\"] = s.shift(24).rolling(24).mean()\nfor k in (24, 48, 168):\nimport pandas as pd\ndf = pd.DataFrame({\"y\": s})\nprint(list(df.columns[1:]))\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ndf[f\"lag_{k}\"] = s.shift(k)"
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "id": "bias",
+    "title": "Систематический недопрогноз | base",
+    "visible": "У прогноза бывает не только разброс, но и **смещение** — средняя ошибка со знаком. Для прогноза «среднее за 4 недели» (`m4` в заготовке) на июле посчитайте `bias` — среднюю ошибку `факт − прогноз` (3 знака), `share_under` — долю часов, где прогноз меньше факта (3 знака), и `ratio` — сумма факта / сумма прогноза (3 знака). В заготовке есть и поправленный прогноз `adj`: `m4`, умноженный на коэффициент `_k` — во сколько раз факт за последнюю неделю выше прогноза `m4` за ту же неделю. Если прогноз отстаёт от роста, `_k > 1` и подтягивает его вверх. Для `adj` — посчитайте для него `bias_adj` и сравните RMSE: `rmse_m4`, `rmse_adj` (3 знака).",
+    "starter": "```python\nimport numpy as np\n```"
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "id": "mean4w",
+    "title": "Сильный наивный прогноз | base",
+    "visible": "Постройте прогноз «среднее за этот час в k прошлых недель» для k = 1, 2, 4, 8 и посчитайте RMSE на июле. Сохраните словарь `rmse_k` (3 знака) и `best_k`. Нужная история для k = 8 есть: к началу июля уже есть история для восьми недель.",
+    "starter": "```python\nimport numpy as np\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\ntest = s[\"2026-07-01\":]\n```"
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "id": "horizon-gap",
+    "title": "Цена горизонта | base",
+    "visible": "Сравните бустинг `HistGradientBoostingRegressor(random_state=0)` для двух горизонтов на признаках из теории (функция `make` в заготовке): на час вперёд и на завтра. Здесь, как в теории, отсечка — полночь, поэтому лаг 24 для завтрашних часов законен; с решением в 20:00 разберёмся в проекте главы. Сохраните `rmse_hour`, `rmse_day` (3 знака) и `gap_pct` — на сколько процентов RMSE на завтра больше (1 знак).",
+    "starter": "```python\n# уже есть: make(s, lags, roll_shift) из теории\nimport numpy as np\nimport pandas as pd\nfrom sklearn.ensemble import HistGradientBoostingRegressor\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\n```"
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "id": "leak-horizon",
+    "title": "Утечка из-за горизонта | plus",
+    "visible": "Проверьте, что будет, если для прогноза «на завтра» (отсечка — полночь, как в теории) по ошибке оставить лаг 1. Обучите `LinearRegression` на признаках `make(s, (1, 24, 48, 168), 1)` и на честных `make(s, (24, 48, 168), 24)`. Сохраните `rmse_leak`, `rmse_fair` (3 знака) и `fooled` — `True`, если «прогноз с утечкой» выглядит лучше.",
+    "starter": "```python\n# уже есть: make(s, lags, roll_shift)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\n```"
+  },
+  {
+    "lesson": "ch12/04-forecast",
+    "id": "by-hour-error",
+    "title": "Где модель ошибается | star",
+    "visible": "Для честного прогноза «на завтра» с отсечкой в полночь (`LinearRegression`, признаки `make(s, (24, 48, 168), 24)`) посчитайте MAE по часам суток на тесте. Сохраните Series `mae_by_hour` (индекс 0–23, 2 знака), `worst_hour` и `night_share` — долю суммарной абсолютной ошибки, приходящуюся на часы 0–5 (3 знака).",
+    "starter": "```python\n# уже есть: make(s, lags, roll_shift)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.linear_model import LinearRegression\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\ns = s[s.index < '2026-08-01']\n```"
+  },
+  {
+    "lesson": "ch12/05-project",
+    "id": "split",
+    "title": "Шаг 1. Разбиение по времени | base",
+    "visible": "Постройте `df = make(s)`, `X`, `y` и три маски: `train` (до 2026-07-01), `valid` (июль), `test` (август). Сохраните `sizes` — словарь `{\"train\": ..., \"valid\": ..., \"test\": ...}` с числом строк.",
+    "starter": "```python\n# уже есть: make(s) — таблица признаков для прогноза на завтра\nimport pandas as pd\ns = pd.read_csv(\"app_orders.csv\", parse_dates=[\"datetime\"], index_col=\"datetime\")[\"orders\"]\n\n```"
+  },
+  {
+    "lesson": "ch12/05-project",
+    "id": "baseline",
+    "title": "Шаг 2. Ориентир и требование | base",
+    "visible": "Посчитайте RMSE прогноза «среднее за 4 недели» (столбец `mean4w`) на тесте — `rmse_base` (3 знака). В `base_meets` сохраните, проходит ли ориентир требование «RMSE ≤ 4.3».",
+    "starter": "```python\n# уже есть: df, X, y и маски train, valid, test\nimport numpy as np\n\n```"
+  },
+  {
+    "lesson": "ch12/05-project",
+    "id": "select",
+    "title": "Шаг 3. Выбор на валидации | plus",
+    "visible": "Обучите на `train` и проверьте на `valid` четыре модели: `LinearRegression()`, `HistGradientBoostingRegressor(random_state=0)`, `HistGradientBoostingRegressor(max_depth=3, random_state=0)`, `HistGradientBoostingRegressor(l2_regularization=1.0, random_state=0)`. Сохраните словарь `valid_rmse` с ключами `\"linear\"`, `\"hgb\"`, `\"hgb_depth3\"`, `\"hgb_l2\"` (3 знака) и `best` — ключ лучшей.",
+    "starter": "```python\n# уже есть: df, X, y и маски train, valid, test\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.ensemble import HistGradientBoostingRegressor\n\n```"
+  },
+  {
+    "lesson": "ch12/05-project",
+    "id": "grid",
+    "title": "Шаг 3 б. Подбор параметров по времени | plus",
+    "visible": "В шаге 3 модель выбрана на одном месяце (июль): впереди неглубокий бустинг, но его параметры взяты наугад. Надёжнее проверить параметры на нескольких кусках прошлого — кросс-валидацией **по времени**. Подберите параметры бустинга на `train | valid` (март–июль) — найденные `best_params` станут параметрами финальной модели в шаге 4:\n\n```python static\nGridSearchCV(HistGradientBoostingRegressor(random_state=0),\n             {\"max_depth\": [2, 3, None], \"learning_rate\": [0.05, 0.1]},\n             cv=TimeSeriesSplit(n_splits=3), scoring=\"neg_root_mean_squared_error\")\n```\n\nСохраните обученный объект в `gs`, лучшие параметры — в `best_params` (словарь), их RMSE на кросс-валидации — `cv_rmse` (положительное число, 3 знака). Затем посчитайте RMSE лучшей модели на августе с обрезкой нулём — `rmse_test_grid` (3 знака) и сравните с требованием 4.3.",
+    "starter": "```python\n# уже есть: df, X, y и маски train, valid, test\nimport numpy as np\nfrom sklearn.ensemble import HistGradientBoostingRegressor\nfrom sklearn.model_selection import GridSearchCV, TimeSeriesSplit\n\nfit_mask = ((train | valid) & (y.index < \"2026-07-31 20:00\") & y.notna())\n\n```"
+  },
+  {
+    "lesson": "ch12/05-project",
+    "id": "final",
+    "title": "Шаг 4. Финальная проверка | base",
+    "visible": "В заготовке `best_params` — параметры бустинга, найденные по времени в шаге 3 б. Обучите `HistGradientBoostingRegressor(random_state=0, **best_params)` на `train | valid`, обрежьте прогноз снизу нулём (`np.clip(p, 0, None)`) и посчитайте RMSE на тесте — `rmse_final` (3 знака). Сохраните `pred_test` (массив прогнозов) и `meets` — выполнено ли требование целиком: RMSE ≤ 4.3 **и** лучше ориентира `rmse_base`.",
+    "starter": "```python\n# уже есть: X, y, маски train/valid/test, rmse_base и best_params из шага 3б\nimport numpy as np\nfrom sklearn.ensemble import HistGradientBoostingRegressor\n\n```"
+  },
+  {
+    "lesson": "ch12/05-project",
+    "id": "staffing",
+    "title": "Шаг 5. Прогноз в людях | plus",
+    "visible": "Одна строка — час работы. Мощность одного бариста — шесть заказов в час. Если в 10:00 прогноз равен 7, а спрос — 11 заказам, план предусматривает двух бариста, и фактически нужны двое. План смены достаточен, хотя сам прогноз ниже спроса. Что произойдёт при прогнозе 6 и спросе 7?\n\nПереведите прогноз в бариста: нужно `max(1, ceil(заказы / 6))` человек в час (с 7 до 22 включительно; ночью выдачу не планируем). Посчитайте для теста:\n\n- `needed` — сколько бариста нужно было по факту;\n- план по модели (`pred_test` в заготовке) и план по ориентиру (`mean4w`).\n\nДля каждого плана сохраните в словарь `plans` (`{\"модель\": {...}, \"ориентир\": {...}}`) долю часов с нехваткой людей `short` (план < нужного, 3 знака) и число лишних бариста-часов `extra` (сумма положительных `план − нужно`). Добавьте `deficit` — суммарное число недостающих бариста-часов и `coverage_work` — долю рабочих часов, когда прогноз заказов покрыл наблюдаемый спрос (3 знака). Сохраните `needed` для каждого часа теста по порядку; при подсчёте четырёх показателей применяйте маску рабочих часов.",
+    "starter": "```python\n# уже есть: X, y, маски и pred_test — прогноз модели на август\nimport numpy as np\n\ny_test = y[test]\nopen_hours = (y_test.index.hour >= 7) & (y_test.index.hour <= 22)\n\n```"
+  },
+  {
+    "lesson": "ch12/05-project",
+    "id": "quantile",
+    "title": "Шаг 6. План по верхнему квантилю | star",
+    "visible": "Перед сравнением смен задайте стоимость дефицитного и избыточного человеко-часа. Рядом с покрытием спроса и долей часов нехватки покажите суммарную нехватку мощности и лишние бариста-часы **в рабочих часах**; лучшая RMSE сама по себе не выбирает самый выгодный план. Если нехватка рук дороже лишней смены, планируют не по середине, а по **верхнему квантилю**: значение, которое факт превышает лишь в ~20 % случаев. Обучите `HistGradientBoostingRegressor(loss=\"quantile\", quantile=0.8, random_state=0, **best_params)` (параметры из шага 3 б есть в заготовке) на `train | valid`, обрежьте нулём и постройте план как в шаге 5. Сохраните `coverage` — долю часов теста, где факт не выше прогноза (3 знака), `short_q` (доля часов нехватки, 3 знака) и `extra_q` (лишние бариста-часы) — по рабочим часам.\n\nДля рабочих часов с 07:00 до 22:00 включительно отдельно сохраните `coverage_work` — долю исходных фактов не выше квантильного прогноза (три знака) и `deficit_q` — суммарное число недостающих бариста-часов после округления плана до работников. При мощности шесть заказов в час сравните нужное и запланированное число людей отдельно для каждого часа.",
+    "starter": "```python\n# уже есть: X, y, маски train, valid, test и best_params\nimport numpy as np\nfrom sklearn.ensemble import HistGradientBoostingRegressor\n\n```"
+  }
+]

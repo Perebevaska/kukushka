@@ -29,7 +29,7 @@ print("индекс монотонный:", s.index.is_monotonic_increasing)
 - `parse_dates=["datetime"]` превращает текст «2026-03-01 00:00:00» в дату-время (глава 2), `index_col="datetime"` делает этот столбец индексом;
 - `["orders"]` в конце берёт единственный столбец как Series — ряд «время → число заказов»;
 - `s.index.min()`, `s.index.max()` — первый и последний час;
-- `is_monotonic_increasing` — идут ли даты строго по возрастанию.
+- `is_monotonic_increasing` проверяет порядок меток по неубыванию. Повторы проверяют отдельно через `s.index.is_unique`. Например, 09:00, 09:00, 11:00 идут по порядку, хотя 09:00 повторяется и 10:00 отсутствует. Уточните причину повторов, затем восстановите часовую сетку через `asfreq("h")`. Теперь `shift(1)` в 11:00 укажет на отсутствующее значение 10:00. Ноль заказов означает отдельное наблюдение.
 
 **Что получилось:** 4416 часов — ровно 184 дня по 24 часа, с 1 марта по 31 августа. Пропущенных часов нет: шаг между соседними метками везде ровно час (проверить можно так: `s.index.to_series().diff().value_counts()`).
 
@@ -308,6 +308,14 @@ assert isinstance(s1.index, _pd.DatetimeIndex), 'Индекс s должен б�
 assert need('n') == len(s0), f'n = {need("n")}.'
 assert need('start') == s0.index.min() and need('end') == s0.index.max(), f'start, end = {need("start")}, {need("end")}.'
 assert need('zero_hours') == int((s0 == 0).sum()), f'zero_hours = {need("zero_hours")}.'
+import numpy as _np, pandas as _pd
+def _same_series(got, expected, atol=1e-8):
+    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
+    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
+    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
+    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
+
+_same_series(need('s'),s0)
 ```
 
 ### hint
@@ -379,13 +387,19 @@ s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime"
 
 ### check
 ```python
+import numpy as _np, pandas as _pd
+def _same_series(got, expected, atol=1e-8):
+    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
+    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
+    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
+    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
 import pandas as _pd
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
 d0 = s0.resample('D').sum(); w0 = d0.resample('W').mean()
-assert need('daily', _pd.Series).equals(d0), 'daily — s.resample("D").sum().'
-assert _pd.Series(need('weekly_mean')).round(6).equals(w0.round(6)), 'weekly_mean — daily.resample("W").mean().'
+_same_series(need('daily'),d0)
+_same_series(need('weekly_mean'),w0,1e-6)
 c0 = d0.resample('W').count()
-assert list(_pd.Series(need('week_days')).values) == list(c0.values), 'week_days — daily.resample("W").count().'
+_same_series(need('week_days'),c0)
 full = w0[c0 == 7]
 assert need('best_week') != w0.idxmax(), f'best_week = {need("best_week")}: в эту «неделю» попал один день, 31 августа. Нужна лучшая полная неделя: week_days == 7.'
 assert need('best_week') == full.idxmax(), f'best_week = {need("best_week")}, а нужно {full.idxmax().date()}.'
@@ -455,7 +469,7 @@ import pandas as _pd
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
 we = s0.index.dayofweek >= 5
 wd = s0[~we].groupby(s0[~we].index.hour).mean().round(1); wk = s0[we].groupby(s0[we].index.hour).mean().round(1)
-p = need('profile', _pd.DataFrame)
+p = need('profile', _pd.DataFrame).sort_index()
 assert list(p.index) == list(range(24)), 'Индекс profile — часы 0–23.'
 assert all(close(p.loc[h, 'будни'], wd[h], 0.06) and close(p.loc[h, 'выходные'], wk[h], 0.06) for h in range(24)), 'Средние по часам не совпадают. Будни — dayofweek < 5.'
 assert need('peak_weekday') == int(wd.idxmax()) and need('peak_weekend') == int(wk.idxmax()), f'peak_weekday, peak_weekend = {need("peak_weekday")}, {need("peak_weekend")}.'
@@ -505,6 +519,14 @@ t = s0.resample('D').sum().rolling(28).mean().dropna()
 f, l = round(t.iloc[0]), round(t.iloc[-1])
 assert need('first_value') == f and need('last_value') == l, f'first_value, last_value = {need("first_value")}, {need("last_value")}, а нужно {f}, {l}.'
 assert close(need('growth_pct'), round((t.iloc[-1] / t.iloc[0] - 1) * 100, 1), 0.06), f'growth_pct = {need("growth_pct")}, а нужно {round(float((t.iloc[-1] / t.iloc[0] - 1) * 100), 1)}: считайте по неокруглённым t.iloc[0] и t.iloc[-1].'
+import numpy as _np, pandas as _pd
+def _same_series(got, expected, atol=1e-8):
+    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
+    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
+    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
+    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
+
+_same_series(need('trend28'),s0.resample('D').sum().rolling(28).mean())
 ```
 
 ### hint
@@ -529,7 +551,7 @@ growth_pct = round((t.iloc[-1] / t.iloc[0] - 1) * 100, 1)
 
 ## task: months | Рост по месяцам | base
 
-Посчитайте `monthly` — сумму заказов по месяцам (`"MS"`) и `growth` — рост к предыдущему месяцу в процентах (`pct_change() * 100`, 1 знак). Месяцы разной длины, поэтому посчитайте и `per_day` — среднее число заказов в день по месяцам (1 знак) и `growth_per_day` — его рост в процентах (1 знак). В `slowest_month` — месяц (число 1–12) с наименьшим ростом `growth`, а в `slowest_month_per_day` — с наименьшим ростом `growth_per_day`.
+Посчитайте `monthly` — сумму заказов по месяцам (`"MS"`) и `growth` — рост к предыдущему месяцу в процентах (`pct_change() * 100`, 1 знак). Месяцы разной длины, поэтому посчитайте и `per_day` — среднее число заказов в день по месяцам (1 знак) и `growth_per_day` — рост по исходным, неокруглённым средним (1 знак). Округлите оба результата только при сохранении. В `slowest_month` — месяц (число 1–12) с наименьшим ростом `growth`, а в `slowest_month_per_day` — с наименьшим ростом `growth_per_day`.
 
 ### starter
 ```python
@@ -540,15 +562,21 @@ s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime"
 
 ### check
 ```python
-import pandas as _pd
+import numpy as _np, pandas as _pd
+def _same_series(got, expected, atol=1e-8):
+    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
+    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
+    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
+    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
 m = s0.resample('MS').sum(); g = (m.pct_change() * 100).round(1)
-_raw_daily=s0.resample('D').sum().resample('MS').mean(); pdm=_raw_daily.round(1); gp=(_raw_daily.pct_change()*100).round(1)
-assert list(need('monthly').values) == list(m.values), 'monthly — s.resample("MS").sum().'
-assert all(close(a, b, 0.06) for a, b in zip(need('growth').dropna().values, g.dropna().values)), f'growth = {list(need("growth").round(1))}, а нужно {list(g)}.'
-assert all(close(a, b, 0.06) for a, b in zip(need('per_day').values, pdm.values)), f'per_day = {list(need("per_day"))}, а нужно {list(pdm)}.'
-assert all(close(a, b, 0.06) for a, b in zip(need('growth_per_day').dropna().values, gp.dropna().values)), f'growth_per_day = {list(need("growth_per_day"))}.'
-assert need('slowest_month') == g.idxmin().month and need('slowest_month_per_day') == gp.idxmin().month, f'slowest_month = {need("slowest_month")}, slowest_month_per_day = {need("slowest_month_per_day")}.'
+raw_daily = s0.resample('D').sum().resample('MS').mean()
+pdm=raw_daily.round(1); gp=(raw_daily.pct_change()*100).round(1)
+_same_series(need('monthly'),m)
+_same_series(need('growth'),g,0.06)
+_same_series(need('per_day'),pdm,0.06)
+_same_series(need('growth_per_day'),gp,0.06)
+assert need('slowest_month') == g.idxmin().month and need('slowest_month_per_day') == gp.idxmin().month, 'Выберите месяц минимального роста отдельно для сумм и среднего за день.'
 ```
 
 ### hint
@@ -594,7 +622,7 @@ s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime"
 import pandas as _pd
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
 z = (s0 == 0).groupby(s0.index.hour).mean().round(2)
-g = need('zero_by_hour', _pd.Series)
+g = need('zero_by_hour', _pd.Series).sort_index()
 assert list(g.index) == list(range(24)) and all(close(g[h], z[h], 0.006) for h in range(24)), 'zero_by_hour — доля нулей по s.index.hour.'
 assert list(need('night_hours', list)) == [h for h in range(24) if z[h] > 0.3], f'night_hours = {need("night_hours")}.'
 day = s0[(s0.index.hour >= 8) & (s0.index.hour <= 20)]; zz = day[day == 0]
@@ -626,7 +654,7 @@ print(night_hours, n_day_zeros, outage_dates)
 ```
 
 ### explain
-Ночью (с 1 до 5 часов) нули — норма: в треть и больше ночей заказов нет вовсе. Днём нулей всего несколько, и они собраны в два дня — 6 марта и 3 июня. Это и есть подозрения на сбои приложения. Такие часы перед моделированием отмечают отдельным признаком или исключают из обучения: иначе модель «выучит», что в июне бывают часы без заказов, и будет занижать прогноз.
+Ночью с 1 до 5 часов нули встречаются часто. Между 08:00 и 20:00 включительно их всего шесть: пять часов подряд 3 июня и один час 6 марта. Сверьте групповой провал с журналом приложения. В генераторе на 3 июня задан сбой, а 6 марта ноль возник при обычной интенсивности. Записанный ноль, отсутствующая строка и неоформленные при сбое заказы имеют разный смысл. Отметка о сбое годится для прогноза только при наличии сообщения к моменту выпуска.
 
 ## task: anomalies | Поиск аномальных часов | plus
 

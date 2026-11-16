@@ -75,7 +75,7 @@ df = df.dropna()
 - **лаги и скользящие средние** — что было недавно. Описывают текущий уровень: если приложение сегодня в ударе (или в сбое), лаги это видят.
 
 ::: warn Лаги и горизонт прогноза
-В этом уроке прогноз — на **один час вперёд**: в 11:59 мы знаем всё до 11:00 включительно и предсказываем 12:00. Поэтому лаг 1 здесь честен. Если прогноз нужен на сутки или на неделю вперёд (например, для графика смен), лага 1 в момент прогноза ещё не будет: честны только лаги не короче горизонта. Как считать горизонт и какие лаги тогда остаются — урок «Прогноз: ориентиры, горизонт и метрики».
+В этом уроке прогноз — на **один час вперёд**: сразу после закрытия часа 11:00–12:00, в 12:00, мы знаем итог часа с меткой 11:00 и прогнозируем интервал 12:00–13:00. Поэтому лаг 1 здесь честен. Если прогноз нужен на сутки или на неделю вперёд (например, для графика смен), лага 1 в момент прогноза ещё не будет: честны только лаги не короче горизонта. Как считать горизонт и какие лаги тогда остаются — урок «Прогноз: ориентиры, горизонт и метрики».
 :::
 
 Сравним бустинг на разных наборах признаков. Обучение — март–июнь, проверка — июль.
@@ -154,7 +154,7 @@ for leak in (False, True):
 С утечкой RMSE заметно лучше — и это обман: в реальной работе в момент прогноза текущего часа ещё нет. Утечка небольшая (один час из 24 в окне), поэтому и «улучшение» скромное. Если бы окно было короче, например 3 часа, разрыв был бы огромным.
 
 ::: warn
-Правило для любого признака временного ряда: для строки «время t» в нём могут быть только данные до t (не включая). Проверка на пальцах — представьте, что сейчас 11:59 и вы считаете признаки для 12:00. Всё, что нельзя посчитать в 11:59, — утечка. Это правило для прогноза на час вперёд; при прогнозе на сутки «сейчас» отодвигается на сутки назад, и лаги короче суток тоже становятся утечкой.
+Перед расчётом признака укажите момент выпуска. В 12:00 для прогноза интервала 12:00–13:00 уже известен итог часа 11:00–12:00. Доступны также календарные события, опубликованные до выпуска. При выпуске накануне фактические заказы завтрашнего утра ещё неизвестны.
 :::
 
 ::: quiz
@@ -207,11 +207,11 @@ print(changed)
 Идея теста: испортили ответ одного часа — и смотрим, какие признаки той же строки «почувствовали» это. Почувствовал — значит, видит ответ.
 :::
 
-**Что получилось:** лаг и честное среднее не изменились, а `roll_24_leak` и `diff_next` — изменились: оба используют ответ часа t (второй — даже будущий час). Такой тест стоит прогонять для любой новой функции признаков — он ловит утечки, которые не видны глазами.
+**Что получилось:** лаг и честное среднее остались прежними. Окно с текущим ответом и разность с участием текущего часа изменились. А если признак вернёт только количество заказов следующего часа? Порча одного текущего значения оставит его прежним.
+
+Для более широкой проверки сохраните прошлое и измените весь неизвестный к выпуску хвост, начиная с t. Используйте разные приращения по часам и повторите опыт с противоположным знаком. Общий сдвиг всех будущих значений сохраняет разность двух будущих часов. Сравнивайте значения каждого признака в t, считая совпадающие пропуски равными. Такой опыт обнаруживает зависимость на проверенных продолжениях. Отдельно проследите источник данных каждого признака.
 
 {{practice: leak-test}}
-
-Проверка доступности меняет **весь** неизвестный к выпуску хвост независимыми значениями и пересобирает признаки. Одинаковая прибавка ко всем будущим часам не выявит их разность. Контрпримеры: текущий y,shift(-1), разность двух будущих часов; честный shift(1) на регулярном индексе должен сохраняться. Дополнительно сравните вариант только по доступному префиксу, даты источников и индексы строк: обмен месяцев не является корректным разбиением.
 
 ## Практика
 
@@ -231,9 +231,9 @@ s = s[s.index < '2026-08-01']
 import pandas as _pd
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
 s0 = s0[s0.index < '2026-08-01']
-d = need('df', _pd.DataFrame)
+d = need('df', _pd.DataFrame).sort_index()
 assert {'y', 'hour', 'dow', 'weekend'} <= set(d.columns), f'Столбцы df: {list(d.columns)}.'
-assert d.index.equals(s0.index), 'Проверьте календарь и порядок строк: здесь нужны все часы до 1 августа, август в таблицу не входит.'
+assert d.index.equals(s0.index), 'Проверьте календарь и состав строк: здесь нужны все часы до 1 августа, август в таблицу не входит.'
 assert _pd.Series(d['y'], index=d.index).eq(s0).all(), 'Сохраните фактические заказы каждого часа в колонке y.'
 assert d['weekend'].eq((d.index.dayofweek >= 5).astype(int)).all(), 'Проверьте weekend для каждого часа субботы и воскресенья.'
 assert (d['hour'].values == s0.index.hour).all() and (d['dow'].values == s0.index.dayofweek).all(), 'hour и dow — из индекса: .index.hour, .index.dayofweek.'
@@ -307,7 +307,7 @@ assert sorted(need('leaky')) == ['b', 'd'], f'leaky = {need("leaky")}. b вкл�
 ```
 
 ### hint
-Для каждого признака задайте вопрос: можно ли его посчитать в 11:59 для строки 12:00?
+Для каждого признака задайте вопрос: можно ли его посчитать в 12:00 сразу после закрытия предыдущего часа для строки 12:00?
 
 ### hint
 `rolling(3)` без сдвига включает текущее значение, `shift(-1)` — это значение следующего часа.
@@ -339,18 +339,27 @@ s = s[s.index < '2026-08-01']
 
 ### check
 ```python
-import pandas as _pd
-s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
-s0 = s0[s0.index < '2026-08-01']
-d = need('make_features')(s0)
-cols = ['y', 'hour', 'dow', 'weekend', 'lag_1', 'lag_24', 'lag_168', 'roll_24']
-assert set(cols) <= set(d.columns), f'Столбцы: {list(d.columns)}.'
-assert not d.isna().any().any(), 'В результате не должно быть пропусков — dropna().'
-t = d.index[0]
-assert t == s0.index[168], f'Первая строка должна быть {s0.index[168]} (после недели истории), а у вас {t}.'
-assert close(d.loc[t, 'roll_24'], s0.iloc[144:168].mean()), 'roll_24 — среднее 24 часов ДО текущего: s.shift(1).rolling(24).mean().'
-assert d.loc[t, 'lag_168'] == s0.iloc[0], 'lag_168 — значение неделю назад: s.shift(168).'
-assert need('first_ts') == s0.index[168], f'first_ts = {need("first_ts")}.'
+import numpy as _np, pandas as _pd
+def _same_frame(got, expected):
+    assert isinstance(got, _pd.DataFrame), 'Сохраните DataFrame.'
+    assert set(expected.columns)<=set(got.columns), 'Не хватает заявленных столбцов.'
+    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность дат.'
+    assert got.index.sort_values().equals(expected.index.sort_values()), 'Даты результата не совпадают.'
+    assert _np.allclose(got.reindex(expected.index)[expected.columns].to_numpy(), expected.to_numpy(), atol=1e-8, rtol=0, equal_nan=True), 'Сверьте все значения по временным ключам.'
+s0 = _pd.read_csv('app_orders.csv',parse_dates=['datetime'],index_col='datetime')['orders']
+s0=s0[s0.index<'2026-08-01']
+def _reference(z):
+    d=_pd.DataFrame({'y':z,'hour':z.index.hour,'dow':z.index.dayofweek,'weekend':(z.index.dayofweek>=5).astype(int)})
+    for k in (1,24,168):d[f'lag_{k}']=z.shift(k)
+    d['roll_24']=z.shift(1).rolling(24).mean()
+    return d.dropna()
+f=need('make_features')
+_same_frame(f(s0.copy()),_reference(s0))
+_same_frame(need('df'),_reference(s0))
+assert need('first_ts')==s0.index[168], 'first_ts — первый час после 168 часов истории.'
+for n in (200,400):
+    z=_pd.Series((_np.arange(n)*17)%71,index=_pd.date_range('2027-02-01 03:00',periods=n,freq='h'))
+    _same_frame(f(z.copy()),_reference(z))
 ```
 
 ### hint
@@ -469,7 +478,7 @@ for name, cols in sets.items():
 - `s.ewm(span=12).mean()` — экспоненциальное среднее: среднее по всему прошлому, где у свежих значений вес больше, а старые затухают; `span=12` задаёт скорость затухания: чем больше `span`, тем дольше помнится прошлое;
 - `s.groupby(s.index.hour).transform(f)` — применяет `f` отдельно к ряду каждого часа суток (все 9:00 подряд, все 10:00 подряд…) и возвращает результат на места исходных строк.
 
-Честны ли признаки по смыслу, определит ваш тест. Напишите `leak_test(features, s, t)`: испортите ряд в момент `t` (прибавьте 1000), постройте признаки по исходному и испорченному ряду и верните отсортированный список названий признаков, у которых значение **в строке `t`** изменилось. Примените к `t = pd.Timestamp("2026-07-15 12:00")` — результат в `leaking`.
+Напишите `leak_test(features, s, t)`. Сохраните ряд до t и дважды измените его начиная с t: в первом опыте прибавьте заметные разные по часам величины, во втором вычтите их. Так меняются и сами будущие значения, и разности между ними. Сравните признаки в строке t с исходными и верните отсортированный список названий, изменившихся хотя бы в одном опыте. Два пропуска в одной позиции считайте совпадением. Сохраните результат для `pd.Timestamp("2026-07-15 12:00")` в `leaking`.
 
 ### setup
 ```python
@@ -519,13 +528,13 @@ for t in [_pd.Timestamp('2026-05-10 09:00'),_pd.Timestamp('2026-07-15 12:00')]:
 ```
 
 ### hint
-Копия ряда — `spoiled = s.copy()`, порча — `spoiled[t] = spoiled[t] + 1000`. Исходный ряд при этом не меняется.
+На копии выделите `tail = s.index >= t`. Прибавьте к первому значению хвоста 1000, ко второму 1001, к третьему 1004 и так далее. Для второго опыта возьмите свежую копию и вычтите эти величины.
 
 ### hint
-Строки `t` двух таблиц признаков: `features(s).loc[t]` и `features(spoiled).loc[t]`; сравнение `!=` даст Series из `True/False` по столбцам.
+Сравните строки `features(s).loc[t]` и `features(spoiled).loc[t]`. Признак совпал, если значения равны либо оба пропущены.
 
 ### hint
-Названия изменившихся: `sorted(changed[changed].index)`.
+Объедините имена изменившихся признаков из обоих опытов и отсортируйте.
 
 ### solution
 ```python
@@ -631,7 +640,7 @@ print(rmse, n_onehot_cols)
 
 ## task: promo-feature | Признак «день акции» | star
 
-В уроке «Временной ряд: индекс-дата, resample и скользящие окна» (задача «Почему пятницы») выяснилось, что всплески — пятничные акции, о которых известно заранее: 17 апреля, 22 мая, 19 июня, 24 июля, с 10 до 20 часов. Добавьте к `make_features(s)` признак `promo` (1 в эти часы) и сравните RMSE бустинга на июле с ним и без него. Отдельно посчитайте RMSE только на часах акции 24 июля. Сохраните `rmse_without`, `rmse_with`, `promo_without`, `promo_with` (3 знака).
+Маркетинг заранее передал учебный календарь 2026 года: 17 апреля, 22 мая, 19 июня, 24 июля и 21 августа. На каждой дате акция действует на часы с метками 10:00–20:00 включительно. Напишите функцию `make_promo(index)`, которая принимает DatetimeIndex и возвращает Series с теми же часовыми ключами и значениями 0/1. Запишите `df["promo"] = make_promo(df.index)`. Для будущего индекса, в котором ещё нет заказов, функция использует только опубликованное расписание. В этом упражнении сравните на июле модели без признака promo и с ним. Отдельно измерьте ошибку на часах акции 24 июля. Сохраните `rmse_without`, `rmse_with`, `promo_without` и `promo_with` (3 знака).
 
 ### setup
 ```python
@@ -656,7 +665,16 @@ import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
 s = s[s.index < '2026-08-01']
-promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-07-24"])
+promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
+
+def make_promo(index):
+    # Верните Series 0/1 с часовыми ключами index; даты известны из promo_days.
+    # Акция действует с 10:00 до 20:00 включительно. Будущие orders не нужны.
+    pass
+
+future_index = pd.to_datetime(["2026-08-21 09:00", "2026-08-21 10:00", "2026-08-21 20:00", "2026-08-21 21:00"])
+# make_promo(future_index) должен дать 0, 1, 1, 0 по этим временным ключам.
+# Для текущей таблицы: df["promo"] = make_promo(df.index).
 ```
 
 ### check
@@ -665,7 +683,7 @@ import numpy as _np, pandas as _pd
 from sklearn.ensemble import HistGradientBoostingRegressor as _H
 s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
 s0 = s0[s0.index < '2026-08-01']
-pdays = _pd.to_datetime(['2026-04-17', '2026-05-22', '2026-06-19', '2026-07-24', '2026-07-24'])
+pdays = _pd.to_datetime(['2026-04-17', '2026-05-22', '2026-06-19', '2026-07-24', '2026-08-21'])
 d = make_features(s0)
 d['promo'] = (d.index.normalize().isin(pdays) & (d.index.hour >= 10) & (d.index.hour <= 20)).astype(int)
 tr = d.index < '2026-07-01'; y = d['y']
@@ -678,6 +696,28 @@ yt = y[~tr].values
 w = {'rmse_without': r(yt, p0), 'rmse_with': r(yt, p1), 'promo_without': r(yt[pm], p0[pm]), 'promo_with': r(yt[pm], p1[pm])}
 for k, v in w.items():
     assert close(need(k), round(v, 3), 0.002), f'{k} = {need(k)}, а нужно {round(v, 3)}.'
+import numpy as _np, pandas as _pd
+def _same_frame(got, expected):
+    assert isinstance(got, _pd.DataFrame), 'Сохраните DataFrame.'
+    assert set(expected.columns)<=set(got.columns), 'Не хватает заявленных столбцов.'
+    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность дат.'
+    assert got.index.sort_values().equals(expected.index.sort_values()), 'Даты результата не совпадают.'
+    assert _np.allclose(got.reindex(expected.index)[expected.columns].to_numpy(), expected.to_numpy(), atol=1e-8, rtol=0, equal_nan=True), 'Сверьте все значения по временным ключам.'
+import numpy as _np, pandas as _pd
+def _same_series(got, expected, atol=1e-8):
+    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
+    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
+    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
+    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
+
+_same_frame(need('df'),d)
+f=need('make_promo')
+dates=_pd.to_datetime(['2026-04-17','2026-05-22','2026-06-19','2026-07-24','2026-08-21'])
+future=_pd.DatetimeIndex([day+_pd.Timedelta(hours=h) for day in dates for h in (9,10,20,21)]+[_pd.Timestamp('2026-08-20 10:00'),_pd.Timestamp('2026-08-22 10:00')])
+expected=_pd.Series((future.normalize().isin(dates)&(future.hour>=10)&(future.hour<=20)).astype(int),index=future)
+_same_series(f(future),expected)
+permuted=future[::-1]
+_same_series(f(permuted),expected.reindex(permuted))
 ```
 
 ### hint
@@ -693,11 +733,14 @@ import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
 s = s[s.index < '2026-08-01']
-promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-07-24"])
+promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
+
+def make_promo(index):
+    flags = index.normalize().isin(promo_days) & (index.hour >= 10) & (index.hour <= 20)
+    return pd.Series(flags.astype(int), index=index)
 
 df = make_features(s)
-hours = df.index.hour
-df["promo"] = (df.index.normalize().isin(promo_days) & (hours >= 10) & (hours <= 20)).astype(int)
+df["promo"] = make_promo(df.index)
 train = df.index < "2026-07-01"
 y = df["y"]
 base_cols = [c for c in df.columns if c not in ("y", "promo")]

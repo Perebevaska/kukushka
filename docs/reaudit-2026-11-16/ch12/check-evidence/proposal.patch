@@ -1,0 +1,465 @@
+--- a/content/ch12/01-resample.md
++++ b/content/ch12/01-resample.md
+@@ -308,6 +308,14 @@
+ assert need('n') == len(s0), f'n = {need("n")}.'
+ assert need('start') == s0.index.min() and need('end') == s0.index.max(), f'start, end = {need("start")}, {need("end")}.'
+ assert need('zero_hours') == int((s0 == 0).sum()), f'zero_hours = {need("zero_hours")}.'
++import numpy as _np, pandas as _pd
++def _same_series(got, expected, atol=1e-8):
++    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
++    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
++    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
++    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
++
++_same_series(need('s'),s0)
+ ```
+ 
+ ### hint
+@@ -379,13 +387,19 @@
+ 
+ ### check
+ ```python
++import numpy as _np, pandas as _pd
++def _same_series(got, expected, atol=1e-8):
++    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
++    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
++    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
++    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
+ import pandas as _pd
+ s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+ d0 = s0.resample('D').sum(); w0 = d0.resample('W').mean()
+-assert need('daily', _pd.Series).equals(d0), 'daily — s.resample("D").sum().'
+-assert _pd.Series(need('weekly_mean')).round(6).equals(w0.round(6)), 'weekly_mean — daily.resample("W").mean().'
++_same_series(need('daily'),d0)
++_same_series(need('weekly_mean'),w0,1e-6)
+ c0 = d0.resample('W').count()
+-assert list(_pd.Series(need('week_days')).values) == list(c0.values), 'week_days — daily.resample("W").count().'
++_same_series(need('week_days'),c0)
+ full = w0[c0 == 7]
+ assert need('best_week') != w0.idxmax(), f'best_week = {need("best_week")}: в эту «неделю» попал один день, 31 августа. Нужна лучшая полная неделя: week_days == 7.'
+ assert need('best_week') == full.idxmax(), f'best_week = {need("best_week")}, а нужно {full.idxmax().date()}.'
+@@ -455,7 +469,7 @@
+ s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+ we = s0.index.dayofweek >= 5
+ wd = s0[~we].groupby(s0[~we].index.hour).mean().round(1); wk = s0[we].groupby(s0[we].index.hour).mean().round(1)
+-p = need('profile', _pd.DataFrame)
++p = need('profile', _pd.DataFrame).sort_index()
+ assert list(p.index) == list(range(24)), 'Индекс profile — часы 0–23.'
+ assert all(close(p.loc[h, 'будни'], wd[h], 0.06) and close(p.loc[h, 'выходные'], wk[h], 0.06) for h in range(24)), 'Средние по часам не совпадают. Будни — dayofweek < 5.'
+ assert need('peak_weekday') == int(wd.idxmax()) and need('peak_weekend') == int(wk.idxmax()), f'peak_weekday, peak_weekend = {need("peak_weekday")}, {need("peak_weekend")}.'
+@@ -505,6 +519,14 @@
+ f, l = round(t.iloc[0]), round(t.iloc[-1])
+ assert need('first_value') == f and need('last_value') == l, f'first_value, last_value = {need("first_value")}, {need("last_value")}, а нужно {f}, {l}.'
+ assert close(need('growth_pct'), round((t.iloc[-1] / t.iloc[0] - 1) * 100, 1), 0.06), f'growth_pct = {need("growth_pct")}, а нужно {round(float((t.iloc[-1] / t.iloc[0] - 1) * 100), 1)}: считайте по неокруглённым t.iloc[0] и t.iloc[-1].'
++import numpy as _np, pandas as _pd
++def _same_series(got, expected, atol=1e-8):
++    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
++    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
++    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
++    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
++
++_same_series(need('trend28'),s0.resample('D').sum().rolling(28).mean())
+ ```
+ 
+ ### hint
+@@ -540,15 +562,21 @@
+ 
+ ### check
+ ```python
+-import pandas as _pd
++import numpy as _np, pandas as _pd
++def _same_series(got, expected, atol=1e-8):
++    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
++    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
++    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
++    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
+ s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+ m = s0.resample('MS').sum(); g = (m.pct_change() * 100).round(1)
+-_raw_daily=s0.resample('D').sum().resample('MS').mean(); pdm=_raw_daily.round(1); gp=(_raw_daily.pct_change()*100).round(1)
+-assert list(need('monthly').values) == list(m.values), 'monthly — s.resample("MS").sum().'
+-assert all(close(a, b, 0.06) for a, b in zip(need('growth').dropna().values, g.dropna().values)), f'growth = {list(need("growth").round(1))}, а нужно {list(g)}.'
+-assert all(close(a, b, 0.06) for a, b in zip(need('per_day').values, pdm.values)), f'per_day = {list(need("per_day"))}, а нужно {list(pdm)}.'
+-assert all(close(a, b, 0.06) for a, b in zip(need('growth_per_day').dropna().values, gp.dropna().values)), f'growth_per_day = {list(need("growth_per_day"))}.'
+-assert need('slowest_month') == g.idxmin().month and need('slowest_month_per_day') == gp.idxmin().month, f'slowest_month = {need("slowest_month")}, slowest_month_per_day = {need("slowest_month_per_day")}.'
++raw_daily = s0.resample('D').sum().resample('MS').mean()
++pdm=raw_daily.round(1); gp=(raw_daily.pct_change()*100).round(1)
++_same_series(need('monthly'),m)
++_same_series(need('growth'),g,0.06)
++_same_series(need('per_day'),pdm,0.06)
++_same_series(need('growth_per_day'),gp,0.06)
++assert need('slowest_month') == g.idxmin().month and need('slowest_month_per_day') == gp.idxmin().month, 'Выберите месяц минимального роста отдельно для сумм и среднего за день.'
+ ```
+ 
+ ### hint
+@@ -594,7 +622,7 @@
+ import pandas as _pd
+ s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+ z = (s0 == 0).groupby(s0.index.hour).mean().round(2)
+-g = need('zero_by_hour', _pd.Series)
++g = need('zero_by_hour', _pd.Series).sort_index()
+ assert list(g.index) == list(range(24)) and all(close(g[h], z[h], 0.006) for h in range(24)), 'zero_by_hour — доля нулей по s.index.hour.'
+ assert list(need('night_hours', list)) == [h for h in range(24) if z[h] > 0.3], f'night_hours = {need("night_hours")}.'
+ day = s0[(s0.index.hour >= 8) & (s0.index.hour <= 20)]; zz = day[day == 0]
+--- a/content/ch12/02-decompose.md
++++ b/content/ch12/02-decompose.md
+@@ -325,12 +325,18 @@
+ 
+ ### check
+ ```python
++import numpy as _np, pandas as _pd
++def _same_series(got, expected, atol=1e-8):
++    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
++    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
++    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
++    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
+ import pandas as _pd
+ t0 = need('toy')
+ tr = t0.rolling(7, center=True).mean()
+-assert _pd.Series(need('trend7')).round(6).equals(tr.round(6)), 'trend7 — toy.rolling(7, center=True).mean().'
++_same_series(need('trend7'),tr,1e-6)
+ sw = (t0 - tr).groupby(t0.index.dayofweek).mean().round(1)
+-g = need('seasonal_week', _pd.Series)
++g = need('seasonal_week', _pd.Series).sort_index()
+ assert list(g.index) == list(range(7)) and all(close(g[k], sw[k], 0.051) for k in range(7)), f'seasonal_week = {g.tolist()}, а нужно {sw.tolist()}.'
+ assert close(need('pattern_sum'), round(sw.sum(), 1), 0.051), f'pattern_sum = {need("pattern_sum")}.'
+ ```
+@@ -395,6 +401,15 @@
+ d0 = s0.resample('D').sum()
+ assert close(need('mean_d1'), round(d0.diff().mean(), 2), 0.006) and close(need('mean_d7'), round(d0.diff(7).mean(), 2), 0.006), f'mean_d1, mean_d7 = {need("mean_d1")}, {need("mean_d7")}.'
+ assert close(need('std_ratio'), round(d0.std() / d0.diff().std(), 2), 0.006), f'std_ratio = {need("std_ratio")}.'
++import numpy as _np, pandas as _pd
++def _same_series(got, expected, atol=1e-8):
++    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
++    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
++    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
++    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
++
++_same_series(need('d1'),d0.diff())
++_same_series(need('d7'),d0.diff(7))
+ ```
+ 
+ ### hint
+@@ -482,7 +497,7 @@
+ from statsmodels.tsa.seasonal import seasonal_decompose as _sd
+ s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+ se = _sd(s0['2026-08-03':'2026-08-16'], period=24).seasonal[:24]
+-got = need('season24', _pd.Series)
++got = need('season24', _pd.Series).sort_index()
+ assert list(got.index) == list(range(24)), 'Индекс season24 — часы 0–23 (например, .index.hour).'
+ assert all(close(got[h], round(se.iloc[h], 1), 0.06) for h in range(24)), 'Значения сезонной части не совпадают.'
+ _r = se.round(1).values; _ok = [h for h in range(24) if _r[h] == _r.min()]
+@@ -637,6 +652,9 @@
+ ax = ax_of(0)
+ assert len(ax.patches) == 200, f'Столбцов на графике {len(ax.patches)}, нужно 200.'
+ assert ax.get_xlabel() == 'лаг, часов', 'Подпишите ось X: «лаг, часов».'
++bars=sorted(ax.patches,key=lambda p:p.get_x()+p.get_width()/2)
++assert _np.allclose([p.get_x()+p.get_width()/2 for p in bars],range(1,201),rtol=0,atol=1e-8), 'Ось X столбцов должна соответствовать лагам 1…200.'
++assert _np.allclose([p.get_height() for p in bars],v,rtol=0,atol=1e-8), 'Высота каждого столбца должна равняться автокорреляции соответствующего лага.'
+ ```
+ 
+ ### hint
+--- a/content/ch12/03-features.md
++++ b/content/ch12/03-features.md
+@@ -231,9 +231,9 @@
+ import pandas as _pd
+ s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+ s0 = s0[s0.index < '2026-08-01']
+-d = need('df', _pd.DataFrame)
++d = need('df', _pd.DataFrame).sort_index()
+ assert {'y', 'hour', 'dow', 'weekend'} <= set(d.columns), f'Столбцы df: {list(d.columns)}.'
+-assert d.index.equals(s0.index), 'Проверьте календарь и порядок строк: здесь нужны все часы до 1 августа, август в таблицу не входит.'
++assert d.index.equals(s0.index), 'Проверьте календарь и состав строк: здесь нужны все часы до 1 августа, август в таблицу не входит.'
+ assert _pd.Series(d['y'], index=d.index).eq(s0).all(), 'Сохраните фактические заказы каждого часа в колонке y.'
+ assert d['weekend'].eq((d.index.dayofweek >= 5).astype(int)).all(), 'Проверьте weekend для каждого часа субботы и воскресенья.'
+ assert (d['hour'].values == s0.index.hour).all() and (d['dow'].values == s0.index.dayofweek).all(), 'hour и dow — из индекса: .index.hour, .index.dayofweek.'
+@@ -339,18 +339,27 @@
+ 
+ ### check
+ ```python
+-import pandas as _pd
+-s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+-s0 = s0[s0.index < '2026-08-01']
+-d = need('make_features')(s0)
+-cols = ['y', 'hour', 'dow', 'weekend', 'lag_1', 'lag_24', 'lag_168', 'roll_24']
+-assert set(cols) <= set(d.columns), f'Столбцы: {list(d.columns)}.'
+-assert not d.isna().any().any(), 'В результате не должно быть пропусков — dropna().'
+-t = d.index[0]
+-assert t == s0.index[168], f'Первая строка должна быть {s0.index[168]} (после недели истории), а у вас {t}.'
+-assert close(d.loc[t, 'roll_24'], s0.iloc[144:168].mean()), 'roll_24 — среднее 24 часов ДО текущего: s.shift(1).rolling(24).mean().'
+-assert d.loc[t, 'lag_168'] == s0.iloc[0], 'lag_168 — значение неделю назад: s.shift(168).'
+-assert need('first_ts') == s0.index[168], f'first_ts = {need("first_ts")}.'
++import numpy as _np, pandas as _pd
++def _same_frame(got, expected):
++    assert isinstance(got, _pd.DataFrame), 'Сохраните DataFrame.'
++    assert set(expected.columns)<=set(got.columns), 'Не хватает заявленных столбцов.'
++    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность дат.'
++    assert got.index.sort_values().equals(expected.index.sort_values()), 'Даты результата не совпадают.'
++    assert _np.allclose(got.reindex(expected.index)[expected.columns].to_numpy(), expected.to_numpy(), atol=1e-8, rtol=0, equal_nan=True), 'Сверьте все значения по временным ключам.'
++s0 = _pd.read_csv('app_orders.csv',parse_dates=['datetime'],index_col='datetime')['orders']
++s0=s0[s0.index<'2026-08-01']
++def _reference(z):
++    d=_pd.DataFrame({'y':z,'hour':z.index.hour,'dow':z.index.dayofweek,'weekend':(z.index.dayofweek>=5).astype(int)})
++    for k in (1,24,168):d[f'lag_{k}']=z.shift(k)
++    d['roll_24']=z.shift(1).rolling(24).mean()
++    return d.dropna()
++f=need('make_features')
++_same_frame(f(s0.copy()),_reference(s0))
++_same_frame(need('df'),_reference(s0))
++assert need('first_ts')==s0.index[168], 'first_ts — первый час после 168 часов истории.'
++for n in (200,400):
++    z=_pd.Series((_np.arange(n)*17)%71,index=_pd.date_range('2027-02-01 03:00',periods=n,freq='h'))
++    _same_frame(f(z.copy()),_reference(z))
+ ```
+ 
+ ### hint
+@@ -656,7 +665,16 @@
+ from sklearn.ensemble import HistGradientBoostingRegressor
+ s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+ s = s[s.index < '2026-08-01']
+-promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-07-24"])
++promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
++
++def make_promo(index):
++    # Верните Series 0/1 с часовыми ключами index; даты известны из promo_days.
++    # Акция действует с 10:00 до 20:00 включительно. Будущие orders не нужны.
++    pass
++
++future_index = pd.to_datetime(["2026-08-21 09:00", "2026-08-21 10:00", "2026-08-21 20:00", "2026-08-21 21:00"])
++# make_promo(future_index) должен дать 0, 1, 1, 0 по этим временным ключам.
++# Для текущей таблицы: df["promo"] = make_promo(df.index).
+ ```
+ 
+ ### check
+@@ -665,7 +683,7 @@
+ from sklearn.ensemble import HistGradientBoostingRegressor as _H
+ s0 = _pd.read_csv('app_orders.csv', parse_dates=['datetime'], index_col='datetime')['orders']
+ s0 = s0[s0.index < '2026-08-01']
+-pdays = _pd.to_datetime(['2026-04-17', '2026-05-22', '2026-06-19', '2026-07-24', '2026-07-24'])
++pdays = _pd.to_datetime(['2026-04-17', '2026-05-22', '2026-06-19', '2026-07-24', '2026-08-21'])
+ d = make_features(s0)
+ d['promo'] = (d.index.normalize().isin(pdays) & (d.index.hour >= 10) & (d.index.hour <= 20)).astype(int)
+ tr = d.index < '2026-07-01'; y = d['y']
+@@ -678,6 +696,28 @@
+ w = {'rmse_without': r(yt, p0), 'rmse_with': r(yt, p1), 'promo_without': r(yt[pm], p0[pm]), 'promo_with': r(yt[pm], p1[pm])}
+ for k, v in w.items():
+     assert close(need(k), round(v, 3), 0.002), f'{k} = {need(k)}, а нужно {round(v, 3)}.'
++import numpy as _np, pandas as _pd
++def _same_frame(got, expected):
++    assert isinstance(got, _pd.DataFrame), 'Сохраните DataFrame.'
++    assert set(expected.columns)<=set(got.columns), 'Не хватает заявленных столбцов.'
++    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность дат.'
++    assert got.index.sort_values().equals(expected.index.sort_values()), 'Даты результата не совпадают.'
++    assert _np.allclose(got.reindex(expected.index)[expected.columns].to_numpy(), expected.to_numpy(), atol=1e-8, rtol=0, equal_nan=True), 'Сверьте все значения по временным ключам.'
++import numpy as _np, pandas as _pd
++def _same_series(got, expected, atol=1e-8):
++    assert isinstance(got, _pd.Series), 'Сохраните Series с исходными ключами.'
++    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность ключей.'
++    assert got.index.sort_values().equals(expected.index.sort_values()), 'Ключи/даты результата не совпадают.'
++    assert _np.allclose(got.reindex(expected.index).to_numpy(), expected.to_numpy(), atol=atol, rtol=0, equal_nan=True), 'Проверьте значения по каждому ключу/дате.'
++
++_same_frame(need('df'),d)
++f=need('make_promo')
++dates=_pd.to_datetime(['2026-04-17','2026-05-22','2026-06-19','2026-07-24','2026-08-21'])
++future=_pd.DatetimeIndex([day+_pd.Timedelta(hours=h) for day in dates for h in (9,10,20,21)]+[_pd.Timestamp('2026-08-20 10:00'),_pd.Timestamp('2026-08-22 10:00')])
++expected=_pd.Series((future.normalize().isin(dates)&(future.hour>=10)&(future.hour<=20)).astype(int),index=future)
++_same_series(f(future),expected)
++permuted=future[::-1]
++_same_series(f(permuted),expected.reindex(permuted))
+ ```
+ 
+ ### hint
+@@ -693,11 +733,14 @@
+ from sklearn.ensemble import HistGradientBoostingRegressor
+ s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
+ s = s[s.index < '2026-08-01']
+-promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-07-24"])
++promo_days = pd.to_datetime(["2026-04-17", "2026-05-22", "2026-06-19", "2026-07-24", "2026-08-21"])
++
++def make_promo(index):
++    flags = index.normalize().isin(promo_days) & (index.hour >= 10) & (index.hour <= 20)
++    return pd.Series(flags.astype(int), index=index)
+ 
+ df = make_features(s)
+-hours = df.index.hour
+-df["promo"] = (df.index.normalize().isin(promo_days) & (hours >= 10) & (hours <= 20)).astype(int)
++df["promo"] = make_promo(df.index)
+ train = df.index < "2026-07-01"
+ y = df["y"]
+ base_cols = [c for c in df.columns if c not in ("y", "promo")]
+--- a/content/ch12/03b-time-split.md
++++ b/content/ch12/03b-time-split.md
+@@ -292,6 +292,8 @@
+ assert need('honest_ok') == True, f'honest_ok = {need("honest_ok")}: разбиение с shuffle=False честное.'
+ assert need('shuffled_ok') == False, f'shuffled_ok = {need("shuffled_ok")}: перемешанное разбиение кладёт будущее в обучение.'
+ assert int(need('n_later')) == nl, f'n_later = {need("n_later")}, а нужно {nl}: (X_tr.index > X_te.index.min()).sum() для перемешанного разбиения.'
++assert bool(f(_a.iloc[[5,0]],_a.iloc[[4,3]])) is False, 'Порядок внутри частей не важен: max(train)=05:00 позже min(test)=03:00.'
++assert bool(f(_a.iloc[[0,1]],_a.iloc[[1,2]])) is False, 'Одинаковая временная метка в train и test не удовлетворяет условию «раньше».'
+ ```
+ 
+ ### hint
+--- a/content/ch12/04-forecast.md
++++ b/content/ch12/04-forecast.md
+@@ -309,6 +309,7 @@
+ w = {'mae': round(float(_np.abs(f - p).mean()), 3), 'rmse': round(float(_np.sqrt(((f - p) ** 2).mean())), 3), 'wape': round(float(_np.abs(f - p).sum() / f.sum()), 3)}
+ g = need('m', dict)
+ assert all(close(g[k], w[k], 0.0011) for k in w), f'm = {g}, а нужно {w}.'
++assert close(need('wape')(_np.array([10.,0.,20.]),_np.array([12.,1.,18.])),5/30), 'WAPE включает ошибки часов с нулевым фактом в числитель.'
+ ```
+ 
+ ### hint
+--- a/content/ch12/05-project.md
++++ b/content/ch12/05-project.md
+@@ -121,7 +121,15 @@
+ _hidden=s0.copy(); _hidden.loc[_hidden.index>='2026-07-31 20:00']=float('nan')
+ _future=make(_hidden).loc['2026-08-01':'2026-08-01 23:00']
+ assert len(_future)==24 and _future.drop(columns='y').notna().all().all(), 'make должен строить24 будущие строки без y на1августа.'
+-
++import numpy as _np, pandas as _pd
++def _same_frame(got, expected):
++    assert isinstance(got, _pd.DataFrame), 'Сохраните DataFrame.'
++    assert set(expected.columns)<=set(got.columns), 'Не хватает заявленных столбцов.'
++    assert got.index.is_unique and len(got)==len(expected), 'Проверьте число строк и уникальность дат.'
++    assert got.index.sort_values().equals(expected.index.sort_values()), 'Даты результата не совпадают.'
++    assert _np.allclose(got.reindex(expected.index)[expected.columns].to_numpy(), expected.to_numpy(), atol=1e-8, rtol=0, equal_nan=True), 'Сверьте все значения по временным ключам.'
++
++_same_frame(need('df'),d)
+ ```
+ 
+ ### hint
+@@ -181,13 +189,15 @@
+ ```python
+ # уже есть: df, X, y и маски train, valid, test
+ import numpy as np
+-
++valid_score = (valid & (y.index < "2026-07-31 20:00") & y.notna())
++# rmse_base — 740 известных июльских часов; base_meets не является приёмкой августа.
+ ```
+ 
+ ### check
+ ```python
++vm = (valid & (y.index < '2026-07-31 20:00') & y.notna())
+ import numpy as _np
+-w = round(float(_np.sqrt(((y[test] - X.loc[test, 'mean4w']) ** 2).mean())), 3)
++w = round(float(_np.sqrt(((y[vm] - X.loc[vm, 'mean4w']) ** 2).mean())), 3)
+ assert close(need('rmse_base'), w, 0.002), f'rmse_base = {need("rmse_base")}, а нужно {w}.'
+ assert need('base_meets') == (w <= 4.3), f'base_meets = {need("base_meets")}.'
+ ```
+@@ -200,8 +210,9 @@
+ 
+ ### solution
+ ```python
+-import numpy as np
+-rmse_base = round(float(np.sqrt(((y[test] - X.loc[test, "mean4w"]) ** 2).mean())), 3)
++valid_score = (valid & (y.index < "2026-07-31 20:00") & y.notna())
++import numpy as np
++rmse_base = round(float(np.sqrt(((y[valid_score] - X.loc[valid_score, "mean4w"]) ** 2).mean())), 3)
+ base_meets = rmse_base <= 4.3
+ ```
+ 
+@@ -242,7 +253,8 @@
+ import numpy as np
+ from sklearn.linear_model import LinearRegression
+ from sklearn.ensemble import HistGradientBoostingRegressor
+-
++fit_mask = (train & (y.index < "2026-06-30 20:00") & y.notna())
++valid_score = (valid & (y.index < "2026-07-31 20:00") & y.notna())
+ ```
+ 
+ ### check
+@@ -251,10 +263,23 @@
+ from sklearn.linear_model import LinearRegression as _LR
+ from sklearn.ensemble import HistGradientBoostingRegressor as _H
+ ms = {'linear': _LR(), 'hgb': _H(random_state=0), 'hgb_depth3': _H(max_depth=3, random_state=0), 'hgb_l2': _H(l2_regularization=1.0, random_state=0)}
+-w = {k: round(float(_np.sqrt(((y[valid] - m.fit(X[train], y[train]).predict(X[valid])) ** 2).mean())), 3) for k, m in ms.items()}
++fm = (train & (y.index < '2026-06-30 20:00') & y.notna())
++vm = (valid & (y.index < '2026-07-31 20:00') & y.notna())
++assert _np.array_equal(need('fit_mask'),fm), 'fit_mask исключает неизвестные ответы 30 июня 20:00–23:00.'
++assert _np.array_equal(need('valid_score'),vm), 'valid_score — 740 июльских часов до 31 июля 20:00.'
++w = {k: round(float(_np.sqrt(((y[vm] - m.fit(X[fm], y[fm]).predict(X[vm])) ** 2).mean())), 3) for k, m in ms.items()}
+ got = need('valid_rmse', dict)
+ assert all(k in got and close(got[k], v, 0.002) for k, v in w.items()), f'valid_rmse = {got}, а нужно {w}.'
+ assert need('best') == min(w, key=w.get), f'best = {need("best")!r}.'
++# Check that unavailable fit labels and unavailable validation labels cannot affect selection.
++for _start,_end in [('2026-06-30 20:00','2026-07-01'),('2026-07-31 20:00','2026-08-01')]:
++    for _sign in (1,-1):
++        _probe=dict(globals())
++        _probe['X']=X.copy(); _probe['y']=y.copy()
++        _unknown=(_probe['y'].index>=_start)&(_probe['y'].index<_end)
++        _probe['y'].loc[_unknown]+=_sign*1000
++        exec(_code,_probe)
++        assert all(close(_probe['valid_rmse'][k],got[k],0.002) for k in w), 'Выбор модели зависит от ответов, неизвестных к моменту выпуска: исключите последние четыре часа из fit и из оценки июля.'
+ ```
+ 
+ ### hint
+@@ -275,10 +300,12 @@
+     "hgb_depth3": HistGradientBoostingRegressor(max_depth=3, random_state=0),
+     "hgb_l2": HistGradientBoostingRegressor(l2_regularization=1.0, random_state=0),
+ }
++fit_mask = (train & (y.index < "2026-06-30 20:00") & y.notna())
++valid_score = (valid & (y.index < "2026-07-31 20:00") & y.notna())
+ valid_rmse = {}
+ for name, m in models.items():
+-    p = m.fit(X[train], y[train]).predict(X[valid])
+-    valid_rmse[name] = round(float(np.sqrt(((y[valid] - p) ** 2).mean())), 3)
++    p = m.fit(X[fit_mask], y[fit_mask]).predict(X[valid_score])
++    valid_rmse[name] = round(float(np.sqrt(((y[valid_score] - p) ** 2).mean())), 3)
+ best = min(valid_rmse, key=valid_rmse.get)
+ ```
+ 
+@@ -314,6 +341,7 @@
+     df["mean4w"] = pd.concat([s.shift(168 * k) for k in range(1, 5)], axis=1).mean(axis=1)
+     return df.dropna(subset=df.columns.drop("y"))
+ s = pd.read_csv("app_orders.csv", parse_dates=["datetime"], index_col="datetime")["orders"]
++s = s[s.index < '2026-08-01']
+ df = make(s)
+ X, y = df.drop(columns="y"), df["y"]
+ train = df.index < "2026-07-01"
+@@ -329,7 +357,7 @@
+ from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
+ 
+ fit_mask = ((train | valid) & (y.index < "2026-07-31 20:00") & y.notna())
+-
++# cv=TimeSeriesSplit(n_splits=3, gap=28); август здесь не оцениваем.
+ ```
+ 
+ ### check
+@@ -339,7 +367,7 @@
+ from sklearn.ensemble import HistGradientBoostingRegressor as _H
+ g = need('gs', _GS)
+ assert hasattr(g, 'best_params_'), 'gs ещё не обучен: вызовите gs.fit(X[fit_mask], y[fit_mask]).'
+-assert isinstance(g.cv, _TS) and g.cv.n_splits == 3 and g.cv.gap >= 28, f'cv = {g.cv!r}. Для ряда нужен TimeSeriesSplit(n_splits=3, gap=28), а не число фолдов: cv=3 означает обычный KFold без учёта времени.'
++assert isinstance(g.cv, _TS) and g.cv.n_splits == 3 and g.cv.gap == 28, f'cv = {g.cv!r}. Для ряда нужен TimeSeriesSplit(n_splits=3, gap=28), а не число фолдов: cv=3 означает обычный KFold без учёта времени.'
+ assert g.scoring == 'neg_root_mean_squared_error', f'scoring = {g.scoring!r}; нужен "neg_root_mean_squared_error".'
+ pg = {k: list(v) for k, v in g.param_grid.items()}
+ assert pg == {'max_depth': [2, 3, None], 'learning_rate': [0.05, 0.1]}, f'Сетка параметров: {pg}.'
+@@ -350,9 +378,6 @@
+ assert close(-g.best_score_, ref, 1e-6), 'gs обучен не на ((train | valid) & (y.index < "2026-07-31 20:00") & y.notna()): лучший результат не совпадает с пересчётом на марте–июле.'
+ assert dict(need('best_params', dict)) == bp, f'best_params = {need("best_params")}, а у gs — {bp}.'
+ assert close(need('cv_rmse'), round(float(ref), 3), 0.002), f'cv_rmse = {need("cv_rmse")}, а нужно {ref:.3f}. best_score_ отрицательный — поменяйте знак.'
+-pt = _np.clip(_H(random_state=0, **bp).fit(X[fm], y[fm]).predict(X[test]), 0, None)
+-rt = round(float(_np.sqrt(((y[test] - pt) ** 2).mean())), 3)
+-assert close(need('rmse_test_grid'), rt, 0.002), f'rmse_test_grid = {need("rmse_test_grid")}, а нужно {rt}. Прогноз gs.predict(X[test]) обрежьте нулём.'
+ ```
+ 
+ ### hint
+@@ -387,9 +412,7 @@
+ gs.fit(X[fit_mask], y[fit_mask])
+ best_params = gs.best_params_
+ cv_rmse = round(float(-gs.best_score_), 3)
+-p = np.clip(gs.predict(X[test]), 0, None)
+-rmse_test_grid = round(float(np.sqrt(((y[test] - p) ** 2).mean())), 3)
+-print(best_params, cv_rmse, rmse_test_grid)
++print(best_params, cv_rmse)
+ ```
+ 
+ ### explain
+@@ -436,7 +459,8 @@
+ # уже есть: X, y, маски train/valid/test, rmse_base и best_params из шага 3б
+ import numpy as np
+ from sklearn.ensemble import HistGradientBoostingRegressor
+-
++# В этом шаге rmse_base уже рассчитан на августе: сравниваем две зафиксированные политики.
++# fit_mask исключает 31 июля 20:00–23:00; эти ответы на первую дату выпуска неизвестны.
+ ```
+ 
+ ### check
