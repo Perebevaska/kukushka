@@ -420,6 +420,9 @@ y = _pd.Series([1, 0, 1, 0, 0])
 s = _pd.Series([True, True, False, False, True])
 assert f(s, y) == 400 - 400, f'profit на примере дала {f(s, y)}, а нужно 0: один TP (+400) и два FP (−400).'
 assert f(s, y, gain=1000) == 600, 'Параметр gain должен использоваться вместо 400.'
+assert f(s,y,cost=50)==300, 'Используйте переданный cost: один TP по +400 и два FP по −50 дают 300.'
+assert f(s,y,gain=1000,cost=50)==900, 'Параметры gain и cost должны работать вместе.'
+assert f(_pd.Series([False]*len(y)),y,cost=50)==0, 'Без отправленных бонусов прибыль равна нулю.'
 ```
 
 ### hint

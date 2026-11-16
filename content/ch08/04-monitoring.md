@@ -402,6 +402,10 @@ import numpy as _np
 f = need('month_report')
 r = f(_np.array([0.1, 0.5, 0.2, 0.4]))
 assert r == {'leads': 4, 'mean_pred': 0.3, 'above': 0.5}, f'month_report вернула {r}.'
+for _p,_t in [(_np.array([.3,.5,.2,.4]),.3),(_np.array([.1,.5,.2,.4]),.45)]:
+    _r=f(_p,threshold=_t)
+    _w=dict(leads=len(_p),mean_pred=round(float(_p.mean()),3),above=round(float((_p>_t).mean()),3))
+    assert _r==_w, f'При threshold={_t} сводка {_r}, ожидалось {_w}. Выше порога означает строго >.'
 ```
 
 ### hint

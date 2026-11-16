@@ -371,6 +371,15 @@ f = need('partial')
 X0 = _pd.DataFrame({'a': [1, 5, 9]})
 assert f(_M(), X0, 'a', [0, 5, 10]) == [0.0, 0.5, 1.0], f'partial вернула {f(_M(), X0, "a", [0, 5, 10])}.'
 assert list(X0['a']) == [1, 5, 9], 'Функция испортила исходную таблицу — копия должна создаваться внутри цикла.'
+class _Other:
+    def predict_proba(self,X):
+        import numpy as np
+        p=(X['b'].values/20).clip(0,1)
+        return np.c_[1-p,p]
+_other=_pd.DataFrame({'a':[2,8],'b':[3,15]},index=[31,10])
+_before=_other.copy(deep=True)
+assert f(_Other(),_other,'b',[0,10,20])==[0.,.5,1.], 'Используйте переданные col, grid и модель; функция должна работать с другим признаком.'
+_pd.testing.assert_frame_equal(_other,_before)
 ```
 
 ### hint
@@ -835,11 +844,35 @@ assert [round(float(x), 3) for x in need('pd_new')] == wn, f'pd_new: ожида�
 assert [round(float(x), 3) for x in need('pd_old')] == wo, f'pd_old: ожидалось {wo}.'
 gaps = [n - o for n, o in zip(wn, wo)]
 assert need('max_gap_day') == G[gaps.index(max(gaps))], f'max_gap_day = {need("max_gap_day")}.'
-ax = ax_of(0)
-assert len(ax.lines) >= 2, 'На графике должно быть две линии.'
-assert ax.get_xlabel() == 'дней с последнего визита', 'Подпишите ось X: «дней с последнего визита».'
-labels = [t.get_text() for t in ax.get_legend().get_texts()] if ax.get_legend() else []
-assert 'новички' in labels and 'остальные' in labels, f'Легенда: {labels}, нужны «новички» и «остальные».'
+import numpy as _np
+from matplotlib.colors import to_rgba as _rgba
+ax=ax_of(0)
+ax.figure.canvas.draw()
+assert ax.get_visible() and ax.figure.get_visible() and ax.axison, 'Покажите график двух частичных зависимостей.'
+assert ax.get_xlabel()=='дней с последнего визита', 'Подпишите ось X: «дней с последнего визита».'
+assert ax.xaxis.label.get_visible() and _rgba(ax.xaxis.label.get_color(),alpha=ax.xaxis.label.get_alpha())[3]>0, 'Подпись оси X должна быть видна.'
+legend=ax.get_legend()
+texts=list(legend.get_texts()) if legend else []
+labels=[t.get_text() for t in texts]
+assert legend and legend.get_visible() and 'новички' in labels and 'остальные' in labels, 'Нужна видимая легенда «новички» и «остальные».'
+assert all(t.get_visible() and _rgba(t.get_color(),alpha=t.get_alpha())[3]>0 for t in texts), 'Покажите подписи групп в легенде.'
+expected={'новички':_np.c_[G,wn], 'остальные':_np.c_[G,wo]}
+handles=getattr(legend,'legend_handles',getattr(legend,'legendHandles',[]))
+found=set()
+for pos,line in enumerate(ax.lines):
+    if not line.get_visible() or line.get_linestyle() in ('None','none','',' ') or line.get_linewidth()<=0 or _rgba(line.get_color(),alpha=line.get_alpha())[3]<=0:continue
+    matches=[label for handle,label in zip(handles,labels) if handle.get_label()==line.get_label()]
+    if len(matches)!=1:
+        matches=[label for handle,label in zip(handles,labels) if hasattr(handle,'get_color') and _np.allclose(_rgba(handle.get_color()),_rgba(line.get_color())) and handle.get_linestyle()==line.get_linestyle()]
+    name=matches[0] if len(matches)==1 else (labels[pos] if pos<len(labels) else None)
+    if name not in expected:continue
+    xy=_np.c_[line.get_xdata(),line.get_ydata()].astype(float)
+    xy=ax.transData.inverted().transform(line.get_transform().transform(xy))
+    if len(xy) and xy[0,0]>xy[-1,0]:xy=xy[::-1]
+    if xy.shape==expected[name].shape and _np.allclose(xy,expected[name],rtol=0,atol=1e-8):found.add(name)
+assert found==set(expected), 'Для каждой группы проверьте фактическую линию: пары grid и частичной зависимости должны совпадать с её расчётом. Порядок отрисовки можно менять.'
+assert min(ax.get_xlim())<=G[0]+1e-8 and max(ax.get_xlim())>=G[-1]-1e-8, 'Вся сетка давности должна быть видна.'
+assert min(ax.get_ylim())<=min(wn+wo)+1e-8 and max(ax.get_ylim())>=max(wn+wo)-1e-8, 'Покажите диапазон обеих частичных зависимостей.'
 ```
 
 ### hint

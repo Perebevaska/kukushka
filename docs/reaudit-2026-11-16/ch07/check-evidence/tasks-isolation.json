@@ -1,0 +1,80 @@
+[
+  {
+    "kind": "task",
+    "lesson": "ch07/contracts",
+    "id": "temporal-cv-raw",
+    "setup": "import pandas as pd\n\nfrom sklearn.preprocessing import FunctionTransformer\ndef lead_time(frame):\n    frame = frame.copy()\n    stamp = pd.to_datetime(frame['created'])\n    frame['hour'] = stamp.dt.hour\n    frame['weekday'] = stamp.dt.dayofweek\n    frame['evening'] = (stamp.dt.hour >= 19).astype(int)\n    return frame\n\nfrom sklearn.preprocessing import FunctionTransformer as _FT0\ndef _lead_time0(frame):\n    frame = frame.copy()\n    stamp = _pd0.to_datetime(frame['created'])\n    frame['hour'] = stamp.dt.hour\n    frame['weekday'] = stamp.dt.dayofweek\n    frame['evening'] = (stamp.dt.hour >= 19).astype(int)\n    return frame\nimport pandas as _pd0\nimport numpy as _np0\nfrom sklearn.model_selection import train_test_split as _tts0, KFold as _KF0, cross_val_score as _cvs0\nfrom sklearn.compose import ColumnTransformer as _CT0\nfrom sklearn.pipeline import Pipeline as _P0, make_pipeline as _mp0\nfrom sklearn.impute import SimpleImputer as _SI0\nfrom sklearn.preprocessing import OneHotEncoder as _OHE0, StandardScaler as _SS0\nfrom sklearn.linear_model import LogisticRegression as _LR0\n_NUM0 = ['guests', 'budget_pp', 'days_to_event', 'response_hours', 'repeat_client', 'tasting', 'hour', 'weekday', 'evening']\n_CAT0 = ['channel', 'event_type', 'city', 'company_size', 'manager']\ndef _leads0():\n    _d = _pd0.read_csv('catering_leads.csv')\n    _t = _pd0.to_datetime(_d['created'])\n    _d['hour'] = _t.dt.hour\n    _d['weekday'] = _t.dt.dayofweek\n    _d['evening'] = (_d['hour'] >= 19).astype(int)\n    return _d\ndef _ref():\n    _d = _leads0()\n    _y = _d['converted']\n    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted', 'hour', 'weekday', 'evening'])\n    _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])\n    return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)\ndef _pre0(num=_NUM0):\n    return _mp0(_FT0(_lead_time0), _CT0([\n        ('num', _mp0(_SI0(strategy='median'), _SS0()), num),\n        ('cat', _mp0(_SI0(strategy='constant', fill_value='не указан'), _OHE0(handle_unknown='ignore')), _CAT0),\n    ]))\ndef _catch0(yt, s, share=0.3, k=None):\n    _s = _pd0.Series(_np0.asarray(s), index=yt.index)\n    return yt.loc[_s.sort_index().sort_values(ascending=False, kind=\"stable\").head(int(len(_s)*share) if k is None else int(k)).index].sum() / yt.sum()\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split, KFold\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import Pipeline, make_pipeline\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nd = pd.read_csv(\"catering_leads.csv\")\ncreated = pd.to_datetime(d[\"created\"])\nd[\"hour\"] = created.dt.hour\nd[\"weekday\"] = created.dt.dayofweek\nd[\"evening\"] = (d[\"hour\"] >= 19).astype(int)\ny = d[\"converted\"]\nX = d.drop(columns=[\"lead_id\", \"contract_rub\", \"converted\", \"hour\", \"weekday\", \"evening\"])\nX_train, X_test, y_train, y_test = (X[pd.to_datetime(d[\"created\"]) < \"2026-06-21 10:58\"], X[pd.to_datetime(d[\"created\"]) >= \"2026-07-21 10:58\"], y[pd.to_datetime(d[\"created\"]) < \"2026-06-21 10:58\"], y[pd.to_datetime(d[\"created\"]) >= \"2026-07-21 10:58\"])\nkf = KFold(n_splits=5, shuffle=True, random_state=42)\nnum = [\"guests\", \"budget_pp\", \"days_to_event\", \"response_hours\", \"repeat_client\", \"tasting\",\n       \"hour\", \"weekday\", \"evening\"]\ncat = [\"channel\", \"event_type\", \"city\", \"company_size\", \"manager\"]\npre = make_pipeline(FunctionTransformer(lead_time), ColumnTransformer([\n    (\"num\", make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num),\n    (\"cat\", make_pipeline(SimpleImputer(strategy=\"constant\", fill_value=\"не указан\"),\n                          OneHotEncoder(handle_unknown=\"ignore\")), cat),\n]))\npipe = Pipeline([(\"prep\", pre), (\"model\", LogisticRegression(max_iter=2000))])\nbest = Pipeline([(\"prep\", pre), (\"model\", LogisticRegression(max_iter=2000, C=1, class_weight=None))]).fit(X_train, y_train)\ndef catch_rate(y_true, scores, share=0.3, k=None):\n    s = pd.Series(scores, index=y_true.index)\n    top = s.sort_index().sort_values(ascending=False, kind=\"stable\").head(int(len(s)*share) if k is None else int(k)).index\n    return y_true.loc[top].sum() / y_true.sum()",
+    "check": "assert verified is True, 'Контракт не выполнен'",
+    "files": [
+      "catering_leads.csv"
+    ]
+  },
+  {
+    "kind": "task",
+    "lesson": "ch07/contracts",
+    "id": "OOF-own-target-singleton",
+    "setup": "import numpy as np\nimport pandas as pd\nfrom sklearn.base import BaseEstimator,TransformerMixin\nfrom sklearn.model_selection import KFold\nclass RateBy(TransformerMixin, BaseEstimator):\n    def __init__(self, by=\"city\", n_splits=5, random_state=42):\n        self.by, self.n_splits, self.random_state = by, n_splits, random_state\n    def fit(self, X, y):\n        y = pd.Series(__import__('numpy').asarray(y), index=X.index)\n        self.rates_ = y.groupby(X[self.by]).mean()\n        self.overall_ = y.mean()\n        return self\n    def transform(self, X):\n        X = X.copy()\n        X[\"churn_rate_\" + self.by] = X[self.by].map(self.rates_).fillna(self.overall_)\n        return X\n    def fit_transform(self, X, y=None, **fit_params):\n        import numpy as np\n        target = pd.Series(np.asarray(y), index=X.index)\n        output = X.copy()\n        encoded = np.empty(len(X))\n        folds = KFold(n_splits=self.n_splits, shuffle=True, random_state=self.random_state)\n        for train, valid in folds.split(X):\n            rates = target.iloc[train].groupby(X.iloc[train][self.by]).mean()\n            encoded[valid] = X.iloc[valid][self.by].map(rates).fillna(target.iloc[train].mean())\n        output[\"churn_rate_\" + self.by] = encoded\n        self.fit(X, target)  # statistics for subsequent unseen rows\n        return output\n",
+    "check": "assert verified is True, 'Контракт не выполнен'",
+    "files": []
+  },
+  {
+    "kind": "task",
+    "lesson": "ch07/contracts",
+    "id": "selection-isolation-recall-plan",
+    "setup": "import pandas as pd\nimport numpy as np\nfrom sklearn.model_selection import train_test_split\n_solution='import pandas as pd\\nfrom sklearn.model_selection import train_test_split\\nfrom sklearn.tree import DecisionTreeClassifier\\nfrom sklearn.metrics import precision_score, recall_score, f1_score\\n\\ng = pd.read_csv(\"guests_churn.csv\")\\ny = g[\"churned\"]\\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\\nX_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\\nX_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)\\n\\nrows = []\\nfor d in range(1, 9):\\n    pred = DecisionTreeClassifier(max_depth=d, random_state=0).fit(X_train, y_train).predict(X_valid)\\n    rows.append({\"depth\": d,\\n                 \"precision\": round(precision_score(y_valid, pred), 3),\\n                 \"recall\": round(recall_score(y_valid, pred), 3),\\n                 \"f1\": round(f1_score(y_valid, pred), 3)})\\ntrees = pd.DataFrame(rows)\\nok = trees[trees[\"recall\"] >= 0.7]\\nbest_depth = int(ok.loc[ok[\"precision\"].idxmax(), \"depth\"])\\ntrees'\n_outputs=['best_depth']",
+    "check": "assert verified is True, 'Контракт не выполнен'",
+    "files": [
+      "guests_churn.csv"
+    ]
+  },
+  {
+    "kind": "task",
+    "lesson": "ch07/contracts",
+    "id": "selection-isolation-f-beta",
+    "setup": "import pandas as pd\nimport numpy as np\nfrom sklearn.model_selection import train_test_split\n_solution='import pandas as pd\\nfrom sklearn.model_selection import train_test_split\\nfrom sklearn.tree import DecisionTreeClassifier\\nfrom sklearn.metrics import fbeta_score\\n\\ng = pd.read_csv(\"guests_churn.csv\")\\ny = g[\"churned\"]\\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\\nX_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\\nX_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)\\n\\nrows = []\\nfor d in range(1, 9):\\n    pred = DecisionTreeClassifier(max_depth=d, random_state=0).fit(X_train, y_train).predict(X_valid)\\n    rows.append({\"depth\": d,\\n                 \"f1\": fbeta_score(y_valid, pred, beta=1),\\n                 \"f2\": fbeta_score(y_valid, pred, beta=2),\\n                 \"f05\": fbeta_score(y_valid, pred, beta=0.5)})\\ntrees = pd.DataFrame(rows)\\nd_f1 = int(trees.loc[trees[\"f1\"].idxmax(), \"depth\"])\\nd_f2 = int(trees.loc[trees[\"f2\"].idxmax(), \"depth\"])\\nd_f05 = int(trees.loc[trees[\"f05\"].idxmax(), \"depth\"])\\nprint(trees.round(3))\\nprint(d_f1, d_f2, d_f05)'\n_outputs=['d_f1', 'd_f2', 'd_f05']",
+    "check": "assert verified is True, 'Контракт не выполнен'",
+    "files": [
+      "guests_churn.csv"
+    ]
+  },
+  {
+    "kind": "task",
+    "lesson": "ch07/contracts",
+    "id": "selection-isolation-recall80",
+    "setup": "import pandas as pd\nimport numpy as np\nfrom sklearn.model_selection import train_test_split\n_solution='import pandas as pd\\nfrom sklearn.model_selection import train_test_split\\nfrom sklearn.ensemble import RandomForestClassifier\\nfrom sklearn.metrics import precision_recall_curve\\n\\ng = pd.read_csv(\"guests_churn.csv\")\\ny = g[\"churned\"]\\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\\nX_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\\nX_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)\\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_valid)[:, 1]\\n\\nprecision, recall, thresholds = precision_recall_curve(y_valid, p)\\ncurve = pd.DataFrame({\"threshold\": thresholds, \"precision\": precision[:-1], \"recall\": recall[:-1]})\\nbest = curve[curve[\"recall\"] >= 0.85].sort_values(\"precision\").iloc[-1]\\nbest_t = round(best[\"threshold\"], 3)\\nbest_prec = round(best[\"precision\"], 3)'\n_outputs=['best_t', 'best_prec']",
+    "check": "assert verified is True, 'Контракт не выполнен'",
+    "files": [
+      "guests_churn.csv"
+    ]
+  },
+  {
+    "kind": "task",
+    "lesson": "ch07/contracts",
+    "id": "selection-isolation-three-auc",
+    "setup": "import pandas as pd\nimport numpy as np\nfrom sklearn.model_selection import train_test_split\n_solution='import pandas as pd\\nfrom sklearn.model_selection import train_test_split\\nfrom sklearn.dummy import DummyClassifier\\nfrom sklearn.linear_model import LogisticRegression\\nfrom sklearn.ensemble import RandomForestClassifier\\nfrom sklearn.metrics import roc_auc_score\\n\\ng = pd.read_csv(\"guests_churn.csv\")\\ny = g[\"churned\"]\\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\\nX_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\\nX_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)\\n\\nmodels = {\\n    \"dummy\": DummyClassifier(strategy=\"most_frequent\"),\\n    \"lr\": LogisticRegression(max_iter=2000),\\n    \"rf\": RandomForestClassifier(n_estimators=100, random_state=0),\\n}\\naucs = {}\\nfor name, m in models.items():\\n    p = m.fit(X_train, y_train).predict_proba(X_valid)[:, 1]\\n    aucs[name] = round(roc_auc_score(y_valid, p), 3)\\nauc_dummy, auc_lr, auc_rf = aucs[\"dummy\"], aucs[\"lr\"], aucs[\"rf\"]\\nbest = max(aucs, key=aucs.get)'\n_outputs=['best', 'auc_dummy', 'auc_lr', 'auc_rf']",
+    "check": "assert verified is True, 'Контракт не выполнен'",
+    "files": [
+      "guests_churn.csv"
+    ]
+  },
+  {
+    "kind": "task",
+    "lesson": "ch07/contracts",
+    "id": "selection-isolation-profit",
+    "setup": "import pandas as pd\nimport numpy as np\nfrom sklearn.model_selection import train_test_split\n_solution='import pandas as pd\\nfrom sklearn.model_selection import train_test_split\\nfrom sklearn.ensemble import RandomForestClassifier\\n\\ng = pd.read_csv(\"guests_churn.csv\")\\ny = g[\"churned\"]\\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\\nX_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\\nX_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)\\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_valid)[:, 1]\\nthresholds = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]\\n\\nprofits = []\\nfor t in thresholds:\\n    bonus = p >= t\\n    tp = int((y_valid[bonus] == 1).sum())\\n    profits.append(tp * 900 - int(bonus.sum()) * 300)\\ni = profits.index(max(profits))\\nbest_t = thresholds[i]\\nbest_profit = profits[i]'\n_outputs=['best_t', 'best_profit']",
+    "check": "assert verified is True, 'Контракт не выполнен'",
+    "files": [
+      "guests_churn.csv"
+    ]
+  },
+  {
+    "kind": "task",
+    "lesson": "ch07/contracts",
+    "id": "serialized-file-fresh-namespace",
+    "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, KFold\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import Pipeline, make_pipeline\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"])\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nnum = [\"tenure_months\", \"app\", \"visits_90d\", \"days_since_last\", \"avg_check\",\n       \"delivery_share\", \"promo_used\", \"complaints\"]\ncat = [\"city\", \"fav_category\"]\npre = ColumnTransformer([\n    (\"num\", make_pipeline(SimpleImputer(strategy=\"constant\", fill_value=0), StandardScaler()), num),\n    (\"cat\", OneHotEncoder(handle_unknown=\"ignore\"), cat),\n])\npipe = Pipeline([(\"prep\", pre), (\"model\", LogisticRegression(max_iter=2000))])\nkf = KFold(n_splits=5, shuffle=True, random_state=42)\npipe.set_params(model__class_weight=\"balanced\").fit(X_train, y_train)",
+    "check": "assert verified is True, 'Контракт не выполнен'",
+    "files": [
+      "guests_churn.csv"
+    ]
+  }
+]

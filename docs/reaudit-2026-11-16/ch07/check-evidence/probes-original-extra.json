@@ -1,0 +1,30 @@
+[
+  {
+    "id": "ROC-essential-corner",
+    "key": "03-threshold/roc-plot",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_curve, roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nfpr, tpr, thresholds = roc_curve(y_test, p)\nfig, ax = plt.subplots(figsize=(4.5, 4.5))\nax.plot(fpr, tpr)\nax.plot([0, 1], [0, 1], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"FPR\")\nax.set_ylabel(\"TPR\")\nax.set_title(\"ROC-кривая леса\")\nauc = round(roc_auc_score(y_test, p), 3)\nimport numpy as np\nj=int(np.flatnonzero((np.diff(fpr[:-1])>0)&(np.diff(tpr[1:])>0))[0])+1\nz=tpr.copy();z[j]-=0.02;ax.lines[0].set_ydata(z)",
+    "expected": false,
+    "why": "Меняется поворот геометрической ROC, а не произвольная промежуточная точка"
+  },
+  {
+    "id": "recall80-wrong-table",
+    "key": "03-threshold/recall80",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import precision_recall_curve\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nprecision, recall, thresholds = precision_recall_curve(y_test, p)\ncurve = pd.DataFrame({\"threshold\": thresholds, \"precision\": precision[:-1], \"recall\": recall[:-1]})\nbest = curve[curve[\"recall\"] >= 0.85].sort_values(\"precision\").iloc[-1]\nbest_t = round(best[\"threshold\"], 3)\nbest_prec = round(best[\"precision\"], 3)\ncurve[\"precision\"]=0\ncurve[\"threshold\"]=0",
+    "expected": false,
+    "why": "Выбранные числа верны, сдаваемая таблица PR испорчена"
+  },
+  {
+    "id": "final-reversed-rule-order",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nmodel_catch = round(catch_rate(y_test, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(y_test, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.Series(scores, index=X_test.index).sort_index().sort_values(ascending=False, kind='stable')\nmodel_ids = d.loc[rank.head(int(rule.sum())).index, 'lead_id'].tolist()\nrule_ids = d.loc[X_test.index[rule], 'lead_id'].tolist()\nrule_ids=sorted(rule_ids,reverse=True)",
+    "expected": true,
+    "why": "Правило задаёт множество выбранных заявок, их приоритет не заявлен"
+  },
+  {
+    "id": "final-date-boundary",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nmodel_catch = round(catch_rate(y_test, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(y_test, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.Series(scores, index=X_test.index).sort_index().sort_values(ascending=False, kind='stable')\nmodel_ids = d.loc[rank.head(int(rule.sum())).index, 'lead_id'].tolist()\nrule_ids = d.loc[X_test.index[rule], 'lead_id'].tolist()\nfrom sklearn.base import BaseEstimator, TransformerMixin\nclass FutureDateMedian(BaseEstimator, TransformerMixin):\n    def fit(self,X,y=None): return self\n    def transform(self,X):\n        X=X.copy()\n        stamp=pd.to_datetime(X.created)\n        X.loc[stamp>pd.Timestamp('2026-10-01'),'created']='2026-09-30 12:00'\n        return X\nbest.steps.insert(0,('date_cleanup',FutureDateMedian()))",
+    "expected": false,
+    "why": "Правдоподобный ограничитель дат незаметно портит календарные признаки будущих строк"
+  }
+]

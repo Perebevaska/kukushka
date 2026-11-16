@@ -719,8 +719,11 @@ macro_f1 = round(report["macro avg"]["f1-score"], 3)
 
 Отдел лояльности ставит условие: модель должна находить **не меньше 70 %** уходящих гостей, а среди таких моделей нужна самая точная. Переберите деревья `DecisionTreeClassifier(max_depth=d, random_state=0)` для `d` от 1 до 8 и сохраните:
 
-- `trees` — DataFrame со столбцами `depth`, `precision`, `recall`, `f1` (по строке на дерево, метрики на тесте, 3 знака);
+- `trees` — DataFrame со столбцами `depth`, `precision`, `recall`, `f1` (по строке на дерево, метрики на валидации, 3 знака);
 - `best_depth` — глубину дерева, которое выполняет условие по полноте и среди таких имеет наибольшую точность (целое).
+
+
+Сначала выделите 20 % строк в окончательный тест (`random_state=42`, `stratify=y`). Остальные 80 % разделите на обучение и валидацию: 25 % остатка — валидация (`random_state=43`, `stratify=y_pool`). Получатся 60/20/20 % исходных строк. Здесь выбираем только по `X_valid`, `y_valid`; окончательный тест не открываем. После фиксации выбора его используют один раз в отдельной оценке.
 
 ### starter
 ```python
@@ -730,7 +733,8 @@ from sklearn.model_selection import train_test_split
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)
 
 ```
 
@@ -743,7 +747,8 @@ from sklearn.metrics import precision_score as _ps, recall_score as _rs, f1_scor
 _g = _pd.read_csv('guests_churn.csv')
 _y = _g['churned']
 _X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})
-_a, _b, _c, _e = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+_pool, _final, _ypool, _yfinal = _tts(_X, _y, test_size=0.2, random_state=42, stratify=_y)
+_a, _b, _c, _e = _tts(_pool, _ypool, test_size=0.25, random_state=43, stratify=_ypool)
 _rows = []
 for _d in range(1, 9):
     _p = _T(max_depth=_d, random_state=0).fit(_a, _c).predict(_b)
@@ -781,15 +786,16 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)
 
 rows = []
 for d in range(1, 9):
-    pred = DecisionTreeClassifier(max_depth=d, random_state=0).fit(X_train, y_train).predict(X_test)
+    pred = DecisionTreeClassifier(max_depth=d, random_state=0).fit(X_train, y_train).predict(X_valid)
     rows.append({"depth": d,
-                 "precision": round(precision_score(y_test, pred), 3),
-                 "recall": round(recall_score(y_test, pred), 3),
-                 "f1": round(f1_score(y_test, pred), 3)})
+                 "precision": round(precision_score(y_valid, pred), 3),
+                 "recall": round(recall_score(y_valid, pred), 3),
+                 "f1": round(f1_score(y_valid, pred), 3)})
 trees = pd.DataFrame(rows)
 ok = trees[trees["recall"] >= 0.7]
 best_depth = int(ok.loc[ok["precision"].idxmax(), "depth"])
@@ -797,7 +803,7 @@ trees
 ```
 
 ### explain
-Самое точное дерево — глубины 3 (около 0.94), но оно находит меньше половины уходящих и условие не выполняет. Полноту не ниже 0.7 дают только три дерева — глубины 2, 5 и 6, — и самое точное из них — глубины 6 (0.746 против 0.728 у глубины 5). Так выглядит выбор «одна метрика не ниже планки, другая — как можно больше». Честнее было бы выбирать глубину на кросс-валидации, а не на тесте (глава 6, урок «Честное сравнение моделей») — здесь мы упростили, чтобы сосредоточиться на метриках.
+Сначала отбираем допустимые строки с recall ≥ 0.7, затем сравниваем их precision. Это выбор глубины по валидации; точность выбранной модели на этих же строках не служит окончательной оценкой качества. Для окончательной проверки глубину фиксируют до открытия теста.
 
 ## task: newcomers | Кого лес ловит хуже | plus
 
@@ -868,11 +874,14 @@ rec_old = round(recall_score(y_test[~new], pred[~new]), 3)
 
 В теории мы упомянули F-beta: `fbeta_score(y_true, y_pred, beta=...)` из `sklearn.metrics`. При `beta=2` полнота весит больше точности, при `beta=0.5` — наоборот, при `beta=1` это F1.
 
-Для деревьев `DecisionTreeClassifier(max_depth=d, random_state=0)`, `d` от 1 до 8, посчитайте на тесте F1, F2 (`beta=2`) и F0.5 (`beta=0.5`). Сохраните целые числа:
+Для деревьев `DecisionTreeClassifier(max_depth=d, random_state=0)`, `d` от 1 до 8, посчитайте на валидации F1, F2 (`beta=2`) и F0.5 (`beta=0.5`). Сохраните целые числа:
 
 - `d_f1` — глубину с наибольшей F1;
 - `d_f2` — глубину с наибольшей F2;
 - `d_f05` — глубину с наибольшей F0.5.
+
+
+Сначала выделите 20 % строк в окончательный тест (`random_state=42`, `stratify=y`). Остальные 80 % разделите на обучение и валидацию: 25 % остатка — валидация (`random_state=43`, `stratify=y_pool`). Получатся 60/20/20 % исходных строк. Здесь выбираем только по `X_valid`, `y_valid`; окончательный тест не открываем. После фиксации выбора его используют один раз в отдельной оценке.
 
 ### starter
 ```python
@@ -882,7 +891,8 @@ from sklearn.model_selection import train_test_split
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)
 
 ```
 
@@ -895,7 +905,8 @@ from sklearn.metrics import fbeta_score as _fb
 _g = _pd.read_csv('guests_churn.csv')
 _y = _g['churned']
 _X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})
-_a, _b, _c, _e = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+_pool, _final, _ypool, _yfinal = _tts(_X, _y, test_size=0.2, random_state=42, stratify=_y)
+_a, _b, _c, _e = _tts(_pool, _ypool, test_size=0.25, random_state=43, stratify=_ypool)
 _s = {1: {}, 2: {}, 0.5: {}}
 for _d in range(1, 9):
     _p = _T(max_depth=_d, random_state=0).fit(_a, _c).predict(_b)
@@ -910,7 +921,7 @@ for _k, _v in _w.items():
 ```
 
 ### hint
-Соберите таблицу, как в задаче «План по полноте»: для каждой глубины — словарь `{"depth": d, "f1": ..., "f2": ..., "f05": ...}`, где `f2 = fbeta_score(y_test, pred, beta=2)`.
+Соберите таблицу, как в задаче «План по полноте»: для каждой глубины — словарь `{"depth": d, "f1": ..., "f2": ..., "f05": ...}`, где `f2 = fbeta_score(y_valid, pred, beta=2)`.
 
 ### hint
 Лучшая глубина по столбцу: `int(trees.loc[trees["f2"].idxmax(), "depth"])`.
@@ -925,15 +936,16 @@ from sklearn.metrics import fbeta_score
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)
 
 rows = []
 for d in range(1, 9):
-    pred = DecisionTreeClassifier(max_depth=d, random_state=0).fit(X_train, y_train).predict(X_test)
+    pred = DecisionTreeClassifier(max_depth=d, random_state=0).fit(X_train, y_train).predict(X_valid)
     rows.append({"depth": d,
-                 "f1": fbeta_score(y_test, pred, beta=1),
-                 "f2": fbeta_score(y_test, pred, beta=2),
-                 "f05": fbeta_score(y_test, pred, beta=0.5)})
+                 "f1": fbeta_score(y_valid, pred, beta=1),
+                 "f2": fbeta_score(y_valid, pred, beta=2),
+                 "f05": fbeta_score(y_valid, pred, beta=0.5)})
 trees = pd.DataFrame(rows)
 d_f1 = int(trees.loc[trees["f1"].idxmax(), "depth"])
 d_f2 = int(trees.loc[trees["f2"].idxmax(), "depth"])
@@ -943,4 +955,4 @@ print(d_f1, d_f2, d_f05)
 ```
 
 ### explain
-Три меры выбрали три разных дерева. F2, которой важнее полнота, выбирает смелое дерево глубины 2 — то самое, что оказалось самым дешёвым в задаче о цене ошибок из урока «Матрица ошибок». F0.5, которой важнее точность, выбирает осторожное дерево глубины 3 с точностью около 0.94. F1 выбирает компромисс из середины — у глубин 5 и 6 она почти одинаковая. Метрика — это решение о ценах ошибок, записанное формулой: выбирайте её до того, как сравнивать модели.
+Разные меры могут предпочесть разные деревья: F2 сильнее штрафует пропущенных уходящих, F0.5 — лишние бонусы. Сравните полученные глубины на валидации. Выберите нужную бизнесу меру до подбора, а окончательный тест оставьте для зафиксированной модели.

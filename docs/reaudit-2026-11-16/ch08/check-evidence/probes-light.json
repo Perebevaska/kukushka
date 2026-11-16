@@ -1,0 +1,107 @@
+[
+  {
+    "id": "profit-alt",
+    "key": "01-value/p-profit",
+    "expected": true,
+    "reason": "Другой способ: сумма вкладов каждого отправленного гостя.",
+    "code": "def profit(send,y,gain=400,cost=200):\n    return sum(gain if actual else -cost for selected,actual in zip(send,y) if selected)\n"
+  },
+  {
+    "id": "profit-cost-ignored",
+    "key": "01-value/p-profit",
+    "expected": false,
+    "reason": "Параметр cost обещан сигнатурой; при cost=50 ожидается 300, а не 0.",
+    "code": "def profit(send, y, gain=400, cost=200):\n    tp = (send & (y == 1)).sum()\n    fp = (send & (y == 0)).sum()\n    return int(gain * tp - 200 * fp)"
+  },
+  {
+    "id": "profit-wrong-denominator",
+    "key": "01-value/p-profit",
+    "expected": false,
+    "reason": "Оплачены все отрицательные примеры вместо только отправленных.",
+    "code": "def profit(send, y, gain=400, cost=200):\n    tp = (send & (y == 1)).sum()\n    fp = (y == 0).sum()\n    return int(gain * tp - cost * fp)"
+  },
+  {
+    "id": "pilot-alt",
+    "key": "01a-pilot/pilot-delta",
+    "expected": true,
+    "reason": "Считаем доли через размеры групп и суммы, не groupby.mean.",
+    "code": "import pandas as pd\nb=pd.read_csv('bonus_pilot.csv')\nz={name:part.churned.sum()/len(part) for name,part in b.groupby('group')}\ndelta=round(z['контроль']-z['бонус'],3)\nonline=round((z['контроль']-z['бонус'])*2400-200)\n"
+  },
+  {
+    "id": "pilot-organic-attribution",
+    "key": "01a-pilot/pilot-delta",
+    "expected": false,
+    "reason": "Всех оставшихся приписали бонусу.",
+    "code": "import pandas as pd\n\nb = pd.read_csv(\"bonus_pilot.csv\")\nchurn = b.groupby(\"group\")[\"churned\"].mean()\nd = churn[\"контроль\"] - churn[\"бонус\"]\ndelta = round(d, 3)\nonline = round((1-churn[\"бонус\"]) * 2400 - 200)"
+  },
+  {
+    "id": "net-alt",
+    "key": "01b-metric-tree/p-net-conv",
+    "expected": true,
+    "reason": "Эквивалентное взвешивание конверсий числом посетителей.",
+    "code": "import pandas as pd\ns=pd.read_csv('shop_funnel.csv').query('month == \"2026-09\"')\nrate=s.checks/s.visitors\nprint(round(float((rate*s.visitors).sum()/s.visitors.sum()),3))\n"
+  },
+  {
+    "id": "net-unweighted",
+    "key": "01b-metric-tree/p-net-conv",
+    "expected": false,
+    "reason": "Среднее конверсий кофеен теряет веса посетителей.",
+    "code": "import pandas as pd\nf = pd.read_csv(\"shop_funnel.csv\")\nsep = f[f[\"month\"] == \"2026-09\"]\nconv = (sep[\"checks\"] / sep[\"visitors\"]).mean()\nprint(round(conv, 3))"
+  },
+  {
+    "id": "binom-alt",
+    "key": "03-risk/binom",
+    "expected": true,
+    "reason": "Подсчёт доли через count_nonzero.",
+    "code": "import numpy as np\nrng = np.random.default_rng(1)\nkept = rng.binomial(120, 0.25, size=10_000)\np_low = round(np.count_nonzero(kept < 20) / len(kept), 3)"
+  },
+  {
+    "id": "binom-boundary",
+    "key": "03-risk/binom",
+    "expected": false,
+    "reason": "Условие меньше 20 подменено не больше 20.",
+    "code": "import numpy as np\nrng = np.random.default_rng(1)\nkept = rng.binomial(120, 0.25, size=10_000)\np_low = round((kept <= 20).mean(), 3)"
+  },
+  {
+    "id": "binom-global-rng",
+    "key": "03-risk/binom",
+    "expected": true,
+    "reason": "Глобальный legacy RNG заранее сдвинут; default_rng(1) независим.",
+    "code": "import numpy as np\nnp.random.seed(723); np.random.random(1000)\nimport numpy as np\nrng = np.random.default_rng(1)\nkept = rng.binomial(120, 0.25, size=10_000)\np_low = round((kept < 20).mean(), 3)"
+  },
+  {
+    "id": "monitor-alt",
+    "key": "04-monitoring/p-monitor",
+    "expected": true,
+    "reason": "Среднее и доля через суммы Python.",
+    "code": "def month_report(p,threshold=.3):\n    return dict(leads=len(p),mean_pred=round(sum(map(float,p))/len(p),3),above=round(sum(x>threshold for x in p)/len(p),3))\n"
+  },
+  {
+    "id": "monitor-threshold-ignored",
+    "key": "04-monitoring/p-monitor",
+    "expected": false,
+    "reason": "Параметр threshold не используется.",
+    "code": "def month_report(p, threshold=0.3):\n    return {\n        \"leads\": len(p),\n        \"mean_pred\": round(float(p.mean()), 3),\n        \"above\": round(float((p > .3).mean()), 3),\n    }"
+  },
+  {
+    "id": "monitor-boundary",
+    "key": "04-monitoring/p-monitor",
+    "expected": false,
+    "reason": "Строго выше порога подменено >=.",
+    "code": "def month_report(p, threshold=0.3):\n    return {\n        \"leads\": len(p),\n        \"mean_pred\": round(float(p.mean()), 3),\n        \"above\": round(float((p >= threshold).mean()), 3),\n    }"
+  },
+  {
+    "id": "partial-alt",
+    "key": "05-explain/p-pd",
+    "expected": true,
+    "reason": "assign создаёт новую таблицу на каждом шаге.",
+    "code": "def partial(model,X,col,grid):\n    return [round(float(model.predict_proba(X.assign(**{col:v}))[:,1].mean()),3) for v in grid]\n"
+  },
+  {
+    "id": "partial-column-ignored",
+    "key": "05-explain/p-pd",
+    "expected": false,
+    "reason": "Функция незаметно всегда меняет a вместо переданного col.",
+    "code": "def partial(model, X, col, grid):\n    out = []\n    for v in grid:\n        X_v = X.copy()\n        X_v[\"a\"] = v\n        out.append(round(float(model.predict_proba(X_v)[:, 1].mean()), 3))\n    return out"
+  }
+]

@@ -54,7 +54,7 @@ for t in [0.3, 0.5, 0.7]:
 :::
 
 ::: note Ровно 0.5
-Вероятность леса — среднее вероятностей его деревьев. Для смешанных листьев 0.4,0.4,0.9 среднее равно 0.567: при пороге 0.5 класс положительный, хотя жёсткий положительный голос только один. Доля жёстких голосов совпадает с вероятностью только для чистых листьев 0/1. При среднем ровно 0.5 возникает ничья классов. `predict` в такой ничьей отвечает «останется», а `p >= 0.5` — «уйдёт». Поэтому при пороге 0.5 цифры здесь на несколько гостей отличаются от прошлого урока. Дальше везде используем `p >= t`.
+Вероятность леса — среднее вероятностей его деревьев. Для смешанных листьев 0.4,0.4,0.9 среднее равно 0.567: при пороге 0.5 класс положительный, хотя жёсткий положительный голос только один. Для чистых листьев 0/1 доля жёстких голосов всегда равна средней вероятности. Для смешанных листьев совпадение возможно, но не гарантировано. При среднем ровно 0.5 возникает ничья классов. `predict` в такой ничьей отвечает «останется», а `p >= 0.5` — «уйдёт». Поэтому при пороге 0.5 цифры здесь на несколько гостей отличаются от прошлого урока. Дальше везде используем `p >= t`.
 :::
 
 ::: predict
@@ -189,9 +189,11 @@ ax.set_title("ROC-кривая")
 ax.legend()
 ```
 
-Первый порог — `inf` (бесконечность): это точка «никому», выше любой оценки. Диагональ — модель, которая раздаёт вероятности наугад: какую бы долю гостей она ни выбрала, уходящих среди них столько же, сколько в среднем, и TPR равен FPR. Чем сильнее кривая выгибается к левому верхнему углу, тем лучше модель отделяет уходящих от остальных.
+Первый порог — `inf` (бесконечность): это точка «никому», выше любой оценки. Диагональ — теоретический ориентир случайного ранжирования: TPR и FPR равны в среднем. На отдельной конечной выборке случайная ROC может отклоняться от неё. Чем сильнее кривая выгибается к левому верхнему углу, тем лучше модель отделяет уходящих от остальных.
 
 {{practice: roc-plot}}
+
+По умолчанию `roc_curve` пропускает часть точек на прямых отрезках. Параметр `drop_intermediate=False` возвращает все пороги. На этих данных у леса получается 95 точек вместо 88 в среде курса. При соединении вершин видна та же линия, площадь одинакова с точностью вычислений. Диагональ показывает ожидаемый результат случайного ранжирования; конкретная случайная раздача оценок на конечной выборке может дать другую кривую.
 
 ## Разберём вместе: ROC-кривая на пяти гостях
 
@@ -232,7 +234,7 @@ print(round(roc_auc_score(y, p), 3))
 
 ## ROC-AUC: одно число вместо кривой
 
-Площадь под ROC-кривой называют **ROC-AUC** (area under curve). У идеальной модели кривая проходит через левый верхний угол, площадь равна 1. У случайной кривая — диагональ, площадь 0.5.
+Площадь под ROC-кривой называют **ROC-AUC** (area under curve). У идеальной модели кривая проходит через левый верхний угол, площадь равна 1. Ожидаемая AUC случайного ранжирования равна 0.5. Отдельная конечная выборка может дать другое значение.
 
 ```python
 import pandas as pd
@@ -498,7 +500,10 @@ fpr = round(fp / (fp + tn), 3)
 
 ## task: recall80 | Порог под план по полноте | base
 
-Отдел лояльности хочет поймать **не меньше 85 %** уходящих гостей. По PR-кривой леса на тесте найдите порог, который при этом даёт самую высокую точность. Сохраните `best_t` — этот порог (3 знака), `best_prec` — точность при нём (3 знака) и `curve` — таблицу DataFrame со столбцами `threshold`, `precision`, `recall` (все пороги кривой).
+Отдел лояльности хочет поймать **не меньше 85 %** уходящих гостей. По PR-кривой леса на валидации найдите порог, который при этом даёт самую высокую точность. Сохраните `best_t` — этот порог (3 знака), `best_prec` — точность при нём (3 знака) и `curve` — таблицу DataFrame со столбцами `threshold`, `precision`, `recall` (все пороги кривой).
+
+
+Сначала выделите 20 % строк в окончательный тест (`random_state=42`, `stratify=y`). Остальные 80 % разделите на обучение и валидацию: 25 % остатка — валидация (`random_state=43`, `stratify=y_pool`). Получатся 60/20/20 % исходных строк. Здесь выбираем только по `X_valid`, `y_valid`; окончательный тест не открываем. После фиксации выбора его используют один раз в отдельной оценке.
 
 ### starter
 ```python
@@ -510,8 +515,9 @@ from sklearn.metrics import precision_recall_curve
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-p = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]
+X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)
+p = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_valid)[:, 1]
 
 ```
 
@@ -524,13 +530,17 @@ from sklearn.metrics import precision_recall_curve as _prc
 _g = _pd.read_csv('guests_churn.csv')
 _y = _g['churned']
 _X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})
-_a, _b, _c, _d = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+_pool, _final, _ypool, _yfinal = _tts(_X, _y, test_size=0.2, random_state=42, stratify=_y)
+_a, _b, _c, _d = _tts(_pool, _ypool, test_size=0.25, random_state=43, stratify=_ypool)
 _p = _RF(n_estimators=100, random_state=0).fit(_a, _c).predict_proba(_b)[:, 1]
 _pr, _rc, _th = _prc(_d, _p)
 _cv = _pd.DataFrame({'threshold': _th, 'precision': _pr[:-1], 'recall': _rc[:-1]})
 _t = need('curve', _pd.DataFrame)
 assert {'threshold', 'precision', 'recall'} <= set(_t.columns), f'Столбцы curve: {list(_t.columns)}. Нужны threshold, precision и recall.'
 assert len(_t) == len(_cv), f'В curve {len(_t)} строк, а порогов у кривой {len(_cv)}. В precision и recall на один элемент больше — последний отбросьте: [:-1].'
+import numpy as _np
+_got_curve = _t.sort_values('threshold').reset_index(drop=True)
+assert _np.allclose(_got_curve[['threshold','precision','recall']].to_numpy(dtype=float), _cv[['threshold','precision','recall']].to_numpy(dtype=float), atol=1e-10, rtol=0), 'Сверьте все строки PR-таблицы: каждый порог связан со своими precision и recall; последний служебный элемент метрик не входит.'
 _ok = _cv[_cv['recall'] >= 0.85]
 _best = _ok.loc[_ok['precision'].idxmax()]
 assert close(need('best_t'), round(_best['threshold'], 3)), f'best_t = {need("best_t")}, а ожидалось {round(_best["threshold"], 3)}. Оставьте строки с recall ≥ 0.85 и возьмите ту, где precision наибольшая.'
@@ -538,7 +548,7 @@ assert close(need('best_prec'), round(_best['precision'], 3)), f'best_prec = {ne
 ```
 
 ### hint
-`precision, recall, thresholds = precision_recall_curve(y_test, p)`, затем `pd.DataFrame({"threshold": thresholds, "precision": precision[:-1], "recall": recall[:-1]})`.
+`precision, recall, thresholds = precision_recall_curve(y_valid, p)`, затем `pd.DataFrame({"threshold": thresholds, "precision": precision[:-1], "recall": recall[:-1]})`.
 
 ### hint
 Отфильтруйте `curve[curve["recall"] >= 0.85]` и возьмите строку с наибольшей точностью: `.sort_values("precision").iloc[-1]`.
@@ -553,10 +563,11 @@ from sklearn.metrics import precision_recall_curve
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-p = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]
+X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)
+p = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_valid)[:, 1]
 
-precision, recall, thresholds = precision_recall_curve(y_test, p)
+precision, recall, thresholds = precision_recall_curve(y_valid, p)
 curve = pd.DataFrame({"threshold": thresholds, "precision": precision[:-1], "recall": recall[:-1]})
 best = curve[curve["recall"] >= 0.85].sort_values("precision").iloc[-1]
 best_t = round(best["threshold"], 3)
@@ -564,11 +575,11 @@ best_prec = round(best["precision"], 3)
 ```
 
 ### explain
-Чтобы поймать 85 % уходящих, порог приходится опускать примерно до 0.3, и тогда по адресу попадает лишь около 60 % бонусов. На этой выборке рост полноты сопровождается снижением точности. Вообще precision не обязана меняться монотонно; проверяйте фактические TP и FP при каждом пороге.
+Порог и точность выбраны на валидации. Ограничение recall ≥ 0.85 относится к этой выборке и не гарантирует такую же полноту на новых гостях. Зафиксируйте порог до окончательной проверки. Precision не обязана меняться монотонно; проверяйте фактические TP и FP.
 
 ## task: roc-plot | Нарисовать ROC-кривую | base
 
-Нарисуйте ROC-кривую леса на тесте: первая линия на графике — сама кривая (`fpr` по X, `tpr` по Y), вторая — диагональ от (0, 0) до (1, 1). Подпишите оси (любой текст) и дайте заголовок, в котором есть слово `ROC`. Сохраните `auc` — ROC-AUC леса на тесте (3 знака).
+Нарисуйте ROC-кривую леса на тесте: покажите саму кривую (`fpr` по X, `tpr` по Y) и диагональ от (0, 0) до (1, 1) целиком. Порядок создания серий не важен; допустимы линии или точки, полная или сокращённая ROC с той же формой. Обе серии должны быть видимыми. Подпишите оси (любой текст) и дайте заголовок, в котором есть слово `ROC`. Сохраните `auc` — ROC-AUC леса на тесте (3 знака).
 
 ### starter
 ```python
@@ -599,10 +610,12 @@ _X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), d
 _a, _b, _c, _d = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)
 _p = _RF(n_estimators=100, random_state=0).fit(_a, _c).predict_proba(_b)[:, 1]
 _f, _t, _ = _rc(_d, _p)
+from matplotlib.colors import to_rgba as _rgba
 ax = ax_of()
-assert len(ax.lines) >= 2, f'На графике линий: {len(ax.lines)}. Нужны две: ROC-кривая и диагональ.'
-_l = ax.lines[0]
-_lx, _ly = _np.asarray(_l.get_xdata(), dtype=float), _np.asarray(_l.get_ydata(), dtype=float)
+assert ax.get_visible() and ax.figure.get_visible() and ax.axison and ax.xaxis.get_visible() and ax.yaxis.get_visible(), 'График и его оси должны быть видимыми.'
+for _label in [ax.xaxis.label, ax.yaxis.label, ax.title]:
+    assert _label.get_visible() and _rgba(_label.get_color(), alpha=_label.get_alpha())[3] > 0, 'Подписи осей и заголовок должны быть видимыми.'
+assert min(ax.get_xlim()) <= 0 and max(ax.get_xlim()) >= 1 and min(ax.get_ylim()) <= 0 and max(ax.get_ylim()) >= 1, 'Покажите ROC и диагональ целиком: оси должны включать от 0 до 1.'
 def _corners(x, y):
     assert len(x) == len(y) and len(x) >= 2 and _np.isfinite(x).all() and _np.isfinite(y).all(), 'ROC должна содержать конечные координаты X и Y.'
     points = []
@@ -617,15 +630,52 @@ def _corners(x, y):
             points.pop()
         points.append(point)
     return _np.asarray(points)
-_got, _want = _corners(_lx, _ly), _corners(_f, _t)
-assert _got.shape == _want.shape and _np.allclose(_got, _want, atol=1e-10, rtol=0), 'Первая линия — не ROC-кривая леса. Рисуйте FPR по X, TPR по Y; промежуточные точки на прямых участках можно сохранять или убирать.'
-_dx, _dy = _np.asarray(ax.lines[1].get_xdata(), dtype=float), _np.asarray(ax.lines[1].get_ydata(), dtype=float)
-assert len(_dx) == len(_dy) and len(_dx) >= 2 and _np.isfinite(_dx).all() and _np.isfinite(_dy).all(), 'Диагональ должна содержать минимум две конечные точки.'
-assert _np.allclose([_dx[0], _dy[0], _dx[-1], _dy[-1]], [0, 0, 1, 1]), 'Вторая линия должна идти из (0, 0) в (1, 1): ax.plot([0, 1], [0, 1]).'
-assert _np.allclose(_dx, _dy, atol=1e-10, rtol=0) and ((_dx >= 0) & (_dx <= 1)).all(), 'Каждая точка диагонали должна лежать на x=y между 0 и 1: проверьте внутренние точки.'
+from matplotlib.collections import PathCollection as _PC
+_series = []
+for _line in ax.lines:
+    _alpha = _line.get_alpha()
+    _has_line = (_line.get_linestyle() not in ('None', 'none', '', ' ') and _line.get_linewidth() > 0
+                 and _rgba(_line.get_color(), alpha=_alpha)[3] > 0)
+    _face_visible = (_line.get_fillstyle() != 'none' and _rgba(_line.get_markerfacecolor(), alpha=_alpha)[3] > 0)
+    _edge_visible = (_line.get_markeredgewidth() > 0 and _rgba(_line.get_markeredgecolor(), alpha=_alpha)[3] > 0)
+    _has_marker = (_line.get_marker() not in ('None', 'none', '', ' ') and _line.get_markersize() > 0
+                   and (_face_visible or _edge_visible))
+    assert _line.get_visible() and (_has_line or _has_marker), 'Каждая серия должна быть видимой: проверьте штрих, заливку и контур маркеров, alpha и размеры.'
+    _series.append((_np.asarray(_line.get_xdata(), dtype=float), _np.asarray(_line.get_ydata(), dtype=float), _has_line))
+for _collection in ax.collections:
+    if isinstance(_collection, _PC):
+        assert _collection.get_visible() and (_collection.get_alpha() is None or _collection.get_alpha() > 0) and _np.any(_collection.get_sizes() > 0), 'Точки ROC должны быть видимыми.'
+        _faces, _edges = _collection.get_facecolors(), _collection.get_edgecolors()
+        _face_visible = len(_faces) and _np.any(_faces[:, 3] > 0)
+        _edge_visible = len(_edges) and _np.any(_edges[:, 3] > 0) and _np.any(_collection.get_linewidths() > 0)
+        assert _face_visible or _edge_visible, 'Точки ROC должны иметь видимую заливку или контур.'
+        _xy = _np.asarray(_collection.get_offsets(), dtype=float)
+        _series.append((_xy[:, 0], _xy[:, 1], False))
+assert len(_series) >= 2, 'Нужны ROC-кривая и диагональ; можно рисовать линиями или точками.'
+_want = _corners(_f, _t)
+_found_roc = _found_diagonal = False
+for _sx, _sy, _ordered in _series:
+    # У связанных линий сохраняем соседство точек, но направление обхода не влияет на геометрию.
+    # У scatter/отдельных маркеров порядок хранения точек вообще не задаёт штрих.
+    assert len(_sx) == len(_sy) and len(_sx) >= 2 and _np.isfinite(_sx).all() and _np.isfinite(_sy).all(), 'Нужны минимум две конечные пары координат в каждой серии.'
+    if not _ordered:
+        _order = _np.lexsort((_sy, _sx))
+        _sx, _sy = _sx[_order], _sy[_order]
+    elif (_sx[0], _sy[0]) > (_sx[-1], _sy[-1]):
+        _sx, _sy = _sx[::-1], _sy[::-1]
+    _got = _corners(_sx, _sy)
+    _is_roc = _got.shape == _want.shape and _np.allclose(_got, _want, atol=1e-10, rtol=0)
+    _is_diagonal = (len(_sx) >= 2 and _np.allclose([_sx[0], _sy[0], _sx[-1], _sy[-1]], [0, 0, 1, 1])
+                    and _np.allclose(_sx, _sy, atol=1e-10, rtol=0) and ((_sx >= 0) & (_sx <= 1)).all()
+                    and (_np.diff(_sx) >= 0).all())
+    assert _is_roc or _is_diagonal, 'Серия не совпадает с ROC леса или диагональю x=y. Сверьте все пары FPR/TPR и внутренние точки диагонали.'
+    _found_roc |= _is_roc
+    _found_diagonal |= _is_diagonal
+assert _found_roc and _found_diagonal, 'Покажите обе серии: ROC леса и диагональ из (0,0) в (1,1). Полная и сокращённая ROC допустимы.'
 assert ax.get_xlabel() and ax.get_ylabel(), 'Подпишите обе оси: set_xlabel и set_ylabel.'
 assert 'ROC' in ax.get_title(), f'Заголовок «{ax.get_title()}» — в нём должно быть слово ROC.'
 assert close(need('auc'), round(_auc(_d, _p), 3)), f'auc = {need("auc")}, а ожидалось {round(_auc(_d, _p), 3)}. roc_auc_score получает вероятности, не ответы predict.'
+
 ```
 
 ### hint
@@ -659,11 +709,14 @@ auc = round(roc_auc_score(y_test, p), 3)
 ```
 
 ### explain
-Каждая точка ROC-кривой — один порог: по X доля ложных тревог среди оставшихся гостей (FPR), по Y доля найденных уходящих (TPR). `roc_curve` сама перебирает все пороги, поэтому для графика достаточно передать вероятности, а не готовые метки. Диагональ — модель, которая угадывает наугад: она находит уходящих ровно в той же доле, в какой ложно тревожит. Кривая леса идёт заметно выше диагонали. AUC = 0.913 — площадь под кривой; её можно читать так: случайно взятый уходящий гость получит от модели больший риск, чем случайный остающийся, примерно в 91 % пар.
+Каждая точка ROC-кривой — один порог: по X доля ложных тревог среди оставшихся гостей (FPR), по Y доля найденных уходящих (TPR). `roc_curve` сама перебирает все пороги, поэтому для графика достаточно передать вероятности, а не готовые метки. Диагональ — ориентир угадывания: равенство TPR и FPR относится к ожидаемому результату; конкретная случайная выборка колеблется около него. Кривая леса идёт заметно выше диагонали. AUC = 0.913 — площадь под кривой; её можно читать так: случайно взятый уходящий гость получит от модели больший риск, чем случайный остающийся, с учётом половины веса ничьих примерно в 91 % пар.
 
 ## task: three-auc | Три модели по AUC | base
 
-Сравните три модели по ROC-AUC на тесте: базовую `DummyClassifier(strategy="most_frequent")` из урока «Матрица ошибок», `LogisticRegression(max_iter=2000)` и `RandomForestClassifier(n_estimators=100, random_state=0)`. Сохраните `auc_dummy`, `auc_lr`, `auc_rf` (3 знака) и в `best` — строку `"dummy"`, `"lr"` или `"rf"` — у какой модели AUC выше.
+Сравните три модели по ROC-AUC на валидации: базовую `DummyClassifier(strategy="most_frequent")` из урока «Матрица ошибок», `LogisticRegression(max_iter=2000)` и `RandomForestClassifier(n_estimators=100, random_state=0)`. Сохраните `auc_dummy`, `auc_lr`, `auc_rf` (3 знака) и в `best` — строку `"dummy"`, `"lr"` или `"rf"` — у какой модели AUC выше.
+
+
+Сначала выделите 20 % строк в окончательный тест (`random_state=42`, `stratify=y`). Остальные 80 % разделите на обучение и валидацию: 25 % остатка — валидация (`random_state=43`, `stratify=y_pool`). Получатся 60/20/20 % исходных строк. Здесь выбираем только по `X_valid`, `y_valid`; окончательный тест не открываем. После фиксации выбора его используют один раз в отдельной оценке.
 
 ### starter
 ```python
@@ -677,7 +730,8 @@ from sklearn.metrics import roc_auc_score
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)
 
 ```
 
@@ -692,7 +746,8 @@ from sklearn.metrics import roc_auc_score as _auc
 _g = _pd.read_csv('guests_churn.csv')
 _y = _g['churned']
 _X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})
-_a, _b, _c, _d = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+_pool, _final, _ypool, _yfinal = _tts(_X, _y, test_size=0.2, random_state=42, stratify=_y)
+_a, _b, _c, _d = _tts(_pool, _ypool, test_size=0.25, random_state=43, stratify=_ypool)
 _w = {}
 for _k, _m in [('dummy', _DC(strategy='most_frequent')), ('lr', _LR(max_iter=2000)), ('rf', _RF(n_estimators=100, random_state=0))]:
     _w[_k] = round(_auc(_d, _m.fit(_a, _c).predict_proba(_b)[:, 1]), 3)
@@ -704,7 +759,7 @@ assert need('best') == _bw, f'best = {need("best")!r}, а лучшая по AUC 
 ```
 
 ### hint
-Для каждой модели: `.fit(X_train, y_train).predict_proba(X_test)[:, 1]` → `roc_auc_score(y_test, ...)`. У `DummyClassifier` тоже есть `predict_proba`.
+Для каждой модели: `.fit(X_train, y_train).predict_proba(X_valid)[:, 1]` → `roc_auc_score(y_valid, ...)`. У `DummyClassifier` тоже есть `predict_proba`.
 
 ### hint
 `best` можно выбрать через словарь: `max(aucs, key=aucs.get)`.
@@ -721,7 +776,8 @@ from sklearn.metrics import roc_auc_score
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)
 
 models = {
     "dummy": DummyClassifier(strategy="most_frequent"),
@@ -730,14 +786,14 @@ models = {
 }
 aucs = {}
 for name, m in models.items():
-    p = m.fit(X_train, y_train).predict_proba(X_test)[:, 1]
-    aucs[name] = round(roc_auc_score(y_test, p), 3)
+    p = m.fit(X_train, y_train).predict_proba(X_valid)[:, 1]
+    aucs[name] = round(roc_auc_score(y_valid, p), 3)
 auc_dummy, auc_lr, auc_rf = aucs["dummy"], aucs["lr"], aucs["rf"]
 best = max(aucs, key=aucs.get)
 ```
 
 ### explain
-У базовой модели AUC ровно 0.5: она всем выдаёт одну и ту же вероятность, все пары — ничьи. Accuracy у неё 0.78, а ранжировать она не умеет вовсе. Лес и логистическая регрессия близки, у леса чуть выше.
+У базовой модели AUC ровно 0.5: все пары — ничьи. Победитель здесь выбран по валидации. Если сообщать качество выбранной модели как итоговое, её нужно один раз проверить на отложенном тесте после фиксации выбора.
 
 ## task: pairs | AUC через пары | plus
 

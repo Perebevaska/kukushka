@@ -1,0 +1,66 @@
+[
+  {
+    "id": "temporal-cv-raw",
+    "key": "contracts/temporal-cv-raw",
+    "code": "import numpy as np\nfrom sklearn.base import clone\nassert len(X_test)==750\nassert pd.to_datetime(X_train.created).max()+pd.Timedelta(days=30)<pd.to_datetime(X_test.created).min()\nassert not set(['hour','weekday','evening']) & set(X_train.columns)\nfolds=[]\nfor train,valid in kf.split(X_train,y_train):\n    assert not set(train)&set(valid)\n    Z=X_train.iloc[train]\n    prep=clone(pre).fit(Z,y_train.iloc[train])\n    cal=prep.steps[0][1].transform(Z)\n    scaler=prep.steps[1][1].named_transformers_['num'].steps[-1][1]\n    imputed=prep.steps[1][1].named_transformers_['num'].steps[0][1].transform(cal[num])\n    assert np.allclose(scaler.mean_,imputed.mean(axis=0))\n    folds.append([len(train),len(valid)])\nnew=X_test.iloc[:2].copy();new.created=['2026-10-01 18:59','2026-10-01 19:00']\ncal=pre.steps[0][1].transform(new)\nassert cal.evening.tolist()==[0,1] and cal.hour.tolist()==[18,19]\nassert cal.index.equals(new.index)\nverified=True\ndetails={'train':len(X_train),'test':len(X_test),'raw_columns':X_train.columns.tolist(),'train_max':str(pd.to_datetime(X_train.created).max()),'release':str(pd.to_datetime(X_test.created).min()),'folds':folds,'date_hours':cal.hour.tolist(),'date_evening':cal.evening.tolist()}\n",
+    "expected": true,
+    "why": "Ожидаемый результат записан до запуска",
+    "diagnostic": "details"
+  },
+  {
+    "id": "OOF-own-target-singleton",
+    "key": "contracts/OOF-own-target-singleton",
+    "code": "X=pd.DataFrame({'city':['unique'+str(i) for i in range(20)]},index=range(500,520));y=pd.Series([0,1]*10,index=X.index)\nt=RateBy();a=t.fit_transform(X,y)\ny2=y.copy();y2.iloc[0]=1-y2.iloc[0];b=RateBy().fit_transform(X,y2)\nassert a.loc[500,'churn_rate_city']==b.loc[500,'churn_rate_city']\nnew=pd.DataFrame({'city':['new',None]},index=[31,10]);out=t.transform(new)\nassert out.index.equals(new.index) and np.isfinite(out.churn_rate_city).all()\nverified=True;details={'own_target_before':float(a.loc[500,'churn_rate_city']),'after':float(b.loc[500,'churn_rate_city']),'unknown':out.churn_rate_city.tolist(),'indices':out.index.tolist()}\n",
+    "expected": true,
+    "why": "Ожидаемый результат записан до запуска",
+    "diagnostic": "details"
+  },
+  {
+    "id": "selection-isolation-recall-plan",
+    "key": "contracts/selection-isolation-recall-plan",
+    "code": "a={};exec(_solution,a)\noriginal=pd.read_csv('guests_churn.csv')\nchanged=original.copy()\nchanged.loc[a['y_test'].index,'churned']=1-changed.loc[a['y_test'].index,'churned']\n# Hold split keys fixed: freeze the already-created partitions, then recompute only the selected result.\nassert not set(a['X_train'].index)&set(a['X_valid'].index)\nassert not set(a['X_test'].index)&(set(a['X_train'].index)|set(a['X_valid'].index))\nbody=_solution[_solution.index('\\nrows =')+1:] if '\\nrows =' in _solution else None\n# Execute with changed final labels while preserving train/valid partitions.\nb=dict(a);b['y_test']=1-a['y_test'];b['X_test']=a['X_test'].copy()\n# Remove input preparation prefix; selected learner code starts after last train_test_split or after p for threshold exercises.\nlines=_solution.splitlines();start=next(i for i,l in enumerate(lines) if l.startswith('X_train, X_valid'))+1\nexec('\\n'.join(lines[start:]),b)\nassert all(a[k]==b[k] for k in _outputs)\nverified=True;details={'selection':{k:str(a[k]) for k in _outputs},'sizes':[len(a['X_train']),len(a['X_valid']),len(a['X_test'])],'test_labels_flipped':len(a['y_test'])}\n",
+    "expected": true,
+    "why": "Ожидаемый результат записан до запуска",
+    "diagnostic": "details"
+  },
+  {
+    "id": "selection-isolation-f-beta",
+    "key": "contracts/selection-isolation-f-beta",
+    "code": "a={};exec(_solution,a)\noriginal=pd.read_csv('guests_churn.csv')\nchanged=original.copy()\nchanged.loc[a['y_test'].index,'churned']=1-changed.loc[a['y_test'].index,'churned']\n# Hold split keys fixed: freeze the already-created partitions, then recompute only the selected result.\nassert not set(a['X_train'].index)&set(a['X_valid'].index)\nassert not set(a['X_test'].index)&(set(a['X_train'].index)|set(a['X_valid'].index))\nbody=_solution[_solution.index('\\nrows =')+1:] if '\\nrows =' in _solution else None\n# Execute with changed final labels while preserving train/valid partitions.\nb=dict(a);b['y_test']=1-a['y_test'];b['X_test']=a['X_test'].copy()\n# Remove input preparation prefix; selected learner code starts after last train_test_split or after p for threshold exercises.\nlines=_solution.splitlines();start=next(i for i,l in enumerate(lines) if l.startswith('X_train, X_valid'))+1\nexec('\\n'.join(lines[start:]),b)\nassert all(a[k]==b[k] for k in _outputs)\nverified=True;details={'selection':{k:str(a[k]) for k in _outputs},'sizes':[len(a['X_train']),len(a['X_valid']),len(a['X_test'])],'test_labels_flipped':len(a['y_test'])}\n",
+    "expected": true,
+    "why": "Ожидаемый результат записан до запуска",
+    "diagnostic": "details"
+  },
+  {
+    "id": "selection-isolation-recall80",
+    "key": "contracts/selection-isolation-recall80",
+    "code": "a={};exec(_solution,a)\noriginal=pd.read_csv('guests_churn.csv')\nchanged=original.copy()\nchanged.loc[a['y_test'].index,'churned']=1-changed.loc[a['y_test'].index,'churned']\n# Hold split keys fixed: freeze the already-created partitions, then recompute only the selected result.\nassert not set(a['X_train'].index)&set(a['X_valid'].index)\nassert not set(a['X_test'].index)&(set(a['X_train'].index)|set(a['X_valid'].index))\nbody=_solution[_solution.index('\\nrows =')+1:] if '\\nrows =' in _solution else None\n# Execute with changed final labels while preserving train/valid partitions.\nb=dict(a);b['y_test']=1-a['y_test'];b['X_test']=a['X_test'].copy()\n# Remove input preparation prefix; selected learner code starts after last train_test_split or after p for threshold exercises.\nlines=_solution.splitlines();start=next(i for i,l in enumerate(lines) if l.startswith('X_train, X_valid'))+1\nexec('\\n'.join(lines[start:]),b)\nassert all(a[k]==b[k] for k in _outputs)\nverified=True;details={'selection':{k:str(a[k]) for k in _outputs},'sizes':[len(a['X_train']),len(a['X_valid']),len(a['X_test'])],'test_labels_flipped':len(a['y_test'])}\n",
+    "expected": true,
+    "why": "Ожидаемый результат записан до запуска",
+    "diagnostic": "details"
+  },
+  {
+    "id": "selection-isolation-three-auc",
+    "key": "contracts/selection-isolation-three-auc",
+    "code": "a={};exec(_solution,a)\noriginal=pd.read_csv('guests_churn.csv')\nchanged=original.copy()\nchanged.loc[a['y_test'].index,'churned']=1-changed.loc[a['y_test'].index,'churned']\n# Hold split keys fixed: freeze the already-created partitions, then recompute only the selected result.\nassert not set(a['X_train'].index)&set(a['X_valid'].index)\nassert not set(a['X_test'].index)&(set(a['X_train'].index)|set(a['X_valid'].index))\nbody=_solution[_solution.index('\\nrows =')+1:] if '\\nrows =' in _solution else None\n# Execute with changed final labels while preserving train/valid partitions.\nb=dict(a);b['y_test']=1-a['y_test'];b['X_test']=a['X_test'].copy()\n# Remove input preparation prefix; selected learner code starts after last train_test_split or after p for threshold exercises.\nlines=_solution.splitlines();start=next(i for i,l in enumerate(lines) if l.startswith('X_train, X_valid'))+1\nexec('\\n'.join(lines[start:]),b)\nassert all(a[k]==b[k] for k in _outputs)\nverified=True;details={'selection':{k:str(a[k]) for k in _outputs},'sizes':[len(a['X_train']),len(a['X_valid']),len(a['X_test'])],'test_labels_flipped':len(a['y_test'])}\n",
+    "expected": true,
+    "why": "Ожидаемый результат записан до запуска",
+    "diagnostic": "details"
+  },
+  {
+    "id": "selection-isolation-profit",
+    "key": "contracts/selection-isolation-profit",
+    "code": "a={};exec(_solution,a)\noriginal=pd.read_csv('guests_churn.csv')\nchanged=original.copy()\nchanged.loc[a['y_test'].index,'churned']=1-changed.loc[a['y_test'].index,'churned']\n# Hold split keys fixed: freeze the already-created partitions, then recompute only the selected result.\nassert not set(a['X_train'].index)&set(a['X_valid'].index)\nassert not set(a['X_test'].index)&(set(a['X_train'].index)|set(a['X_valid'].index))\nbody=_solution[_solution.index('\\nrows =')+1:] if '\\nrows =' in _solution else None\n# Execute with changed final labels while preserving train/valid partitions.\nb=dict(a);b['y_test']=1-a['y_test'];b['X_test']=a['X_test'].copy()\n# Remove input preparation prefix; selected learner code starts after last train_test_split or after p for threshold exercises.\nlines=_solution.splitlines();start=next(i for i,l in enumerate(lines) if l.startswith('X_train, X_valid'))+1\nexec('\\n'.join(lines[start:]),b)\nassert all(a[k]==b[k] for k in _outputs)\nverified=True;details={'selection':{k:str(a[k]) for k in _outputs},'sizes':[len(a['X_train']),len(a['X_valid']),len(a['X_test'])],'test_labels_flipped':len(a['y_test'])}\n",
+    "expected": true,
+    "why": "Ожидаемый результат записан до запуска",
+    "diagnostic": "details"
+  },
+  {
+    "id": "serialized-file-fresh-namespace",
+    "key": "contracts/serialized-file-fresh-namespace",
+    "code": "import joblib\njoblib.dump(pipe, \"churn_model.joblib\")\nmodel2 = joblib.load(\"churn_model.joblib\")\npred = model2.predict(X_test)\nsame = bool((pred == pipe.predict(X_test)).all())\nn_flag = int(pred.sum())\nprint(same, n_flag)\nloaded={};exec('import joblib\\nrestored=joblib.load(\"churn_model.joblib\")',loaded)\nnew=X_test.iloc[:2].copy();new['city']=['новый город','ещё город'];new['avg_check']=float('nan')\nassert (loaded['restored'].predict(new[new.columns[::-1]])==pipe.predict(new)).all()\nverified=True;details={'same':bool(same),'flagged':int(n_flag),'raw_new_rows':len(new)}\n",
+    "expected": true,
+    "why": "Ожидаемый результат записан до запуска",
+    "diagnostic": "details"
+  }
+]

@@ -1,0 +1,282 @@
+[
+  {
+    "id": "profit-alt",
+    "key": "01-value/p-profit",
+    "expected": true,
+    "reason": "Другой способ: сумма вкладов каждого отправленного гостя.",
+    "code": "def profit(send,y,gain=400,cost=200):\n    return sum(gain if actual else -cost for selected,actual in zip(send,y) if selected)\n"
+  },
+  {
+    "id": "profit-cost-ignored",
+    "key": "01-value/p-profit",
+    "expected": false,
+    "reason": "Параметр cost обещан сигнатурой; при cost=50 ожидается 300, а не 0.",
+    "code": "def profit(send, y, gain=400, cost=200):\n    tp = (send & (y == 1)).sum()\n    fp = (send & (y == 0)).sum()\n    return int(gain * tp - 200 * fp)"
+  },
+  {
+    "id": "profit-wrong-denominator",
+    "key": "01-value/p-profit",
+    "expected": false,
+    "reason": "Оплачены все отрицательные примеры вместо только отправленных.",
+    "code": "def profit(send, y, gain=400, cost=200):\n    tp = (send & (y == 1)).sum()\n    fp = (y == 0).sum()\n    return int(gain * tp - cost * fp)"
+  },
+  {
+    "id": "pilot-alt",
+    "key": "01a-pilot/pilot-delta",
+    "expected": true,
+    "reason": "Считаем доли через размеры групп и суммы, не groupby.mean.",
+    "code": "import pandas as pd\nb=pd.read_csv('bonus_pilot.csv')\nz={name:part.churned.sum()/len(part) for name,part in b.groupby('group')}\ndelta=round(z['контроль']-z['бонус'],3)\nonline=round((z['контроль']-z['бонус'])*2400-200)\n"
+  },
+  {
+    "id": "pilot-organic-attribution",
+    "key": "01a-pilot/pilot-delta",
+    "expected": false,
+    "reason": "Всех оставшихся приписали бонусу.",
+    "code": "import pandas as pd\n\nb = pd.read_csv(\"bonus_pilot.csv\")\nchurn = b.groupby(\"group\")[\"churned\"].mean()\nd = churn[\"контроль\"] - churn[\"бонус\"]\ndelta = round(d, 3)\nonline = round((1-churn[\"бонус\"]) * 2400 - 200)"
+  },
+  {
+    "id": "net-alt",
+    "key": "01b-metric-tree/p-net-conv",
+    "expected": true,
+    "reason": "Эквивалентное взвешивание конверсий числом посетителей.",
+    "code": "import pandas as pd\ns=pd.read_csv('shop_funnel.csv').query('month == \"2026-09\"')\nrate=s.checks/s.visitors\nprint(round(float((rate*s.visitors).sum()/s.visitors.sum()),3))\n"
+  },
+  {
+    "id": "net-unweighted",
+    "key": "01b-metric-tree/p-net-conv",
+    "expected": false,
+    "reason": "Среднее конверсий кофеен теряет веса посетителей.",
+    "code": "import pandas as pd\nf = pd.read_csv(\"shop_funnel.csv\")\nsep = f[f[\"month\"] == \"2026-09\"]\nconv = (sep[\"checks\"] / sep[\"visitors\"]).mean()\nprint(round(conv, 3))"
+  },
+  {
+    "id": "gains-alt-step",
+    "key": "02-budget/gains-plot",
+    "expected": true,
+    "reason": "Те же пары координат, step и обратный порядок artists.",
+    "code": "order = np.argsort(-risk)\ncaught = np.cumsum(y_test.values[order]) / y_test.sum()\nshare = np.arange(1, len(y_test) + 1) / len(y_test)\nfig, ax = plt.subplots()\nax.step(share, caught, where=\"post\", label=\"модель\")\nax.plot([0, 1], [0, 1], \"--\", color=\"grey\", label=\"случайно\")\nax.set_xlabel(\"доля гостей с бонусом\")\nax.set_ylabel(\"доля пойманных уходящих\")\nax.legend()\nplt.show()\nat10 = round(caught[59], 3)"
+  },
+  {
+    "id": "gains-corrupt-point",
+    "key": "02-budget/gains-plot",
+    "expected": false,
+    "reason": "Одна внутренняя доля испорчена; точка 10% осталась верной.",
+    "code": "order = np.argsort(-risk)\ncaught = np.cumsum(y_test.values[order]) / y_test.sum()\nshare = np.arange(1, len(y_test) + 1) / len(y_test)\nfig, ax = plt.subplots()\nax.plot(share, caught, label=\"модель\")\nax.plot([0, 1], [0, 1], \"--\", color=\"grey\", label=\"случайно\")\nax.set_xlabel(\"доля гостей с бонусом\")\nax.set_ylabel(\"доля пойманных уходящих\")\nax.legend()\nplt.show()\nat10 = round(caught[59], 3)\nwrong=caught.copy();wrong[100]=.8\nax.lines[0].set_ydata(wrong)"
+  },
+  {
+    "id": "gains-hidden-axes",
+    "key": "02-budget/gains-plot",
+    "expected": false,
+    "reason": "Весь Axes скрыт; график отсутствует.",
+    "code": "order = np.argsort(-risk)\ncaught = np.cumsum(y_test.values[order]) / y_test.sum()\nshare = np.arange(1, len(y_test) + 1) / len(y_test)\nfig, ax = plt.subplots()\nax.plot(share, caught, label=\"модель\")\nax.plot([0, 1], [0, 1], \"--\", color=\"grey\", label=\"случайно\")\nax.set_xlabel(\"доля гостей с бонусом\")\nax.set_ylabel(\"доля пойманных уходящих\")\nax.legend()\nplt.show()\nat10 = round(caught[59], 3)\nax.set_visible(False)"
+  },
+  {
+    "id": "gains-hidden-label",
+    "key": "02-budget/gains-plot",
+    "expected": false,
+    "reason": "Подпись Y отсутствует визуально.",
+    "code": "order = np.argsort(-risk)\ncaught = np.cumsum(y_test.values[order]) / y_test.sum()\nshare = np.arange(1, len(y_test) + 1) / len(y_test)\nfig, ax = plt.subplots()\nax.plot(share, caught, label=\"модель\")\nax.plot([0, 1], [0, 1], \"--\", color=\"grey\", label=\"случайно\")\nax.set_xlabel(\"доля гостей с бонусом\")\nax.set_ylabel(\"доля пойманных уходящих\")\nax.legend()\nplt.show()\nat10 = round(caught[59], 3)\nax.yaxis.label.set_visible(False)"
+  },
+  {
+    "id": "gains-markers",
+    "key": "02-budget/gains-plot",
+    "expected": true,
+    "reason": "Кривая теми же точками: plot с маркерами без соединения.",
+    "code": "order = np.argsort(-risk)\ncaught = np.cumsum(y_test.values[order]) / y_test.sum()\nshare = np.arange(1, len(y_test) + 1) / len(y_test)\nfig, ax = plt.subplots()\nax.plot(share,caught,\".\",label=\"модель\")\nax.plot([0, 1], [0, 1], \"--\", color=\"grey\", label=\"случайно\")\nax.set_xlabel(\"доля гостей с бонусом\")\nax.set_ylabel(\"доля пойманных уходящих\")\nax.legend()\nplt.show()\nat10 = round(caught[59], 3)"
+  },
+  {
+    "id": "binom-alt",
+    "key": "03-risk/binom",
+    "expected": true,
+    "reason": "Подсчёт доли через count_nonzero.",
+    "code": "import numpy as np\nrng = np.random.default_rng(1)\nkept = rng.binomial(120, 0.25, size=10_000)\np_low = round(np.count_nonzero(kept < 20) / len(kept), 3)"
+  },
+  {
+    "id": "binom-boundary",
+    "key": "03-risk/binom",
+    "expected": false,
+    "reason": "Условие меньше 20 подменено не больше 20.",
+    "code": "import numpy as np\nrng = np.random.default_rng(1)\nkept = rng.binomial(120, 0.25, size=10_000)\np_low = round((kept <= 20).mean(), 3)"
+  },
+  {
+    "id": "binom-global-rng",
+    "key": "03-risk/binom",
+    "expected": true,
+    "reason": "Глобальный legacy RNG заранее сдвинут; default_rng(1) независим.",
+    "code": "import numpy as np\nnp.random.seed(723); np.random.random(1000)\nimport numpy as np\nrng = np.random.default_rng(1)\nkept = rng.binomial(120, 0.25, size=10_000)\np_low = round((kept < 20).mean(), 3)"
+  },
+  {
+    "id": "boot-vectorized",
+    "key": "03-risk/boot-profit",
+    "expected": true,
+    "reason": "Те же парные индексы в одном двумерном вызове RNG.",
+    "code": "rng=np.random.default_rng(0)\nix=rng.integers(0,len(yv),(1000,len(yv)))\ns,yy=send[ix],yv[ix]\nprofits=400*(s & (yy==1)).sum(axis=1)-200*(s & (yy==0)).sum(axis=1)\nlow,high=np.percentile(profits,[2.5,97.5]).round()\np_loss=(profits<0).mean()\n"
+  },
+  {
+    "id": "boot-broken-pairs",
+    "key": "03-risk/boot-profit",
+    "expected": false,
+    "reason": "Предложение и факт индексируются независимо.",
+    "code": "rng=np.random.default_rng(0)\nix=rng.integers(0,len(yv),(1000,len(yv)))\njx=rng.integers(0,len(yv),(1000,len(yv)))\ns,yy=send[ix],yv[jx]\nprofits=400*(s & (yy==1)).sum(axis=1)-200*(s & (yy==0)).sum(axis=1)\nlow,high=np.percentile(profits,[2.5,97.5]).round()\np_loss=(profits<0).mean()\n"
+  },
+  {
+    "id": "monitor-alt",
+    "key": "04-monitoring/p-monitor",
+    "expected": true,
+    "reason": "Среднее и доля через суммы Python.",
+    "code": "def month_report(p,threshold=.3):\n    return dict(leads=len(p),mean_pred=round(sum(map(float,p))/len(p),3),above=round(sum(x>threshold for x in p)/len(p),3))\n"
+  },
+  {
+    "id": "monitor-threshold-ignored",
+    "key": "04-monitoring/p-monitor",
+    "expected": false,
+    "reason": "Параметр threshold не используется.",
+    "code": "def month_report(p, threshold=0.3):\n    return {\n        \"leads\": len(p),\n        \"mean_pred\": round(float(p.mean()), 3),\n        \"above\": round(float((p > .3).mean()), 3),\n    }"
+  },
+  {
+    "id": "monitor-boundary",
+    "key": "04-monitoring/p-monitor",
+    "expected": false,
+    "reason": "Строго выше порога подменено >=.",
+    "code": "def month_report(p, threshold=0.3):\n    return {\n        \"leads\": len(p),\n        \"mean_pred\": round(float(p.mean()), 3),\n        \"above\": round(float((p >= threshold).mean()), 3),\n    }"
+  },
+  {
+    "id": "report-alt",
+    "key": "04b-segments/report-text",
+    "expected": true,
+    "reason": "Тот же bootstrap и показатели при другом порядке и предложениях.",
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.metrics import roc_auc_score\n\ndef auc_ci(y, p, n_boot=200, seed=0):\n    y, p = np.asarray(y), np.asarray(p)\n    rng = np.random.default_rng(seed)\n    aucs = []\n    for _ in range(n_boot):\n        i = rng.integers(0, len(y), len(y))\n        if y[i].min() == y[i].max():\n            continue\n        aucs.append(roc_auc_score(y[i], p[i]))\n    return np.percentile(aucs, [2.5, 97.5])\n\nsoc = live[live[\"channel\"] == \"соцсети\"]\nlo, hi = auc_ci(soc[\"converted\"], soc[\"p\"])\nauc = roc_auc_score(soc[\"converted\"], soc[\"p\"])\nreport = (f\"Соцсети: AUC {auc:.3f} (95 % ДИ {lo:.2f}–{hi:.2f}) на {len(soc)} заявках, \"\n          f\"{soc['converted'].sum()} договора. Прогноз {soc['p'].mean():.3f} при факте {soc['converted'].mean():.3f}.\")\nprint(report)\nreport_metrics = dict(n=len(soc), deals=int(soc['converted'].sum()), auc=round(roc_auc_score(soc['converted'],soc['p']),3), ci_low=round(float(lo),2), ci_high=round(float(hi),2), pred_mean=round(soc['p'].mean(),3), fact_rate=round(soc['converted'].mean(),3))\nreport=(f\"На {report_metrics['n']} заявках соцсетей получено {report_metrics['deals']} договоров. \"\nf\"Факт {report_metrics['fact_rate']:.3f}, средний прогноз {report_metrics['pred_mean']:.3f}. \"\nf\"AUC {report_metrics['auc']:.3f}, 95 % ДИ от {report_metrics['ci_low']:.2f} до {report_metrics['ci_high']:.2f}.\")\n"
+  },
+  {
+    "id": "report-pred-fact",
+    "key": "04b-segments/report-text",
+    "expected": false,
+    "reason": "Прогноз и наблюдаемая доля переставлены.",
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.metrics import roc_auc_score\n\ndef auc_ci(y, p, n_boot=200, seed=0):\n    y, p = np.asarray(y), np.asarray(p)\n    rng = np.random.default_rng(seed)\n    aucs = []\n    for _ in range(n_boot):\n        i = rng.integers(0, len(y), len(y))\n        if y[i].min() == y[i].max():\n            continue\n        aucs.append(roc_auc_score(y[i], p[i]))\n    return np.percentile(aucs, [2.5, 97.5])\n\nsoc = live[live[\"channel\"] == \"соцсети\"]\nlo, hi = auc_ci(soc[\"converted\"], soc[\"p\"])\nauc = roc_auc_score(soc[\"converted\"], soc[\"p\"])\nreport = (f\"Соцсети: AUC {auc:.3f} (95 % ДИ {lo:.2f}–{hi:.2f}) на {len(soc)} заявках, \"\n          f\"{soc['converted'].sum()} договора. Прогноз {soc['p'].mean():.3f} при факте {soc['converted'].mean():.3f}.\")\nprint(report)\nreport_metrics = dict(n=len(soc), deals=int(soc['converted'].sum()), auc=round(roc_auc_score(soc['converted'],soc['p']),3), ci_low=round(float(lo),2), ci_high=round(float(hi),2), pred_mean=round(soc['p'].mean(),3), fact_rate=round(soc['converted'].mean(),3))\nreport_metrics[\"pred_mean\"],report_metrics[\"fact_rate\"]=report_metrics[\"fact_rate\"],report_metrics[\"pred_mean\"]"
+  },
+  {
+    "id": "report-n-deals",
+    "key": "04b-segments/report-text",
+    "expected": false,
+    "reason": "Число заявок и договоров перепутаны.",
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.metrics import roc_auc_score\n\ndef auc_ci(y, p, n_boot=200, seed=0):\n    y, p = np.asarray(y), np.asarray(p)\n    rng = np.random.default_rng(seed)\n    aucs = []\n    for _ in range(n_boot):\n        i = rng.integers(0, len(y), len(y))\n        if y[i].min() == y[i].max():\n            continue\n        aucs.append(roc_auc_score(y[i], p[i]))\n    return np.percentile(aucs, [2.5, 97.5])\n\nsoc = live[live[\"channel\"] == \"соцсети\"]\nlo, hi = auc_ci(soc[\"converted\"], soc[\"p\"])\nauc = roc_auc_score(soc[\"converted\"], soc[\"p\"])\nreport = (f\"Соцсети: AUC {auc:.3f} (95 % ДИ {lo:.2f}–{hi:.2f}) на {len(soc)} заявках, \"\n          f\"{soc['converted'].sum()} договора. Прогноз {soc['p'].mean():.3f} при факте {soc['converted'].mean():.3f}.\")\nprint(report)\nreport_metrics = dict(n=len(soc), deals=int(soc['converted'].sum()), auc=round(roc_auc_score(soc['converted'],soc['p']),3), ci_low=round(float(lo),2), ci_high=round(float(hi),2), pred_mean=round(soc['p'].mean(),3), fact_rate=round(soc['converted'].mean(),3))\nreport_metrics[\"n\"],report_metrics[\"deals\"]=report_metrics[\"deals\"],report_metrics[\"n\"]"
+  },
+  {
+    "id": "report-rng-isolated",
+    "key": "04b-segments/report-text",
+    "expected": true,
+    "reason": "Лишние вызовы глобального RNG не влияют на локальный seed=0.",
+    "code": "np.random.seed(582)\nnp.random.normal(size=1000)\nimport numpy as np\nimport pandas as pd\nfrom sklearn.metrics import roc_auc_score\n\ndef auc_ci(y, p, n_boot=200, seed=0):\n    y, p = np.asarray(y), np.asarray(p)\n    rng = np.random.default_rng(seed)\n    aucs = []\n    for _ in range(n_boot):\n        i = rng.integers(0, len(y), len(y))\n        if y[i].min() == y[i].max():\n            continue\n        aucs.append(roc_auc_score(y[i], p[i]))\n    return np.percentile(aucs, [2.5, 97.5])\n\nsoc = live[live[\"channel\"] == \"соцсети\"]\nlo, hi = auc_ci(soc[\"converted\"], soc[\"p\"])\nauc = roc_auc_score(soc[\"converted\"], soc[\"p\"])\nreport = (f\"Соцсети: AUC {auc:.3f} (95 % ДИ {lo:.2f}–{hi:.2f}) на {len(soc)} заявках, \"\n          f\"{soc['converted'].sum()} договора. Прогноз {soc['p'].mean():.3f} при факте {soc['converted'].mean():.3f}.\")\nprint(report)\nreport_metrics = dict(n=len(soc), deals=int(soc['converted'].sum()), auc=round(roc_auc_score(soc['converted'],soc['p']),3), ci_low=round(float(lo),2), ci_high=round(float(hi),2), pred_mean=round(soc['p'].mean(),3), fact_rate=round(soc['converted'].mean(),3))"
+  },
+  {
+    "id": "partial-alt",
+    "key": "05-explain/p-pd",
+    "expected": true,
+    "reason": "assign создаёт новую таблицу на каждом шаге.",
+    "code": "def partial(model,X,col,grid):\n    return [round(float(model.predict_proba(X.assign(**{col:v}))[:,1].mean()),3) for v in grid]\n"
+  },
+  {
+    "id": "partial-column-ignored",
+    "key": "05-explain/p-pd",
+    "expected": false,
+    "reason": "Функция незаметно всегда меняет a вместо переданного col.",
+    "code": "def partial(model, X, col, grid):\n    out = []\n    for v in grid:\n        X_v = X.copy()\n        X_v[\"a\"] = v\n        out.append(round(float(model.predict_proba(X_v)[:, 1].mean()), 3))\n    return out"
+  },
+  {
+    "id": "fair-alt",
+    "key": "05b-fairness/fair-toy",
+    "expected": true,
+    "reason": "Определения через TP и два отдельных знаменателя.",
+    "code": "import pandas as pd\n\nt = pd.DataFrame({\n    \"group\":   [\"A\"] * 6 + [\"B\"] * 6,\n    \"churned\": [1, 1, 1, 0, 0, 0,   1, 1, 1, 0, 0, 0],\n    \"send\":    [1, 1, 1, 0, 0, 0,   1, 0, 0, 1, 1, 0],\n})\ncounts=t.assign(tp=t.send*t.churned).groupby('group').agg(n=('send','size'),sent=('send','sum'),actual=('churned','sum'),tp=('tp','sum'))\nselected=(counts.sent/counts.n).round(2)\nrecall=(counts.tp/counts.actual).round(2)\nprecision=(counts.tp/counts.sent).round(2)\n"
+  },
+  {
+    "id": "fair-wrong-denominator",
+    "key": "05b-fairness/fair-toy",
+    "expected": false,
+    "reason": "Деление TP на всех гостей вместо уходящих.",
+    "code": "import pandas as pd\n\nt = pd.DataFrame({\n    \"group\":   [\"A\"] * 6 + [\"B\"] * 6,\n    \"churned\": [1, 1, 1, 0, 0, 0,   1, 1, 1, 0, 0, 0],\n    \"send\":    [1, 1, 1, 0, 0, 0,   1, 0, 0, 1, 1, 0],\n})\nselected = t.groupby(\"group\")[\"send\"].mean().round(2)\nrecall = t[t[\"churned\"] == 1].groupby(\"group\")[\"send\"].mean().round(2)\nprecision = t[t[\"send\"] == 1].groupby(\"group\")[\"churned\"].mean().round(2)\nrecall=(t.assign(tp=t.send*t.churned).groupby(\"group\").tp.mean()).round(2)"
+  },
+  {
+    "id": "decision-alt",
+    "key": "06-project/decision",
+    "expected": true,
+    "reason": "Последовательный проход, допускает пустое множество и удерживает порядок.",
+    "code": "passed=[]\nchoice=cost_of_safety=None\nfor city in risk.index:\n    if risk.loc[city,'p_loss']<=.025:\n        passed.append(city)\n        if choice is None or risk.loc[city,'mean']>risk.loc[choice,'mean']:\n            choice=city\nif choice is not None:cost_of_safety=max(risk['mean'])-risk.loc[choice,'mean']\n"
+  },
+  {
+    "id": "decision-all-leader",
+    "key": "06-project/decision",
+    "expected": false,
+    "reason": "Лидер по всем городам совпадает только на учебном входе.",
+    "code": "print(risk)\nok = risk[risk[\"p_loss\"] <= 0.025]\npassed = list(ok.index)\nchoice = risk[\"mean\"].idxmax() if len(ok) else None\ncost_of_safety = risk[\"mean\"].max() - ok.loc[choice, \"mean\"] if choice is not None else None"
+  },
+  {
+    "id": "decision-strict",
+    "key": "06-project/decision",
+    "expected": false,
+    "reason": "Ровно 2.5% исключено ошибочно.",
+    "code": "print(risk)\nok = risk[risk[\"p_loss\"] < 0.025]\npassed = list(ok.index)\nchoice = ok[\"mean\"].idxmax() if len(ok) else None\ncost_of_safety = risk[\"mean\"].max() - ok.loc[choice, \"mean\"] if choice is not None else None"
+  },
+  {
+    "id": "decision-no-empty",
+    "key": "06-project/decision",
+    "expected": false,
+    "reason": "Пустое множество не обработано.",
+    "code": "print(risk)\nok = risk[risk[\"p_loss\"] <= 0.025]\npassed = list(ok.index)\nchoice = ok[\"mean\"].idxmax()\ncost_of_safety = risk[\"mean\"].max() - ok.loc[choice, \"mean\"] if choice is not None else None"
+  },
+  {
+    "id": "decision-money-units",
+    "key": "06-project/decision",
+    "expected": false,
+    "reason": "Тысячи рублей ошибочно превращены в рубли.",
+    "code": "print(risk)\nok = risk[risk[\"p_loss\"] <= 0.025]\npassed = list(ok.index)\nchoice = ok[\"mean\"].idxmax() if len(ok) else None\ncost_of_safety = risk[\"mean\"].max() - ok.loc[choice, \"mean\"] if choice is not None else None\ncost_of_safety=cost_of_safety*1000 if cost_of_safety is not None else None"
+  },
+  {
+    "id": "money-alt",
+    "key": "07-final-project/fp-money",
+    "expected": true,
+    "reason": "Другой допустимый заранее названный порог 0.10.",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, StratifiedKFold\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.compose import make_column_transformer\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\n\n# data (признаки всех гостей на 1 июля) и pilot уже загружены\noff = pilot[pilot[\"group_name\"] == \"предложение\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\nnum = [\"orders_n\", \"orders_per_week\", \"recency_days\", \"avg_check\", \"delivery_share\", \"morning_share\",\n       \"shops_n\", \"tenure_days\", \"coffee_share\", \"app_sessions\", \"complaints_n\"]\ncat = [\"source\", \"city\"]\nX, y = off[num + cat], off[\"bought\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\nscaled = make_column_transformer(\n    (make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nplain = make_column_transformer(\n    (SimpleImputer(strategy=\"median\"), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nimport numpy as np\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import cross_val_predict\n\nbest = make_pipeline(scaled, LogisticRegression(max_iter=1000))\n\ndef profit_curve(p, y, value=1600, cost=150):\n    rows = []\n    for t in np.arange(0.02, 0.41, 0.02).round(2):\n        send = p > t\n        tp = int((send & (y == 1)).sum())\n        rows.append({\"threshold\": t, \"sent\": int(send.sum()), \"buyers\": tp,\n                     \"profit\": value * tp - cost * int(send.sum())})\n    return pd.DataFrame(rows)\n\noof = cross_val_predict(best, X_train, y_train, cv=cv, method=\"predict_proba\")[:, 1]\ncurve = profit_curve(oof, y_train)\nbest_t = 0.10\nbest.fit(X_train, y_train)\nsend = best.predict_proba(X_test)[:, 1] > best_t\ntest_sent = int(send.sum())\ntest_buyers = int((send & (y_test == 1)).sum())\ntest_profit = 1600 * test_buyers - 150 * test_sent\nall_profit = 1600 * int(y_test.sum()) - 150 * len(y_test)\nprint(best_t, test_sent, test_buyers, test_profit, all_profit)"
+  },
+  {
+    "id": "money-units",
+    "key": "07-final-project/fp-money",
+    "expected": false,
+    "reason": "Расход контакта задан тысячами вместо рублей.",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, StratifiedKFold\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.compose import make_column_transformer\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\n\n# data (признаки всех гостей на 1 июля) и pilot уже загружены\noff = pilot[pilot[\"group_name\"] == \"предложение\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\nnum = [\"orders_n\", \"orders_per_week\", \"recency_days\", \"avg_check\", \"delivery_share\", \"morning_share\",\n       \"shops_n\", \"tenure_days\", \"coffee_share\", \"app_sessions\", \"complaints_n\"]\ncat = [\"source\", \"city\"]\nX, y = off[num + cat], off[\"bought\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\nscaled = make_column_transformer(\n    (make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nplain = make_column_transformer(\n    (SimpleImputer(strategy=\"median\"), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nimport numpy as np\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import cross_val_predict\n\nbest = make_pipeline(scaled, LogisticRegression(max_iter=1000))\n\ndef profit_curve(p, y, value=1600, cost=150):\n    rows = []\n    for t in np.arange(0.02, 0.41, 0.02).round(2):\n        send = p > t\n        tp = int((send & (y == 1)).sum())\n        rows.append({\"threshold\": t, \"sent\": int(send.sum()), \"buyers\": tp,\n                     \"profit\": value * tp - cost * int(send.sum())})\n    return pd.DataFrame(rows)\n\noof = cross_val_predict(best, X_train, y_train, cv=cv, method=\"predict_proba\")[:, 1]\ncurve = profit_curve(oof, y_train)\nbest_t = curve.loc[curve[\"profit\"].idxmax(), \"threshold\"]\nbest.fit(X_train, y_train)\nsend = best.predict_proba(X_test)[:, 1] > best_t\ntest_sent = int(send.sum())\ntest_buyers = int((send & (y_test == 1)).sum())\ntest_profit = 1600 * test_buyers - 150 * test_sent\nall_profit = 1600 * int(y_test.sum()) - 150 * len(y_test)\nprint(best_t, test_sent, test_buyers, test_profit, all_profit)\ntest_profit=1600*test_buyers-.150*test_sent"
+  },
+  {
+    "id": "money-curve-key",
+    "key": "07-final-project/fp-money",
+    "expected": false,
+    "reason": "Кривая с прежними прибылями приписывает их другим порогам.",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, StratifiedKFold\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.compose import make_column_transformer\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\n\n# data (признаки всех гостей на 1 июля) и pilot уже загружены\noff = pilot[pilot[\"group_name\"] == \"предложение\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\nnum = [\"orders_n\", \"orders_per_week\", \"recency_days\", \"avg_check\", \"delivery_share\", \"morning_share\",\n       \"shops_n\", \"tenure_days\", \"coffee_share\", \"app_sessions\", \"complaints_n\"]\ncat = [\"source\", \"city\"]\nX, y = off[num + cat], off[\"bought\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\nscaled = make_column_transformer(\n    (make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nplain = make_column_transformer(\n    (SimpleImputer(strategy=\"median\"), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nimport numpy as np\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import cross_val_predict\n\nbest = make_pipeline(scaled, LogisticRegression(max_iter=1000))\n\ndef profit_curve(p, y, value=1600, cost=150):\n    rows = []\n    for t in np.arange(0.02, 0.41, 0.02).round(2):\n        send = p > t\n        tp = int((send & (y == 1)).sum())\n        rows.append({\"threshold\": t, \"sent\": int(send.sum()), \"buyers\": tp,\n                     \"profit\": value * tp - cost * int(send.sum())})\n    return pd.DataFrame(rows)\n\noof = cross_val_predict(best, X_train, y_train, cv=cv, method=\"predict_proba\")[:, 1]\ncurve = profit_curve(oof, y_train)\nbest_t = curve.loc[curve[\"profit\"].idxmax(), \"threshold\"]\nbest.fit(X_train, y_train)\nsend = best.predict_proba(X_test)[:, 1] > best_t\ntest_sent = int(send.sum())\ntest_buyers = int((send & (y_test == 1)).sum())\ntest_profit = 1600 * test_buyers - 150 * test_sent\nall_profit = 1600 * int(y_test.sum()) - 150 * len(y_test)\nprint(best_t, test_sent, test_buyers, test_profit, all_profit)\ncurve[\"threshold\"]=curve[\"threshold\"].values[::-1]"
+  },
+  {
+    "id": "money-curve-reorder",
+    "key": "07-final-project/fp-money",
+    "expected": true,
+    "reason": "Целые строки таблицы кривой переставлены без потери соответствия.",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, StratifiedKFold\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.compose import make_column_transformer\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\n\n# data (признаки всех гостей на 1 июля) и pilot уже загружены\noff = pilot[pilot[\"group_name\"] == \"предложение\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\nnum = [\"orders_n\", \"orders_per_week\", \"recency_days\", \"avg_check\", \"delivery_share\", \"morning_share\",\n       \"shops_n\", \"tenure_days\", \"coffee_share\", \"app_sessions\", \"complaints_n\"]\ncat = [\"source\", \"city\"]\nX, y = off[num + cat], off[\"bought\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\nscaled = make_column_transformer(\n    (make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nplain = make_column_transformer(\n    (SimpleImputer(strategy=\"median\"), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nimport numpy as np\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import cross_val_predict\n\nbest = make_pipeline(scaled, LogisticRegression(max_iter=1000))\n\ndef profit_curve(p, y, value=1600, cost=150):\n    rows = []\n    for t in np.arange(0.02, 0.41, 0.02).round(2):\n        send = p > t\n        tp = int((send & (y == 1)).sum())\n        rows.append({\"threshold\": t, \"sent\": int(send.sum()), \"buyers\": tp,\n                     \"profit\": value * tp - cost * int(send.sum())})\n    return pd.DataFrame(rows)\n\noof = cross_val_predict(best, X_train, y_train, cv=cv, method=\"predict_proba\")[:, 1]\ncurve = profit_curve(oof, y_train)\nbest_t = curve.loc[curve[\"profit\"].idxmax(), \"threshold\"]\nbest.fit(X_train, y_train)\nsend = best.predict_proba(X_test)[:, 1] > best_t\ntest_sent = int(send.sum())\ntest_buyers = int((send & (y_test == 1)).sum())\ntest_profit = 1600 * test_buyers - 150 * test_sent\nall_profit = 1600 * int(y_test.sum()) - 150 * len(y_test)\nprint(best_t, test_sent, test_buyers, test_profit, all_profit)\ncurve=curve.iloc[::-1]"
+  },
+  {
+    "id": "honest-alt",
+    "key": "07-final-project/fp-honest",
+    "expected": true,
+    "reason": "Другой допустимый заранее названный порог 0.10.",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, StratifiedKFold\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.compose import make_column_transformer\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\n\n# data (признаки всех гостей на 1 июля) и pilot уже загружены\noff = pilot[pilot[\"group_name\"] == \"предложение\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\nnum = [\"orders_n\", \"orders_per_week\", \"recency_days\", \"avg_check\", \"delivery_share\", \"morning_share\",\n       \"shops_n\", \"tenure_days\", \"coffee_share\", \"app_sessions\", \"complaints_n\"]\ncat = [\"source\", \"city\"]\nX, y = off[num + cat], off[\"bought\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\nscaled = make_column_transformer(\n    (make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nplain = make_column_transformer(\n    (SimpleImputer(strategy=\"median\"), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nfrom sklearn.linear_model import LogisticRegression\n\nimport numpy as np\nfrom sklearn.model_selection import cross_val_predict\n\noof = cross_val_predict(make_pipeline(scaled, LogisticRegression(max_iter=1000)),\n                        X_train, y_train, cv=cv, method=\"predict_proba\")[:, 1]\non_train = make_pipeline(scaled, LogisticRegression(max_iter=1000)).fit(X_train, y_train)\nctrl = pilot[pilot[\"group_name\"] == \"контроль\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\np_ctrl = on_train.predict_proba(ctrl[num + cat])[:, 1]\n\n# scaled — общий объект у конвейеров, fit перенастраивает его. final обучаем последним,\n# и после этого on_train больше не используем: его масштаб уже перезаписан.\nfinal = make_pipeline(scaled, LogisticRegression(max_iter=1000)).fit(X, y)\nrest = data[~data[\"guest_id\"].isin(pilot[\"guest_id\"]) & (data[\"orders_n\"] > 0)].copy()\nrest[\"p\"] = final.predict_proba(rest[num + cat])[:, 1]\n\nincr = []\nfor t in np.arange(0.02, 0.41, 0.02).round(2):\n    send = oof > t\n    r_t = ctrl.loc[p_ctrl > t, \"bought\"].mean()\n    incr.append({\"threshold\": t, \"sent\": int(send.sum()), \"organic_share\": r_t,\n                 \"margin\": 1600 * ((send & (y_train == 1)).sum() - r_t * send.sum()) - 150 * send.sum()})\nincr = pd.DataFrame(incr)\nbest_t_incr = 0.10\n\nrest[\"send\"] = rest[\"p\"] > best_t_incr\nn_send = int(rest[\"send\"].sum())\nhi = final.predict_proba(ctrl[num + cat])[:, 1] > best_t_incr\norg = ctrl.loc[hi, \"bought\"].mean()\norganic = round(org, 3)\neb = rest.loc[rest[\"send\"], \"p\"].sum()\nexp_buyers = round(eb, 1)\nnaive_profit = round(1600 * eb - 150 * n_send)\nhonest_profit = round(1600 * (eb - org * n_send) - 150 * n_send)\nhonest_all = round(1600 * (rest[\"p\"].sum() - ctrl[\"bought\"].mean() * len(rest)) - 150 * len(rest))\nprint(best_t_incr, organic, exp_buyers, naive_profit, honest_profit, honest_all)"
+  },
+  {
+    "id": "honest-ignore-organic",
+    "key": "07-final-project/fp-honest",
+    "expected": false,
+    "reason": "Все ожидаемые покупки приписаны рассылке.",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, StratifiedKFold\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.compose import make_column_transformer\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\n\n# data (признаки всех гостей на 1 июля) и pilot уже загружены\noff = pilot[pilot[\"group_name\"] == \"предложение\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\nnum = [\"orders_n\", \"orders_per_week\", \"recency_days\", \"avg_check\", \"delivery_share\", \"morning_share\",\n       \"shops_n\", \"tenure_days\", \"coffee_share\", \"app_sessions\", \"complaints_n\"]\ncat = [\"source\", \"city\"]\nX, y = off[num + cat], off[\"bought\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\nscaled = make_column_transformer(\n    (make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nplain = make_column_transformer(\n    (SimpleImputer(strategy=\"median\"), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nfrom sklearn.linear_model import LogisticRegression\n\nimport numpy as np\nfrom sklearn.model_selection import cross_val_predict\n\noof = cross_val_predict(make_pipeline(scaled, LogisticRegression(max_iter=1000)),\n                        X_train, y_train, cv=cv, method=\"predict_proba\")[:, 1]\non_train = make_pipeline(scaled, LogisticRegression(max_iter=1000)).fit(X_train, y_train)\nctrl = pilot[pilot[\"group_name\"] == \"контроль\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\np_ctrl = on_train.predict_proba(ctrl[num + cat])[:, 1]\n\n# scaled — общий объект у конвейеров, fit перенастраивает его. final обучаем последним,\n# и после этого on_train больше не используем: его масштаб уже перезаписан.\nfinal = make_pipeline(scaled, LogisticRegression(max_iter=1000)).fit(X, y)\nrest = data[~data[\"guest_id\"].isin(pilot[\"guest_id\"]) & (data[\"orders_n\"] > 0)].copy()\nrest[\"p\"] = final.predict_proba(rest[num + cat])[:, 1]\n\nincr = []\nfor t in np.arange(0.02, 0.41, 0.02).round(2):\n    send = oof > t\n    r_t = ctrl.loc[p_ctrl > t, \"bought\"].mean()\n    incr.append({\"threshold\": t, \"sent\": int(send.sum()), \"organic_share\": r_t,\n                 \"margin\": 1600 * ((send & (y_train == 1)).sum() - r_t * send.sum()) - 150 * send.sum()})\nincr = pd.DataFrame(incr)\nbest_t_incr = incr.loc[incr[\"margin\"].idxmax(), \"threshold\"]\n\nrest[\"send\"] = rest[\"p\"] > best_t_incr\nn_send = int(rest[\"send\"].sum())\nhi = final.predict_proba(ctrl[num + cat])[:, 1] > best_t_incr\norg = ctrl.loc[hi, \"bought\"].mean()\norganic = round(org, 3)\neb = rest.loc[rest[\"send\"], \"p\"].sum()\nexp_buyers = round(eb, 1)\nnaive_profit = round(1600 * eb - 150 * n_send)\nhonest_profit = round(1600 * (eb - org * n_send) - 150 * n_send)\nhonest_all = round(1600 * (rest[\"p\"].sum() - ctrl[\"bought\"].mean() * len(rest)) - 150 * len(rest))\nprint(best_t_incr, organic, exp_buyers, naive_profit, honest_profit, honest_all)\nhonest_profit=naive_profit"
+  },
+  {
+    "id": "honest-round-organic",
+    "key": "07-final-project/fp-honest",
+    "expected": false,
+    "reason": "Округление доли органики до денежного расчёта.",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, StratifiedKFold\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.compose import make_column_transformer\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\n\n# data (признаки всех гостей на 1 июля) и pilot уже загружены\noff = pilot[pilot[\"group_name\"] == \"предложение\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\nnum = [\"orders_n\", \"orders_per_week\", \"recency_days\", \"avg_check\", \"delivery_share\", \"morning_share\",\n       \"shops_n\", \"tenure_days\", \"coffee_share\", \"app_sessions\", \"complaints_n\"]\ncat = [\"source\", \"city\"]\nX, y = off[num + cat], off[\"bought\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\nscaled = make_column_transformer(\n    (make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nplain = make_column_transformer(\n    (SimpleImputer(strategy=\"median\"), num),\n    (OneHotEncoder(handle_unknown=\"ignore\"), cat))\nfrom sklearn.linear_model import LogisticRegression\n\nimport numpy as np\nfrom sklearn.model_selection import cross_val_predict\n\noof = cross_val_predict(make_pipeline(scaled, LogisticRegression(max_iter=1000)),\n                        X_train, y_train, cv=cv, method=\"predict_proba\")[:, 1]\non_train = make_pipeline(scaled, LogisticRegression(max_iter=1000)).fit(X_train, y_train)\nctrl = pilot[pilot[\"group_name\"] == \"контроль\"].merge(data, on=\"guest_id\", validate=\"one_to_one\")\np_ctrl = on_train.predict_proba(ctrl[num + cat])[:, 1]\n\n# scaled — общий объект у конвейеров, fit перенастраивает его. final обучаем последним,\n# и после этого on_train больше не используем: его масштаб уже перезаписан.\nfinal = make_pipeline(scaled, LogisticRegression(max_iter=1000)).fit(X, y)\nrest = data[~data[\"guest_id\"].isin(pilot[\"guest_id\"]) & (data[\"orders_n\"] > 0)].copy()\nrest[\"p\"] = final.predict_proba(rest[num + cat])[:, 1]\n\nincr = []\nfor t in np.arange(0.02, 0.41, 0.02).round(2):\n    send = oof > t\n    r_t = ctrl.loc[p_ctrl > t, \"bought\"].mean()\n    incr.append({\"threshold\": t, \"sent\": int(send.sum()), \"organic_share\": r_t,\n                 \"margin\": 1600 * ((send & (y_train == 1)).sum() - r_t * send.sum()) - 150 * send.sum()})\nincr = pd.DataFrame(incr)\nbest_t_incr = incr.loc[incr[\"margin\"].idxmax(), \"threshold\"]\n\nrest[\"send\"] = rest[\"p\"] > best_t_incr\nn_send = int(rest[\"send\"].sum())\nhi = final.predict_proba(ctrl[num + cat])[:, 1] > best_t_incr\norg = ctrl.loc[hi, \"bought\"].mean()\norganic = round(org, 3)\neb = rest.loc[rest[\"send\"], \"p\"].sum()\nexp_buyers = round(eb, 1)\nnaive_profit = round(1600 * eb - 150 * n_send)\nhonest_profit = round(1600 * (eb - org * n_send) - 150 * n_send)\nhonest_all = round(1600 * (rest[\"p\"].sum() - ctrl[\"bought\"].mean() * len(rest)) - 150 * len(rest))\nprint(best_t_incr, organic, exp_buyers, naive_profit, honest_profit, honest_all)\nhonest_profit=round(1600*(eb-organic*n_send)-150*n_send)"
+  }
+]

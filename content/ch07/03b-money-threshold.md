@@ -14,7 +14,7 @@ recap:
 Точность и полнота — промежуточные цифры. Бизнесу важнее деньги. Допустим:
 
 - бонус стоит «Зерну» **200 ₽** — его получат и уходящие, и оставшиеся гости;
-- бонус, отправленный уходящему гостю, в среднем приносит **1000 ₽** выручки, которую мы иначе потеряли бы (уже с учётом того, что срабатывает он не всегда).
+- по условиям сценария бонус гостю, который без акции ушёл бы, в среднем приносит **1000 ₽ дополнительной маржи до стоимости бонуса**. В этой сумме уже учтены переменные расходы и вероятность удержания. Для гостя, который остался бы и без акции, дополнительная маржа равна нулю. Средний эффект бонуса задан в условии. В реальной акции его оценивают по сравнению с контрольной группой.
 
 Тогда для порога t прибыль акции = TP × 1000 − (TP + FP) × 200: выгода от пойманных уходящих минус стоимость всех бонусов. Это та же схема, что в уроке «Матрица ошибок»: бонус платим всем, кому отправили. Там мы считали потери от пропущенных (FN), здесь — выгоду от пойманных (TP); это одно и то же, потому что TP + FN — все уходящие, и их число от порога не зависит. В тесте 134 уходящих, значит FN = 134 − TP, и потери по схеме того урока (с нынешними ценами) равны:
 
@@ -59,7 +59,7 @@ ax.set_title("Кривая прибыли")
 - Прибыль: выгода с каждого TP минус стоимость **всех** бонусов, и TP, и FP.
 - «Бонус всем» — точка отсчёта: модель полезна, если зарабатывает больше неё.
 
-Лучший порог здесь около 0.25: прибыль около 79 тыс. ₽ на 600 тестовых гостях против примерно 68 тыс. при пороге 0.5. Бонус всем подряд почти не окупается — 14 тыс. ₽. Модель с правильным порогом зарабатывает в пять с лишним раз больше.
+Лучший порог здесь около 0.25: прибыль около 79 тыс. ₽ на 600 тестовых гостях против примерно 68 тыс. при пороге 0.5. Бонус всем подряд почти не окупается — 14 тыс. ₽. Так выглядит подбор порога на уже размеченной группе. Для оценки результата на новых гостях зафиксируйте порог на валидации, затем примените его к отложенной группе в задании «Честный выбор порога».
 
 Почему оптимум так низко? Бонус выгодно дать гостю, если ожидаемая выгода больше стоимости: p × 1000 > 200, то есть p > 0.2. Когда бонус дешёвый, а уход дорогой, порог должен быть низким — даже ценой точности. Это правило работает, только если вероятностям можно верить как числам — то есть модель **откалибрована**: среди гостей с p ≈ 0.3 уходит действительно около 30 %. Как это проверить — урок «Что делать с вероятностями: ранжирование и калибровка» главы 6.
 
@@ -119,7 +119,10 @@ loss = bonuses * COST + (churned - tp) * GAIN
 
 ## task: profit | Прибыль при дорогом бонусе | base
 
-Бонус подорожал: теперь он стоит **300 ₽**, а выгода от бонуса уходящему гостю — **900 ₽**. Для порогов `[0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]` посчитайте прибыль на тесте: TP × 900 − (число бонусов) × 300, бонус — при p ≥ порога. Сохраните `profits` — **список** прибылей (целые числа) в порядке порогов, `best_t` — порог с наибольшей прибылью и `best_profit` — эту прибыль.
+Бонус подорожал: теперь он стоит **300 ₽**, а выгода от бонуса уходящему гостю — **900 ₽**. Для порогов `[0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]` посчитайте прибыль на валидации: TP × 900 − (число бонусов) × 300, бонус — при p ≥ порога. Сохраните `profits` — **список** прибылей (целые числа) в порядке порогов, `best_t` — порог с наибольшей прибылью и `best_profit` — эту прибыль.
+
+
+Сначала выделите 20 % строк в окончательный тест (`random_state=42`, `stratify=y`). Остальные 80 % разделите на обучение и валидацию: 25 % остатка — валидация (`random_state=43`, `stratify=y_pool`). Получатся 60/20/20 % исходных строк. Здесь выбираем только по `X_valid`, `y_valid`; окончательный тест не открываем. После фиксации выбора его используют один раз в отдельной оценке.
 
 ### starter
 ```python
@@ -130,8 +133,9 @@ from sklearn.ensemble import RandomForestClassifier
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-p = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]
+X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)
+p = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_valid)[:, 1]
 thresholds = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 
 ```
@@ -144,7 +148,8 @@ from sklearn.ensemble import RandomForestClassifier as _RF
 _g = _pd.read_csv('guests_churn.csv')
 _y = _g['churned']
 _X = _pd.get_dummies(_g.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})
-_a, _b, _c, _d = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)
+_pool, _final, _ypool, _yfinal = _tts(_X, _y, test_size=0.2, random_state=42, stratify=_y)
+_a, _b, _c, _d = _tts(_pool, _ypool, test_size=0.25, random_state=43, stratify=_ypool)
 _p = _RF(n_estimators=100, random_state=0).fit(_a, _c).predict_proba(_b)[:, 1]
 _ts = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 _w = [int((_d[_p >= t] == 1).sum()) * 900 - int((_p >= t).sum()) * 300 for t in _ts]
@@ -158,7 +163,7 @@ assert int(need('best_profit')) == _w[_i], f'best_profit = {need("best_profit")}
 ```
 
 ### hint
-Для одного порога: `bonus = p >= t`, `tp = int((y_test[bonus] == 1).sum())`, прибыль `tp * 900 - int(bonus.sum()) * 300`.
+Для одного порога: `bonus = p >= t`, `tp = int((y_valid[bonus] == 1).sum())`, прибыль `tp * 900 - int(bonus.sum()) * 300`.
 
 ### hint
 Индекс максимума списка: `profits.index(max(profits))`, по нему берите порог из `thresholds`.
@@ -172,14 +177,15 @@ from sklearn.ensemble import RandomForestClassifier
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 X = pd.get_dummies(g.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-p = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]
+X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)
+p = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_valid)[:, 1]
 thresholds = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 
 profits = []
 for t in thresholds:
     bonus = p >= t
-    tp = int((y_test[bonus] == 1).sum())
+    tp = int((y_valid[bonus] == 1).sum())
     profits.append(tp * 900 - int(bonus.sum()) * 300)
 i = profits.index(max(profits))
 best_t = thresholds[i]
@@ -187,7 +193,7 @@ best_profit = profits[i]
 ```
 
 ### explain
-Порог безубыточности теперь 300 / 900 ≈ 0.33: бонус выгоден гостю с вероятностью ухода выше трети. Лучший порог сдвинулся вверх по сравнению с примером в теории — дорогой бонус требует большей уверенности.
+Таблица показывает прибыль при каждом пороге на валидации. Выбранный максимум ещё не является ожидаемой прибылью на новых гостях: окончательный порог фиксируют до теста. Формула использует заданную дополнительную маржу 900 ₽ на найденного уходящего и стоимость всех бонусов 300 ₽.
 
 ## task: budget | Бюджет на 100 бонусов | plus
 

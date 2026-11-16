@@ -1,0 +1,474 @@
+[
+  {
+    "id": "01-confusion/count-four-alternative",
+    "key": "01-confusion/count-four",
+    "code": "import pandas as pd\n\nfact = pd.Series([1, 0, 0, 1, 1, 0, 0, 0, 1, 0])\npred = pd.Series([1, 0, 1, 0, 1, 0, 0, 1, 0, 0])\nfrom sklearn.metrics import confusion_matrix\ntn, fp, fn, tp = map(int, confusion_matrix(fact,pred).ravel())\nacc = round((tp+tn)/len(fact),2)",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "01-confusion/count-four-error",
+    "key": "01-confusion/count-four",
+    "code": "import pandas as pd\n\nfact = pd.Series([1, 0, 0, 1, 1, 0, 0, 0, 1, 0])\npred = pd.Series([1, 0, 1, 0, 1, 0, 0, 1, 0, 0])\ntp = int(((fact == 1) & (pred == 1)).sum())\nfp = int(((fact == 0) & (pred == 1)).sum())\nfn = int(((fact == 1) & (pred == 0)).sum())\ntn = int(((fact == 0) & (pred == 0)).sum())\nacc = round((tp + tn) / (tp + fp + fn + tn), 2)\nfp, fn = fn+1, fp",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "02-precision-recall/by-hand-alternative",
+    "key": "02-precision-recall/by-hand",
+    "code": "tp,fp,fn=90,23,44\nprec=round(tp/(tp+fp),3)\nrec=round(tp/(tp+fn),3)\nf1=round(2*tp/(2*tp+fp+fn),3)",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "02-precision-recall/by-hand-error",
+    "key": "02-precision-recall/by-hand",
+    "code": "tp, fp, fn = 90, 23, 44\np = tp / (tp + fp)\nr = tp / (tp + fn)\nprec = round(p, 3)\nrec = round(r, 3)\nf1 = round(2 * p * r / (p + r), 3)\nf1 = round((p+r)/2,3)",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "03b-money-threshold/warm-profit-alternative",
+    "key": "03b-money-threshold/warm-profit",
+    "code": "tp = 91\nbonuses = 116\nchurned = 134\nCOST, GAIN = 200, 1000\n\nprofit = tp*(GAIN-COST)-(bonuses-tp)*COST\nloss = (bonuses-tp)*COST + tp*COST + (churned-tp)*GAIN",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "03b-money-threshold/warm-profit-error",
+    "key": "03b-money-threshold/warm-profit",
+    "code": "tp = 91\nbonuses = 116\nchurned = 134\nCOST, GAIN = 200, 1000\n\nprofit = tp * GAIN - bonuses * COST\nloss = bonuses * COST + (churned - tp) * GAIN\nprofit = tp * (GAIN-COST)",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "04-imbalance/w-hand-alternative",
+    "key": "04-imbalance/w-hand",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nfrom sklearn.utils.class_weight import compute_class_weight\nimport numpy as np\nw0,w1=np.round(compute_class_weight('balanced',classes=np.array([0,1]),y=y_train),3)",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "04-imbalance/w-hand-error",
+    "key": "04-imbalance/w-hand",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nn = len(y_train)\nw0 = round(n / (2 * (y_train == 0).sum()), 3)\nw1 = round(n / (2 * (y_train == 1).sum()), 3)\nw0,w1 = [round(len(y)/(2*(y==c).sum()),3) for c in [0,1]]",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "05-scaling/zscore-alternative",
+    "key": "05-scaling/zscore",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nfrom sklearn.preprocessing import StandardScaler\nscaler=StandardScaler().fit(X_train[['avg_check']])\nmu = scaler.mean_[0]\nsd = scaler.scale_[0]\nz_test = scaler.transform(X_test[['avg_check']]).ravel()",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "05-scaling/zscore-error",
+    "key": "05-scaling/zscore",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nmu = X_train[\"avg_check\"].mean()\nsd = X_train[\"avg_check\"].std(ddof=0)\nz_test = (X_test[\"avg_check\"] - mu) / sd\nz_test=(X_test[\"avg_check\"]-X_test[\"avg_check\"].mean())/X_test[\"avg_check\"].std(ddof=0)",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "05b-regularization/c-two-alternative",
+    "key": "05b-regularization/c-two",
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nscaler = StandardScaler().fit(X_train)\nXs_train = scaler.transform(X_train)\n\nsmall = LogisticRegression(C=0.01).fit(Xs_train, y_train)\nbig = LogisticRegression(C=10).fit(Xs_train, y_train)\nsum_small = round(np.linalg.norm(small.coef_.ravel(),ord=1), 2)\nsum_big = round(np.linalg.norm(big.coef_.ravel(),ord=1), 2)\nbigger = 10 if sum_big > sum_small else 0.01",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "05b-regularization/c-two-error",
+    "key": "05b-regularization/c-two",
+    "code": "import numpy as np\nimport pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nscaler = StandardScaler().fit(X_train)\nXs_train = scaler.transform(X_train)\n\nsmall = LogisticRegression(C=0.01).fit(Xs_train, y_train)\nbig = LogisticRegression(C=10).fit(Xs_train, y_train)\nsum_small = round(np.abs(small.coef_).sum(), 2)\nsum_big = round(np.abs(big.coef_).sum(), 2)\nbigger = 10 if sum_big > sum_small else 0.01\nsum_small=round(np.linalg.norm(small.coef_),2)",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "06-features/is-new-alternative",
+    "key": "06-features/is-new",
+    "code": "import pandas as pd\n\ng = pd.read_csv(\"guests_churn.csv\")\ng['is_new'] = g.tenure_months.le(3).astype(int)\nrate_new=round(g.loc[g.is_new.eq(1),'churned'].mean(),3)\nrate_old=round(g.loc[g.is_new.eq(0),'churned'].mean(),3)\nn_new=int(g.is_new.value_counts()[1])",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "06-features/is-new-error",
+    "key": "06-features/is-new",
+    "code": "import pandas as pd\n\ng = pd.read_csv(\"guests_churn.csv\")\ng[\"is_new\"] = (g[\"tenure_months\"] < 3).astype(int)\nrates = g.groupby(\"is_new\")[\"churned\"].mean()\nrate_new = round(rates[1], 3)\nrate_old = round(rates[0], 3)\nn_new = int(g[\"is_new\"].sum())",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "06b-feature-check/bins-alternative",
+    "key": "06b-feature-check/bins",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, KFold, cross_val_score\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.compose import make_column_selector, make_column_transformer\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import OneHotEncoder\n\ndef guest_encoder():\n    return make_column_transformer(\n        (\"passthrough\", make_column_selector(dtype_include=\"number\")),\n        (OneHotEncoder(handle_unknown=\"ignore\", sparse_output=False),\n         make_column_selector(dtype_exclude=\"number\")),\n    )\n\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nkf = KFold(n_splits=5, shuffle=True, random_state=42)\n\ndef cv_auc(df, scoring=\"roc_auc\"):\n    X = df.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]).fillna({\"avg_check\": 0})\n    if \"recency\" in X:\n        X[\"recency\"] = X[\"recency\"].astype(str)\n    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n    model = make_pipeline(guest_encoder(), StandardScaler(), LogisticRegression(max_iter=2000))\n    return cross_val_score(model, X_train, y_train, cv=kf, scoring=scoring).mean()\n\nb = g.copy()\nb[\"recency\"] = pd.cut(b[\"days_since_last\"],bins=[-1,14,30,60,1000],right=True).astype(str)\nn_cols = pd.get_dummies(b.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).shape[1]\nauc_bins = round(cv_auc(b), 3)",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "06b-feature-check/bins-error",
+    "key": "06b-feature-check/bins",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, KFold, cross_val_score\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.compose import make_column_selector, make_column_transformer\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import OneHotEncoder\n\ndef guest_encoder():\n    return make_column_transformer(\n        (\"passthrough\", make_column_selector(dtype_include=\"number\")),\n        (OneHotEncoder(handle_unknown=\"ignore\", sparse_output=False),\n         make_column_selector(dtype_exclude=\"number\")),\n    )\n\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nkf = KFold(n_splits=5, shuffle=True, random_state=42)\n\ndef cv_auc(df, scoring=\"roc_auc\"):\n    X = df.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]).fillna({\"avg_check\": 0})\n    if \"recency\" in X:\n        X[\"recency\"] = X[\"recency\"].astype(str)\n    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n    model = make_pipeline(guest_encoder(), StandardScaler(), LogisticRegression(max_iter=2000))\n    return cross_val_score(model, X_train, y_train, cv=kf, scoring=scoring).mean()\n\nb = g.copy()\nb[\"recency\"] = pd.cut(b[\"days_since_last\"], [-1, 14, 30, 60, 1000]).astype(str)\nn_cols = pd.get_dummies(b.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).shape[1]\nauc_bins = round(cv_auc(b), 3)\nn_cols-=1",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "07-pipeline/median-imp-alternative",
+    "key": "07-pipeline/median-imp",
+    "code": "import numpy as np\nfrom sklearn.impute import SimpleImputer\nimp=SimpleImputer(strategy='median').fit(X_train[['avg_check']])\nmed=float(X_train.avg_check.quantile(0.5))\ntest_filled=X_test[['avg_check']].fillna(med).to_numpy()",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "07-pipeline/median-imp-error",
+    "key": "07-pipeline/median-imp",
+    "code": "from sklearn.impute import SimpleImputer\nimp = SimpleImputer(strategy=\"median\")\nimp.fit(X_train[[\"avg_check\"]])\nmed = imp.statistics_[0]\ntest_filled = imp.transform(X_test[[\"avg_check\"]])\nprint(med, test_filled[:5].ravel())\ntest_filled=X_test[[\"avg_check\"]].fillna(X_test.avg_check.median()).to_numpy()",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "07b-own-steps/class-warm-alternative",
+    "key": "07b-own-steps/class-warm",
+    "code": "class CoffeeMachine:\n    def __init__(self, beans):\n        self.beans = beans\n        self.cups = 0\n\n    def brew(self, grams=18):\n        self.beans -= grams\n        self.cups += 1\n        return self\n\nm = CoffeeMachine(1000)\nfor _ in range(3):\n    m.brew(grams=18)\nleft = m.beans\ncups = m.cups",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "07b-own-steps/class-warm-error",
+    "key": "07b-own-steps/class-warm",
+    "code": "class CoffeeMachine:\n    def __init__(self, beans):\n        self.beans = beans\n        self.cups = 0\n\n    def brew(self, grams=18):\n        self.beans -= grams\n        self.cups = 1\n        return self\n\nm = CoffeeMachine(1000)\nm.brew().brew().brew()\nleft = m.beans\ncups = m.cups",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "08-tuning/cv-table-alternative",
+    "key": "08-tuning/cv-table",
+    "code": "import pandas as pd\nres = pd.DataFrame(search.cv_results_)\ntable = res.sort_values(by=[\"rank_test_score\"],ascending=True,kind=\"stable\")[[\"param_model__C\", \"param_model__class_weight\", \"mean_test_score\", \"std_test_score\"]]\nbest = table.iloc[0]\nclose_rows = table[table[\"mean_test_score\"] >= best[\"mean_test_score\"] - best[\"std_test_score\"]]\nn_close = len(close_rows)\ncw_close = set(close_rows[\"param_model__class_weight\"])\nprint(table.round(3))\nprint(n_close, cw_close)",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "08-tuning/cv-table-error",
+    "key": "08-tuning/cv-table",
+    "code": "import pandas as pd\nres = pd.DataFrame(search.cv_results_)\ntable = res.sort_values(\"rank_test_score\")[[\"param_model__C\", \"param_model__class_weight\", \"mean_test_score\", \"std_test_score\"]]\nbest = table.iloc[0]\nclose_rows = table[table[\"mean_test_score\"] >= best[\"mean_test_score\"] - best[\"std_test_score\"]]\nn_close = len(close_rows)\ncw_close = set(close_rows[\"param_model__class_weight\"])\nprint(table.round(3))\nprint(n_close, cw_close)\ntable[\"param_model__C\"]=0\ntable[\"std_test_score\"]=0",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "09-project/final-alternative",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nlabels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, \"lead_id\"])\nmodel_catch = round(catch_rate(labels_by_id, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.DataFrame({'score': scores, 'lead_id': d.loc[X_test.index, 'lead_id']}, index=X_test.index).sort_values(by=['score','lead_id'],ascending=[False,True],kind='stable')\nmodel_ids = rank.head(int(rule.sum()))['lead_id'].tolist()\nrule_ids = sorted(d.loc[X_test.index[rule], 'lead_id'].tolist())",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "09-project/final-error",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nlabels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, \"lead_id\"])\nmodel_catch = round(catch_rate(labels_by_id, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.DataFrame({'score': scores, 'lead_id': d.loc[X_test.index, 'lead_id']}, index=X_test.index).sort_values(['score', 'lead_id'], ascending=[False, True])\nmodel_ids = rank.head(int(rule.sum()))['lead_id'].tolist()\nrule_ids = sorted(d.loc[X_test.index[rule], 'lead_id'].tolist())\nmodel_ids=model_ids[:-1]",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "03-threshold/roc-plot-alternative",
+    "key": "03-threshold/roc-plot",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_curve, roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nfpr, tpr, thresholds = roc_curve(y_test, p, drop_intermediate=False)\nfig, ax = plt.subplots(figsize=(4.5, 4.5))\nax.plot(fpr, tpr)\nax.plot([0, 1], [0, 1], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"FPR\")\nax.set_ylabel(\"TPR\")\nax.set_title(\"ROC-кривая леса\")\nauc = round(roc_auc_score(y_test, p), 3)",
+    "expected": true,
+    "why": "Другой корректный способ, результат по видимому условию"
+  },
+  {
+    "id": "03-threshold/roc-plot-error",
+    "key": "03-threshold/roc-plot",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_curve, roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nfpr, tpr, thresholds = roc_curve(y_test, p)\nfig, ax = plt.subplots(figsize=(4.5, 4.5))\nax.plot(fpr, tpr)\nax.plot([0, 1], [0, 1], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"FPR\")\nax.set_ylabel(\"TPR\")\nax.set_title(\"ROC-кривая леса\")\nauc = round(roc_auc_score(y_test, p), 3)\nax.lines[0].set_visible(False)",
+    "expected": false,
+    "why": "Правдоподобная ошибка результата"
+  },
+  {
+    "id": "ROC-diagonal-first",
+    "key": "03-threshold/roc-plot",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_curve, roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nfpr, tpr, thresholds = roc_curve(y_test, p)\nfig, ax = plt.subplots(figsize=(4.5, 4.5))\nax.plot([0, 1], [0, 1], color=\"grey\", linestyle=\"--\")\nax.plot(fpr, tpr)\nax.set_xlabel(\"FPR\")\nax.set_ylabel(\"TPR\")\nax.set_title(\"ROC-кривая леса\")\nauc = round(roc_auc_score(y_test, p), 3)",
+    "expected": true,
+    "why": "Порядок создания линий не меняет содержание графика"
+  },
+  {
+    "id": "ROC-scatter",
+    "key": "03-threshold/roc-plot",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_curve, roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nfpr, tpr, thresholds = roc_curve(y_test, p)\nfig, ax = plt.subplots(figsize=(4.5, 4.5))\nax.scatter(fpr,tpr)\nax.plot([0, 1], [0, 1], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"FPR\")\nax.set_ylabel(\"TPR\")\nax.set_title(\"ROC-кривая леса\")\nauc = round(roc_auc_score(y_test, p), 3)",
+    "expected": true,
+    "why": "Те же ROC пары точек нанесены точками"
+  },
+  {
+    "id": "hidden-diagonal",
+    "key": "03-threshold/roc-plot",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_curve, roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nfpr, tpr, thresholds = roc_curve(y_test, p)\nfig, ax = plt.subplots(figsize=(4.5, 4.5))\nax.plot(fpr, tpr)\nax.plot([0, 1], [0, 1], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"FPR\")\nax.set_ylabel(\"TPR\")\nax.set_title(\"ROC-кривая леса\")\nauc = round(roc_auc_score(y_test, p), 3)\nax.lines[1].set_alpha(0)",
+    "expected": false,
+    "why": "График скрыт/искажён и не выполняет видимый контракт"
+  },
+  {
+    "id": "hidden-axes",
+    "key": "03-threshold/roc-plot",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_curve, roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nfpr, tpr, thresholds = roc_curve(y_test, p)\nfig, ax = plt.subplots(figsize=(4.5, 4.5))\nax.plot(fpr, tpr)\nax.plot([0, 1], [0, 1], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"FPR\")\nax.set_ylabel(\"TPR\")\nax.set_title(\"ROC-кривая леса\")\nauc = round(roc_auc_score(y_test, p), 3)\nax.set_visible(False)",
+    "expected": false,
+    "why": "График скрыт/искажён и не выполняет видимый контракт"
+  },
+  {
+    "id": "clipped-ROC",
+    "key": "03-threshold/roc-plot",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_curve, roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nfpr, tpr, thresholds = roc_curve(y_test, p)\nfig, ax = plt.subplots(figsize=(4.5, 4.5))\nax.plot(fpr, tpr)\nax.plot([0, 1], [0, 1], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"FPR\")\nax.set_ylabel(\"TPR\")\nax.set_title(\"ROC-кривая леса\")\nauc = round(roc_auc_score(y_test, p), 3)\nax.set_xlim(0.95,1.0)",
+    "expected": false,
+    "why": "График скрыт/искажён и не выполняет видимый контракт"
+  },
+  {
+    "id": "diagonal-bend",
+    "key": "03-threshold/roc-plot",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_curve, roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nfpr, tpr, thresholds = roc_curve(y_test, p)\nfig, ax = plt.subplots(figsize=(4.5, 4.5))\nax.plot(fpr, tpr)\nax.plot([0, 1], [0, 1], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"FPR\")\nax.set_ylabel(\"TPR\")\nax.set_title(\"ROC-кривая леса\")\nauc = round(roc_auc_score(y_test, p), 3)\nax.lines[1].set_data([0,.5,1],[0,.9,1])",
+    "expected": false,
+    "why": "График скрыт/искажён и не выполняет видимый контракт"
+  },
+  {
+    "id": "ROC-changed-point",
+    "key": "03-threshold/roc-plot",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_curve, roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nfpr, tpr, thresholds = roc_curve(y_test, p)\nfig, ax = plt.subplots(figsize=(4.5, 4.5))\nax.plot(fpr, tpr)\nax.plot([0, 1], [0, 1], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"FPR\")\nax.set_ylabel(\"TPR\")\nax.set_title(\"ROC-кривая леса\")\nauc = round(roc_auc_score(y_test, p), 3)\nz=tpr.copy(); z[5]+=0.02; ax.lines[0].set_ydata(z)",
+    "expected": true,
+    "why": "Диагностированная поправка исходной классификации: точка #5 остаётся внутри того же вертикального отрезка, геометрическая ROC сохраняется."
+  },
+  {
+    "id": "final-missing-rule-tail",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nlabels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, \"lead_id\"])\nmodel_catch = round(catch_rate(labels_by_id, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.DataFrame({'score': scores, 'lead_id': d.loc[X_test.index, 'lead_id']}, index=X_test.index).sort_values(['score', 'lead_id'], ascending=[False, True])\nmodel_ids = rank.head(int(rule.sum()))['lead_id'].tolist()\nrule_ids = sorted(d.loc[X_test.index[rule], 'lead_id'].tolist())\nrule_ids=rule_ids[:-1]",
+    "expected": false,
+    "why": "Последний контакт правила потерян"
+  },
+  {
+    "id": "final-rounded-budget",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nlabels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, \"lead_id\"])\nmodel_catch = round(catch_rate(labels_by_id, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.DataFrame({'score': scores, 'lead_id': d.loc[X_test.index, 'lead_id']}, index=X_test.index).sort_values(['score', 'lead_id'], ascending=[False, True])\nmodel_ids = rank.head(int(rule.sum()))['lead_id'].tolist()\nrule_ids = sorted(d.loc[X_test.index[rule], 'lead_id'].tolist())\nmodel_ids=model_ids[:int(len(X_test)*rule_share_test)]",
+    "expected": false,
+    "why": "Округление доли уменьшает целую очередь"
+  },
+  {
+    "id": "final-broken-raw-preparation",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nlabels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, \"lead_id\"])\nmodel_catch = round(catch_rate(labels_by_id, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.DataFrame({'score': scores, 'lead_id': d.loc[X_test.index, 'lead_id']}, index=X_test.index).sort_values(['score', 'lead_id'], ascending=[False, True])\nmodel_ids = rank.head(int(rule.sum()))['lead_id'].tolist()\nrule_ids = sorted(d.loc[X_test.index[rule], 'lead_id'].tolist())\nbest.steps[0]=(best.steps[0][0],best.steps[0][1].steps[-1][1])",
+    "expected": false,
+    "why": "Подготовка даты удалена после расчёта чисел"
+  },
+  {
+    "id": "final-not-pipeline",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nlabels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, \"lead_id\"])\nmodel_catch = round(catch_rate(labels_by_id, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.DataFrame({'score': scores, 'lead_id': d.loc[X_test.index, 'lead_id']}, index=X_test.index).sort_values(['score', 'lead_id'], ascending=[False, True])\nmodel_ids = rank.head(int(rule.sum()))['lead_id'].tolist()\nrule_ids = sorted(d.loc[X_test.index[rule], 'lead_id'].tolist())\n_original_best=best\nclass ModelProxy:\n    def predict_proba(self,X): return _original_best.predict_proba(X)\nbest=ModelProxy()",
+    "expected": false,
+    "why": "Передан объект без контракта Pipeline; задание заявляет обученный конвейер"
+  },
+  {
+    "id": "empty-serialized-file",
+    "key": "08-tuning/save-load",
+    "code": "import joblib\njoblib.dump(pipe, \"churn_model.joblib\")\nmodel2 = joblib.load(\"churn_model.joblib\")\npred = model2.predict(X_test)\nsame = bool((pred == pipe.predict(X_test)).all())\nn_flag = int(pred.sum())\nprint(same, n_flag)\nopen(\"churn_model.joblib\",\"wb\").close()",
+    "expected": false,
+    "why": "На диске пустой файл при правильной модели в памяти"
+  },
+  {
+    "id": "metric-alternative",
+    "key": "09-project/metric",
+    "code": "import numpy as np\nimport pandas as pd\n\ndef catch_rate(y_true, scores, share=0.3, k=None):\n    s = pd.Series(scores, index=y_true.index)\n    top = s.to_frame(\"score\").assign(key=s.index).sort_values([\"score\",\"key\"],ascending=[False,True])[\"score\"].head(int(len(s)*share) if k is None else int(k)).index\n    return y_true.loc[top].sum() / y_true.sum()\n\nrule = (X_train[\"repeat_client\"] == 1) | (X_train[\"channel\"] == \"рекомендация\")\nrule_share = round(rule.mean(), 3)\nrule_catch = round(y_train[rule].sum() / y_train.sum(), 3)\nrandom_catch = round(catch_rate(y_train, np.random.default_rng(0).random(len(y_train))), 3)\nprint(rule_share, rule_catch, random_catch)",
+    "expected": true,
+    "why": "Равные оценки развязаны явным вторым ключом"
+  },
+  {
+    "id": "metric-rounded-k",
+    "key": "09-project/metric",
+    "code": "import numpy as np\nimport pandas as pd\n\ndef catch_rate(y_true, scores, share=0.3, k=None):\n    s = pd.Series(scores, index=y_true.index)\n    top = s.sort_index().sort_values(ascending=False, kind=\"stable\").head(int(len(s)*share) if k is None else int(k)).index\n    return y_true.loc[top].sum() / y_true.sum()\n\nrule = (X_train[\"repeat_client\"] == 1) | (X_train[\"channel\"] == \"рекомендация\")\nrule_share = round(rule.mean(), 3)\nrule_catch = round(y_train[rule].sum() / y_train.sum(), 3)\nrandom_catch = round(catch_rate(y_train, np.random.default_rng(0).random(len(y_train))), 3)\nprint(rule_share, rule_catch, random_catch)\nold_catch=catch_rate\ndef catch_rate(y_true,scores,share=0.3,k=None):\n    return old_catch(y_true,scores,share=round(k/len(y_true),3) if k is not None else share)",
+    "expected": false,
+    "why": "При k=10 из30 ошибочно отбирается9"
+  },
+  {
+    "id": "cv-table-permuted-parameter-labels",
+    "key": "08-tuning/cv-table",
+    "code": "import pandas as pd\nres = pd.DataFrame(search.cv_results_)\ntable = res.sort_values(\"rank_test_score\")[[\"param_model__C\", \"param_model__class_weight\", \"mean_test_score\", \"std_test_score\"]]\nbest = table.iloc[0]\nclose_rows = table[table[\"mean_test_score\"] >= best[\"mean_test_score\"] - best[\"std_test_score\"]]\nn_close = len(close_rows)\ncw_close = set(close_rows[\"param_model__class_weight\"])\nprint(table.round(3))\nprint(n_close, cw_close)\ntable[\"param_model__C\"]=table[\"param_model__C\"].iloc[::-1].to_numpy()",
+    "expected": false,
+    "why": "Оценки приписаны другим настройкам"
+  },
+  {
+    "id": "ROC-essential-corner",
+    "key": "03-threshold/roc-plot",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_curve, roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nfpr, tpr, thresholds = roc_curve(y_test, p)\nfig, ax = plt.subplots(figsize=(4.5, 4.5))\nax.plot(fpr, tpr)\nax.plot([0, 1], [0, 1], color=\"grey\", linestyle=\"--\")\nax.set_xlabel(\"FPR\")\nax.set_ylabel(\"TPR\")\nax.set_title(\"ROC-кривая леса\")\nauc = round(roc_auc_score(y_test, p), 3)\nimport numpy as np\nj=int(np.flatnonzero((np.diff(fpr[:-1])>0)&(np.diff(tpr[1:])>0))[0])+1\nz=tpr.copy();z[j]-=0.02;ax.lines[0].set_ydata(z)",
+    "expected": false,
+    "why": "Меняется поворот геометрической ROC, а не произвольная промежуточная точка"
+  },
+  {
+    "id": "recall80-wrong-table",
+    "key": "03-threshold/recall80",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import precision_recall_curve\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\nX_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_valid)[:, 1]\n\nprecision, recall, thresholds = precision_recall_curve(y_valid, p)\ncurve = pd.DataFrame({\"threshold\": thresholds, \"precision\": precision[:-1], \"recall\": recall[:-1]})\nbest = curve[curve[\"recall\"] >= 0.85].sort_values(\"precision\").iloc[-1]\nbest_t = round(best[\"threshold\"], 3)\nbest_prec = round(best[\"precision\"], 3)\ncurve[\"precision\"]=0\ncurve[\"threshold\"]=0",
+    "expected": false,
+    "why": "Выбранные числа верны, сдаваемая таблица PR испорчена"
+  },
+  {
+    "id": "final-reversed-rule-order",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nlabels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, \"lead_id\"])\nmodel_catch = round(catch_rate(labels_by_id, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.DataFrame({'score': scores, 'lead_id': d.loc[X_test.index, 'lead_id']}, index=X_test.index).sort_values(['score', 'lead_id'], ascending=[False, True])\nmodel_ids = rank.head(int(rule.sum()))['lead_id'].tolist()\nrule_ids = sorted(d.loc[X_test.index[rule], 'lead_id'].tolist())\nrule_ids=sorted(rule_ids,reverse=True)",
+    "expected": false,
+    "why": "Уточнён видимый контракт: очередь правила по возрастанию lead_id"
+  },
+  {
+    "id": "final-date-boundary",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nlabels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, \"lead_id\"])\nmodel_catch = round(catch_rate(labels_by_id, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.DataFrame({'score': scores, 'lead_id': d.loc[X_test.index, 'lead_id']}, index=X_test.index).sort_values(['score', 'lead_id'], ascending=[False, True])\nmodel_ids = rank.head(int(rule.sum()))['lead_id'].tolist()\nrule_ids = sorted(d.loc[X_test.index[rule], 'lead_id'].tolist())\nfrom sklearn.base import BaseEstimator, TransformerMixin\nclass FutureDateMedian(BaseEstimator, TransformerMixin):\n    def fit(self,X,y=None): return self\n    def transform(self,X):\n        X=X.copy()\n        stamp=pd.to_datetime(X.created)\n        X.loc[stamp>pd.Timestamp('2026-10-01'),'created']='2026-09-30 12:00'\n        return X\nbest.steps.insert(0,('date_cleanup',FutureDateMedian()))",
+    "expected": false,
+    "why": "Правдоподобный ограничитель дат незаметно портит календарные признаки будущих строк"
+  },
+  {
+    "id": "02-precision-recall/recall-plan-validation-author",
+    "key": "02-precision-recall/recall-plan",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.metrics import precision_score, recall_score, f1_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\nX_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)\n\nrows = []\nfor d in range(1, 9):\n    pred = DecisionTreeClassifier(max_depth=d, random_state=0).fit(X_train, y_train).predict(X_valid)\n    rows.append({\"depth\": d,\n                 \"precision\": round(precision_score(y_valid, pred), 3),\n                 \"recall\": round(recall_score(y_valid, pred), 3),\n                 \"f1\": round(f1_score(y_valid, pred), 3)})\ntrees = pd.DataFrame(rows)\nok = trees[trees[\"recall\"] >= 0.7]\nbest_depth = int(ok.loc[ok[\"precision\"].idxmax(), \"depth\"])\ntrees",
+    "expected": true,
+    "why": "Подбор только на validation, финальный test отложен"
+  },
+  {
+    "id": "02-precision-recall/recall-plan-old-test-selection",
+    "key": "02-precision-recall/recall-plan",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.metrics import precision_score, recall_score, f1_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nrows = []\nfor d in range(1, 9):\n    pred = DecisionTreeClassifier(max_depth=d, random_state=0).fit(X_train, y_train).predict(X_test)\n    rows.append({\"depth\": d,\n                 \"precision\": round(precision_score(y_test, pred), 3),\n                 \"recall\": round(recall_score(y_test, pred), 3),\n                 \"f1\": round(f1_score(y_test, pred), 3)})\ntrees = pd.DataFrame(rows)\nok = trees[trees[\"recall\"] >= 0.7]\nbest_depth = int(ok.loc[ok[\"precision\"].idxmax(), \"depth\"])\ntrees",
+    "expected": false,
+    "why": "Старая программа подбирает на прежнем test с другим train; контракт изменён"
+  },
+  {
+    "id": "02-precision-recall/f-beta-validation-author",
+    "key": "02-precision-recall/f-beta",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.metrics import fbeta_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\nX_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)\n\nrows = []\nfor d in range(1, 9):\n    pred = DecisionTreeClassifier(max_depth=d, random_state=0).fit(X_train, y_train).predict(X_valid)\n    rows.append({\"depth\": d,\n                 \"f1\": fbeta_score(y_valid, pred, beta=1),\n                 \"f2\": fbeta_score(y_valid, pred, beta=2),\n                 \"f05\": fbeta_score(y_valid, pred, beta=0.5)})\ntrees = pd.DataFrame(rows)\nd_f1 = int(trees.loc[trees[\"f1\"].idxmax(), \"depth\"])\nd_f2 = int(trees.loc[trees[\"f2\"].idxmax(), \"depth\"])\nd_f05 = int(trees.loc[trees[\"f05\"].idxmax(), \"depth\"])\nprint(trees.round(3))\nprint(d_f1, d_f2, d_f05)",
+    "expected": true,
+    "why": "Подбор только на validation, финальный test отложен"
+  },
+  {
+    "id": "02-precision-recall/f-beta-old-test-selection",
+    "key": "02-precision-recall/f-beta",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.metrics import fbeta_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nrows = []\nfor d in range(1, 9):\n    pred = DecisionTreeClassifier(max_depth=d, random_state=0).fit(X_train, y_train).predict(X_test)\n    rows.append({\"depth\": d,\n                 \"f1\": fbeta_score(y_test, pred, beta=1),\n                 \"f2\": fbeta_score(y_test, pred, beta=2),\n                 \"f05\": fbeta_score(y_test, pred, beta=0.5)})\ntrees = pd.DataFrame(rows)\nd_f1 = int(trees.loc[trees[\"f1\"].idxmax(), \"depth\"])\nd_f2 = int(trees.loc[trees[\"f2\"].idxmax(), \"depth\"])\nd_f05 = int(trees.loc[trees[\"f05\"].idxmax(), \"depth\"])\nprint(trees.round(3))\nprint(d_f1, d_f2, d_f05)",
+    "expected": false,
+    "why": "Старая программа подбирает на прежнем test с другим train; контракт изменён"
+  },
+  {
+    "id": "03-threshold/recall80-validation-author",
+    "key": "03-threshold/recall80",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import precision_recall_curve\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\nX_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_valid)[:, 1]\n\nprecision, recall, thresholds = precision_recall_curve(y_valid, p)\ncurve = pd.DataFrame({\"threshold\": thresholds, \"precision\": precision[:-1], \"recall\": recall[:-1]})\nbest = curve[curve[\"recall\"] >= 0.85].sort_values(\"precision\").iloc[-1]\nbest_t = round(best[\"threshold\"], 3)\nbest_prec = round(best[\"precision\"], 3)",
+    "expected": true,
+    "why": "Подбор только на validation, финальный test отложен"
+  },
+  {
+    "id": "03-threshold/recall80-old-test-selection",
+    "key": "03-threshold/recall80",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import precision_recall_curve\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\n\nprecision, recall, thresholds = precision_recall_curve(y_test, p)\ncurve = pd.DataFrame({\"threshold\": thresholds, \"precision\": precision[:-1], \"recall\": recall[:-1]})\nbest = curve[curve[\"recall\"] >= 0.85].sort_values(\"precision\").iloc[-1]\nbest_t = round(best[\"threshold\"], 3)\nbest_prec = round(best[\"precision\"], 3)",
+    "expected": false,
+    "why": "Старая программа подбирает на прежнем test с другим train; контракт изменён"
+  },
+  {
+    "id": "03-threshold/three-auc-validation-author",
+    "key": "03-threshold/three-auc",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.dummy import DummyClassifier\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\nX_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)\n\nmodels = {\n    \"dummy\": DummyClassifier(strategy=\"most_frequent\"),\n    \"lr\": LogisticRegression(max_iter=2000),\n    \"rf\": RandomForestClassifier(n_estimators=100, random_state=0),\n}\naucs = {}\nfor name, m in models.items():\n    p = m.fit(X_train, y_train).predict_proba(X_valid)[:, 1]\n    aucs[name] = round(roc_auc_score(y_valid, p), 3)\nauc_dummy, auc_lr, auc_rf = aucs[\"dummy\"], aucs[\"lr\"], aucs[\"rf\"]\nbest = max(aucs, key=aucs.get)",
+    "expected": true,
+    "why": "Подбор только на validation, финальный test отложен"
+  },
+  {
+    "id": "03-threshold/three-auc-old-test-selection",
+    "key": "03-threshold/three-auc",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.dummy import DummyClassifier\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_auc_score\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\n\nmodels = {\n    \"dummy\": DummyClassifier(strategy=\"most_frequent\"),\n    \"lr\": LogisticRegression(max_iter=2000),\n    \"rf\": RandomForestClassifier(n_estimators=100, random_state=0),\n}\naucs = {}\nfor name, m in models.items():\n    p = m.fit(X_train, y_train).predict_proba(X_test)[:, 1]\n    aucs[name] = round(roc_auc_score(y_test, p), 3)\nauc_dummy, auc_lr, auc_rf = aucs[\"dummy\"], aucs[\"lr\"], aucs[\"rf\"]\nbest = max(aucs, key=aucs.get)",
+    "expected": false,
+    "why": "Старая программа подбирает на прежнем test с другим train; контракт изменён"
+  },
+  {
+    "id": "03b-money-threshold/profit-validation-author",
+    "key": "03b-money-threshold/profit",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)\nX_train, X_valid, y_train, y_valid = train_test_split(X_pool, y_pool, test_size=0.25, random_state=43, stratify=y_pool)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_valid)[:, 1]\nthresholds = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]\n\nprofits = []\nfor t in thresholds:\n    bonus = p >= t\n    tp = int((y_valid[bonus] == 1).sum())\n    profits.append(tp * 900 - int(bonus.sum()) * 300)\ni = profits.index(max(profits))\nbest_t = thresholds[i]\nbest_profit = profits[i]",
+    "expected": true,
+    "why": "Подбор только на validation, финальный test отложен"
+  },
+  {
+    "id": "03b-money-threshold/profit-old-test-selection",
+    "key": "03b-money-threshold/profit",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\np = RandomForestClassifier(n_estimators=100, random_state=0).fit(X_train, y_train).predict_proba(X_test)[:, 1]\nthresholds = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]\n\nprofits = []\nfor t in thresholds:\n    bonus = p >= t\n    tp = int((y_test[bonus] == 1).sum())\n    profits.append(tp * 900 - int(bonus.sum()) * 300)\ni = profits.index(max(profits))\nbest_t = thresholds[i]\nbest_profit = profits[i]",
+    "expected": false,
+    "why": "Старая программа подбирает на прежнем test с другим train; контракт изменён"
+  },
+  {
+    "id": "09-project/look-revised-author",
+    "key": "09-project/look",
+    "code": "import pandas as pd\nd = pd.read_csv(\"catering_leads.csv\").iloc[:1869].copy()\nconv_rate = round(d[\"converted\"].mean(), 3)\nn_contracts = d[\"converted\"].sum()\nbudget_na = round(d[\"budget_pp\"].isna().mean(), 3)\nsize_na = d[\"company_size\"].isna().sum()\ncontract_match = bool((d[\"contract_rub\"].notna() == (d[\"converted\"] == 1)).all())\nprint(conv_rate, n_contracts, budget_na, size_na, contract_match)",
+    "expected": true,
+    "why": "Авторский контроль raw входа и временного проекта"
+  },
+  {
+    "id": "09-project/groups-revised-author",
+    "key": "09-project/groups",
+    "code": "by_channel = d.groupby(\"channel\")[\"converted\"].mean().round(3).sort_values(ascending=False)\nrepeat_rate = round(d.loc[d[\"repeat_client\"] == 1, \"converted\"].mean(), 3)\nnew_rate = round(d.loc[d[\"repeat_client\"] == 0, \"converted\"].mean(), 3)\nfast_rate = round(d.loc[d[\"response_hours\"] <= 1, \"converted\"].mean(), 3)\nslow_rate = round(d.loc[d[\"response_hours\"] > 8, \"converted\"].mean(), 3)\nprint(by_channel)\nprint(repeat_rate, new_rate, fast_rate, slow_rate)",
+    "expected": true,
+    "why": "Авторский контроль raw входа и временного проекта"
+  },
+  {
+    "id": "09-project/missing-revised-author",
+    "key": "09-project/missing",
+    "code": "size_na_rate = round(d.loc[d[\"company_size\"].isna(), \"converted\"].mean(), 3)\nsize_ok_rate = round(d.loc[d[\"company_size\"].notna(), \"converted\"].mean(), 3)\nbudget_na_rate = round(d.loc[d[\"budget_pp\"].isna(), \"converted\"].mean(), 3)\nbudget_ok_rate = round(d.loc[d[\"budget_pp\"].notna(), \"converted\"].mean(), 3)\nbudget_high = round(d.loc[d[\"budget_pp\"] >= 450, \"converted\"].mean(), 3)\nbudget_low = round(d.loc[d[\"budget_pp\"] < 450, \"converted\"].mean(), 3)\nprint(size_na_rate, size_ok_rate, budget_na_rate, budget_ok_rate, budget_high, budget_low)",
+    "expected": true,
+    "why": "Авторский контроль raw входа и временного проекта"
+  },
+  {
+    "id": "09-project/time-revised-author",
+    "key": "09-project/time",
+    "code": "import pandas as pd\ncreated = pd.to_datetime(d[\"created\"])\nd[\"hour\"] = created.dt.hour\nd[\"weekday\"] = created.dt.dayofweek\nd[\"evening\"] = (d[\"hour\"] >= 19).astype(int)\nev = d[\"evening\"] == 1\nevening_share = round(ev.mean(), 3)\nevening_rate = round(d.loc[ev, \"converted\"].mean(), 3)\nday_rate = round(d.loc[~ev, \"converted\"].mean(), 3)\nevening_wait = round(d.loc[ev, \"response_hours\"].median(), 1)\nday_wait = round(d.loc[~ev, \"response_hours\"].median(), 1)\nprint(evening_share, evening_rate, day_rate, evening_wait, day_wait)",
+    "expected": true,
+    "why": "Авторский контроль raw входа и временного проекта"
+  },
+  {
+    "id": "09-project/pipe-revised-author",
+    "key": "09-project/pipe",
+    "code": "import pandas as pd\n\nfrom sklearn.preprocessing import FunctionTransformer\ndef lead_time(frame):\n    frame = frame.copy()\n    stamp = pd.to_datetime(frame['created'])\n    frame['hour'] = stamp.dt.hour\n    frame['weekday'] = stamp.dt.dayofweek\n    frame['evening'] = (stamp.dt.hour >= 19).astype(int)\n    return frame\nfrom sklearn.model_selection import train_test_split, KFold, cross_val_score\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import Pipeline, make_pipeline\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nkf = KFold(n_splits=5, shuffle=True, random_state=42)\nnum = [\"guests\", \"budget_pp\", \"days_to_event\", \"response_hours\", \"repeat_client\", \"tasting\",\n       \"hour\", \"weekday\", \"evening\"]\ncat = [\"channel\", \"event_type\", \"city\", \"company_size\", \"manager\"]\n\ny = d[\"converted\"]\nX = d.drop(columns=[\"lead_id\", \"contract_rub\", \"converted\", \"hour\", \"weekday\", \"evening\"])\nX_train, X_test, y_train, y_test = (X[pd.to_datetime(d[\"created\"]) < \"2026-06-21 10:58\"], X[pd.to_datetime(d[\"created\"]) >= \"2026-07-21 10:58\"], y[pd.to_datetime(d[\"created\"]) < \"2026-06-21 10:58\"], y[pd.to_datetime(d[\"created\"]) >= \"2026-07-21 10:58\"])\npre = make_pipeline(FunctionTransformer(lead_time), ColumnTransformer([\n    (\"num\", make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num),\n    (\"cat\", make_pipeline(SimpleImputer(strategy=\"constant\", fill_value=\"не указан\"),\n                          OneHotEncoder(handle_unknown=\"ignore\")), cat),\n]))\npipe = Pipeline([(\"prep\", pre), (\"model\", LogisticRegression(max_iter=2000))])\nn_features = pre.fit_transform(X_train).shape[1]\ncv_auc = round(cross_val_score(pipe, X_train, y_train, cv=kf, scoring=\"roc_auc\").mean(), 3)\nprint(n_features, cv_auc)",
+    "expected": true,
+    "why": "Авторский контроль raw входа и временного проекта"
+  },
+  {
+    "id": "09-project/trap-revised-author",
+    "key": "09-project/trap",
+    "code": "from sklearn.model_selection import cross_val_score\nfrom sklearn.pipeline import Pipeline\nfrom sklearn.dummy import DummyClassifier\nfrom sklearn.ensemble import RandomForestClassifier\ndummy_acc = round(cross_val_score(DummyClassifier(strategy=\"most_frequent\"), X_train, y_train, cv=kf).mean(), 3)\nforest = Pipeline([(\"prep\", pre), (\"model\", RandomForestClassifier(n_estimators=50, min_samples_leaf=5, random_state=0))])\nforest_acc = round(cross_val_score(forest, X_train, y_train, cv=kf).mean(), 3)\nforest_f1 = round(cross_val_score(forest, X_train, y_train, cv=kf, scoring=\"f1\").mean(), 3)\nbalanced = Pipeline([(\"prep\", pre), (\"model\", RandomForestClassifier(n_estimators=50, min_samples_leaf=5,\n                                                                      class_weight=\"balanced\", random_state=0))])\nbalanced_f1 = round(cross_val_score(balanced, X_train, y_train, cv=kf, scoring=\"f1\").mean(), 3)\nprint(dummy_acc, forest_acc, forest_f1, balanced_f1)",
+    "expected": true,
+    "why": "Авторский контроль raw входа и временного проекта"
+  },
+  {
+    "id": "09-project/metric-revised-author",
+    "key": "09-project/metric",
+    "code": "import numpy as np\nimport pandas as pd\n\ndef catch_rate(y_true, scores, share=0.3, k=None):\n    s = pd.Series(scores, index=y_true.index)\n    top = s.sort_index().sort_values(ascending=False, kind=\"stable\").head(int(len(s)*share) if k is None else int(k)).index\n    return y_true.loc[top].sum() / y_true.sum()\n\nrule = (X_train[\"repeat_client\"] == 1) | (X_train[\"channel\"] == \"рекомендация\")\nrule_share = round(rule.mean(), 3)\nrule_catch = round(y_train[rule].sum() / y_train.sum(), 3)\nrandom_catch = round(catch_rate(y_train, np.random.default_rng(0).random(len(y_train))), 3)\nprint(rule_share, rule_catch, random_catch)",
+    "expected": true,
+    "why": "Авторский контроль raw входа и временного проекта"
+  },
+  {
+    "id": "09-project/grid-revised-author",
+    "key": "09-project/grid",
+    "code": "import pandas as pd\nfrom sklearn.model_selection import GridSearchCV\nparams = {\"model__C\": [0.01, 0.1, 1, 10], \"model__class_weight\": [None, \"balanced\"]}\ngrid = GridSearchCV(pipe, params, cv=kf, scoring=\"roc_auc\").fit(X_train, y_train)\nbest_params = grid.best_params_\nbest_auc = round(grid.best_score_, 3)\nres = pd.DataFrame(grid.cv_results_)\nspread = round(res[\"mean_test_score\"].max() - res[\"mean_test_score\"].min(), 3)\nprint(best_params, best_auc, spread)\nres[[\"param_model__C\", \"param_model__class_weight\", \"mean_test_score\"]].round(3)",
+    "expected": true,
+    "why": "Авторский контроль raw входа и временного проекта"
+  },
+  {
+    "id": "09-project/final-revised-author",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nlabels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, \"lead_id\"])\nmodel_catch = round(catch_rate(labels_by_id, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.DataFrame({'score': scores, 'lead_id': d.loc[X_test.index, 'lead_id']}, index=X_test.index).sort_values(['score', 'lead_id'], ascending=[False, True])\nmodel_ids = rank.head(int(rule.sum()))['lead_id'].tolist()\nrule_ids = sorted(d.loc[X_test.index[rule], 'lead_id'].tolist())",
+    "expected": true,
+    "why": "Авторский контроль raw входа и временного проекта"
+  },
+  {
+    "id": "09-project/speed-revised-author",
+    "key": "09-project/speed",
+    "code": "from sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import Pipeline, make_pipeline\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nnum_now = [c for c in num if c != \"response_hours\"]\npre_now = make_pipeline(FunctionTransformer(lead_time), ColumnTransformer([\n    (\"num\", make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), num_now),\n    (\"cat\", make_pipeline(SimpleImputer(strategy=\"constant\", fill_value=\"не указан\"),\n                          OneHotEncoder(handle_unknown=\"ignore\")), cat),\n]))\nnow = Pipeline([(\"prep\", pre_now), (\"model\", LogisticRegression(max_iter=2000))]).fit(X_train, y_train)\ncatch_now = round(catch_rate(y_test, now.predict_proba(X_test)[:, 1]), 3)\n\noleg = d[\"manager\"] == \"Олег\"\nfast = d[\"response_hours\"] <= 2\noleg_wait = round(d.loc[oleg, \"response_hours\"].median(), 1)\nothers_wait = round(d.loc[~oleg, \"response_hours\"].median(), 1)\noleg_fast = round(d.loc[oleg & fast, \"converted\"].mean(), 3)\nothers_fast = round(d.loc[~oleg & fast, \"converted\"].mean(), 3)\nprint(catch_now, oleg_wait, others_wait, oleg_fast, others_fast)",
+    "expected": true,
+    "why": "Авторский контроль raw входа и временного проекта"
+  },
+  {
+    "id": "final-ties-correct-IDs",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nlabels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, \"lead_id\"])\nmodel_catch = round(catch_rate(labels_by_id, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank = pd.DataFrame({'score': scores, 'lead_id': d.loc[X_test.index, 'lead_id']}, index=X_test.index).sort_values(['score', 'lead_id'], ascending=[False, True])\nmodel_ids = rank.head(int(rule.sum()))['lead_id'].tolist()\nrule_ids = sorted(d.loc[X_test.index[rule], 'lead_id'].tolist())",
+    "expected": true,
+    "why": "Все750 рисков равны;IDвобратномпорядке,точнаяочередьпоID",
+    "csv_transform": "import pandas as pd\nz=pd.read_csv('catering_leads.csv')\nm=pd.to_datetime(z.created)>=pd.Timestamp('2026-07-21 10:58')\ncols=[c for c in z if c not in ['lead_id','converted','contract_rub']]\nfor c in cols:z.loc[m,c]=z.loc[m,c].iloc[0]\nz.loc[m,'created']='2026-09-30 19:00'\nz.loc[m,'lead_id']=z.loc[m,'lead_id'].to_numpy()[::-1]\nz.to_csv('catering_leads.csv',index=False)\n",
+    "diagnostic": "{'model_n':len(model_ids),'rule_n':len(rule_ids),'model_last':model_ids[-1],'rule_last':rule_ids[-1]}"
+  },
+  {
+    "id": "final-ties-index-error",
+    "key": "09-project/final",
+    "code": "from sklearn.metrics import roc_auc_score\nscores = best.predict_proba(X_test)[:, 1]\ntest_auc = round(roc_auc_score(y_test, scores), 3)\nlabels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, \"lead_id\"])\nmodel_catch = round(catch_rate(labels_by_id, scores), 3)\nrule = (X_test[\"repeat_client\"] == 1) | (X_test[\"channel\"] == \"рекомендация\")\nrule_share_test = round(rule.mean(), 3)\nrule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)\nmodel_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)\nprint(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)\nrank=pd.Series(scores,index=X_test.index).sort_index().sort_values(ascending=False,kind='stable')\nmodel_ids=d.loc[rank.head(int(rule.sum())).index,'lead_id'].tolist()\nrule_ids=sorted(d.loc[X_test.index[rule],'lead_id'].tolist())",
+    "expected": false,
+    "why": "Индекс строки не заменяет фактический lead_id",
+    "csv_transform": "import pandas as pd\nz=pd.read_csv('catering_leads.csv')\nm=pd.to_datetime(z.created)>=pd.Timestamp('2026-07-21 10:58')\ncols=[c for c in z if c not in ['lead_id','converted','contract_rub']]\nfor c in cols:z.loc[m,c]=z.loc[m,c].iloc[0]\nz.loc[m,'created']='2026-09-30 19:00'\nz.loc[m,'lead_id']=z.loc[m,'lead_id'].to_numpy()[::-1]\nz.to_csv('catering_leads.csv',index=False)\n"
+  }
+]

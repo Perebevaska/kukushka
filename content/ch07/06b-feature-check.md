@@ -44,7 +44,7 @@ print([round(float(v), 2) for v in np.log1p([0, 9, 99])])
 Почему: log1p(9) = ln 10 ≈ 2.3, log1p(99) = ln 100 ≈ 4.61. Между 0 и 9 днями — 2.3 «логарифмических единицы», а между 9 и 99 — столько же ещё: в десять раз больше дней — плюс 2.3.
 :::
 
-**Интервалы.** `pd.cut` разбивает число на группы, а `get_dummies` превращает группу во флаги — по одному на интервал. Тогда у каждого интервала свой вес, и форма связи может быть любой. Наша функция `cv_auc` вызывает `get_dummies` для всей таблицы, поэтому столбец `recency` она превратит во флаги сама.
+**Интервалы.** `pd.cut` разбивает число на группы, а `get_dummies` превращает группу во флаги — по одному на интервал. Тогда у каждого интервала свой вес, и форма связи может быть любой. В `cv_auc` кодировщик строит такие флаги по обучающим строкам каждого фолда.
 
 ::: figure recency-shape
 Давность визита тремя способами. Сверху — доля ушедших по интервалам: риск растёт быстро в первые недели и медленно потом. Снизу — те же дни после `np.log1p`: первые недели растянуты, длинный хвост сжат.
@@ -56,16 +56,29 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.compose import make_column_selector, make_column_transformer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+def guest_encoder():
+    return make_column_transformer(
+        ("passthrough", make_column_selector(dtype_include="number")),
+        (OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+         make_column_selector(dtype_exclude="number")),
+    )
+
 
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
 def cv_auc(df, scoring="roc_auc"):
-    X = pd.get_dummies(df.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+    X = df.drop(columns=["guest_id", "churned", "card_blocked"]).fillna({"avg_check": 0})
+    if "recency" in X:
+        X["recency"] = X["recency"].astype(str)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-    Xs = StandardScaler().fit_transform(X_train)
-    return cross_val_score(LogisticRegression(max_iter=2000), Xs, y_train, cv=kf, scoring=scoring)   # 5 оценок, по фолду
+    model = make_pipeline(guest_encoder(), StandardScaler(), LogisticRegression(max_iter=2000))
+    return cross_val_score(model, X_train, y_train, cv=kf, scoring=scoring)   # 5 оценок, по фолду
 
 g_log = g.copy()
 g_log["log_days"] = np.log1p(g_log["days_since_last"])
@@ -93,16 +106,29 @@ from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.compose import make_column_selector, make_column_transformer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+def guest_encoder():
+    return make_column_transformer(
+        ("passthrough", make_column_selector(dtype_include="number")),
+        (OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+         make_column_selector(dtype_exclude="number")),
+    )
+
 
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
 def scores(df):
-    X = pd.get_dummies(df.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+    X = df.drop(columns=["guest_id", "churned", "card_blocked"]).fillna({"avg_check": 0})
+    if "recency" in X:
+        X["recency"] = X["recency"].astype(str)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-    lr = cross_val_score(LogisticRegression(max_iter=2000), StandardScaler().fit_transform(X_train), y_train, cv=kf, scoring="roc_auc")
-    rf = cross_val_score(RandomForestClassifier(n_estimators=50, random_state=0), X_train, y_train, cv=kf, scoring="roc_auc")
+    lr = cross_val_score(make_pipeline(guest_encoder(), StandardScaler(), LogisticRegression(max_iter=2000)), X_train, y_train, cv=kf, scoring="roc_auc")
+    rf = cross_val_score(make_pipeline(guest_encoder(), RandomForestClassifier(n_estimators=50, random_state=0)), X_train, y_train, cv=kf, scoring="roc_auc")
     return lr, rf
 
 new = g.copy()
@@ -115,10 +141,10 @@ for name, df in [("исходные", g), ("с новыми", new)]:
     print(f"{name:9} логрегрессия {lr.mean():.3f} ± {lr.std():.3f}   лес {rf.mean():.3f} ± {rf.std():.3f}")
 ```
 
-У логистической регрессии AUC вырос примерно с 0.877 до 0.911 — она обогнала лес. А лес прибавил меньше 0.01 — это меньше разброса между фолдами (около 0.016), то есть почти ничего. Дерево само задаёт вопросы «стаж ≤ 3?» и «жалобы > 0, и если да — доставка > 0.5?», поэтому ступеньки и взаимодействия ему подсказывать не нужно. Конструирование признаков сильнее всего помогает простым моделям — а простые модели проще объяснять и быстрее считать.
+У логистической регрессии AUC вырос примерно с 0.877 до 0.911 — она обогнала лес. А лес прибавил меньше 0.01. Размер полезного улучшения задаётся задачей; для оценки сравните парные разницы на общих фолдах. Дерево само задаёт вопросы «стаж ≤ 3?» и «жалобы > 0, и если да — доставка > 0.5?», поэтому ступеньки и взаимодействия ему подсказывать не нужно. Конструирование признаков сильнее всего помогает простым моделям — а простые модели проще объяснять и быстрее считать.
 
-::: warn Сравнивайте с разбросом
-Прирост меньше разброса между фолдами по одному среднему не оценить: на другой нарезке он может смениться падением. Сравнивайте варианты на одних и тех же фолдах (один `kf` на всё) и смотрите разницу по каждому фолду: устойчивый прирост виден на всех или почти всех фолдах, шум — то плюс, то минус.
+::: warn Сопоставляйте парные результаты
+Сравнивайте варианты на одних и тех же фолдах (один `kf` на всё) и смотрите разницу по каждому фолду. Даже при больших колебаниях отдельных моделей одна может давать одинаковый выигрыш в каждом фолде. Эти разницы описывают выбранные разбиения; их обучающие части перекрываются, поэтому доверительный вывод требует отдельного обоснования.
 :::
 
 {{practice: p-recency, bins, combo, rf-gain}}
@@ -199,13 +225,24 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.compose import make_column_selector, make_column_transformer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+def guest_encoder():
+    return make_column_transformer(
+        ("passthrough", make_column_selector(dtype_include="number")),
+        (OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+         make_column_selector(dtype_exclude="number")),
+    )
+
 
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
-X = pd.get_dummies(g.drop(columns=["guest_id", "churned"]), dtype=int).fillna({"avg_check": 0})
+X = g.drop(columns=["guest_id", "churned"]).fillna({"avg_check": 0})
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-auc = cross_val_score(LogisticRegression(max_iter=2000), StandardScaler().fit_transform(X_train), y_train, cv=kf, scoring="roc_auc")
+auc = cross_val_score(make_pipeline(guest_encoder(), StandardScaler(), LogisticRegression(max_iter=2000)), X_train, y_train, cv=kf, scoring="roc_auc")
 print(f"AUC с card_blocked: {auc.mean():.3f}")
 ```
 
@@ -247,7 +284,7 @@ AUC почти 0.99 — и ноль пользы: 1 октября, когда �
   > Можно — перестановкой. Она работает с любой моделью.
 :::
 
-Для корректного `fit` масштабирования внутри каждого фолда используйте [пример Pipeline](07-pipeline.html). Предварительный `fit_transform(X_train)` перед внутренней CV включает проверочные строки фолда в статистику масштаба; это упрощение может почти не изменить балл, но изменяет процедуру и значения признаков.
+Кодирование и масштабирование в примерах обучаются внутри каждого фолда. Как устроена эта цепочка, показывает [урок Pipeline](07-pipeline.html).
 
 ## Практика
 
@@ -290,16 +327,29 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.compose import make_column_selector, make_column_transformer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+def guest_encoder():
+    return make_column_transformer(
+        ("passthrough", make_column_selector(dtype_include="number")),
+        (OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+         make_column_selector(dtype_exclude="number")),
+    )
+
 
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
 def cv_auc(df, scoring="roc_auc"):
-    X = pd.get_dummies(df.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+    X = df.drop(columns=["guest_id", "churned", "card_blocked"]).fillna({"avg_check": 0})
+    if "recency" in X:
+        X["recency"] = X["recency"].astype(str)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-    Xs = StandardScaler().fit_transform(X_train)
-    return cross_val_score(LogisticRegression(max_iter=2000), Xs, y_train, cv=kf, scoring=scoring).mean()
+    model = make_pipeline(guest_encoder(), StandardScaler(), LogisticRegression(max_iter=2000))
+    return cross_val_score(model, X_train, y_train, cv=kf, scoring=scoring).mean()
 
 b = g.copy()
 ```
@@ -310,15 +360,27 @@ import pandas as _pd
 from sklearn.model_selection import train_test_split as _tts, KFold as _KF, cross_val_score as _cvs
 from sklearn.preprocessing import StandardScaler as _SS
 from sklearn.linear_model import LogisticRegression as _LR
+from sklearn.compose import make_column_selector as _selector, make_column_transformer as _columns
+from sklearn.pipeline import make_pipeline as _pipe
+from sklearn.preprocessing import OneHotEncoder as _onehot
+
+def _guest_encoder():
+    return _columns(
+        ("passthrough", _selector(dtype_include="number")),
+        (_onehot(handle_unknown="ignore", sparse_output=False),
+         _selector(dtype_exclude="number")),
+    )
+
 _g = _pd.read_csv('guests_churn.csv')
 _y = _g['churned']
 _kf = _KF(n_splits=5, shuffle=True, random_state=42)
 _b = _g.copy()
-_b['recency'] = _pd.cut(_b['days_since_last'], [-1, 14, 30, 60, 1000])
-_X = _pd.get_dummies(_b.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})
+_b['recency'] = _pd.cut(_b['days_since_last'], [-1, 14, 30, 60, 1000]).astype(str)
+_X = _b.drop(columns=['guest_id', 'churned', 'card_blocked']).fillna({'avg_check': 0})
 _a, _bb, _c, _d = _tts(_X, _y, test_size=0.25, random_state=42, stratify=_y)
-_w = round(_cvs(_LR(max_iter=2000), _SS().fit_transform(_a), _c, cv=_kf, scoring='roc_auc').mean(), 3)
-assert int(need('n_cols')) == _X.shape[1], f'n_cols = {need("n_cols")}, а ожидалось {_X.shape[1]}: 15 исходных признаков и по флагу на каждый из четырёх интервалов.'
+_w = round(_cvs(_pipe(_guest_encoder(), _SS(), _LR(max_iter=2000)), _a, _c, cv=_kf, scoring='roc_auc').mean(), 3)
+_width = _guest_encoder().fit_transform(_a).shape[1]
+assert int(need('n_cols')) == _width, f'n_cols = {need("n_cols")}, а ожидалось {_width}: 15 исходных признаков и по флагу на каждый из четырёх интервалов.'
 assert close(need('auc_bins'), _w), f'auc_bins = {need("auc_bins")}, а ожидалось {_w}. Границы — [-1, 14, 30, 60, 1000], столбец recency добавлен к копии таблицы.'
 ```
 
@@ -334,19 +396,32 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.compose import make_column_selector, make_column_transformer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+def guest_encoder():
+    return make_column_transformer(
+        ("passthrough", make_column_selector(dtype_include="number")),
+        (OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+         make_column_selector(dtype_exclude="number")),
+    )
+
 
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
 def cv_auc(df, scoring="roc_auc"):
-    X = pd.get_dummies(df.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+    X = df.drop(columns=["guest_id", "churned", "card_blocked"]).fillna({"avg_check": 0})
+    if "recency" in X:
+        X["recency"] = X["recency"].astype(str)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-    Xs = StandardScaler().fit_transform(X_train)
-    return cross_val_score(LogisticRegression(max_iter=2000), Xs, y_train, cv=kf, scoring=scoring).mean()
+    model = make_pipeline(guest_encoder(), StandardScaler(), LogisticRegression(max_iter=2000))
+    return cross_val_score(model, X_train, y_train, cv=kf, scoring=scoring).mean()
 
 b = g.copy()
-b["recency"] = pd.cut(b["days_since_last"], [-1, 14, 30, 60, 1000])
+b["recency"] = pd.cut(b["days_since_last"], [-1, 14, 30, 60, 1000]).astype(str)
 n_cols = pd.get_dummies(b.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).shape[1]
 auc_bins = round(cv_auc(b), 3)
 ```
@@ -365,16 +440,29 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.compose import make_column_selector, make_column_transformer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+def guest_encoder():
+    return make_column_transformer(
+        ("passthrough", make_column_selector(dtype_include="number")),
+        (OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+         make_column_selector(dtype_exclude="number")),
+    )
+
 
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
 def cv_auc(df, scoring="roc_auc"):
-    X = pd.get_dummies(df.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+    X = df.drop(columns=["guest_id", "churned", "card_blocked"]).fillna({"avg_check": 0})
+    if "recency" in X:
+        X["recency"] = X["recency"].astype(str)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-    Xs = StandardScaler().fit_transform(X_train)
-    return cross_val_score(LogisticRegression(max_iter=2000), Xs, y_train, cv=kf, scoring=scoring).mean()
+    model = make_pipeline(guest_encoder(), StandardScaler(), LogisticRegression(max_iter=2000))
+    return cross_val_score(model, X_train, y_train, cv=kf, scoring=scoring).mean()
 
 ```
 
@@ -385,13 +473,24 @@ import pandas as _pd
 from sklearn.model_selection import train_test_split as _tts, KFold as _KF, cross_val_score as _cvs
 from sklearn.preprocessing import StandardScaler as _SS
 from sklearn.linear_model import LogisticRegression as _LR
+from sklearn.compose import make_column_selector as _selector, make_column_transformer as _columns
+from sklearn.pipeline import make_pipeline as _pipe
+from sklearn.preprocessing import OneHotEncoder as _onehot
+
+def _guest_encoder():
+    return _columns(
+        ("passthrough", _selector(dtype_include="number")),
+        (_onehot(handle_unknown="ignore", sparse_output=False),
+         _selector(dtype_exclude="number")),
+    )
+
 _g = _pd.read_csv('guests_churn.csv')
 _y = _g['churned']
 _kf = _KF(n_splits=5, shuffle=True, random_state=42)
 def _cv(df, sc):
-    X = _pd.get_dummies(df.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})
+    X = df.drop(columns=['guest_id', 'churned', 'card_blocked']).fillna({'avg_check': 0})
     a, b, c, d = _tts(X, _y, test_size=0.25, random_state=42, stratify=_y)
-    return _cvs(_LR(max_iter=2000), _SS().fit_transform(a), c, cv=_kf, scoring=sc).mean()
+    return _cvs(_pipe(_guest_encoder(), _SS(), _LR(max_iter=2000)), a, c, cv=_kf, scoring=sc).mean()
 _n = _g.copy()
 _n['is_new'] = (_n['tenure_months'] <= 3).astype(int)
 _n['compl_x_deliv'] = _n['complaints'] * _n['delivery_share']
@@ -415,16 +514,29 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.compose import make_column_selector, make_column_transformer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+def guest_encoder():
+    return make_column_transformer(
+        ("passthrough", make_column_selector(dtype_include="number")),
+        (OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+         make_column_selector(dtype_exclude="number")),
+    )
+
 
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
 def cv_auc(df, scoring="roc_auc"):
-    X = pd.get_dummies(df.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+    X = df.drop(columns=["guest_id", "churned", "card_blocked"]).fillna({"avg_check": 0})
+    if "recency" in X:
+        X["recency"] = X["recency"].astype(str)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-    Xs = StandardScaler().fit_transform(X_train)
-    return cross_val_score(LogisticRegression(max_iter=2000), Xs, y_train, cv=kf, scoring=scoring).mean()
+    model = make_pipeline(guest_encoder(), StandardScaler(), LogisticRegression(max_iter=2000))
+    return cross_val_score(model, X_train, y_train, cv=kf, scoring=scoring).mean()
 
 new = g.copy()
 new["is_new"] = (new["tenure_months"] <= 3).astype(int)
@@ -476,6 +588,17 @@ from sklearn.model_selection import train_test_split as _tts, KFold as _KF, cros
 from sklearn.preprocessing import StandardScaler as _SS
 from sklearn.linear_model import LogisticRegression as _LR
 from sklearn.ensemble import RandomForestClassifier as _RF
+from sklearn.compose import make_column_selector as _selector, make_column_transformer as _columns
+from sklearn.pipeline import make_pipeline as _pipe
+from sklearn.preprocessing import OneHotEncoder as _onehot
+
+def _guest_encoder():
+    return _columns(
+        ("passthrough", _selector(dtype_include="number")),
+        (_onehot(handle_unknown="ignore", sparse_output=False),
+         _selector(dtype_exclude="number")),
+    )
+
 _g = _pd.read_csv('guests_churn.csv')
 _y = _g['churned']
 _kf = _KF(n_splits=5, shuffle=True, random_state=42)
@@ -484,10 +607,10 @@ _n['is_new'] = (_n['tenure_months'] <= 3).astype(int)
 _n['compl_x_deliv'] = _n['complaints'] * _n['delivery_share']
 _n['log_days'] = _np.log1p(_n['days_since_last'])
 def _sc(df):
-    X = _pd.get_dummies(df.drop(columns=['guest_id', 'churned', 'card_blocked']), dtype=int).fillna({'avg_check': 0})
+    X = df.drop(columns=['guest_id', 'churned', 'card_blocked']).fillna({'avg_check': 0})
     a, b, c, d = _tts(X, _y, test_size=0.25, random_state=42, stratify=_y)
-    lr = _cvs(_LR(max_iter=2000), _SS().fit_transform(a), c, cv=_kf, scoring='roc_auc')
-    rf = _cvs(_RF(n_estimators=50, random_state=0), a, c, cv=_kf, scoring='roc_auc')
+    lr = _cvs(_pipe(_guest_encoder(), _SS(), _LR(max_iter=2000)), a, c, cv=_kf, scoring='roc_auc')
+    rf = _cvs(_pipe(_guest_encoder(), _RF(n_estimators=50, random_state=0)), a, c, cv=_kf, scoring='roc_auc')
     return lr, rf
 _l0, _r0 = _sc(_g)
 _l1, _r1 = _sc(_n)
@@ -497,7 +620,7 @@ assert close(need('rf_std'), round(_r0.std(), 3)), f'rf_std = {need("rf_std")}, 
 ```
 
 ### hint
-Напишите функцию, которая по таблице возвращает два массива оценок: `get_dummies` → `train_test_split` → `cross_val_score` для логистической регрессии (на `StandardScaler().fit_transform(X_train)`) и для леса (на `X_train`).
+Напишите функцию, которая возвращает пять оценок каждой модели. Обеим передайте одни и те же сырые строки и фолды. В конвейер регрессии включите кодировщик и StandardScaler, в конвейер леса — только кодировщик перед лесом.
 
 ### hint
 Прирост — разница средних: `lr_new.mean() - lr_old.mean()`; разброс — `rf_old.std()`.
@@ -510,6 +633,17 @@ from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.compose import make_column_selector, make_column_transformer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+def guest_encoder():
+    return make_column_transformer(
+        ("passthrough", make_column_selector(dtype_include="number")),
+        (OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+         make_column_selector(dtype_exclude="number")),
+    )
+
 
 g = pd.read_csv("guests_churn.csv")
 y = g["churned"]
@@ -521,10 +655,12 @@ new["compl_x_deliv"] = new["complaints"] * new["delivery_share"]
 new["log_days"] = np.log1p(new["days_since_last"])
 
 def scores(df):
-    X = pd.get_dummies(df.drop(columns=["guest_id", "churned", "card_blocked"]), dtype=int).fillna({"avg_check": 0})
+    X = df.drop(columns=["guest_id", "churned", "card_blocked"]).fillna({"avg_check": 0})
+    if "recency" in X:
+        X["recency"] = X["recency"].astype(str)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-    lr = cross_val_score(LogisticRegression(max_iter=2000), StandardScaler().fit_transform(X_train), y_train, cv=kf, scoring="roc_auc")
-    rf = cross_val_score(RandomForestClassifier(n_estimators=50, random_state=0), X_train, y_train, cv=kf, scoring="roc_auc")
+    lr = cross_val_score(make_pipeline(guest_encoder(), StandardScaler(), LogisticRegression(max_iter=2000)), X_train, y_train, cv=kf, scoring="roc_auc")
+    rf = cross_val_score(make_pipeline(guest_encoder(), RandomForestClassifier(n_estimators=50, random_state=0)), X_train, y_train, cv=kf, scoring="roc_auc")
     return lr, rf
 
 lr_old, rf_old = scores(g)
@@ -536,7 +672,7 @@ print(lr_gain, rf_gain, rf_std)
 ```
 
 ### explain
-Логистическая регрессия прибавила больше 0.03 — в разы больше разброса. Прирост леса меньше разброса между фолдами: сказать, что признаки ему помогли, нельзя. Признаки, придуманные для одной модели, стоит проверять отдельно для каждой.
+Логистическая регрессия прибавила в среднем больше 0.03. У леса средний прирост меньше. Оцените парные изменения на общих фолдах и сопоставьте их с заранее заданным полезным улучшением. Признаки, придуманные для одной модели, стоит проверять отдельно для каждой.
 
 ## task: perm | Важность перестановкой | base
 

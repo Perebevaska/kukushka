@@ -16,11 +16,11 @@ recap:
 
 Записка коммерческого директора:
 
-> Заявок на кейтеринг стало много, а менеджеров пять. Плотно вести — созваниваться, готовить меню, возить дегустацию — они успевают примерно 30 % заявок, остальные получают типовое предложение по почте. Сейчас каждый выбирает сам, по ощущению; негласное правило — «сначала повторные клиенты и те, кто пришёл по рекомендации». Нужна модель, которая после первого ответа клиенту ставит заявке приоритет. И главное: сколько договоров мы будем ловить, если плотно вести 30 % заявок по модели?
+> Заявок на кейтеринг стало много, а менеджеров пять. Плотно вести — созваниваться, готовить меню, возить дегустацию — они успевают примерно 30 % заявок, остальные получают типовое предложение по почте. Сейчас каждый выбирает сам, по ощущению; негласное правило — «сначала повторные клиенты и те, кто пришёл по рекомендации». Нужна модель, которая после первого ответа клиенту ставит заявке приоритет. Сколько прошлых договоров оказалось бы в первых 30 % по модели? И сколько — в двух списках при одинаковом числе звонков?
 
-Данные — `catering_leads.csv`: 3000 заявок компаний на кофе-кейтеринг за январь–сентябрь 2026 года.
+Учебная CRM синтетическая. В `catering_leads.csv` собраны 3000 заявок компаний на кофе-кейтеринг за январь–сентябрь 2026 года.
 
-Столбцы: `lead_id` — номер заявки, `created` — дата и время заявки, `channel` — откуда пришла (сайт, звонок, рекомендация, соцсети, выставка, тендер), `event_type` — тип мероприятия, `city`, `company_size` — размер компании (до 50 / 50–250 / 250–1000 / 1000+ сотрудников), `guests` — число гостей, `budget_pp` — бюджет на гостя, ₽, `days_to_event` — дней от заявки до мероприятия, `manager` — кто ведёт, `response_hours` — сколько часов прошло до первого ответа менеджера, `repeat_client` — компания уже заказывала (1/0), `tasting` — просили дегустацию (1/0), `contract_rub` — сумма договора. Целевой признак `converted` — заявка закончилась договором (1/0).
+Столбцы: `lead_id` — номер заявки, `created` — дата и время заявки, `channel` — откуда пришла (сайт, звонок, рекомендация, соцсети, выставка, тендер), `event_type` — тип мероприятия, `city`, `company_size` — размер компании (до 50 / 50–250 / 250–1000 / 1000+ сотрудников), `guests` — число гостей, `budget_pp` — бюджет на гостя, ₽, `days_to_event` — дней от заявки до мероприятия, `manager` — кто ведёт, `response_hours` — сколько часов прошло до первого ответа менеджера, `repeat_client` — компания уже заказывала (1/0), `tasting` — просили дегустацию (1/0), `contract_rub` — сумма договора. Цель `converted` равна 1, если договор подписан в течение 30 дней после заявки. Время подписи в CSV отсутствует. Для учебного скоринга считаем, что поля заявки, назначенный менеджер и просьба о дегустации фиксируются при регистрации. В рабочей CRM это проверяют по журналу изменений. Длительность ожидания `response_hours` известна к первому ответу.
 
 ## Как измерить пользу
 
@@ -30,9 +30,9 @@ recap:
 
 - случайные 30 % заявок поймают около 30 % договоров;
 - идеальная модель — все 100 %, если договоров меньше 30 % заявок;
-- правило директора — где-то между, это и есть планка.
+- для правила директора отдельно посчитаем, сколько мест оно занимает и сколько договоров охватывает.
 
-Порядок заявок целиком описывает ROC-AUC (урок «Порог, PR- и ROC-кривые»): насколько часто заявка с договором стоит в списке выше заявки без него. Поэтому настройки будем подбирать по AUC, а отчитываться перед директором — долей пойманных договоров.
+Качество ранжирования по всем парам положительных и отрицательных заявок измеряет ROC-AUC (урок «Порог, PR- и ROC-кривые»): насколько часто заявка с договором стоит в списке выше заявки без него. Поэтому настройки будем подбирать по AUC, а отчитываться перед директором — долей пойманных договоров.
 
 ::: quiz
 Менеджеры обзванивают заявки на кейтеринг по списку из модели и успевают позвонить в 30 % заявок. Какая метрика лучше всего описывает пользу модели?
@@ -71,6 +71,8 @@ recap:
 Разбор с десятью заявками: менеджеры берут верхние 30 % списка. Модель ловит два договора из трёх; случайный выбор — в среднем 30 %, идеальная модель — все 100 %.
 :::
 
+**Проверьте знаменатели на другом варианте.** Оценки и первые три выбранные заявки те же, но среди неотобранных договор также заключила заявка 8. Сколько договоров поймано из всех договоров и какая доля выбранных заявок закончилась договором? Запишите две дроби. Почему случайная очередь из трёх мест по-прежнему имеет ожидаемый охват 30 %?
+
 Заметьте, что порога 0.5 здесь нет: заявка 4 с оценкой 0.40 не попала в работу не потому, что «меньше половины», а потому, что менеджеров не хватает. Если завтра наймут шестого, топ станет шире, и та же модель даст другую долю. Поэтому метрику считают для того объёма работы, который реально есть.
 
 ```python
@@ -80,6 +82,8 @@ deal = np.array([1, 0, 1, 0, 1, 0, 0, 0, 0, 0])
 top = np.argsort(-score)[:int(0.3 * len(score))]
 print(deal[top].sum() / deal.sum())
 ```
+
+Для самостоятельной работы скачайте [каркас блокнота](../notebooks/project-template.ipynb) и [check_notebook.py](../notebooks/check_notebook.py). Поместите `catering_leads.csv` в `data/` рядом с блокнотом. В отчёте сохраните временные границы, выбранные до теста настройки, одну итоговую оценку и две поимённые очереди одинакового размера. Передайте блокнот с выводами, сохранённый `.joblib` и модуль своих шагов подготовки, если они использованы. Проверьте загрузку в новом процессе на сырой строке с новой датой и незнакомой категорией. Рядом укажите версии библиотек и точный порядок выбора при одинаковых рисках.
 
 ## План
 
@@ -96,7 +100,7 @@ print(deal[top].sum() / deal.sum())
 
 До исследования связей с `converted` зарезервируйте последние 750 заявок по created: первая дата финальной партии 2026-07-21 10:58. Метка созревает через 30 дней; обучение берёт только заявки до 2026-06-21 10:58 (1869 строк), промежуток 381 строк к старту финальной партии ещё не созрел и в fit не входит. Граница определяется датой, а не меткой. В паспорте фиксируйте доступность цели created+30 дней; финальные ответы открываются после их созревания.
 
-Начиная с пятого шага, перед задачей курс сам готовит `d` (с признаками из шага 4), `X`, `y`, `X_train`, `X_test`, `y_train`, `y_test` и фолды `kf = KFold(n_splits=5, shuffle=True, random_state=42)`, а с шестого — ещё и подготовку `pre` из шага 5.
+В шаге 5 вы соберёте конвейер для сырой заявки. Начиная с шага 6, заготовки получают его подготовку и календарное разбиение. Пять перемешанных фолдов внутри 1869 уже созревших заявок помогают выбрать настройки для одного фиксированного выпуска. Качество на следующем календарном периоде измерим отдельно, после созревания последней метки 25 октября в 21:48.
 
 ::: warn Типичные ошибки проекта
 - **Сумма договора как признак.** `contract_rub` известна только после подписания — это утечка, модель «угадает» всё.
@@ -109,11 +113,15 @@ print(deal[top].sum() / deal.sum())
 Это повторение всей главы: метрики (уроки «Матрица ошибок», «Precision, recall и F1» и «Порог, PR- и ROC-кривые»), дисбаланс (урок «Дисбаланс классов»), масштабирование (урок «Масштабирование и ближайшие соседи»), признаки (урок «Новые признаки»), конвейер (урок «Pipeline: предобработка и модель вместе») и подбор настроек (урок «Подбор гиперпараметров»). В подсказках указано, на какой урок опирается шаг.
 :::
 
+## Вопрос из другой области
+
+Ремонтная служба может осмотреть семь устройств в день. Две модели оценили одни и те же устройства, у нескольких оценок есть ничья на седьмом месте. Задайте порядок по ID до просмотра исходов и составьте две очереди ровно по семь мест. Как сравнить охват реальных поломок на историческом дне с известными исходами всех устройств? Какие данные потребуются для сравнения политик в новом рабочем дне?
+
 ## Практика
 
 ## task: look | Шаг 1. Осмотр | base
 
-Загрузите `catering_leads.csv` в `d`. Сохраните:
+Прочитайте `catering_leads.csv`, преобразуйте `created` в дату со временем и оставьте в `d` 1869 заявок, поступивших до 21 июня 2026 года, 10:58. Все показатели шага относятся к этим зрелым заявкам. Сохраните:
 
 - `conv_rate` — долю заявок с договором (3 знака);
 - `n_contracts` — сколько всего договоров;
@@ -152,7 +160,7 @@ def _leads0():
 def _ref():
     _d = _leads0().iloc[:1869].copy()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted', 'hour', 'weekday', 'evening'])
     _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
@@ -245,7 +253,7 @@ def _leads0():
 def _ref():
     _d = _leads0().iloc[:1869].copy()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted', 'hour', 'weekday', 'evening'])
     _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
@@ -339,7 +347,7 @@ def _leads0():
 def _ref():
     _d = _leads0().iloc[:1869].copy()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted', 'hour', 'weekday', 'evening'])
     _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
@@ -391,7 +399,7 @@ print(size_na_rate, size_ok_rate, budget_na_rate, budget_ok_rate, budget_high, b
 ```
 
 ### explain
-Пропуски не случайны. Клиент, который не назвал размер компании, покупает реже (10 % против 13,8 %). Причины пропуска из выгрузки неизвестны. Поэтому пропуск размера не заменяем самой частой категорией, а делаем **отдельной категорией** «не указан» — так модель сможет учесть, что пустое поле само по себе сигнал. С бюджетом разница меньше (12 % против 14 %), зато сам бюджет говорит много: от 450 ₽ на гостя договоров втрое больше, чем при меньшем бюджете. Пропуск бюджета заполним медианой обучающей части — это нейтральное значение, а не «бюджет ноль»: в отличие от среднего чека гостей без визитов (глава 6), здесь бюджет есть, его просто не назвали.
+На обучающей части заявки с пропущенным размером компании реже заканчиваются договором (10 % против 13,8 %). Причины пропуска из выгрузки неизвестны. Поэтому пропуск размера не заменяем самой частой категорией, а делаем **отдельной категорией** «не указан» — так модель сможет учесть, что пустое поле само по себе сигнал. С бюджетом разница меньше (12 % против 14 %), зато сам бюджет говорит много: от 450 ₽ на гостя договоров втрое больше, чем при меньшем бюджете. Пропуск бюджета заполним медианой обучающей части — это нейтральное значение, а не «бюджет ноль»: в отличие от среднего чека гостей без визитов (глава 6), для пустой ячейки точная сумма неизвестна.
 
 ## task: time | Шаг 4. Признаки из времени заявки | base
 
@@ -438,7 +446,7 @@ def _leads0():
 def _ref():
     _d = _leads0().iloc[:1869].copy()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted', 'hour', 'weekday', 'evening'])
     _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
@@ -510,12 +518,12 @@ print(evening_share, evening_rate, day_rate, evening_wait, day_wait)
 
 ## task: pipe | Шаг 5. Конвейер | base
 
-`d` с признаками из шага 4 уже готова. Соберите:
+В `d` доступна таблица заявок. Соберите модель, которую можно вызвать на сырой строке CRM.
 
-- `y` — `converted`; `X` — все столбцы `d`, кроме `lead_id`, `created`, `contract_rub` и `converted` (без `get_dummies` — подготовку сделает конвейер);
-- `X_train`, `X_test`, `y_train`, `y_test` — `train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)`;
-- `pre` — `ColumnTransformer` (урок «Pipeline: предобработка и модель вместе»): числовые столбцы `num` — `SimpleImputer(strategy="median")`, затем `StandardScaler()`; категориальные `cat` — `SimpleImputer(strategy="constant", fill_value="не указан")` (`SimpleImputer` умеет заполнять и текст — константой: пропуск станет отдельной категорией «не указан»), затем `OneHotEncoder(handle_unknown="ignore")`;
-- `pipe` — `Pipeline([("prep", pre), ("model", LogisticRegression(max_iter=2000))])`.
+- В `y` возьмите `converted`. В `X` оставьте исходные поля заявки, включая строковый `created`. Удалите `lead_id`, `contract_rub`, `converted` и ранее вычисленные `hour`, `weekday`, `evening`, если они есть.
+- По времени `created` сформируйте `X_train`, `y_train` из строк до 21 июня 10:58 и `X_test`, `y_test` из строк начиная с 21 июля 10:58. Между границами проходят 30 дней. Проверьте размеры 1869 и 750 и сохраните исходные индексы.
+- В начале `pre` поставьте `FunctionTransformer` с функцией, которая копирует таблицу и добавляет час, день недели и флаг вечера из `created`. Следом в `ColumnTransformer` подготовьте списки из заготовки. Для чисел нужны медиана и `StandardScaler`, для категорий — заполнение строкой «не указан» и `OneHotEncoder(handle_unknown="ignore")`.
+- Соедините шаги в `Pipeline([("prep", pre), ("model", LogisticRegression(max_iter=2000))])` и сохраните его в `pipe`.
 
 Сохраните `n_features` — сколько столбцов получается после `pre` на обучающей части, и `cv_auc` — средний ROC-AUC конвейера на фолдах `kf` по обучающей части (3 знака).
 
@@ -550,7 +558,7 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted', 'hour', 'weekday', 'evening'])
     _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
@@ -586,7 +594,24 @@ _x = need('X', _pd0.DataFrame)
 assert 'contract_rub' not in _x.columns, 'contract_rub в X — это утечка из шага 1: сумма договора известна только после договора.'
 assert 'converted' not in _x.columns and 'lead_id' not in _x.columns , 'Уберите из X lead_id и сам ответ converted; created остаётся для конвейера.'
 assert _x.columns.is_unique and set(_x.columns) == set(_X.columns), f'Столбцы X: {list(_x.columns)}, а ожидались {list(_X.columns)}. Без get_dummies — сырые столбцы.'
-assert list(need('X_test').index) == list(_Xte.index) and list(need('y_train').index) == list(_ytr.index), 'Проверьте хронологию: последние 750 заявок отложены, для обучения берутся только метки, созревшие до начала проверки.'
+from pandas.testing import assert_frame_equal as _frame_equal, assert_series_equal as _series_equal
+for _name, _expected in [('X', _X), ('X_train', _Xtr), ('X_test', _Xte)]:
+    _submitted = need(_name, _pd0.DataFrame)
+    assert _submitted.columns.is_unique and set(_submitted.columns) == set(_expected.columns), f'{_name}: сохраните исходные столбцы CRM; их порядок можно менять.'
+    assert _submitted.index.is_unique and set(_submitted.index) == set(_expected.index), f'{_name}: строки должны соответствовать своим исходным ID и календарной части.'
+    try:
+        _frame_equal(_submitted.reindex(index=_expected.index, columns=_expected.columns), _expected,
+                     check_dtype=False, check_names=False, check_exact=False, rtol=1e-9, atol=1e-10)
+    except AssertionError:
+        raise AssertionError(f'{_name}: содержимое сырых строк не совпадает с их исходными ID; проверьте значения, пропуски и календарное разбиение.') from None
+for _name, _expected in [('y', _y), ('y_train', _ytr), ('y_test', _yte)]:
+    _submitted = need(_name, _pd0.Series)
+    assert _submitted.index.is_unique and set(_submitted.index) == set(_expected.index), f'{_name}: метки должны быть связаны с исходными ID своей календарной части.'
+    try:
+        _series_equal(_submitted.reindex(_expected.index), _expected,
+                      check_dtype=False, check_names=False, check_exact=False, rtol=0, atol=0)
+    except AssertionError:
+        raise AssertionError(f'{_name}: значения converted не совпадают с исходными ID. Сохраните метки без инверсии и перестановки только ответов.') from None
 _p = need('pipe', _P0)
 assert list(_p.named_steps) == ['prep', 'model'], f'Шаги pipe: {list(_p.named_steps)}, а нужны ["prep", "model"].'
 assert isinstance(_p.named_steps['model'], _LR0), 'Последний шаг pipe — LogisticRegression(max_iter=2000).'
@@ -600,6 +625,15 @@ _want = _pre0().fit_transform(_sample)
 assert _got.shape == _want.shape, 'Проверьте, что подготовка внутри pipe включает категории и числовые столбцы.'
 assert need('n_features') == _nf, f'n_features = {need("n_features")}, а после подготовки получается {_nf} столбцов. Проверьте списки num и cat и fit_transform(X_train).'
 _a = round(_cvs0(_P0([('prep', _pre0()), ('model', _LR0(max_iter=2000))]), _Xtr, _ytr, cv=_k, scoring='roc_auc').mean(), 3)
+_actual_cv = round(_cvs0(_clone(_p), _Xtr, _ytr, cv=_k, scoring='roc_auc').mean(), 3)
+assert close(_actual_cv, _a, .0011), 'Переданный pipe должен выполнять ту же подготовку в каждом CV-фолде: сверьте календарные признаки и состав столбцов.'
+_sample_raw = _Xte.iloc[:2].copy()
+_sample_raw['created'] = ['2026-10-01 18:59', '2026-10-01 19:00']
+_sample_raw['channel'] = ['новый канал', None]
+_sample_raw['budget_pp'] = _np0.nan
+_actual_model = _clone(_p).fit(_Xtr, _ytr)
+_expected_model = _P0([('prep', _pre0()), ('model', _LR0(max_iter=2000))]).fit(_Xtr, _ytr)
+assert _np0.allclose(_actual_model.predict_proba(_sample_raw[_sample_raw.columns[::-1]]), _expected_model.predict_proba(_sample_raw), atol=1e-6, rtol=1e-6), 'Проверьте фактический pipe на сырой CRM: даты 18:59/19:00, новая категория, пропуск и другой порядок входных колонок.'
 assert close(need('cv_auc'), _a), f'cv_auc = {need("cv_auc")}, а ожидалось {_a}. cross_val_score(pipe, X_train, y_train, cv=kf, scoring="roc_auc").mean().'
 ```
 
@@ -633,7 +667,7 @@ num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client"
 cat = ["channel", "event_type", "city", "company_size", "manager"]
 
 y = d["converted"]
-X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X = d.drop(columns=["lead_id", "contract_rub", "converted", "hour", "weekday", "evening"])
 X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
 pre = make_pipeline(FunctionTransformer(lead_time), ColumnTransformer([
     ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
@@ -698,7 +732,7 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted', 'hour', 'weekday', 'evening'])
     _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
@@ -722,7 +756,7 @@ d["hour"] = created.dt.hour
 d["weekday"] = created.dt.dayofweek
 d["evening"] = (d["hour"] >= 19).astype(int)
 y = d["converted"]
-X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X = d.drop(columns=["lead_id", "contract_rub", "converted", "hour", "weekday", "evening"])
 X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting",
@@ -791,9 +825,9 @@ print(dummy_acc, forest_acc, forest_f1, balanced_f1)
 
 Напишите функцию `catch_rate(y_true, scores, share=0.3, k=None)` — долю всех договоров, которые попадают в верхние `share` заявок по оценке; при переданном целом `k` отбирайте ровно `k` мест. Долю для показа округляют после определения списка:
 
-1. сделайте `pd.Series(scores, index=y_true.index)`;
-2. возьмите `int(len(...) * share)` заявок с наибольшей оценкой (`nlargest`);
-3. верните сумму `y_true` по ним, делённую на сумму `y_true` по всем.
+1. Свяжите оценку с ключом строки из индекса `y_true`. На этой выгрузке исходный индекс идёт в порядке возрастания `lead_id`.
+2. При заданном `k` возьмите ровно столько заявок, иначе вычислите `int(len(y_true) * share)`. Сначала выбирайте большую оценку, при равной оценке — меньший ключ.
+3. Разделите число договоров у выбранных заявок на число договоров во всей группе.
 
 Затем посчитайте точку сравнения — правило директора на **обучающей** части: правило отмечает заявку, если клиент повторный **или** пришёл по рекомендации. Правило — не оценка, а отметка 0/1, и отмечает оно не 30 % заявок, поэтому `catch_rate` к нему не применяйте. Сохраните:
 
@@ -842,7 +876,7 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted', 'hour', 'weekday', 'evening'])
     _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
@@ -866,7 +900,7 @@ d["hour"] = created.dt.hour
 d["weekday"] = created.dt.dayofweek
 d["evening"] = (d["hour"] >= 19).astype(int)
 y = d["converted"]
-X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X = d.drop(columns=["lead_id", "contract_rub", "converted", "hour", "weekday", "evening"])
 X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting",
@@ -917,7 +951,7 @@ assert close(_f(_boundary_y, _boundary_s, k=10), 1), 'При k=10 десятая
 ```
 
 ### hint
-Тело функции — три строки: `s = pd.Series(scores, index=y_true.index)`, `top = s.nlargest(int(len(s) * share)).index`, `return y_true.loc[top].sum() / y_true.sum()`.
+Если `k is None`, вычислите число мест из доли. Сначала упорядочите оценки по ключу через `sort_index()`, затем по убыванию оценки с `kind="stable"`. Первые `k` индексов выбирают строки из `y_true`.
 
 ### hint
 «Или» для масок — `|`, каждое условие в скобках: `(X_train["repeat_client"] == 1) | (X_train["channel"] == "рекомендация")`.
@@ -940,7 +974,7 @@ print(rule_share, rule_catch, random_catch)
 ```
 
 ### explain
-Случайный выбор ловит долю договоров, равную доле заявок, — около 30 %. Правило директора отмечает чуть больше пятой части заявок и ловит в них почти 60 % договоров — примерно в 2.5 раза больше, чем случайный выбор того же объёма. Это планка для модели. Сравнивать с правилом честно при одинаковом объёме работы: правило отмечает меньше 30 % заявок, поэтому на тесте посчитаем и топ-30 %, и топ такого же размера, как у правила.
+Случайная очередь из 30 % заявок охватывает в среднем около 30 % договоров. В конкретном розыгрыше с seed 0 получилось 35,9 %. Правило директора отмечает чуть больше пятой части заявок и ловит в них почти 60 % договоров — примерно в 2.5 раза больше, чем случайный выбор того же объёма. Это планка для модели. Сравнивать с правилом честно при одинаковом объёме работы: правило отмечает меньше 30 % заявок, поэтому на тесте посчитаем и топ-30 %, и топ такого же размера, как у правила.
 
 ## task: grid | Шаг 8. Подбор настроек | plus
 
@@ -949,7 +983,7 @@ print(rule_share, rule_catch, random_catch)
 - `C`: 0.01, 0.1, 1, 10;
 - `class_weight`: `None`, `"balanced"`
 
-с `cv=kf` и `scoring="roc_auc"` на обучающей части. Почему AUC, а не `catch_rate` из шага 7: AUC смотрит на весь порядок заявок и устойчивее на фолдах, а в топ-30 % одного фолда всего в первом фолде 450 заявок, всего 61 договор, в первых 135 заявках базовой модели 50 договоров: полнота 50/61, точность 50/135 — доля по ним сильно шумит. Сохраните обученный поиск в `grid`, а также:
+с `cv=kf` и `scoring="roc_auc"` на обучающей части. AUC использует пары по всему списку. В первом фолде 374 заявки и 41 договор. Базовая модель нашла 34 договора в первых 112 заявках. Полнота равна 34/41, точность списка — 34/112. По другим фолдам число договоров и состав верхушки меняются. Можно подбирать модель непосредственно по полноте при фиксированном бюджете, если именно он определяет решение. Сохраните обученный поиск в `grid`, а также:
 
 - `best_params` — лучшие настройки (`best_params_`);
 - `best_auc` — лучший средний AUC (3 знака);
@@ -997,7 +1031,7 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted', 'hour', 'weekday', 'evening'])
     _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
@@ -1021,7 +1055,7 @@ d["hour"] = created.dt.hour
 d["weekday"] = created.dt.dayofweek
 d["evening"] = (d["hour"] >= 19).astype(int)
 y = d["converted"]
-X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X = d.drop(columns=["lead_id", "contract_rub", "converted", "hour", "weekday", "evening"])
 X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting",
@@ -1088,7 +1122,7 @@ res[["param_model__C", "param_model__class_weight", "mean_test_score"]].round(3)
 Лучшие настройки — `C=1` без весов, то есть обычная логистическая регрессия; диапазон средних AUC по сетке составил 0,031. Это нормальный и полезный результат: подбор показал, что настройки здесь почти не важны, и дальше можно не тратить на них время. Обратите внимание на `class_weight`: в шаге 6 он поднял F1 леса больше чем вдвое, а AUC почти не меняет (урок «Дисбаланс классов»). Веса сдвигают оценки к редкому классу, а для списка «верхние 30 %» важно проверить, как изменился порядок заявок.
 
 ::: note
-Для сравнения: лес из шага 6 с `class_weight="balanced"` на тех же фолдах даёт AUC около 0.86 — столько же, сколько логистическая регрессия. Когда модели равны, берём более простую: её коэффициенты можно показать директору.
+Для сравнения: лес из шага 6 с `class_weight="balanced"` на тех же фолдах даёт средний AUC 0,870, логрегрессия — 0,878. Для проекта берём логрегрессию. Близость двух средних сама по себе не доказывает равенство моделей.
 :::
 
 При сравнении с правилом сначала получите целое `k = int(rule.sum())`. Например, если правило отметило 175 из 750 заявок, модели тоже выделяется 175, а не 174 после восстановления места из округлённой доли 23.3 %. Это пример ошибки округления; на новой календарной партии число мест вычислите заново. При ничьих используйте lead_id по возрастанию.
@@ -1097,7 +1131,7 @@ res[["param_model__C", "param_model__class_weight", "mean_test_score"]].round(3)
 
 Перед отбором можете записать для диспетчера одну строку решения: чью заявку оцениваем, в какой момент, какие признаки уже известны, сколько контактов можно взять и по какому исходу позже сравним две очереди.
 
-Сохраните `model_ids` и `rule_ids` — списки исходных lead_id одинаковой длины `k=int(rule.sum())`. Для модели сортируйте score по убыванию, lead_id по возрастанию; правило сохраняет свои выбранные ID. Строки и прогнозы связывайте по ID, включая последний допустимый контакт.
+Сохраните `model_ids` и `rule_ids` — списки исходных lead_id одинаковой длины `k=int(rule.sum())`. Для модели сортируйте score по убыванию, lead_id по возрастанию; для правила отсортируйте все выбранные ID по возрастанию. Строки и прогнозы связывайте по ID, включая последний допустимый контакт.
 
 Курс обучил лучший конвейер из шага 8 на всей обучающей части — он в `best`, — и определил функцию `catch_rate` из шага 7. Теперь — один раз — проверьте на тесте (3 знака):
 
@@ -1147,7 +1181,7 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted', 'hour', 'weekday', 'evening'])
     _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
@@ -1171,7 +1205,7 @@ d["hour"] = created.dt.hour
 d["weekday"] = created.dt.dayofweek
 d["evening"] = (d["hour"] >= 19).astype(int)
 y = d["converted"]
-X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X = d.drop(columns=["lead_id", "contract_rub", "converted", "hour", "weekday", "evening"])
 X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting",
@@ -1199,17 +1233,20 @@ from sklearn.metrics import roc_auc_score
 ```python
 from sklearn.metrics import roc_auc_score as _auc
 _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _k = _ref()
-_s = _P0([('prep', _pre0()), ('model', _LR0(max_iter=2000))]).fit(_Xtr, _ytr).predict_proba(_Xte)[:, 1]
+_reference_model = _P0([('prep', _pre0()), ('model', _LR0(max_iter=2000))]).fit(_Xtr, _ytr)
+_s = _reference_model.predict_proba(_Xte)[:, 1]
 _a = round(_auc(_yte, _s), 3)
 assert close(need('test_auc'), _a), f'test_auc = {need("test_auc")}, а ожидалось {_a}. roc_auc_score(y_test, best.predict_proba(X_test)[:, 1]).'
-_mc = round(_catch0(_yte, _s), 3)
+_by_id = _pd0.Series(_yte.to_numpy(), index=_d.loc[_Xte.index, 'lead_id'])
+_mc = round(_catch0(_by_id, _s), 3)
 assert close(need('model_catch'), _mc), f'model_catch = {need("model_catch")}, а ожидалось {_mc}. catch_rate(y_test, вероятности на X_test).'
 _r = (_Xte['repeat_client'] == 1) | (_Xte['channel'] == 'рекомендация')
 _rs, _rc = round(_r.mean(), 3), round(_yte[_r].sum() / _yte.sum(), 3)
 assert close(need('rule_share_test'), _rs) and close(need('rule_catch_test'), _rc), f'rule_share_test, rule_catch_test = {need("rule_share_test")}, {need("rule_catch_test")}, а ожидалось {_rs}, {_rc}. Правило — на X_test, договоры — y_test.'
-_ms = round(_catch0(_yte, _s, k=int(_r.sum())), 3)
+_ms = round(_catch0(_by_id, _s, k=int(_r.sum())), 3)
 assert close(need('model_same'), _ms, 0.0011), f'model_same = {need("model_same")}, а ожидалось {_ms}. catch_rate(y_test, вероятности, k=int(rule.sum())).'
 _best = need('best')
+assert isinstance(_best, _P0), 'best должен быть обученным Pipeline с подготовкой сырых строк и моделью.'
 _raw = _pd0.read_csv('catering_leads.csv').loc[_Xte.index].drop(columns=['converted','contract_rub'])
 _actual = _best.predict_proba(_raw)[:,1]
 assert _np0.allclose(_actual, _s), 'best должен принимать исходные даты CRM и давать прогнозы той же модели.'
@@ -1219,15 +1256,17 @@ _new['channel'] = ['новый канал', None]
 _new['budget_pp'] = _np0.nan
 _pred = _best.predict_proba(_new[_new.columns[::-1]])[:,1]
 assert len(_pred)==2 and _np0.isfinite(_pred).all(), 'Конвейер должен обрабатывать новые категории, пропуски и иной порядок колонок.'
+_expected_new = _reference_model.predict_proba(_new)[:,1]
+assert _np0.allclose(_pred, _expected_new, atol=1e-8, rtol=1e-7), 'На новых датах, категориях и пропусках best должен выполнять ту же подготовку, что при обучении.'
 
-_rank = _pd0.Series(_s, index=_Xte.index).sort_index().sort_values(ascending=False, kind='stable')
-assert list(need('model_ids')) == _d.loc[_rank.head(int(_r.sum())).index, 'lead_id'].tolist(), 'model_ids: ровно k мест, риск по убыванию, ID по возрастанию при ничьей.'
-assert list(need('rule_ids')) == _d.loc[_Xte.index[_r], 'lead_id'].tolist(), 'rule_ids: исходные ID заявок под маской правила.'
+_rank = _pd0.DataFrame({'score': _s, 'lead_id': _d.loc[_Xte.index, 'lead_id']}, index=_Xte.index).sort_values(['score','lead_id'], ascending=[False,True])
+assert list(need('model_ids')) == _rank.head(int(_r.sum()))['lead_id'].tolist(), 'model_ids: ровно k мест, риск по убыванию, ID по возрастанию при ничьей.'
+assert list(need('rule_ids')) == sorted(_d.loc[_Xte.index[_r], 'lead_id'].tolist()), 'rule_ids: все ID под маской правила, по lead_id по возрастанию.'
 
 ```
 
 ### hint
-Вероятности: `scores = best.predict_proba(X_test)[:, 1]`. Тогда `catch_rate(y_test, scores)` — топ-30 %.
+Вероятности: `scores = best.predict_proba(X_test)[:, 1]`. Свяжите метки с ID: `labels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, "lead_id"])`. Тогда `catch_rate(labels_by_id, scores)` — топ-30 % с развязкой ничьих по ID.
 
 ### hint
 Правило на тесте — та же маска, что в шаге 7, только по `X_test`; для `model_same` передайте `k=int(rule.sum())`. При шести заявках и двух местах маска должна выбрать две строки, даже если напечатанная доля равна 0,333.
@@ -1237,22 +1276,23 @@ assert list(need('rule_ids')) == _d.loc[_Xte.index[_r], 'lead_id'].tolist(), 'ru
 from sklearn.metrics import roc_auc_score
 scores = best.predict_proba(X_test)[:, 1]
 test_auc = round(roc_auc_score(y_test, scores), 3)
-model_catch = round(catch_rate(y_test, scores), 3)
+labels_by_id = pd.Series(y_test.to_numpy(), index=d.loc[X_test.index, "lead_id"])
+model_catch = round(catch_rate(labels_by_id, scores), 3)
 rule = (X_test["repeat_client"] == 1) | (X_test["channel"] == "рекомендация")
 rule_share_test = round(rule.mean(), 3)
 rule_catch_test = round(y_test[rule].sum() / y_test.sum(), 3)
-model_same = round(catch_rate(y_test, scores, k=int(rule.sum())), 3)
+model_same = round(catch_rate(labels_by_id, scores, k=int(rule.sum())), 3)
 print(test_auc, model_catch, rule_share_test, rule_catch_test, model_same)
-rank = pd.Series(scores, index=X_test.index).sort_index().sort_values(ascending=False, kind='stable')
-model_ids = d.loc[rank.head(int(rule.sum())).index, 'lead_id'].tolist()
-rule_ids = d.loc[X_test.index[rule], 'lead_id'].tolist()
+rank = pd.DataFrame({'score': scores, 'lead_id': d.loc[X_test.index, 'lead_id']}, index=X_test.index).sort_values(['score', 'lead_id'], ascending=[False, True])
+model_ids = rank.head(int(rule.sum()))['lead_id'].tolist()
+rule_ids = sorted(d.loc[X_test.index[rule], 'lead_id'].tolist())
 
 ```
 
 ### explain
 В следующих по времени 750 заявках заключено 94 договора. Первые 225 по модели охватывают 72 договора (76,6 %), случайная очередь такой длины в среднем охватила бы 30 %. Правило директора выделяет 166 заявок и находит 57 договоров. Из 166 заявок, выбранных моделью, договор заключили 64. На этом периоде AUC составил 0,858, после среднего 0,878 при подборе. Для сравнения очередей знаменатель один и тот же — 94 договора.
 
-Модель выигрывает у правила, потому что складывает много сигналов сразу: канал и повторность, но ещё бюджет, срок до мероприятия, просьбу о дегустации и скорость первого ответа — по модулю коэффициента она на втором месте после флага канала «рекомендация» (`coef_`, урок «Масштабирование и ближайшие соседи»). О ней — в шаге 10.
+Кроме канала и повторности модель учитывает бюджет, срок до мероприятия, просьбу о дегустации и часы до первого ответа. Как изменится очередь, если менеджеру нужен прогноз ещё до ответа, проверим в шаге 10.
 
 ## task: speed | Шаг 10. Скорость ответа: причина или следствие? | star
 
@@ -1308,7 +1348,7 @@ def _leads0():
 def _ref():
     _d = _leads0()
     _y = _d['converted']
-    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted'])
+    _X = _d.drop(columns=['lead_id', 'contract_rub', 'converted', 'hour', 'weekday', 'evening'])
     _Xtr, _Xte, _ytr, _yte = (_X[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _X[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'], _y[_pd0.to_datetime(_d['created']) < '2026-06-21 10:58'], _y[_pd0.to_datetime(_d['created']) >= '2026-07-21 10:58'])
     return _d, _X, _y, _Xtr, _Xte, _ytr, _yte, _KF0(n_splits=5, shuffle=True, random_state=42)
 def _pre0(num=_NUM0):
@@ -1332,7 +1372,7 @@ d["hour"] = created.dt.hour
 d["weekday"] = created.dt.dayofweek
 d["evening"] = (d["hour"] >= 19).astype(int)
 y = d["converted"]
-X = d.drop(columns=["lead_id", "contract_rub", "converted"])
+X = d.drop(columns=["lead_id", "contract_rub", "converted", "hour", "weekday", "evening"])
 X_train, X_test, y_train, y_test = (X[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], X[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"], y[pd.to_datetime(d["created"]) < "2026-06-21 10:58"], y[pd.to_datetime(d["created"]) >= "2026-07-21 10:58"])
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 num = ["guests", "budget_pp", "days_to_event", "response_hours", "repeat_client", "tasting",
@@ -1388,11 +1428,11 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 num_now = [c for c in num if c != "response_hours"]
-pre_now = ColumnTransformer([
+pre_now = make_pipeline(FunctionTransformer(lead_time), ColumnTransformer([
     ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num_now),
     ("cat", make_pipeline(SimpleImputer(strategy="constant", fill_value="не указан"),
                           OneHotEncoder(handle_unknown="ignore")), cat),
-])
+]))
 now = Pipeline([("prep", pre_now), ("model", LogisticRegression(max_iter=2000))]).fit(X_train, y_train)
 catch_now = round(catch_rate(y_test, now.predict_proba(X_test)[:, 1]), 3)
 
@@ -1406,7 +1446,7 @@ print(catch_now, oleg_wait, others_wait, oleg_fast, others_fast)
 ```
 
 ### explain
-При раннем прогнозе без скорости ответа в верхние 30 % также попали 72 из 94 договоров. Совпадение числа договоров само по себе не означает совпадения всех адресатов. Значит, ставить приоритет можно уже в момент прихода заявки, а после первого ответа — уточнять.
+В нашем сценарии ранняя модель получает только поля, известные при регистрации. В верхние 30 % также попали 72 из 94 договоров. Чтобы выяснить, у каких заявок изменился приоритет после ответа, нужно сравнить их ID.
 
 Олег отвечает медленнее всех: медиана около 6 часов против двух у коллег. Но когда он отвечает за два часа, его заявки заканчиваются договором не реже, чем у остальных (около 21 % против 20 %). Это совместимо с гипотезой о скорости; причинный вывод из такого среза пока не следует.
 
@@ -1417,6 +1457,7 @@ print(catch_now, oleg_wait, others_wait, oleg_fast, others_fast)
 - Данные без утечки: сумма договора известна только после подписания, поэтому в модель она не входит.
 - Доля правильных здесь бесполезна: «никто не купит» права в 87 % случаев. Мерили тем, что важно бизнесу, — долей договоров в верхних 30 % списка.
 - В календарной проверке модель нашла 72 из 94 договоров в 225 заявках. При одинаковой очереди из 166 заявок модель нашла 64 договора, правило — 57.
+- Разница в семь исторических договоров показывает, как договоры распределились по очередям. Чтобы измерить дополнительные договоры от звонков, заранее назначьте сопоставимым группам две политики при одинаковом бюджете и сравните долю договоров среди всех заявок каждой группы через 30 дней.
 - Для ранней очереди до первого ответа также получено 72 из 94 в топ-30 %. После получения ответа приоритет можно пересчитать.
 - Быстрый ответ — один из самых сильных сигналов договора, а у Олега и у вечерних заявок ответ медленный. Прежде чем перестраивать график, проверьте эффект скорости A/B-тестом.
 - Ограничения: девять месяцев одного года; качество модели нужно перепроверять на новых заявках, а список — пересчитывать.

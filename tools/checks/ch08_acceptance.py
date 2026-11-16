@@ -1,13 +1,21 @@
 from acceptance_runner import Chapter
 
+def replaced(source, before, after):
+    assert before in source, f'Проба не изменила программу: нет {before!r}.'
+    result = source.replace(before, after)
+    assert result != source
+    return result
+
 with Chapter('ch08') as c:
     c.probe('04b-segments','report-text', 'report_metrics["pred_mean"],report_metrics["fact_rate"]=report_metrics["fact_rate"],report_metrics["pred_mean"]')
     c.probe('04b-segments','report-text', 'report_metrics["n"],report_metrics["deals"]=report_metrics["deals"],report_metrics["n"]')
     c.probe('07-final-project','fp-portrait', 'rest["city"]="Неверный город"')
     source=c.tasks['07-final-project','fp-money']['solution']
-    c.probe('07-final-project','fp-money', code=source.replace('best_t = curve.loc[curve["profit"].idxmax(), "threshold"]', 'best_t = 0.10'),expected=True)
+    c.probe('07-final-project','fp-money', code=replaced(source, 'best_t = supported.loc[supported["margin"].idxmax(), "threshold"]', 'best_t = 0.10'),expected=True)
     source=c.tasks['07-final-project','fp-honest']['solution']
-    c.probe('07-final-project','fp-honest', code=source.replace('best_t_incr = incr.loc[incr["margin"].idxmax(), "threshold"]', 'best_t_incr = 0.10'),expected=True)
+    c.probe('07-final-project','fp-honest', code=replaced(source, 'best_t = 0.08', 'best_t = 0.10'),expected=True)
+    source=c.tasks['07-final-project','fp-portrait']['solution']
+    c.probe('07-final-project','fp-portrait', code=replaced(source, 'best_t = 0.08', 'best_t = 0.10'),expected=True)
     c.probe('06-project','decision',expected=True)
     source=c.tasks['06-project','decision']['solution']
     c.probe('06-project','decision',code=source.replace('ok["mean"].idxmax()', 'risk["mean"].idxmax()'))

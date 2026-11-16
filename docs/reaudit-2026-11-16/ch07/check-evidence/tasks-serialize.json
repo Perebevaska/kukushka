@@ -1,0 +1,12 @@
+[
+  {
+    "kind": "task",
+    "lesson": "ch07/contracts",
+    "id": "serialized-file-fresh-namespace",
+    "setup": "import pandas as pd\nfrom sklearn.model_selection import train_test_split, KFold\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import Pipeline, make_pipeline\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"])\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nnum = [\"tenure_months\", \"app\", \"visits_90d\", \"days_since_last\", \"avg_check\",\n       \"delivery_share\", \"promo_used\", \"complaints\"]\ncat = [\"city\", \"fav_category\"]\npre = ColumnTransformer([\n    (\"num\", make_pipeline(SimpleImputer(strategy=\"constant\", fill_value=0), StandardScaler()), num),\n    (\"cat\", OneHotEncoder(handle_unknown=\"ignore\"), cat),\n])\npipe = Pipeline([(\"prep\", pre), (\"model\", LogisticRegression(max_iter=2000))])\nkf = KFold(n_splits=5, shuffle=True, random_state=42)\npipe.set_params(model__class_weight=\"balanced\").fit(X_train, y_train)",
+    "check": "assert verified is True, 'Контракт не выполнен'",
+    "files": [
+      "guests_churn.csv"
+    ]
+  }
+]

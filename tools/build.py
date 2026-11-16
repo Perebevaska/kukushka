@@ -445,7 +445,7 @@ def parse_chapter_extra(ch: dict) -> dict:
             for ref in refs:
                 if ref not in lessons:
                     raise FormatError(f'{ch["id"]}/test.md: ссылка на урок {ref}, которого нет в главе')
-            if ch['id'] == 'ch02':
+            if ch['id'] in {'ch02', 'ch08'}:
                 core = {ls['id'] for ls in ch['lessons'] if ls.get('core')}
                 out[name]['coreQuestions'] = [f'c{i}' for i, ref in enumerate(refs, 1) if ref in core]
     return out
@@ -634,6 +634,9 @@ def write_chapter_pages(course, ch, extra, index_data):
         prev = link(f'{last["id"]}.html', 'prev', '← Последний урок', last['title']) if last else '<span class="prev empty"></span>'
         if ch['id'] == 'ch08':
             nxt = link('../ch15/01-artifact.html', 'next', 'Основной путь →', 'Сохранить модель и подготовить выпускной проект')
+            inner += ('<p class="prose">После урока об артефакте переходите к '
+                      '<a href="../ch15/06-final-project.html">выпускному CRM-проекту</a>. '
+                      'Уроки о сервисе можно пройти по рабочей задаче.</p>')
             routes = [
                 ('ch09', 'Матрица признаков', 'проверить линейный прогноз после смены представления'),
                 ('ch10', 'Таблица продаж', 'сравнить бустинг и простую модель на будущих датах'),
@@ -644,7 +647,10 @@ def write_chapter_pages(course, ch, extra, index_data):
             ]
             links = ''.join(f'<li><a href="../{cid}/index.html">{source}</a> — {goal}.</li>'
                             for cid, source, goal in routes)
-            inner += (f'<details class="prose"><summary>Выбрать углубление по задаче</summary><ul>{links}</ul></details>')
+            inner += (f'<details class="prose"><summary>Выбрать углубление по задаче</summary><ul>{links}</ul>'
+                      '<p>Для нейросети на NumPy в главе 11 пригодятся умножение матриц из главы 9 '
+                      'и шаг градиента из главы 10. Перед свёрточной сетью в главе 14 повторите '
+                      'прямой проход и обучение из главы 11.</p></details>')
         elif next_ch:
             nh = f'{root}{next_ch["id"]}/index.html' if (CONTENT / next_ch['id'] / 'intro.md').exists() else f'{root}index.html#{next_ch["id"]}'
             nxt = link(nh, 'next', f'Глава {next_ch["n"]} →', next_ch['title'])

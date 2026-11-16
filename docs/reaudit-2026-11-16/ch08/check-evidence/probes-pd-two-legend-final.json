@@ -1,0 +1,9 @@
+[
+  {
+    "id": "pd-two-actual-legend-swap",
+    "key": "05-explain/pd-two",
+    "expected": false,
+    "reason": "Переставлены только отображаемые подписи actual legend; данные и подписи самих Line2D сохранены.",
+    "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\n\ng = pd.read_csv(\"guests_churn.csv\")\ny = g[\"churned\"]\nX = pd.get_dummies(g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"]), dtype=int).fillna({\"avg_check\": 0})\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)\nforest = RandomForestClassifier(n_estimators=100, min_samples_leaf=5, random_state=0).fit(X_train, y_train)\ngrid = [0, 7, 14, 21, 30, 45, 60, 90]\n\ndef curve(part):\n    out = []\n    for v in grid:\n        part_v = part.copy()\n        part_v[\"days_since_last\"] = v\n        out.append(round(forest.predict_proba(part_v)[:, 1].mean(), 3))\n    return out\n\npd_new = curve(X_test[X_test[\"tenure_months\"] <= 3])\npd_old = curve(X_test[X_test[\"tenure_months\"] > 3])\ngaps = [n - o for n, o in zip(pd_new, pd_old)]\nmax_gap_day = grid[gaps.index(max(gaps))]\n\nfig, ax = plt.subplots()\nax.plot(grid, pd_new, marker=\"o\", label=\"новички\")\nax.plot(grid, pd_old, marker=\"o\", label=\"остальные\")\nax.set_xlabel(\"дней с последнего визита\")\nax.set_ylabel(\"средний прогноз ухода\")\nax.legend()\nplt.show()\nfor text in ax.get_legend().get_texts():\n    text.set_text({\"новички\":\"остальные\",\"остальные\":\"новички\"}[text.get_text()])"
+  }
+]
