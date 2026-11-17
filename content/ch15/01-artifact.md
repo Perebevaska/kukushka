@@ -140,7 +140,7 @@ print("признаки, которые ждёт модель:", list(loaded.fea
 Как через полгода доказать, что модель обучена именно на этом файле, а не на соседней выгрузке с похожим именем? Записать **отпечаток** (хеш) файла данных. Хеш-функция превращает любые байты в короткую строку, причём:
 
 - одинаковые данные → всегда одинаковая строка;
-- изменение хотя бы одного символа → совершенно другая строка.
+- при изменении байтов отпечаток обычно меняется. Возможны коллизии. Для повторного запуска храните отпечаток вместе с версией данных и происхождением выгрузки.
 
 Посмотрим на игрушечном примере:
 
@@ -428,6 +428,8 @@ print("решение изменилось у", round((in10 != in11).mean() * 10
 
 {{practice: versions}}
 
+**Куда дальше?** По основному маршруту переходите к [выпускному проекту B2B](06-final-project.html). Для полного маршрута продолжайте уроком [«Модель как сервис»](02-service.html).
+
 ## Практика
 
 ## task: md5-text | Отпечаток строки | warmup
@@ -688,6 +690,8 @@ assert c['data_md5'] == _h.md5(open('guests_churn.csv', 'rb').read()).hexdigest(
 assert c['sklearn'] == _sk.__version__, 'sklearn — sklearn.__version__.'
 assert _j.load(open('card.json', encoding='utf-8')) == c, 'card.json должен содержать ровно card.'
 assert need('same') is True, 'same = card2 == card.'
+assert c.get('name') == 'churn' and c.get('version') == '1.0', 'В паспорте этой модели name="churn", version="1.0".'
+assert need('card2', dict) == c, 'card2 — паспорт, фактически прочитанный обратно из card.json.'
 ```
 
 ### hint
@@ -762,15 +766,24 @@ import joblib
 ```python
 import numpy as _np
 import pandas as _pd
-gd = _pd.read_csv('golden.csv')
-Xt = need('X_test')
-assert len(gd) == 20 and 'expected' in gd.columns, 'golden.csv: 20 строк и столбец expected.'
-assert list(gd.drop(columns=['expected']).columns) == list(Xt.columns), 'Кроме expected, в golden.csv должны быть ровно столбцы X_test (index=False при записи).'
-w = need('model').predict_proba(Xt.head(20))[:, 1]
-assert _np.allclose(gd['expected'], w, atol=1e-12), 'expected — вероятности ухода (predict_proba(...)[:, 1]) для первых 20 строк X_test.'
-assert need('max_diff') < 1e-9, f'max_diff = {need("max_diff")}: слишком большая разница — проверьте, что сравниваете со столбцом expected.'
-assert need('passed') is True or need('passed') == True, 'passed = max_diff < 1e-9.'
-assert 'loaded' in _code and calls('load') >= 1, 'Загрузите модель из файла: loaded = joblib.load("model.joblib").'
+import joblib as _jl
+_gd = _pd.read_csv('golden.csv')
+_Xt = need('X_test')
+_fields = list(_Xt.columns)
+assert len(_gd) == 20 and list(_gd.columns) == [*_fields, 'expected'], 'golden.csv: первые20 строк X_test, все признаки в прежнем порядке и expected; index=False.'
+try:
+    _pd.testing.assert_frame_equal(_gd[_fields].reset_index(drop=True), _Xt.head(20).reset_index(drop=True), check_dtype=False, rtol=1e-12, atol=1e-12)
+except AssertionError:
+    raise AssertionError('Признаки golden.csv должны совпадать с первыми20 строками X_test: сохраняйте вход и его вероятность вместе.')
+_loaded = _jl.load('model.joblib')
+_expected = need('model').predict_proba(_Xt.head(20))[:, 1]
+_actual = _loaded.predict_proba(_gd[_fields])[:, 1]
+assert _np.isfinite(_gd.expected).all() and _np.allclose(_gd.expected, _expected, rtol=0, atol=1e-9), 'expected — вероятности ухода исходной модели на сохранённых20 строках, до округления.'
+_diff = float(_np.max(_np.abs(_actual - _gd.expected.to_numpy())))
+assert _diff < 1e-9, f'Загруженная из model.joblib модель расходится с golden.csv: max_diff={_diff}. Считайте прогноз на строках из файла.'
+assert close(need('max_diff'), _diff, 1e-12), 'max_diff — фактическая максимальная абсолютная разница loaded на строках golden.csv и expected.'
+assert bool(need('passed')) is (_diff < 1e-9), 'passed — результат сравнения фактического max_diff с1e-9.'
+assert calls('load') >= 1, 'Загрузите сохранённую модель: joblib.load("model.joblib").'
 ```
 
 ### hint
@@ -807,6 +820,8 @@ print(max_diff, passed)
 ## task: contract | Проверка входа | base
 
 Напишите `check_input(df)` по образцу из урока: вернуть список строк-проблем (пустой — всё хорошо). Проверьте: отсутствующие столбцы (сообщение начинается с `"нет столбцов"`), лишние (`"лишние столбцы"`), нечисловые числовые признаки (`"<столбец>: ожидаются числа"`), незнакомые значения в `city` и `fav_category` (`"<столбец>: незнакомые значения"`). Известные значения возьмите из обученного кодировщика `model` (заготовка). Примените к трём выгрузкам из заготовки: `p_ok`, `p_bad1`, `p_bad2` — списки проблем.
+
+В заготовке и стартовом коде есть `model`, `FEATURES`, `NUM`, `ok`, `bad1`, `bad2`.
 
 ### setup
 ```python
@@ -857,6 +872,17 @@ assert any(s.startswith('avg_check') and 'числа' in s for s in r2), f'bad2:
 assert any(s.startswith('fav_category') and 'десерты' in s for s in r2), f'bad2: нужна проблема про незнакомое значение «десерты». Сейчас: {r2}.'
 assert len(r1) == 2 and len(r2) == 2, f'Лишние проблемы: bad1 → {r1}, bad2 → {r2}.'
 assert need('p_ok') == r0 and need('p_bad1') == r1 and need('p_bad2') == r2, 'p_ok, p_bad1, p_bad2 — результаты check_input для трёх выгрузок.'
+_known = need('model').named_steps['prep'].named_transformers_['cat'].categories_
+_valid = o.copy()
+for _col, _values in zip(['city', 'fav_category'], _known):
+    _valid[_col] = _values[-1]
+assert f(_valid) == [], 'Известные обученному кодировщику города и категории должны проходить, даже если их не было в ok.'
+for _columns in [('city',), ('fav_category',), ('city', 'fav_category')]:
+    _new = _valid.copy()
+    for _col in _columns:
+        _new[_col] = '__неизвестное_значение__'
+    _problems = f(_new)
+    assert isinstance(_problems, list) and all(any(str(_p).startswith(_col + ':') and 'незнакомые значения' in str(_p) for _p in _problems) for _col in _columns), 'Отдельно проверяйте незнакомые city и fav_category; при двух нарушениях нужны оба сообщения.'
 ```
 
 ### hint
@@ -1070,7 +1096,7 @@ print(auc10, auc11, n10, n11, flip, newly_in, thr11)
 - `"golden"` — расхождение с контрольным набором из `golden_path` меньше `1e-9`;
 - `"auc"` — AUC модели на тесте не ниже `card["auc_test"] − 0.01`.
 
-В заготовке есть модель `good`, её паспорт `card` и контрольный набор `golden.csv`, а также модель `retrained` — та же схема, но обученная на другой половине данных (кто-то «случайно» переобучил и положил в ту же папку). Сохраните `res_good = release_check(good, ...)` и `res_bad = release_check(retrained, ...)`.
+В заготовке есть модель `good`, её паспорт `card` и контрольный набор `golden.csv`, а также модель `retrained` — та же схема, но обученная на другой половине данных (кто-то «случайно» переобучил и положил в ту же папку). Даны `good, retrained, card, X_test, y_test` и файл `golden.csv`. Вызовите `release_check(good, card, "golden.csv", X_test, y_test)` и такой же вызов с `retrained`. Результаты — `res_good` и `res_bad`.
 
 ### setup
 ```python
@@ -1122,6 +1148,15 @@ c2 = dict(c, auc_test=0.99)
 assert not bool(f(m, c2, 'golden.csv', Xt, yt)['auc']), 'Проверка auc: AUC на тесте >= card["auc_test"] - 0.01 (с паспортом auc_test=0.99 должна не пройти).'
 c3 = dict(c, features=list(reversed(c['features'])))
 assert not bool(f(m, c3, 'golden.csv', Xt, yt)['features']), 'Проверка features: важен и порядок признаков.'
+import pandas as _pd
+from pathlib import Path as _Path
+_other = _Path('control_release_other.csv')
+_gold = _pd.read_csv('golden.csv')
+_gold.to_csv(_other, index=False)
+assert bool(f(m, c, str(_other), Xt, yt)['golden']), 'golden_path — путь аргумента: тот же контроль с другим именем должен проходить.'
+_gold.loc[0, 'expected'] = (_gold.loc[0, 'expected'] + .1) % 1
+_gold.to_csv(_other, index=False)
+assert not bool(f(m, c, str(_other), Xt, yt)['golden']), 'Сверяйте контроль из переданного golden_path: одна изменённая expected должна остановить выпуск.'
 ```
 
 ### hint

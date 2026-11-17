@@ -1,0 +1,259 @@
+{
+  "01-artifact/md5-text": [
+    "Хеш считается от байтов: сначала строку превращают в байты методом `.encode(\"utf-8\")`.",
+    "`hashlib.md5(байты).hexdigest()` — готовая строка-отпечаток.",
+    "`h1 = hashlib.md5(\"Зерно\".encode(\"utf-8\")).hexdigest()`, аналогично `h2`; `same = h1 == h2`."
+  ],
+  "01-artifact/p-save": [
+    "Порядок жизни модели: импорт → обучение → сохранение → загрузка → сравнение.",
+    "Загрузить можно только то, что уже сохранено: `joblib.load` идёт после `joblib.dump`."
+  ],
+  "01-artifact/size": [
+    "Сначала `joblib.dump(модель, \"имя.joblib\")`, потом `os.path.getsize(\"имя.joblib\")` — размер в байтах.",
+    "Килобайты: `round(os.path.getsize(\"small.joblib\") / 1024, 1)`. Отношение: `round(os.path.getsize(\"big.joblib\") / os.path.getsize(\"small.joblib\"))`; не делите округлённыеКиБ."
+  ],
+  "01-artifact/data-md5": [
+    "Двоичный режим: `with open(path, \"rb\") as f:` — тогда `f.read()` вернёт байты, которые можно сразу передать в `hashlib.md5`.",
+    "Копия: `g = pd.read_csv(...)`, `g.loc[0, \"tenure_months\"] += 1`, `g.to_csv(\"guests_copy.csv\", index=False)`.",
+    "```python\ndef file_md5(path):\n    with open(path, \"rb\") as f:\n        return hashlib.md5(f.read()).hexdigest()\n```"
+  ],
+  "01-artifact/card": [
+    "Признаки: `list(model.feature_names_in_)`. Если проверка скажет «обычный список строк», приведите каждый элемент: `[str(f) for f in model.feature_names_in_]`.",
+    "AUC: `round(roc_auc_score(y_test, model.predict_proba(X_test)[:, 1]), 3)`. Если проверка скажет «обычный float», оберните в `float(...)`. Число строк — `len(X_train)`, это уже обычный `int`.",
+    "Запись: `with open(\"card.json\", \"w\", encoding=\"utf-8\") as f: json.dump(card, f, ensure_ascii=False, indent=2)`. Чтение: `with open(\"card.json\", encoding=\"utf-8\") as f: card2 = json.load(f)`."
+  ],
+  "01-artifact/golden": [
+    "Сначала набор: `golden = X_test.head(20).copy()`, потом `golden[\"expected\"] = model.predict_proba(golden)[:, 1]` и `golden.to_csv(\"golden.csv\", index=False)`.",
+    "При проверке уберите столбец ответов, иначе модель не узнает таблицу: `gold.drop(columns=[\"expected\"])`.",
+    "`max_diff = float(np.abs(loaded.predict_proba(gold.drop(columns=[\"expected\"]))[:, 1] - gold[\"expected\"]).max())`."
+  ],
+  "01-artifact/contract": [
+    "Четыре проверки по очереди: отсутствующие (`[c for c in FEATURES if c not in df.columns]`), лишние (наоборот), типы (для числовых признаков — `pd.api.types.is_numeric_dtype(df[c])`), категории (`set(df[c].dropna()) - set(KNOWN[c])`).",
+    "Числовые признаки — те, что есть в `FEATURES`, но нет в `KNOWN`. Не проверяйте тип у столбца, которого нет в таблице: `if c in df.columns`.",
+    "Шаблон одной проверки: `missing = [...]`, затем `if missing: problems.append(f\"нет столбцов: {missing}\")`. Остальные — так же."
+  ],
+  "01-artifact/decide": [
+    "Выбор признаков по паспорту: `df[card[\"features\"]]` — и столбцы нужные, и порядок правильный, а `guest_id` в модель не попадёт.",
+    "Сначала посчитайте неокруглённую вероятность `p`, по ней — `in_campaign = p >= card[\"threshold\"]`, и только потом округляйте для показа: `p.round(3)`.",
+    "```python\np = model.predict_proba(df[card[\"features\"]])[:, 1]\nout = pd.DataFrame({\"guest_id\": df[\"guest_id\"].values, \"proba\": p.round(3), \"in_campaign\": p >= card[\"threshold\"]})\nreturn out.sort_values(\"proba\", ascending=False)\n```"
+  ],
+  "01-artifact/versions": [
+    "Решения: `in10 = p10 >= 1 / 3`, `in11 = p11 >= 1 / 3`. Изменилось — `in10 != in11`; «только в 1.1» — `in11 & ~in10` (`~` — «не»).",
+    "Порог с тем же числом гостей: отсортируйте вероятности 1.1 по убыванию — `np.sort(p11)[::-1]` — и возьмите элемент с номером `n10 - 1` (нумерация с нуля).",
+    "`thr11 = round(float(np.sort(p11)[::-1][n10 - 1]), 3)`."
+  ],
+  "01-artifact/release": [
+    "Каждая проверка — одно сравнение. Начните со скелета: `return {\"features\": ..., \"golden\": ..., \"auc\": ...}`.",
+    "Контрольный набор — как в задаче «Контрольный набор»: прочитать CSV, убрать `expected`, сравнить вероятности, взять максимум модуля разницы.",
+    "```python\ngold = pd.read_csv(golden_path)\ndiff = np.abs(model.predict_proba(gold.drop(columns=[\"expected\"]))[:, 1] - gold[\"expected\"]).max()\nauc = roc_auc_score(y_test, model.predict_proba(X_test)[:, 1])\n```\nСравнения дают `np.bool_` — оберните их в `bool(...)`, как в паспорте: `\"golden\": bool(diff < 1e-9)`."
+  ],
+  "02-service/json-rt": [
+    "Текст → словарь: `json.loads`. Словарь → текст: `json.dumps`.",
+    "`out_text = json.dumps(payload, ensure_ascii=False)`, `has_null = \"null\" in out_text`."
+  ],
+  "02-service/p-json": [
+    "Сначала текст, потом разбор `json.loads`, потом обращение к полям."
+  ],
+  "02-service/is-int": [
+    "`isinstance(x, int)` для `True` вернёт `True` — нужно второе условие, которое отсечёт `bool`.",
+    "`return isinstance(x, int) and not isinstance(x, bool)`; для чисел — `isinstance(x, (int, float))`."
+  ],
+  "02-service/validate": [
+    "Разбейте на шаги: 1) обязательные поля; 2) город и категория; 3) цикл по `INT_RANGES`; 4) `avg_check`; 5) `delivery_share`. Каждый шаг — несколько строк, добавляющих в `errors`.",
+    "В цикле по целым полям: если поля нет — `continue`; если `not is_int(v)` — ошибка типа; иначе (`elif`) — проверка диапазона. Порядок важен: строку нельзя сравнивать с числом.",
+    "```python\nfor f, (lo, hi) in INT_RANGES.items():\n    if f not in p:\n        continue\n    v = p[f]\n    if not is_int(v):\n        errors.append(f\"{f}: ожидается целое число\")\n    elif v < lo or (hi is not None and v > hi):\n        errors.append(f\"{f}: вне диапазона\")\n```"
+  ],
+  "02-service/handler": [
+    "Скелет: `errors = validate(payload)` → `if errors: return {...422...}` → `try:` модель `except Exception as e: return {...500...}` → `return {...200...}`.",
+    "Ответ должен пережить `json.dumps`: вероятность — `float(...)`, решение — `bool` (результат сравнения обычного `float` с порогом — уже `bool`).",
+    "```python\ntry:\n    row = pd.DataFrame([payload])[CARD[\"features\"]]\n    p = float(model.predict_proba(row)[0, 1])\nexcept Exception as e:\n    return {\"status\": 500, \"errors\": [f\"{type(e).__name__}: {e}\"]}\n```"
+  ],
+  "02-service/http": [
+    "`json.loads` на испорченном тексте бросает `json.JSONDecodeError` — поймайте её через `try/except`. Отдельно проверьте, что результат — словарь: `isinstance(payload, dict)`.",
+    "```python\ntry:\n    payload = json.loads(text)\nexcept json.JSONDecodeError:\n    payload = None\nif not isinstance(payload, dict):\n    return json.dumps({\"status\": 400, ...}, ensure_ascii=False)\n```"
+  ],
+  "02-service/reasons": [
+    "Подготовленная строка: `z = prep.transform(pd.DataFrame([payload])[FEATURES])`. Она может оказаться разреженной матрицей — тогда `z.toarray()`. Веса — `lr.coef_[0]`.",
+    "Вклады удобно положить в Series с именами `prep.get_feature_names_out()`; префикс отрезается `name.split(\"__\", 1)[1]`. Дальше — оставить положительные и отсортировать по убыванию.",
+    "```python\ncontrib = pd.Series(z[0] * lr.coef_[0], index=[n.split(\"__\", 1)[1] for n in prep.get_feature_names_out()])\ncontrib = contrib[contrib > 0].sort_values(ascending=False)\nreturn list(contrib.index[:k])\n```"
+  ],
+  "02b-service-run/batch": [
+    "`predict_batch` — одна строка: список ответов → `pd.DataFrame(...)`. Коды: `res[\"status\"].value_counts()` → `.to_dict()`.",
+    "Поля из ошибок: пройдите по спискам `errors` у строк со статусом 422 и возьмите `e.split(\":\")[0]` у каждой строки ошибки. Затем `pd.Series(список).value_counts()`.",
+    "```python\nfields = [e.split(\":\")[0] for errs in res.loc[res[\"status\"] == 422, \"errors\"] for e in errs]\nbad_fields = pd.Series(fields).value_counts()\n```"
+  ],
+  "02b-service-run/tail": [
+    "`np.percentile(times, 50)` и `np.percentile(times, 95)`; среднее — `np.mean(times)`. Медленные: `sum(t > 50 for t in times)`.",
+    "Сравнение с числом numpy даёт `np.bool_`. Для обычного `bool`: `meets = bool(p95 <= 100)`."
+  ],
+  "02b-service-run/latency": [
+    "Шаблон замера: `t0 = time.perf_counter()` → действие → `(time.perf_counter() - t0) * 1000`. Одна строка таблицы как таблица — `X.iloc[[i]]` (двойные скобки!).",
+    "В цикле по `i in range(200)` замеряйте и добавляйте в `times`. Пакет — один замер вокруг `model.predict_proba(X.head(200))`.",
+    "`p50, p95 = np.percentile(times, 50), np.percentile(times, 95)`; `batch_per_row = batch_ms / 200`; `speedup = p50 / batch_per_row`."
+  ],
+  "02b-service-run/tests": [
+    "Сначала `failed` — то же списковое выражение, что для `failed_v1`, только с `validate_v0`. Посмотрите на список: каждая не прошедшая строка подсказывает, какую проверку исправить.",
+    "Сравните случаи из `failed` с таблицей контракта (раздел «Проверка входа» урока «Модель как сервис: запрос, проверка, ответ»): у каких полей границы в `validate_v0` другие или их нет вовсе? И что будет с `isinstance(True, int)`?",
+    "Четыре дыры: `bool` проходит как `int`; доля доставки проверяется до 100, а не до 1; у чека нет верхней границы; у стажа и `app` нет своих диапазонов (стаж от 1, `app` — 0 или 1). Проще всего: скопировать `validate_v0` и поправить — `isinstance(p[f], bool)` как отдельное условие ошибки, `0 <= ... <= 1`, `50 <= чек <= 3000`, словарь нижних/верхних границ для целых полей."
+  ],
+  "02b-service-run/tests-write": [
+    "Тест ловит ошибку, если на нём версия с багом отвечает не так, как правильная. Для бага с `True` нужен запрос, где `app=True`; правильная проверка ответит 422, а версия с багом — 200.",
+    "Запрос на основе нормального: `dict(GOOD, app=True)` и `dict(GOOD, delivery_share=40)` — оба с ожиданием 422."
+  ],
+  "03-experiments/run-dict": [
+    "`runs.append({\"run_id\": \"run-001\", \"model\": \"LogReg\", \"cv_auc\": 0.875})` — и так же второй. Таблица — `pd.DataFrame(runs)`.",
+    "Строка с максимумом: `journal.loc[journal[\"cv_auc\"].idxmax(), \"run_id\"]`."
+  ],
+  "03-experiments/p-cv": [
+    "Сначала импорты, потом фолды, потом оценка, потом печать."
+  ],
+  "03-experiments/seed": [
+    "Вероятности на первых 20: `модель.predict_proba(X.head(20))[:, 1]`.",
+    "`np.array_equal(p1, p2)` — полное совпадение. Наибольшая разница — `np.abs(p1 - p3).max()`."
+  ],
+  "03-experiments/log-csv": [
+    "Одна строка-таблица — `pd.DataFrame([run])`. Дописать: `.to_csv(path, mode=\"a\", header=..., index=False)`.",
+    "Заголовок нужен только для первой записи: `header=not os.path.exists(path)` — до того, как файл создан, условие истинно.",
+    "Подсчёт строк заголовка: `open(\"journal.csv\", encoding=\"utf-8\").read().splitlines()` и `sum(l.startswith(\"run_id\") for l in lines)`."
+  ],
+  "03-experiments/grid": [
+    "Функция `log` повторяет одно и то же для любой модели: оценка `cross_val_score` → словарь → `runs.append(...)`. Её вызывают в двух циклах: по `C` и по глубине.",
+    "```python\ndef log(model_name, param, est):\n    s = cross_val_score(make(est), X_train, y_train, cv=CV, scoring=\"roc_auc\")\n    runs.append({\"model\": model_name, \"param\": param, \"cv_auc_mean\": round(s.mean(), 4), \"cv_auc_std\": round(s.std(), 4)})\n```",
+    "Лучшая строка: `journal.loc[journal[\"cv_auc_mean\"].idxmax()]`."
+  ],
+  "03-experiments/paired": [
+    "Две оценки `cross_val_score` с **одним и тем же** `cv=CV` — результаты придут в одинаковом порядке фолдов. Разность массивов — поэлементная.",
+    "`wins = int((diff > 0).sum())`, `paired_clear = bool((diff > 0).all())`."
+  ],
+  "03-experiments/seed-noise": [
+    "Список по зёрнам: `[cv_auc(RandomForestClassifier(60, min_samples_leaf=5, random_state=s)) for s in range(6)]`.",
+    "Размах — `max(by_seed) - min(by_seed)`. Разница глубин — две оценки `cv_auc` с `max_depth=6` и `max_depth=3`."
+  ],
+  "03-experiments/lucky": [
+    "Двойной цикл: внешний по `n`, внутренний — по `s in range(40)`. Внутри — `roc_auc_score(y_all[:n], np.random.default_rng(s).random(n))`.",
+    "`best_by_n = {n: round(max(roc_auc_score(...) for s in range(40)), 3) for n in [50, 200, 1000]}`; убывание — `best_by_n[50] > best_by_n[200] > best_by_n[1000]`."
+  ],
+  "03-experiments/reproduce": [
+    "`json.loads(row[\"params\"])` вернёт словарь параметров. Распаковка словаря в аргументы — `**params`: `LogisticRegression(**params)`.",
+    "Для леса зерно лежит в отдельном столбце: `RandomForestClassifier(**params, random_state=int(row[\"seed\"]))`. Пересчёт — `cross_val_score(make(rebuild(row)), X_train, y_train, cv=CV, scoring=\"roc_auc\").mean()`.",
+    "Таблицу удобно собрать циклом `for _, row in journal.iterrows():` в список словарей, а `broken` — `check_df.loc[~check_df[\"ok\"], \"run_id\"].iloc[0]`."
+  ],
+  "03-experiments/honest": [
+    "Шаг 1 — таблица: `pd.Series({name: cross_val_score(make(est), X_train, y_train, cv=CV, scoring=\"roc_auc\").mean() for name, est in candidates.items()})`.",
+    "Шаг 2 — выбор: `chosen = cv_table.idxmax()`. Шаг 3 — финал: `make(candidates[chosen]).fit(X_train, y_train)` и `roc_auc_score(y_test, ...predict_proba(X_test)[:, 1])`.",
+    "`optimism = round(cv_best - test_auc, 4)` — может оказаться и отрицательным: тест — тоже выборка со своим шумом."
+  ],
+  "04-deploy/versions": [
+    "`version(\"pandas\")` — строка с версией. Имя для sklearn — `\"scikit-learn\"`, как при установке.",
+    "`\"\\n\".join(f\"{p}=={version(p)}\" for p in [\"numpy\", \"pandas\", \"scikit-learn\"])`."
+  ],
+  "04-deploy/p-jsonl": [
+    "Открыть файл → прочитать все строки в список словарей → напечатать."
+  ],
+  "04-deploy/cron": [
+    "Порядок полей: **минута, час**, день месяца, месяц, день недели. Время 6:30 — это `30 6`, а не `6 30`.",
+    "Каждые 10 минут — `*/10` в поле минут; будни — `1-5` в поле дня недели; 1-е число — `1` в поле дня месяца."
+  ],
+  "04-deploy/batch-job": [
+    "Причины удобно собрать функцией `bad_reason(row)` и `df.apply(bad_reason, axis=1)` — как в уроке, добавив третье условие для `tenure_months`.",
+    "Деление: `good = df[reasons == \"\"]`, `bad = df[reasons != \"\"].assign(reason=reasons[reasons != \"\"])`. Вероятности — только для `good[CARD[\"features\"]]`.",
+    "Запись: `os.makedirs(out_dir, exist_ok=True)`, затем `out.to_csv(f\"{out_dir}/scores_{date}.csv\", index=False)` и то же для `bad`."
+  ],
+  "04-deploy/idempotent": [
+    "Число строк в CSV — `len(pd.read_csv(путь))`. Считайте его сразу после каждого запуска.",
+    "Повторы: `vc = df[\"guest_id\"].value_counts()` и `int((vc > 1).sum())`. Перед опытом с дозаписью: `if os.path.exists(\"out/all_scores.csv\"): os.remove(...)`."
+  ],
+  "04-deploy/parse-log": [
+    "Построчное чтение: `[json.loads(line) for line in f]`. Затем `pd.DataFrame(...)` и `pd.to_datetime(log[\"ts\"])`.",
+    "Доли статусов — `value_counts(normalize=True)`. Даты строкой — `log[\"ts\"].min().strftime(\"%Y-%m-%d\")`."
+  ],
+  "04-deploy/latency-hours": [
+    "Фильтр — `log[log[\"status\"] == 200]`, процентиль — `.quantile(0.95)`.",
+    "`log.groupby(log[\"ts\"].dt.hour).size()` — запросы по часам; `.idxmax()` — самый нагруженный час."
+  ],
+  "04-deploy/write-log": [
+    "Дозапись: `with open(path, \"a\", encoding=\"utf-8\") as f: f.write(json.dumps(rec, ensure_ascii=False) + \"\\n\")`.",
+    "Запись — словарь из всех полей; время — `datetime.now().isoformat(timespec=\"seconds\")`. Три вызова — циклом: `for rid, client, status, ms, err in calls_to_log: log_request(\"my_log.jsonl\", rid, client, status, ms, err)`. Для чтения обратно — тот же приём, что в задаче «Журнал в таблицу»."
+  ],
+  "04-deploy/daily": [
+    "Три агрегата посчитайте отдельно и соберите в одну таблицу: `pd.DataFrame({\"n\": ..., \"error_rate\": ..., \"p95_ms\": ...})` — pandas выровняет их по дате.",
+    "Доля ошибок за день: `log.groupby(\"date\")[\"status\"].apply(lambda s: (s != 200).mean())`. Процентиль — по `log[log[\"status\"] == 200]`.",
+    "`alert_days = [str(d) for d, r in daily.iterrows() if r[\"error_rate\"] > 0.02 or r[\"p95_ms\"] > 100]`."
+  ],
+  "04-deploy/cron-match": [
+    "Разделите задачу: `field_match(field, value)` проверяет одно поле. Поле — список частей через запятую (`field.split(\",\")`); подходит, если подходит хоть одна часть.",
+    "Если одновременно ограничены день месяца и день недели, в обычном cron эти два условия соединены **ИЛИ**, прочие поля — И. Укажите принятую семантику явно и проверьте дату, где совпало только календарное число, затем только день недели. Часть бывает трёх видов: `\"*\"` или `\"*/n\"` (шаг: `value % n == 0`), `\"a-b\"` (диапазон: `a <= value <= b`), просто число (`value == int(part)`).",
+    "```python\ndef cron_match(expr, dt):\n    m, h, dom, mon, dow = expr.split()\n    return (field_match(m, dt.minute) and field_match(h, dt.hour) and field_match(dom, dt.day)\n            and field_match(mon, dt.month) and field_match(dow, dt.isoweekday() % 7))\n```"
+  ],
+  "05-project/timeline": [
+    "Чтение — как в задаче «Журнал в таблицу» урока «Упаковка и запуск: окружение, Docker, расписание, журнал». Для группировки удобно добавить столбец `log[\"date\"] = log[\"ts\"].dt.date`.",
+    "Доли кодов за день: `log.groupby(\"date\")[\"status\"].apply(lambda s: (s == 500).mean())`. p95 — по `log[log[\"status\"] == 200]`.",
+    "Первая дата по условию: `str(daily.index[daily[\"p95_ms\"] > 100][0])`."
+  ],
+  "05-project/slow": [
+    "`ok.groupby(\"model_version\")[\"latency_ms\"]` и от неё `.quantile(0.5)`, `.quantile(0.95)`, `.size()` — три Series, которые собираются в DataFrame.",
+    "График: в цикле по версиям `ax.scatter(part[\"ts\"], part[\"latency_ms\"], s=4, label=version)`; линия требования — `ax.axhline(100, color=\"red\")`."
+  ],
+  "05-project/web500": [
+    "`e500[\"client\"].value_counts()`; время первой ошибки — `e500[\"ts\"].min()`; тексты — `e500[\"error\"].unique()`.",
+    "Есть ли ключ в словаре входа: `web[\"payload\"].apply(lambda p: \"delivery_share\" in p)` — получится столбец `True/False`; его `.mean()` — доля.",
+    "До и после — фильтры `web[\"ts\"] < t0` и `web[\"ts\"] >= t0`, где `t0 = e500[\"ts\"].min()`."
+  ],
+  "05-project/kopecks": [
+    "`P = pd.json_normalize(ok[\"payload\"].tolist())`, затем `P[\"client\"] = ok[\"client\"]` — индексы совпадают, потому что `ok` пронумерован заново (`reset_index`).",
+    "Медианы — `P.groupby(\"client\")[\"avg_check\"].median()`; доля больших чеков — `(P[\"avg_check\"] > 3000).groupby(P[\"client\"]).mean()`."
+  ],
+  "05-project/rollback": [
+    "Решения: `v10.predict_proba(P[FEATURES])[:, 1] >= 1/3` — и так для четырёх сочетаний «модель × данные». Сложите четыре столбца `True/False` в один DataFrame.",
+    "Доли по клиентам: `pd.DataFrame({...}).groupby(P[\"client\"]).mean().round(3)`.",
+    "В декабрьском эксперименте сосчитайте смены расчётного решения v10 с «включить» на «не включать» среди успешных запросов приложения 3.2 (`P[\"client\"] == \"app 3.2\"`), где `v10_as_is` — `True`, а `v10_fixed` — `False`: `(as_is & ~fixed & mask).sum()`."
+  ],
+  "05-project/guard": [
+    "В строке таблицы пропуск чека — это `NaN`, а не `None`: проверяйте `pd.isna(row[\"avg_check\"])`.",
+    "Отказ по строке: `bad = P.apply(lambda r: len(range_problems(r)) > 0, axis=1)`; доли по клиентам — `bad.groupby(P[\"client\"]).mean()`.",
+    "Первое время: `P.loc[bad, \"ts\"].min().strftime(\"%Y-%m-%d %H:%M\")`."
+  ],
+  "05-project/faster": [
+    "Для каждого `n`: обучить, посчитать AUC на тесте, затем в цикле по 40 строкам замерить `predict_proba(X_test.iloc[[i]])` и взять `np.median` времён.",
+    "Таблица: список словарей `{\"n\": n, \"auc\": ..., \"ms\": ...}` → `pd.DataFrame(rows).set_index(\"n\")`.",
+    "`best_small = min(n for n in speed.index if speed.loc[n, \"auc\"] >= speed.loc[150, \"auc\"] - 0.002)`; `speedup = speed.loc[150, \"ms\"] / speed.loc[best_small, \"ms\"]`."
+  ],
+  "05-project/advice": [
+    "Пройдитесь по трём жалобам и шагу 5. Какой вариант закрывает все три проблемы и не создаёт новую?"
+  ],
+  "06-final-project/audit": [
+    "Всё считается запросами: `pd.read_sql(\"SELECT COUNT(*) AS n FROM orders\", con)[\"n\"][0]`. Для словаря `tables` — цикл по `names`.",
+    "Дубли: прочитайте столбец `ticket_id` и посчитайте `.duplicated().sum()` — это строки-повторы, без первых вхождений. Последняя дата — `SELECT MAX(order_date) ...`: даты в SQLite хранятся строками, и `MAX` по строкам вида `ГГГГ-ММ-ДД` работает правильно.",
+    "```python\nq = lambda sql: pd.read_sql(sql, con).iloc[0, 0]\ntables = {t: int(q(f\"SELECT COUNT(*) FROM {t}\")) for t in names}\nn_test = int(q(\"SELECT SUM(is_test) FROM clients\"))\n...\n```"
+  ],
+  "06-final-project/target": [
+    "Действующие — маска `(base[\"start_date\"] <= c) & (base[\"end_date\"].isna() | (base[\"end_date\"] > c))`. Пропуск в `end_date` значит «договор действует» — без `isna()` такие клиенты выпадут.",
+    "Ушёл — `end_date` есть и не позже `c + pd.offsets.MonthEnd(months)`. Series с индексом `client_id`: `pd.Series(флаги.astype(int).values, index=active[\"client_id\"].values)`.",
+    "```python\nactive = base[...]\nleft = active[\"end_date\"].notna() & (active[\"end_date\"] <= c + pd.offsets.MonthEnd(months))\nreturn pd.Series(left.astype(int).values, index=active[\"client_id\"].values)\n...\nrates = {cut: (len(build_target(cut)), round(float(build_target(cut).mean()), 3)) for cut in cuts}\n```"
+  ],
+  "06-final-project/features": [
+    "Сначала отфильтруйте заказы: до среза включительно и без отменённых, — это `o`. Из них — последние 90 дней: `o90 = o[o[\"order_date\"] > c - pd.Timedelta(days=90)]`. Агрегаты — `groupby(\"client_id\")`.",
+    "Чтобы клиенты без заказов не пропали, агрегаты выравнивают по индексу действующих: `.reindex(f.index, fill_value=0)`. Последний заказ — `o.groupby(\"client_id\")[\"order_date\"].max().reindex(f.index)`, у клиентов без заказов будет `NaT` → заполните днями с начала договора `(c - act[\"start_date\"]).dt.days`.",
+    "```python\no = orders[(orders[\"order_date\"] <= c) & (orders[\"status\"] != \"отменён\")]\no90 = o[o[\"order_date\"] > c - pd.Timedelta(days=90)]\nf[\"orders_90\"] = o90.groupby(\"client_id\").size().reindex(f.index, fill_value=0)\nf[\"revenue_90\"] = ...\nlast = o.groupby(\"client_id\")[\"order_date\"].max().reindex(f.index)\nf[\"days_since_order\"] = (c - last).dt.days.fillna(...)\n```"
+  ],
+  "06-final-project/leak": [
+    "Честный признак уже есть: `roc_auc_score(test[\"churn\"], test[\"days_since_order\"])`. Для «неосторожного» сгруппируйте все неотменённые заказы по клиенту и возьмите максимум даты.",
+    "Выравнивание по клиентам теста: `.reindex(test[\"client_id\"])`; дни — `(c - last).dt.days`, пропуски — `.fillna(0)`. У клиентов, заказывавших после среза, дни станут **отрицательными** — это и есть след будущего.",
+    "```python\nok = orders[orders[\"status\"] != \"отменён\"]\nlast_all = ok.groupby(\"client_id\")[\"order_date\"].max().reindex(test[\"client_id\"])\nleaky = (c - last_all).dt.days.fillna(0)\nauc_leaky = round(float(roc_auc_score(test[\"churn\"], leaky)), 3)\n```"
+  ],
+  "06-final-project/models": [
+    "Словарь моделей и цикл: `cross_val_score(model, X, y, groups=groups, cv=GroupKFold(n_splits=5), scoring=\"roc_auc\").mean()`. Без `groups=` `GroupKFold` упадёт с ошибкой — это и хорошо.",
+    "Лучшая — `max(cv_auc, key=cv_auc.get)`. Её обучают на всём `train` и **один раз** проверяют на `test`: `roc_auc_score(test[\"churn\"], model.predict_proba(test[CAT + NUM])[:, 1])`.",
+    "```python\nmodels = {\n    \"logreg\": make_pipeline(_pre(), LogisticRegression(max_iter=2000)),\n    \"boosting\": make_pipeline(ColumnTransformer([(\"cat\", OneHotEncoder(handle_unknown=\"ignore\"), CAT)], remainder=\"passthrough\"),\n                              HistGradientBoostingClassifier(max_depth=3, learning_rate=0.05, max_iter=200, random_state=42)),\n    \"knn\": make_pipeline(_pre(), KNeighborsClassifier(n_neighbors=25)),\n}\ncv = GroupKFold(n_splits=5)\ncv_auc = {k: round(float(cross_val_score(m, X, y, groups=groups, cv=cv, scoring=\"roc_auc\").mean()), 3) for k, m in models.items()}\n...\n```"
+  ],
+  "06-final-project/profit": [
+    "Две похожие формулы: ожидаемая (с `test[\"p\"]`) — чтобы **выбрать**, сценарная на известных метках (с `test[\"churn\"]`) — чтобы **оценить** выбор при заданной доле удержания. Выбор: `exp[exp > 0].sort_values(ascending=False).index[:150]`.",
+    "Правило: `test.sort_values(\"revenue_trend\").index[:150]` — индексы 150 клиентов с самым сильным падением выручки. Прибыль группы — сумма сценарных результатов по её индексам: `real[idx].sum()`.",
+    "```python\nexp = test[\"p\"] * SAVE * MARGIN * MONTHS * R - CALL - DISCOUNT * R\nreal = test[\"churn\"] * SAVE * MARGIN * MONTHS * R - CALL - DISCOUNT * R\ncalls = exp[exp > 0].sort_values(ascending=False).index[:150]\nprofit_model = round(float(real[calls].sum()))\n...\n```"
+  ],
+  "06-final-project/package": [
+    "Обучение на всех размеченных данных: `full = pd.concat([train, test], ignore_index=True)`. После `joblib.dump(model, \"model.joblib\")` загрузите файл `joblib.load` и считайте прогноз **загруженной** моделью — так проверяется, что артефакт рабочий.",
+    "Срез для работы — `s = snapshot(\"2026-09-30\")`. Уходы следующего квартала в день отбора ещё неизвестны. Для рабочего прогноза используются признаки на дату среза. Список — как в шаге 6, только с `p_churn` вместо `p`; запись — `to_csv(\"call_list.csv\", index=False)`. Отпечаток данных — `hashlib.md5(open(\"office.db\", \"rb\").read()).hexdigest()`.",
+    "`json.dump` не понимает типы numpy: `train_rows`, `n_calls`, `expected_profit` приведите к `int`. Пишите с `ensure_ascii=False`, чтобы русские названия остались читаемыми."
+  ]
+}

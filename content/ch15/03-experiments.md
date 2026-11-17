@@ -6,7 +6,7 @@ recap:
   - "Запуск (run) = параметры + метрики + отпечаток данных + seed + время + артефакт. Записывайте каждый запуск, а не только удачные."
   - "Журнал — обычная таблица: список словарей → DataFrame → CSV с дозаписью (`mode='a'`, заголовок один раз)."
   - "Фиксируйте `random_state`: одинаковый seed → одинаковый результат. Разброс метрики по разным seed — мера шума."
-  - "Разница между моделями значима, только если она больше шума: смотрите на разброс по фолдам и на парные разности по тем же фолдам."
+  - "На одинаковых фолдах сравнивайте парные разности. Их направление и разброс описывают проверенные выборки."
   - "Чем больше вариантов вы перебрали на одной валидации, тем оптимистичнее лучший результат. Финальную оценку делают один раз на тесте."
   - "MLflow: `mlflow.start_run()`, `log_params`, `log_metrics`, `sklearn.log_model` — тот же журнал с веб-интерфейсом и реестром моделей."
 ---
@@ -108,7 +108,11 @@ import os
 import pandas as pd
 
 def append_run(run, path="runs.csv"):
-    pd.DataFrame([run]).to_csv(path, mode="a", header=not os.path.exists(path), index=False)
+    exists = os.path.exists(path)
+    columns = list(pd.read_csv(path, nrows=0).columns) if exists else list(run)
+    if set(columns) != set(run):
+        raise ValueError("Поля записи расходятся с заголовком журнала")
+    pd.DataFrame([run], columns=columns).to_csv(path, mode="a", header=not exists, index=False)
 
 if os.path.exists("runs.csv"):
     os.remove("runs.csv")                      # для примера начинаем с чистого журнала
@@ -123,7 +127,7 @@ print(pd.read_csv("runs.csv"))
 - `header=not os.path.exists(path)` — заголовок пишем, только если файла ещё нет. Иначе строка заголовка повторялась бы перед каждым запуском.
 
 ::: warn
-Если в следующем запуске у словаря окажутся другие ключи (добавили поле `note`), `to_csv` с дозаписью **не** проверит заголовок: столбцы съедут. Держите набор полей постоянным — заведите функцию `log_run`, которая всегда формирует словарь одного вида, и не собирайте его руками каждый раз.
+Если в следующем запуске у словаря окажутся другие ключи (добавили поле `note`), `to_csv` с дозаписью **не** проверит заголовок: столбцы съедут. Сохраняйте и набор полей, и порядок столбцов, например считайте заголовок существующего файла перед дозаписью. Один и тот же набор ключей словаря может поступить в другом порядке. Заведите функцию `log_run`, которая всегда формирует словарь одного вида, и не собирайте его руками каждый раз.
 :::
 
 {{practice: log-csv, grid}}
@@ -224,7 +228,7 @@ AUC двух моделей на тех же пяти фолдах: точки �
 :::
 
 ::: note
-Почему парное сравнение сильнее. Разброс по фолдам у каждой модели большой, потому что сами фолды разные по трудности. Но на трудном фолде хуже *обе* модели. Разность убирает эту общую часть, и остаётся то, что относится именно к моделям. Это та же идея, что у парного t-теста из урока «Статистические тесты: какой выбрать» главы 5: сравнивают разности у одних и тех же объектов (здесь — фолдов), а не две независимые выборки.
+Общий фолд позволяет сравнить две модели на одних гостях. Обучающие части пяти фолдов перекрываются, поэтому обычная формула стандартной ошибки для пяти независимых измерений сюда автоматически не переносится. Для вывода о последующем периоде нужна отдельная, заранее отложенная выборка.
 :::
 
 ::: quiz
@@ -340,7 +344,7 @@ for depth in [3, 6, None]:
 У MLflow есть `mlflow.sklearn.autolog()`: одна строка перед обучением, и параметры, метрики на обучении и сама модель логируются автоматически. Удобно для старта, но метрики кросс-валидации и отпечаток данных всё равно лучше логировать явно.
 :::
 
-Ещё одна часть MLflow — **реестр моделей** (Model Registry): у выбранного запуска модель получает имя и версию (`churn`, версия 3) и **псевдоним** (alias) — например, `champion`, «та, что сейчас в работе». Сервис на FastAPI из урока «Сервис в работе: пакет, время ответа, FastAPI, тесты» загружает не файл по пути, а модель по псевдониму: `mlflow.sklearn.load_model("models:/churn@champion")`. Выкатить новую версию или откатиться — значит переставить псевдоним на другую версию, не трогая код сервиса. В старых версиях MLflow вместо псевдонимов были стадии (Staging, Production); сейчас они объявлены устаревшими.
+Ещё одна часть MLflow — **реестр моделей** (Model Registry): у выбранного запуска модель получает имя и версию (`churn`, версия 3) и **псевдоним** (alias) — например, `champion`, «та, что сейчас в работе». В опубликованном FastAPI модель загружается из joblib. Если вы подключите реестр, сервис сможет загружать модель по псевдониму: `mlflow.sklearn.load_model("models:/churn@champion")`. Выкатить новую версию или откатиться — значит переставить псевдоним на другую версию, не трогая код сервиса. В старых версиях MLflow вместо псевдонимов были стадии (Staging, Production); сейчас они объявлены устаревшими.
 
 Зарегистрируйте лучший завершённый запуск и проверьте двадцать контрольных строк. Храните таблицу с вероятностями вместе с паспортом, если переносите модель на другой компьютер.
 
@@ -376,11 +380,15 @@ runs = []
 ### check
 ```python
 import pandas as _pd
-r = need('runs', list)
-assert len(r) == 2 and all(isinstance(x, dict) for x in r), 'runs — список из двух словарей.'
-j = need('journal', _pd.DataFrame)
-assert {'run_id', 'model', 'cv_auc'} <= set(j.columns) and len(j) == 2, f'Столбцы journal: {list(j.columns)}.'
-assert need('best_id') == 'run-002', f'best_id = {need("best_id")!r}.'
+_runs = need('runs', list)
+assert len(_runs) == 2 and all(isinstance(_r, dict) for _r in _runs), 'runs — список из двух словарей.'
+_w = _pd.DataFrame([{'run_id':'run-001','model':'LogReg','cv_auc':.875}, {'run_id':'run-002','model':'Forest','cv_auc':.901}]).set_index('run_id').sort_index()
+_j = need('journal', _pd.DataFrame)
+for _frame, _name in [(_pd.DataFrame(_runs), 'runs'), (_j, 'journal')]:
+    assert {'run_id','model','cv_auc'} <= set(_frame.columns) and len(_frame)==2 and _frame.run_id.is_unique and set(_frame.run_id)==set(_w.index), f'{_name}: нужны два разных run_id из условия.'
+    _actual = _frame.set_index('run_id').loc[_w.index]
+    assert _actual.model.tolist()==_w.model.tolist() and all(close(a,b,1e-10) for a,b in zip(_actual.cv_auc,_w.cv_auc)), f'{_name}: названия моделей и AUC должны сохраняться по run_id.'
+assert need('best_id') == _w.cv_auc.idxmax(), 'best_id — run_id с максимальным cv_auc.'
 ```
 
 ### hint
@@ -518,6 +526,25 @@ assert 'Unnamed: 0' not in b.columns, 'В файле лишний столбец
 lines = open('journal.csv', encoding='utf-8').read().splitlines()
 assert sum(l.startswith('run_id') for l in lines) == 1, 'Заголовок должен быть в файле один раз: header=not os.path.exists(path).'
 assert need('n_header_lines') == 1, f'n_header_lines = {need("n_header_lines")}.'
+_w = _pd.DataFrame([need('r1'), need('r2'), need('r3')])
+_actual = _pd.read_csv('journal.csv')
+for _frame, _name in [(_actual, 'journal.csv'), (b, 'back')]:
+    assert set(_frame.columns) == set(_w.columns) and len(_frame)==len(_w), f'{_name}: нужны все поля трёх запусков, без лишнего индекса.'
+    try:
+        _pd.testing.assert_frame_equal(_frame.loc[:,_w.columns].reset_index(drop=True), _w.reset_index(drop=True), check_dtype=False, rtol=1e-12, atol=1e-12)
+    except AssertionError:
+        raise AssertionError(f'{_name}: значения должны сохраняться под своими именами полей. При дозаписи выровняйте столбцы по заголовку, порядок ключей словаря может отличаться.')
+from pathlib import Path as _Path
+_path = _Path('journal_other_schema.csv')
+if _path.exists(): _path.unlink()
+_a = dict(run_id='other-01', model='Forest', cv_auc_mean=.8123, note='новый срез')
+_b = dict(note='база', cv_auc_mean=.8345, run_id='other-02', model='LogReg')
+f(_a, str(_path)); f(_b, str(_path))
+_back = _pd.read_csv(_path)
+try:
+    _pd.testing.assert_frame_equal(_back.loc[:,list(_a)].reset_index(drop=True), _pd.DataFrame([_a,_b])[list(_a)], check_dtype=False, rtol=1e-12, atol=1e-12)
+except (AssertionError, KeyError):
+    raise AssertionError('append_run должна работать с переданным path и сохранять смысл полей при другом порядке ключей; заголовок записывается один раз.')
 ```
 
 ### hint
@@ -535,7 +562,8 @@ import os
 import pandas as pd
 
 def append_run(run, path):
-    pd.DataFrame([run]).to_csv(path, mode="a", header=not os.path.exists(path), index=False)
+    columns = list(pd.read_csv(path, nrows=0).columns) if os.path.exists(path) else list(run)
+    pd.DataFrame([run]).reindex(columns=columns).to_csv(path, mode="a", header=not os.path.exists(path), index=False)
 
 if os.path.exists("journal.csv"):
     os.remove("journal.csv")
@@ -613,6 +641,13 @@ assert all(abs(a - b) < 0.0012 for a, b in zip(got, want)), f'Средние AUC
 bw = max(w, key=lambda r: r[2])
 b = need('best', _pd.Series)
 assert close(b['cv_auc_mean'], round(bw[2], 4), 0.0012) and close(float(b['param']), float(bw[1])) and b['model'] == bw[0], f'best — строка с наибольшим cv_auc_mean: {bw[0]} {bw[1]}.'
+_assert_columns = {'model','param','cv_auc_mean','cv_auc_std'}
+assert _assert_columns <= set(j.columns), 'В journal нужны model,param,cv_auc_mean,cv_auc_std.'
+assert not j.duplicated(['model','param']).any(), 'Каждая конфигурация model/param должна встречаться один раз.'
+for _name, _param, _mean, _std in w:
+    _row = j[(j.model == _name) & j.param.eq(_param)]
+    assert len(_row)==1, f'Не найдена конфигурация {_name}/{_param}; не переставляйте только подписи параметров.'
+    assert close(_row.iloc[0].cv_auc_mean, round(_mean,4), .0012) and close(_row.iloc[0].cv_auc_std, round(_std,4), .0012), f'{_name}/{_param}: среднее и std AUC должны принадлежать этой конфигурации.'
 ```
 
 ### hint
@@ -654,7 +689,7 @@ print(best)
 ```
 
 ### explain
-Посмотрите на столбец `cv_auc_std`: у всех запусков он около 0.01–0.02, а разница между регрессиями с разным `C` — меньше 0.01. Значит, выбирать «лучшее C» здесь бессмысленно — это шум. А вот разрыв между лесом и регрессией (около 0.02–0.03) уже стоит проверить парным сравнением — это следующая задача.
+Посмотрите на столбец `cv_auc_std`: у всех запусков он около 0.01–0.02, а разница между регрессиями с разным `C` — меньше 0.01. Значит, этот небольшой разрыв сам по себе недостаточен для вывода о лучшем C. А вот разрыв между лесом и регрессией (около 0.02–0.03) уже стоит проверить парным сравнением — это следующая задача.
 
 ## task: paired | Парное сравнение | base
 
@@ -731,7 +766,7 @@ print(diff.round(3), mean_diff, wins, sd_lr, paired_clear)
 ```
 
 ### explain
-Разброс AUC регрессии по фолдам сопоставим со средней разницей между моделями — по двум средним «с плюс-минусом» не скажешь, кто лучше. Но парные разности положительны во всех фолдах: на каждом куске данных лес выигрывает. Это и есть аргумент для журнала и для руководителя: «лес лучше устойчиво, а не в среднем». Типичная ошибка — задать фолды числом (`cv=5`) у одной модели и объектом `CV` у другой: тогда фолды разные и парное сравнение теряет смысл.
+Разброс AUC регрессии по фолдам сопоставим со средней разницей между моделями — по двум средним «с плюс-минусом» не скажешь, кто лучше. Но парные разности положительны во всех фолдах: на каждом куске данных лес выигрывает. Это и есть аргумент для журнала и для руководителя: «на каждом из пяти проверенных фолдов у леса AUC выше». Типичная ошибка — задать фолды числом (`cv=5`) у одной модели и объектом `CV` у другой: тогда фолды разные и парное сравнение теряет смысл.
 
 ## task: seed-noise | Шум от зерна | plus
 
@@ -815,6 +850,8 @@ print(np.round(by_seed, 4), seed_sd, seed_range, depth_gap, gap_within_range)
 ## task: lucky | Удачливая пустышка | plus
 
 Повторите опыт с 40 случайными «моделями» на маленькой валидации и проверьте, как меняется иллюзия с размером валидации. Для `n` из `[50, 200, 1000]`: валидация — первые `n` значений `churned`; «модель» с номером `s` выдаёт `np.random.default_rng(s).random(n)`, `s` от 0 до 39. Сохраните `best_by_n` — словарь `{n: наибольший AUC среди 40 пустышек}` (3 знака). В `shrinks` — `True`, если значения убывают с ростом `n`.
+
+В этой карточке `y_all` — массив меток, уже прочитанный из CSV. Возьмите из него первые `n` значений.
 
 ### setup
 ```python
@@ -920,6 +957,19 @@ assert list(c['ok']) == [True, True, False], f'ok = {list(c["ok"])}: первы�
 assert need('broken') == 'run-013', f'broken = {need("broken")!r}.'
 r = need('rebuild'); j = need('journal')
 assert type(r(j.iloc[1])).__name__ == 'RandomForestClassifier' and r(j.iloc[1]).random_state == 3, 'Для леса передайте random_state=seed из журнала.'
+import json as _json
+from sklearn.model_selection import cross_val_score as _cvs
+from sklearn.linear_model import LogisticRegression as _LR
+from sklearn.ensemble import RandomForestClassifier as _RF
+for _i, _row in j.iterrows():
+    _params = _json.loads(_row['params'])
+    _est = _LR(**_params) if _row['model']=='LogReg' else _RF(**_params, random_state=int(_row['seed']))
+    _value = round(float(_cvs(make(_est), X_train, y_train, cv=CV, scoring='roc_auc').mean()),4)
+    _actual = c.loc[c.run_id.eq(_row.run_id)]
+    assert len(_actual)==1, 'В check_df нужна одна строка на каждый run_id.'
+    _actual = _actual.iloc[0]
+    assert close(_actual.logged, _row.cv_auc_mean, 1e-10) and close(_actual.reproduced, _value, .000051), f'{_row.run_id}: logged из журнала, reproduced — пересчитанный средний AUC с4 знаками.'
+    assert bool(_actual.ok) == (abs(_value - _row.cv_auc_mean)<.0005), f'{_row.run_id}: ok пересчитывается по abs(reproduced-logged)<0.0005.'
 ```
 
 ### hint

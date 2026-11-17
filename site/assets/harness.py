@@ -420,6 +420,7 @@ def run(code, check=None, setup=None, show_last=False):
     sys.stdout = sys.stderr = buf
     builtins.input = _no_input
     try:
+        compiled = compile(code, _USER, 'exec')
         if 'pandas' in code or 'pandas' in (setup or ''):
             _pandas_options()
         if setup:
@@ -427,7 +428,7 @@ def run(code, check=None, setup=None, show_last=False):
         # как в Jupyter: значение последнего выражения показываем (таблицы pandas — таблицей)
         body, last = _split_last_expr(code) if show_last else (code, None)
         if last is None:
-            exec(compile(code, _USER, 'exec'), ns)
+            exec(compiled, ns)
         else:
             exec(compile(body, _USER, 'exec'), ns)
             value = eval(compile(last, _USER, 'eval'), ns)

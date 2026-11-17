@@ -1,0 +1,94 @@
+--- a/content/ch15/06-final-project.md
++++ b/content/ch15/06-final-project.md
+@@ -1059,9 +1059,9 @@
+ 
+ ## task: profit | Шаг 6. Список звонков в рублях | plus
+ 
+-На тесте посчитаны вероятности ухода `test["p"]` (предоставленная для этой самостоятельной карточки модель). Для каждого клиента: месячная выручка `R = revenue_90 / 3`, ожидаемая прибыль звонка `exp = p · 0.5 · 0.35 · 12 · R − 1500 − 0.2 · R`. Список звонков — клиенты с `exp > 0` по убыванию `exp`, не больше 150. Посчитайте **сценарный результат на наблюдаемых уходах** выбранного списка (в формуле вместо `p` — настоящий `churn`): `profit_model` (целые рубли), `n_calls` и `caught` — сколько из списка имеют наблюдаемую метку ухода. Для сравнения — `profit_rule` (150 клиентов с наименьшим `revenue_trend`) и `profit_all` (позвонить всем).
+-
+-Сохраните позиции выбранных строк таблицы `test` в `calls`. Можно взять более короткую очередь с положительной ожидаемой прибылью и обосновать её размер. Для допущений 30 %, 50 % и 70 % постройте `sensitivity` с индексом `0.3, 0.5, 0.7`. Колонки: `fixed_profit` — рубли для исходной очереди, `reselected_n` — число звонков после нового отбора при лимите 150, `reselected_profit` — рубли для нового списка. При оценке используйте наблюдаемые метки ухода и явно укажите допущение о доле спасённых.
++На тесте посчитаны вероятности ухода `test["p"]` (предоставленная для этой самостоятельной карточки модель). Для каждого клиента: месячная выручка `R = revenue_90 / 3`, ожидаемая прибыль звонка `exp = p · 0.5 · 0.35 · 12 · R − 1500 − 0.2 · R`. Список звонков — клиенты с `exp > 0` по убыванию неокруглённой `exp`, при равенстве — по возрастанию `client_id`, не больше 150. Посчитайте **сценарный результат на наблюдаемых уходах** выбранного списка (в формуле вместо `p` — настоящий `churn`): `profit_model` (целые рубли), `n_calls` и `caught` — сколько из списка имеют наблюдаемую метку ухода. Для сравнения — `profit_rule` (150 клиентов с наименьшим `revenue_trend`, при равенстве — с меньшим `client_id`) и `profit_all` (позвонить всем).
++
++Сохраните позиции выбранных строк таблицы `test` в `calls`. Можно взять более короткую очередь с положительной ожидаемой прибылью и обосновать её размер. Для допущений 30 %, 50 % и 70 % постройте `sensitivity` с индексом `0.3, 0.5, 0.7`. Колонки: `fixed_profit` — рубли для исходной очереди, `reselected_n` — число звонков после нового отбора при лимите 150 (та же сортировка: ожидаемая польза по убыванию, затем `client_id` по возрастанию), `reselected_profit` — рубли для нового списка. При оценке используйте наблюдаемые метки ухода и явно укажите допущение о доле спасённых.
+ 
+ ### setup
+ ```python
+@@ -1141,7 +1141,7 @@
+ 
+ ### starter
+ ```python
+-# уже есть: test с колонками p (вероятность ухода), churn, revenue_90, revenue_trend
++# уже есть: test с колонками client_id, p (вероятность ухода), churn, revenue_90, revenue_trend
+ SAVE, MARGIN, MONTHS, CALL, DISCOUNT = 0.5, 0.35, 12, 1500, 0.2
+ 
+ R = test["revenue_90"] / 3
+@@ -1163,10 +1163,12 @@
+     sel = test.reset_index().set_index('client_id').loc[_ids, 'index'].tolist()
+ assert len(sel)<=150 and len(set(sel))==len(sel) and set(sel)<=set(test.index), 'calls: не больше150 разных клиентских строк теста.'
+ assert (e.loc[sel]>0).all(), 'У выбранных клиентов сценарная ожидаемая выгода должна быть положительной.'
++_ordered = test.loc[list(sel), ['client_id']].assign(_expected=e.loc[list(sel)].to_numpy()).sort_values(['_expected', 'client_id'], ascending=[False, True])
++assert list(sel) == list(_ordered.index), 'calls: выбранные строки расположите по убыванию неокруглённой ожидаемой пользы; при равенстве — по возрастанию client_id. Более короткая положительная очередь допустима.'
+ assert need('n_calls') == len(sel), f'n_calls = {need("n_calls")}, а нужно {len(sel)}: клиенты с положительной ожидаемой прибылью, но не больше 150.'
+ assert abs(need('profit_model') - round(float(real[sel].sum()))) <= 1, f'profit_model = {need("profit_model")}. Сценарная оценка на известных уходах использует churn (0 или 1) при заданной доле удержания.'
+ assert need('caught') == int(test.loc[sel, 'churn'].sum()), f'caught = {need("caught")}.'
+-rule = test.sort_values('revenue_trend').index[:150]
++rule = test.sort_values(['revenue_trend', 'client_id']).index[:150]
+ assert abs(need('profit_rule') - round(float(real[rule].sum()))) <= 1, f'profit_rule = {need("profit_rule")}: 150 клиентов с наименьшим revenue_trend.'
+ assert abs(need('profit_all') - round(float(real.sum()))) <= 1, f'profit_all = {need("profit_all")}.'
+ if globals().get('_project_notebook') and 'sensitivity' not in globals() and 'fixed_money' in globals() and 'money' in globals():
+@@ -1178,23 +1180,24 @@
+ for save in (.3,.5,.7):
+     expected=test['p']*save*.35*12*R0-1500-.2*R0
+     observed=test['churn']*save*.35*12*R0-1500-.2*R0
+-    reselected=expected[expected>0].sort_values(ascending=False).index[:150]
++    reselected=test.assign(expected_profit=expected).loc[expected>0].sort_values(["expected_profit", "client_id"], ascending=[False, True]).index[:150]
+     assert close(_sens.loc[save,'fixed_profit'],round(float(observed.loc[sel].sum())),1), 'fixed_profit: меняется допущение при неизменном списке.'
+     assert _sens.loc[save,'reselected_n']==len(reselected) and close(_sens.loc[save,'reselected_profit'],round(float(observed.loc[reselected].sum())),1), 'Переотбор меняет и список, и деньги; его результат сообщается отдельно.'
+ 
+ ```
+ 
+ ### hint
+-Две похожие формулы: ожидаемая (с `test["p"]`) — чтобы **выбрать**, сценарная на известных метках (с `test["churn"]`) — чтобы **оценить** выбор при заданной доле удержания. Выбор: `exp[exp > 0].sort_values(ascending=False).index[:150]`.
+-
+-### hint
+-Правило: `test.sort_values("revenue_trend").index[:150]` — индексы 150 клиентов с самым сильным падением выручки. Прибыль группы — сумма сценарных результатов по её индексам: `real[idx].sum()`.
++Две похожие формулы: ожидаемая (с `test["p"]`) — чтобы **выбрать**, сценарная на известных метках (с `test["churn"]`) — чтобы **оценить** выбор при заданной доле удержания. Для выбора добавьте рассчитанную пользу к `test`, оставьте положительные строки и сортируйте по `expected_profit` по убыванию, затем по `client_id` по возрастанию.
++
++### hint
++Правило: `test.sort_values(["revenue_trend", "client_id"]).index[:150]` — индексы 150 клиентов с самым сильным падением выручки. Прибыль группы — сумма сценарных результатов по её индексам: `real[idx].sum()`.
+ 
+ ### hint
+ ```python
+ exp = test["p"] * SAVE * MARGIN * MONTHS * R - CALL - DISCOUNT * R
+ real = test["churn"] * SAVE * MARGIN * MONTHS * R - CALL - DISCOUNT * R
+-calls = exp[exp > 0].sort_values(ascending=False).index[:150]
++ranked = test.assign(expected_profit=exp)
++calls = ranked.loc[exp > 0].sort_values(["expected_profit", "client_id"], ascending=[False, True]).index[:150]
+ profit_model = round(float(real[calls].sum()))
+ ...
+ ```
+@@ -1207,12 +1210,13 @@
+ exp = test["p"] * SAVE * MARGIN * MONTHS * R - CALL - DISCOUNT * R
+ real = test["churn"] * SAVE * MARGIN * MONTHS * R - CALL - DISCOUNT * R
+ 
+-calls = exp[exp > 0].sort_values(ascending=False).index[:150]
++ranked = test.assign(expected_profit=exp)
++calls = ranked.loc[exp > 0].sort_values(["expected_profit", "client_id"], ascending=[False, True]).index[:150]
+ n_calls = len(calls)
+ profit_model = round(float(real[calls].sum()))
+ caught = int(test.loc[calls, "churn"].sum())
+ 
+-rule = test.sort_values("revenue_trend").index[:150]
++rule = test.sort_values(["revenue_trend", "client_id"]).index[:150]
+ profit_rule = round(float(real[rule].sum()))
+ profit_all = round(float(real.sum()))
+ print(n_calls, caught, profit_model, profit_rule, profit_all)
+@@ -1220,7 +1224,7 @@
+ for save in (.3,.5,.7):
+     expected=test['p']*save*MARGIN*MONTHS*R-CALL-DISCOUNT*R
+     scenario=test['churn']*save*MARGIN*MONTHS*R-CALL-DISCOUNT*R
+-    reselected=expected[expected>0].sort_values(ascending=False).index[:150]
++    reselected=test.assign(expected_profit=expected).loc[expected>0].sort_values(["expected_profit", "client_id"], ascending=[False, True]).index[:150]
+     rows.append(dict(save=save,fixed_profit=round(float(scenario.loc[calls].sum())),reselected_n=len(reselected),reselected_profit=round(float(scenario.loc[reselected].sum()))))
+ sensitivity=pd.DataFrame(rows).set_index('save')
+ 

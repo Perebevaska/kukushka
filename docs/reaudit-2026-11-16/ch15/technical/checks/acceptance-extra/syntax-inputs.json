@@ -1,0 +1,103 @@
+{
+  "valid_smokes": [
+    {
+      "name": "plain",
+      "code": "print(2+3)",
+      "setup": "",
+      "show_last": false,
+      "expected": {
+        "ok": true,
+        "out": "5\n"
+      }
+    },
+    {
+      "name": "setup-imports",
+      "code": "print(pd.Series([1,2]).sum())",
+      "setup": "import pandas as pd",
+      "show_last": false,
+      "expected": {
+        "ok": true,
+        "out": "3\n"
+      }
+    },
+    {
+      "name": "show-last",
+      "code": "x=4\nx+1",
+      "setup": "print(\"prepared\")",
+      "show_last": true,
+      "expected": {
+        "ok": true,
+        "out": "prepared\n",
+        "display": {
+          "text": "5"
+        }
+      }
+    },
+    {
+      "name": "figure",
+      "code": "import matplotlib.pyplot as plt\nfig,ax=plt.subplots()\nax.plot([0,1],[1,2])\nprint(\"drawn\")",
+      "setup": "",
+      "show_last": false,
+      "expected": {
+        "ok": true,
+        "out": "drawn\n",
+        "figures": 1
+      }
+    },
+    {
+      "name": "runtime-error",
+      "code": "x=1\nprint(1/0)",
+      "setup": "s=2",
+      "show_last": false,
+      "expected": {
+        "ok": false,
+        "error_type": "ZeroDivisionError",
+        "line": 2
+      }
+    }
+  ],
+  "cold_warm_cases": [
+    {
+      "name": "literal_invalid",
+      "task": "handler",
+      "setup": "import pandas as pd\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import Pipeline, make_pipeline\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n_g = pd.read_csv(\"guests_churn.csv\")\n_X = _g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"])\n_NUM = [\"tenure_months\", \"app\", \"visits_90d\", \"days_since_last\", \"avg_check\", \"delivery_share\", \"promo_used\", \"complaints\"]\n_pre = ColumnTransformer([(\"num\", make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), _NUM),\n                          (\"cat\", OneHotEncoder(handle_unknown=\"ignore\"), [\"city\", \"fav_category\"])])\nmodel = Pipeline([(\"prep\", _pre), (\"model\", LogisticRegression(max_iter=2000))]).fit(_X, _g[\"churned\"])\nCARD = {\"version\": \"1.0\", \"features\": list(_X.columns), \"threshold\": 1 / 3}\ndef validate(p):\n    return [f\"{f}: обязательное поле\" for f in CARD[\"features\"] if f not in p]\nGOOD = {\"city\": \"Пермь\", \"tenure_months\": 12, \"app\": 0, \"visits_90d\": 4, \"days_since_last\": 8,\n        \"avg_check\": 446, \"delivery_share\": 0.04, \"fav_category\": \"кофе\", \"promo_used\": 1, \"complaints\": 0}",
+      "code": "import pandas as pd\ndef predict_one(payload):\n    errors=validate(payload)\n    if errors:\n        return {'status':422,'errors':errors}\n    try:\n        row=pd.DataFrame([payload])[CARD['features']]\n        p=float(model.predict_proba(row)[0,1])\n    except Exception as e:\n        return {'status':500,'errors':[f'{type(e).__name__}: {e}']}\n    return {'status':200,'proba':round(p,3),'in_campaign':p>=CARD['threshold'],'model_version':CARD['version']}\nr_good=predict_one(GOOD)\nr_bad=predict_one({k:v for k,v in GOOD.items() if k!='city'})\nprint(r_good,r_bad,sep='\n')",
+      "check": "import json as _j\nimport pandas as _pd\nf, m, C, G = need('predict_one'), need('model'), need('CARD'), need('GOOD')\np = float(m.predict_proba(_pd.DataFrame([G])[C['features']])[0, 1])\nr = need('r_good', dict)\nassert r.get('status') == 200 and close(r.get('proba'), round(p, 3), 1e-9), f'r_good = {r}: status 200 и proba с 3 знаками.'\nassert r.get('in_campaign') is (p >= C['threshold']) and r.get('model_version') == C['version'], f'r_good = {r}: in_campaign — bool по порогу из CARD, model_version из CARD.'\n_j.dumps(r)\nrb = need('r_bad', dict)\nassert rb.get('status') == 422 and any('city' in e for e in rb.get('errors', [])), f'r_bad = {rb}: 422 и ошибка про city.'\nr5 = f(dict(G, visits_90d='четыре'))\nassert r5.get('status') == 500 and isinstance(r5.get('errors'), list) and r5['errors'], f'Если модель упала (visits_90d строкой не ловит учебная validate), нужен ответ 500 с текстом ошибки, а сейчас: {r5}.'\nassert ':' in r5['errors'][0], 'Текст ошибки 500: \"<ИмяОшибки>: <сообщение>\" — type(e).__name__.'",
+      "files": [
+        "guests_churn.csv"
+      ],
+      "should_pass": false,
+      "reason": "SyntaxError в print; сначала назвать ошибку ученика"
+    },
+    {
+      "name": "literal_fixed",
+      "task": "handler",
+      "setup": "import pandas as pd\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import Pipeline, make_pipeline\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\nfrom sklearn.linear_model import LogisticRegression\n_g = pd.read_csv(\"guests_churn.csv\")\n_X = _g.drop(columns=[\"guest_id\", \"churned\", \"card_blocked\"])\n_NUM = [\"tenure_months\", \"app\", \"visits_90d\", \"days_since_last\", \"avg_check\", \"delivery_share\", \"promo_used\", \"complaints\"]\n_pre = ColumnTransformer([(\"num\", make_pipeline(SimpleImputer(strategy=\"median\"), StandardScaler()), _NUM),\n                          (\"cat\", OneHotEncoder(handle_unknown=\"ignore\"), [\"city\", \"fav_category\"])])\nmodel = Pipeline([(\"prep\", _pre), (\"model\", LogisticRegression(max_iter=2000))]).fit(_X, _g[\"churned\"])\nCARD = {\"version\": \"1.0\", \"features\": list(_X.columns), \"threshold\": 1 / 3}\ndef validate(p):\n    return [f\"{f}: обязательное поле\" for f in CARD[\"features\"] if f not in p]\nGOOD = {\"city\": \"Пермь\", \"tenure_months\": 12, \"app\": 0, \"visits_90d\": 4, \"days_since_last\": 8,\n        \"avg_check\": 446, \"delivery_share\": 0.04, \"fav_category\": \"кофе\", \"promo_used\": 1, \"complaints\": 0}",
+      "code": "import pandas as pd\ndef predict_one(payload):\n    errors=validate(payload)\n    if errors:\n        return {'status':422,'errors':errors}\n    try:\n        row=pd.DataFrame([payload])[CARD['features']]\n        p=float(model.predict_proba(row)[0,1])\n    except Exception as e:\n        return {'status':500,'errors':[f'{type(e).__name__}: {e}']}\n    return {'status':200,'proba':round(p,3),'in_campaign':p>=CARD['threshold'],'model_version':CARD['version']}\nr_good=predict_one(GOOD)\nr_bad=predict_one({k:v for k,v in GOOD.items() if k!='city'})\nprint(r_good,r_bad,sep=chr(10))",
+      "check": "import json as _j\nimport pandas as _pd\nf, m, C, G = need('predict_one'), need('model'), need('CARD'), need('GOOD')\np = float(m.predict_proba(_pd.DataFrame([G])[C['features']])[0, 1])\nr = need('r_good', dict)\nassert r.get('status') == 200 and close(r.get('proba'), round(p, 3), 1e-9), f'r_good = {r}: status 200 и proba с 3 знаками.'\nassert r.get('in_campaign') is (p >= C['threshold']) and r.get('model_version') == C['version'], f'r_good = {r}: in_campaign — bool по порогу из CARD, model_version из CARD.'\n_j.dumps(r)\nrb = need('r_bad', dict)\nassert rb.get('status') == 422 and any('city' in e for e in rb.get('errors', [])), f'r_bad = {rb}: 422 и ошибка про city.'\nr5 = f(dict(G, visits_90d='четыре'))\nassert r5.get('status') == 500 and isinstance(r5.get('errors'), list) and r5['errors'], f'Если модель упала (visits_90d строкой не ловит учебная validate), нужен ответ 500 с текстом ошибки, а сейчас: {r5}.'\nassert ':' in r5['errors'][0], 'Текст ошибки 500: \"<ИмяОшибки>: <сообщение>\" — type(e).__name__.'",
+      "files": [
+        "guests_churn.csv"
+      ],
+      "should_pass": true,
+      "reason": "должно быть принято и при первом запуске урока"
+    }
+  ],
+  "matrix": [
+    "cold_invalid",
+    "cold_fixed",
+    "warm_invalid_after_fixed",
+    "warm_fixed"
+  ],
+  "expected_before": {
+    "cold_invalid": "ModuleNotFoundError (pandas or sklearn)",
+    "cold_fixed": "accepted",
+    "warm_invalid_after_fixed": "SyntaxError line14",
+    "warm_fixed": "accepted"
+  },
+  "expected_after": {
+    "cold_invalid": "SyntaxError line14",
+    "cold_fixed": "accepted",
+    "warm_invalid_after_fixed": "SyntaxError line14",
+    "warm_fixed": "accepted"
+  }
+}

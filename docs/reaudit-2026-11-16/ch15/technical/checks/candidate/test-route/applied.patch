@@ -1,0 +1,74 @@
+--- a/site/assets/lesson.js
++++ b/site/assets/lesson.js
+@@ -447,6 +447,9 @@
+       var questions = $('.test-questions');
+       if (questions && $('.quiz-c[data-answered]', questions)) questions.open = true;
+       testResult();
++      if (LESSON.lesson === 'ch15/test') {
++        $$('[data-core-only]').forEach(function (cb) { cb.addEventListener('change', testResult); });
++      }
+     }
+     if (ordersTest) {
+       var project = el('p'), projectLink = el('a', '', 'Открыть шаг «Отчёт в файл»');
+@@ -466,6 +469,7 @@
+     // итог теста главы: сколько верно, какие уроки повторить, новая попытка
+     function testResult() {
+       var box = $('#test-result'); if (!box) return;
++      markChapter15TestRoute();
+       var all = $$('.quiz-c'), qs = all;
+       box.textContent = '';
+       if (coreQuestions) {
+@@ -485,7 +489,18 @@
+       head.appendChild(el('b', '', (coreQuestions ? 'Основной путь · ' : '') + ok + ' из ' + qs.length + (ordersTest ? ' по теории' : '')));
+       if (!ordersTest) head.appendChild(el('span', '', pct >= 80 ? ' — глава усвоена. Можно идти дальше.' : pct >= 50 ? ' — неплохо, но стоит повторить темы ниже.' : ' — лучше вернуться к урокам ниже, а потом пройти тест ещё раз.'));
+       box.prepend(head);
+-      if (coreQuestions && tried.length === extra.length) box.appendChild(el('p', '', 'Всего верно ' + (ok + correct.length) + ' из ' + all.length + '.'));
++      if (coreQuestions && tried.length === extra.length) {
++        if (LESSON.lesson === 'ch15/test') {
++          var fullOk = ok + correct.length, fullPct = Math.round(100 * fullOk / all.length);
++          var fullHead = el('div', 'exam-score ' + (fullPct >= 80 ? 'good' : fullPct >= 50 ? 'mid' : 'low'));
++          fullHead.dataset.routeScore = 'full';
++          fullHead.appendChild(el('b', '', 'Полный путь · ' + fullOk + ' из ' + all.length));
++          fullHead.appendChild(el('span', '', fullPct >= 80 ? ' — полный маршрут усвоен.' : ' — повторите темы полного маршрута ниже.'));
++          box.appendChild(fullHead);
++        } else {
++          box.appendChild(el('p', '', 'Всего верно ' + (ok + correct.length) + ' из ' + all.length + '.'));
++        }
++      }
+       var miss = {};
+       all.forEach(function (x) {
+         if (x.dataset.answered !== 'fail' || !x.dataset.lesson) return;
+@@ -512,6 +527,25 @@
+       };
+       box.appendChild(again);
+     }
++  }
++
++  // У главы15 основной и полный тест имеют независимые результаты по тем же ответам.
++  function markChapter15TestRoute() {
++    if (LESSON.lesson !== 'ch15/test' || !P.state) return;
++    var chapter = D.COURSE.find(function (c) { return c.id === 'ch15'; });
++    if (!chapter || !chapter.test.coreQuestions) return;
++    var main = document.body.classList.contains('core-only');
++    var keys = main ? chapter.test.coreQuestions : Array.from({ length: chapter.test.n }, function (_, i) { return 'c' + (i + 1); });
++    var attempt = ((P.state.exam[LESSON.lesson] || {}).n || 1), answered = 0, right = 0;
++    keys.forEach(function (key) {
++      var answer = P.state.quiz[D.testQuestionKey(LESSON.lesson, key, attempt)];
++      if (answer) { answered++; if (answer.ok) right++; }
++    });
++    $$('[data-ctest="ch15"]').forEach(function (a) {
++      a.dataset.done = answered >= keys.length && keys.length ? (right / keys.length >= 0.8 ? 'all' : 'part') : (answered ? 'part' : '');
++      var count = $('[data-p]', a);
++      if (count) count.textContent = answered ? right + '/' + keys.length + (main ? ' осн.' : ' полный') : '';
++    });
+   }
+ 
+   // ---------- «Предскажите вывод» ----------
+@@ -784,6 +818,7 @@
+       var cm = $('#chapter-meter i'); if (cm) cm.style.width = (chTotal ? 100 * chDone / chTotal : 0) + '%';
+     }
+     D.markDots(document);
++    markChapter15TestRoute();
+     var next = $('.pager .next');
+     if (next) next.classList.toggle('ready', p.done >= p.total);
+     var nowComplete = LESSON.mode === 'lesson' ? p.complete : p.done >= p.total;

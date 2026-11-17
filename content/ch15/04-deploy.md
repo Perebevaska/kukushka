@@ -537,19 +537,31 @@ print(summary)
 
 ### check
 ```python
+from pathlib import Path as _Path
+import numpy as _np
 import pandas as _pd
-s = need('summary', dict)
-for k in ['n_input', 'n_scored', 'n_rejected', 'n_in_campaign']:
-    assert k in s, f'В сводке нет ключа {k}.'
-assert s['n_input'] == 300 and s['n_rejected'] == 10 and s['n_scored'] == 290, f'Сводка {s}: из 300 строк должно быть отложено 10 (5 + 3 + 2).'
-sc = _pd.read_csv('out/scores_2026-12-07.csv'); rj = _pd.read_csv('out/rejected_2026-12-07.csv')
-assert list(sc.columns) == ['guest_id', 'proba', 'in_campaign', 'model_version'], f'Столбцы scores: {list(sc.columns)}.'
-assert len(sc) == 290 and len(rj) == 10 and 'reason' in rj.columns, 'rejected — 10 строк со столбцом reason.'
-m, C = need('MODEL'), need('CARD')
-ex = _pd.read_csv('export.csv').set_index('guest_id').loc[sc['guest_id']]
-p = m.predict_proba(ex[C['features']])[:, 1]
-assert (abs(sc['proba'].values - p) < 1e-3).all(), 'proba — вероятность ухода от MODEL.'
-assert s['n_in_campaign'] == int((p >= C['threshold']).sum()) == int(sc['in_campaign'].sum()), 'n_in_campaign — число гостей с proba ≥ порога из CARD.'
+_m,_card = need('MODEL'),need('CARD')
+def _verify_batch(_input, _directory, _date, _summary):
+    _source = _pd.read_csv(_input)
+    _sc = _pd.read_csv(_Path(_directory)/f'scores_{_date}.csv')
+    _rj = _pd.read_csv(_Path(_directory)/f'rejected_{_date}.csv')
+    assert list(_sc.columns)==['guest_id','proba','in_campaign','model_version'], 'scores: guest_id,proba,in_campaign,model_version.'
+    assert 'guest_id' in _rj and 'reason' in _rj, 'rejected: исходные guest_id и непустая причина.'
+    _bad=(_source.visits_90d<0)|~_source.delivery_share.between(0,1)|(_source.tenure_months<1)
+    assert _sc.guest_id.is_unique and _rj.guest_id.is_unique, 'ID в scored/rejected не должны повторяться.'
+    assert set(_sc.guest_id)==set(_source.loc[~_bad,'guest_id']) and set(_rj.guest_id)==set(_source.loc[_bad,'guest_id']), 'scored и rejected должны точно делить исходные guest_id на годные и ошибочные; нельзя потерять или продублировать офис.'
+    assert _rj.reason.notna().all() and _rj.reason.astype(str).str.strip().ne('').all(), 'Для каждой отложенной строки нужна непустая причина; текст и порядок проверок свободны.'
+    _good=_source.set_index('guest_id').loc[_sc.guest_id]
+    _p=_m.predict_proba(_good[_card['features']])[:,1]
+    assert _np.allclose(_sc.proba,_p,rtol=0,atol=1e-3), 'Вероятности должны принадлежать тем же guest_id и MODEL.'
+    assert _np.array_equal(_sc.in_campaign.to_numpy(), _p>=_card['threshold']), 'Решение каждого гостя принимается по неокруглённой вероятности и порогу CARD.'
+    assert _sc.model_version.astype(str).eq(str(_card['version'])).all(), 'model_version берётся из CARD.'
+    assert isinstance(_summary,dict) and all(_summary.get(k)==v for k,v in {'n_input':len(_source),'n_scored':len(_sc),'n_rejected':len(_rj),'n_in_campaign':int((_p>=_card['threshold']).sum())}.items()), 'Сводка должна совпадать с фактическими исходными и выходными файлами.'
+_verify_batch('export.csv','out','2026-12-07',need('summary',dict))
+_changed=_pd.read_csv('export.csv').iloc[:27].sample(frac=1,random_state=24).copy()
+_changed.to_csv('export_other.csv',index=False)
+_other=need('run_batch')('export_other.csv','batch_other','2026-12-21')
+_verify_batch('export_other.csv','batch_other','2026-12-21',_other)
 ```
 
 ### hint
@@ -708,6 +720,12 @@ gs = {int(k): v for k, v in need('status_share', dict).items()}
 assert all(close(gs[k], ws[k], 0.0011) for k in ws.index), f'status_share = {gs}.'
 assert need('clients', list) == sorted(L['client'].unique()), f'clients = {need("clients")}.'
 assert tuple(need('period')) == ('2026-11-02', '2026-11-08'), f'period = {need("period")}.'
+_expected_payload = _pd.json_normalize(L['payload'].tolist())
+assert set(p.columns)==set(_expected_payload.columns), 'payload_df должна сохранять все поля входных payload, без выдуманных или потерянных.'
+try:
+    _pd.testing.assert_frame_equal(p.loc[:,_expected_payload.columns].reset_index(drop=True), _expected_payload.reset_index(drop=True), check_dtype=False, rtol=1e-12, atol=1e-12)
+except AssertionError:
+    raise AssertionError('payload_df: значения признаков должны принадлежать той же записи журнала, а не только совпадать по числу строк и названиям столбцов.')
 ```
 
 ### hint
@@ -831,6 +849,18 @@ assert 'ожидается' in raw, 'Русские буквы экраниро�
 assert [r['status'] for r in recs] == [200, 422, 500], 'Статусы — числа, в том порядке, в котором записывали.'
 m = need('mine', _pd.DataFrame)
 assert len(m) == 3 and list(m['request_id']) == ['q-1', 'q-2', 'q-3'], 'mine — прочитанный my_log.jsonl.'
+_columns = ['ts','request_id','client','status','latency_ms','error']
+assert set(_columns) <= set(m.columns), 'mine — перечитанный JSONL со всеми полями записи.'
+_expected = _pd.DataFrame(recs)[_columns]
+_actual = m[_columns].reset_index(drop=True).copy()
+for _frame in [_actual, _expected]:
+    _frame['ts'] = _pd.to_datetime(_frame['ts'])
+try:
+    _pd.testing.assert_frame_equal(_actual, _expected, check_dtype=False, rtol=1e-12, atol=1e-12)
+except AssertionError:
+    raise AssertionError('mine должна совпадать с содержимым my_log.jsonl по каждому полю, включая client, latency_ms и error.')
+for _record, _call in zip(recs, need('calls_to_log')):
+    assert [_record[_field] for _field in _columns[1:]] == list(_call), 'Записывайте аргументы log_request под своими именами полей.'
 ```
 
 ### hint
@@ -894,9 +924,12 @@ er = l.groupby('date')['status'].apply(lambda s: (s != 200).mean()).round(3)
 p = l[l['status'] == 200].groupby('date')['latency_ms'].quantile(0.95).round(1)
 d = need('daily', _pd.DataFrame)
 assert {'n', 'error_rate', 'p95_ms'} <= set(d.columns) and len(d) == 7, f'daily: 7 строк и столбцы n, error_rate, p95_ms. Сейчас {d.shape}, {list(d.columns)}.'
-assert list(d['n'].values) == list(n.values), 'n — число запросов за день.'
-assert all(abs(a - b) < 0.0011 for a, b in zip(d['error_rate'].values, er.values)), f'error_rate:\n{d["error_rate"]}\nа нужно\n{er}'
-assert all(abs(a - b) < 0.051 for a, b in zip(d['p95_ms'].values, p.values)), f'p95_ms — по успешным запросам:\n{d["p95_ms"]}\nа нужно\n{p}'
+
+_dates = _pd.Index([_pd.Timestamp(v).date() for v in d.index])
+assert _dates.is_unique and set(_dates)==set(n.index), 'Индекс daily — семь исходных дат журнала, по одному разу.'
+_aligned=d.copy(); _aligned.index=_dates; _aligned=_aligned.loc[n.index]
+for _column,_expected,_tol in [('n',n,0),('error_rate',er,.0011),('p95_ms',p,.051)]:
+    assert all(abs(a-b)<=_tol for a,b in zip(_aligned[_column],_expected)), f'{_column}: сравнивайте показатели по датам, а не только по позиции строки.'
 wa = [str(k) for k in n.index if er[k] > 0.02 or p[k] > 100]
 assert [str(x) for x in need('alert_days', list)] == wa, f'alert_days = {need("alert_days")}, а нужно {wa}.'
 ```

@@ -445,7 +445,7 @@ def parse_chapter_extra(ch: dict) -> dict:
             for ref in refs:
                 if ref not in lessons:
                     raise FormatError(f'{ch["id"]}/test.md: ссылка на урок {ref}, которого нет в главе')
-            if ch['id'] in {'ch02', 'ch08'}:
+            if ch['id'] in {'ch02', 'ch08', 'ch15'}:
                 core = {ls['id'] for ls in ch['lessons'] if ls.get('core')}
                 out[name]['coreQuestions'] = [f'c{i}' for i, ref in enumerate(refs, 1) if ref in core]
     return out

@@ -1,0 +1,30 @@
+--- a/site/assets/harness.py
++++ b/site/assets/harness.py
+@@ -420,6 +420,7 @@
+     sys.stdout = sys.stderr = buf
+     builtins.input = _no_input
+     try:
++        compiled = compile(code, _USER, 'exec')
+         if 'pandas' in code or 'pandas' in (setup or ''):
+             _pandas_options()
+         if setup:
+@@ -427,7 +428,7 @@
+         # как в Jupyter: значение последнего выражения показываем (таблицы pandas — таблицей)
+         body, last = _split_last_expr(code) if show_last else (code, None)
+         if last is None:
+-            exec(compile(code, _USER, 'exec'), ns)
++            exec(compiled, ns)
+         else:
+             exec(compile(body, _USER, 'exec'), ns)
+             value = eval(compile(last, _USER, 'eval'), ns)
+--- a/tools/build.py
++++ b/tools/build.py
+@@ -445,7 +445,7 @@
+             for ref in refs:
+                 if ref not in lessons:
+                     raise FormatError(f'{ch["id"]}/test.md: ссылка на урок {ref}, которого нет в главе')
+-            if ch['id'] in {'ch02', 'ch08'}:
++            if ch['id'] in {'ch02', 'ch08', 'ch15'}:
+                 core = {ls['id'] for ls in ch['lessons'] if ls.get('core')}
+                 out[name]['coreQuestions'] = [f'c{i}' for i, ref in enumerate(refs, 1) if ref in core]
+     return out
